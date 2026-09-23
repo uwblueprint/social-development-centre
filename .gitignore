@@ -1,5 +1,3 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
 # dependencies
 /node_modules
 /.pnp
@@ -28,9 +26,15 @@ yarn-error.log*
 .env*.local
 .env
 
+AGENTS.md
+CLAUDE.md
+
 # vercel
 .vercel
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# next-yak swc plugin cache
+/.swc/
