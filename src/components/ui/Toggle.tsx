@@ -1,9 +1,38 @@
 "use client";
 
+import * as React from "react";
 import { styled } from "next-yak";
 import { Toggle as TogglePrimitive } from "radix-ui";
 
-export const Toggle = styled(TogglePrimitive.Root)`
+/*
+ * States (verified for WCAG 2.2 AA contrast):
+ * - off:          bg --color-bg,        border --color-border-strong, text --color-text
+ * - off + hover:  bg --color-secondary, text --color-text
+ * - on:           bg --color-primary,   text --color-on-primary, + check icon (non-color cue)
+ * - on + hover:   bg --color-primary-hover, text --color-on-primary
+ * - disabled:     reduced opacity, not-allowed cursor (color alone never carries the pressed state)
+ */
+
+const CheckIcon = styled.svg`
+  display: none;
+  flex-shrink: 0;
+`;
+
+function Check() {
+  return (
+    <CheckIcon width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+      <path
+        d="M2 6.2L4.6 8.8L10 3"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </CheckIcon>
+  );
+}
+
+const Root = styled(TogglePrimitive.Root)`
   all: unset;
   display: inline-flex;
   align-items: center;
@@ -17,21 +46,36 @@ export const Toggle = styled(TogglePrimitive.Root)`
   color: var(--color-text);
   font-family: inherit;
   font-size: var(--text-sm);
-  font-weight: 500;
+  font-weight: var(--weight-regular);
   cursor: pointer;
   transition:
     background-color var(--duration) var(--ease),
     color var(--duration) var(--ease),
     border-color var(--duration) var(--ease);
 
+  ${CheckIcon} {
+    display: none;
+  }
+
   &:hover:not([data-disabled]) {
-    background: var(--color-surface);
+    background: var(--color-secondary);
+    color: var(--color-text);
   }
 
   &[data-state="on"] {
     background: var(--color-primary);
     color: var(--color-on-primary);
     border-color: var(--color-primary);
+
+    ${CheckIcon} {
+      display: inline-flex;
+    }
+  }
+
+  &[data-state="on"]:hover:not([data-disabled]) {
+    background: var(--color-primary-hover);
+    color: var(--color-on-primary);
+    border-color: var(--color-primary-hover);
   }
 
   &:focus-visible {
@@ -43,3 +87,12 @@ export const Toggle = styled(TogglePrimitive.Root)`
     cursor: not-allowed;
   }
 `;
+
+export function Toggle({ children, ...props }: TogglePrimitive.ToggleProps) {
+  return (
+    <Root {...props}>
+      <Check />
+      {children}
+    </Root>
+  );
+}

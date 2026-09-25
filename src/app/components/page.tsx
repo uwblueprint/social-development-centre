@@ -1,18 +1,16 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { styled } from "next-yak";
-import { ButtonDemos, SwitchDemos } from "./demos/BasicsDemos";
+import { ButtonDemos } from "./demos/BasicsDemos";
+import { FieldDemo, InputDemo, SelectDemo, TextareaDemo } from "./demos/FormDemos";
 import {
   CheckboxDemo,
-  FieldDemo,
-  InputDemo,
   RadioGroupDemo,
-  SelectDemo,
   SliderDemo,
-  TextareaDemo,
+  SwitchDemo,
   ToggleDemo,
   ToggleGroupDemo,
-} from "./demos/FormDemos";
+} from "./demos/ControlDemos";
 import { OverlayDemos } from "./demos/OverlayDemos";
 import { DisplayDemos } from "./demos/DisplayDemos";
 
@@ -28,7 +26,7 @@ const sections: { id: string; title: string; description: string; demo: ReactNod
   { id: "select", title: "Select", description: "Pick one option from a list.", demo: <SelectDemo /> },
   { id: "checkbox", title: "Checkbox", description: "Independent on/off choices, including indeterminate.", demo: <CheckboxDemo /> },
   { id: "radio", title: "Radio group", description: "One choice from a small set.", demo: <RadioGroupDemo /> },
-  { id: "switch", title: "Switch", description: "Settings that apply immediately.", demo: <SwitchDemos /> },
+  { id: "switch", title: "Switch", description: "Settings that apply immediately.", demo: <SwitchDemo /> },
   { id: "slider", title: "Slider", description: "Choose a value from a range.", demo: <SliderDemo /> },
   { id: "toggle", title: "Toggle", description: "A single pressable on/off button.", demo: <ToggleDemo /> },
   { id: "toggle-group", title: "Toggle group", description: "Segmented control for switching views or options.", demo: <ToggleGroupDemo /> },
