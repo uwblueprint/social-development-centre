@@ -7,6 +7,7 @@ export const Label = styled(LabelPrimitive.Root)`
   display: inline-block;
   font-size: var(--text-sm);
   font-weight: var(--weight-regular);
+  line-height: var(--leading-ui);
   color: var(--color-text);
   margin-bottom: var(--space-1);
   cursor: pointer;

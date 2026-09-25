@@ -27,13 +27,13 @@ export const Badge = styled.span<{ $variant?: Variant }>`
   ${({ $variant }) =>
     $variant === "success" &&
     css`
-      background: color-mix(in srgb, var(--color-success) 14%, transparent);
+      background: var(--color-success-subtle);
       color: var(--color-success);
     `}
   ${({ $variant }) =>
     $variant === "danger" &&
     css`
-      background: color-mix(in srgb, var(--color-danger) 14%, transparent);
+      background: var(--color-danger-subtle);
       color: var(--color-danger);
     `}
   ${({ $variant }) =>

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Field } from "@/components/ui/Field";
 import { Select } from "@/components/ui/Select";
+import { DatePicker } from "@/components/ui/DatePicker";
 
 const Section = styled.div`
   display: flex;
@@ -72,7 +73,15 @@ export function TextareaDemo() {
   );
 }
 
+function todayISODate() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(
+    now.getDate(),
+  ).padStart(2, "0")}`;
+}
+
 export function FieldDemo() {
+  const todayIso = todayISODate();
   return (
     <FormGrid>
       <Field label="Full name" required>
@@ -94,7 +103,9 @@ export function FieldDemo() {
           <Input {...props} type="url" placeholder="https://example.org" defaultValue="example.org" />
         )}
       </Field>
-      <Field label="Date of birth">{(props) => <Input {...props} type="date" />}</Field>
+      <Field label="Date of birth" hint="YYYY-MM-DD — typing is fastest; the calendar button also works">
+        {(props) => <DatePicker {...props} defaultValue="1990-05-14" max={todayIso} />}
+      </Field>
       <Field label="Number of volunteers" hint="Between 1 and 500">
         {(props) => <Input {...props} type="number" min={1} max={500} placeholder="10" />}
       </Field>

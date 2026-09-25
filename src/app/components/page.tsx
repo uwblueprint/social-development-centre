@@ -5,6 +5,7 @@ import { ButtonDemos } from "./demos/BasicsDemos";
 import { FieldDemo, InputDemo, SelectDemo, TextareaDemo } from "./demos/FormDemos";
 import {
   CheckboxDemo,
+  DatePickerDemo,
   RadioGroupDemo,
   SliderDemo,
   SwitchDemo,
@@ -23,6 +24,7 @@ const sections: { id: string; title: string; description: string; demo: ReactNod
   { id: "field", title: "Field", description: "Label, hint and error wired to any control for screen readers.", demo: <FieldDemo /> },
   { id: "input", title: "Input", description: "Single-line text entry.", demo: <InputDemo /> },
   { id: "textarea", title: "Textarea", description: "Multi-line text entry.", demo: <TextareaDemo /> },
+  { id: "date-picker", title: "Date picker", description: "Type a date or pick one from a calendar.", demo: <DatePickerDemo /> },
   { id: "select", title: "Select", description: "Pick one option from a list.", demo: <SelectDemo /> },
   { id: "checkbox", title: "Checkbox", description: "Independent on/off choices, including indeterminate.", demo: <CheckboxDemo /> },
   { id: "radio", title: "Radio group", description: "One choice from a small set.", demo: <RadioGroupDemo /> },
