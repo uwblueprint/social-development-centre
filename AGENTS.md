@@ -12,6 +12,7 @@ This file is for AI coding agents and humans alike. Read it before writing any U
 - `docs/design/principles.md`: the design rules behind the kit. `docs/design/research.md`: the evidence (Linear, Ramp, NN/g).
 - `docs/backend/`: how the backend connects (data seams, server actions returning `ActionState`, `SubmitButton`) and per-feature backend requirements. `/components/form-contract` shows exactly what a form submits.
 - `docs/user-guide/`: task-based user guide ("to do X, click Y"). The source for end-user documentation.
+- `docs/emails/`: drafts of product emails per feature.
 - `docs/decisions/`: product decisions per feature (what, which page, what it affects, when users meet it).
 - `/components`: live showcase of every component in every state. Run `pnpm dev` and open http://localhost:3000/components.
 
