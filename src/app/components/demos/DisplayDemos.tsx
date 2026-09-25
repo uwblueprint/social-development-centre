@@ -12,6 +12,10 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/Accordion";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/Collapsible";
 import { Tag, SelectableTag, RemovableTag, TagList } from "@/components/ui/Tag";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { List, ListRow } from "@/components/ui/ListRow";
+import { Building2, ChevronRight, Search } from "lucide-react";
+import { Icon } from "@/components/ui/Icon";
 
 const Grid = styled.div`
   display: grid;
@@ -127,6 +131,44 @@ const FAQ = [
     a: "Facilitators log milestones after each session, and participants can view their own progress and upcoming sessions from their dashboard at any time.",
   },
 ];
+
+const SAMPLE_ROWS = [
+  { name: "Northside Food Bank", meta: "6 opportunities" },
+  { name: "Riverbend Youth Collective", meta: "3 opportunities" },
+  { name: "Eastside Newcomer Services", meta: "11 opportunities" },
+];
+
+export function ListRowDemo() {
+  return (
+    <List style={{ border: "1px solid var(--color-border)", borderRadius: "var(--radius-lg)" }}>
+      {SAMPLE_ROWS.map((row) => (
+        <ListRow key={row.name} type="button" onClick={() => {}}>
+          <span style={{ flex: 1, fontSize: "var(--text-sm)" }}>{row.name}</span>
+          <span style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)" }}>{row.meta}</span>
+          <Icon icon={ChevronRight} size={16} />
+        </ListRow>
+      ))}
+    </List>
+  );
+}
+
+export function EmptyStateDemo() {
+  return (
+    <Stack>
+      <Card>
+        <EmptyState
+          icon={Building2}
+          title="No partners yet"
+          description="Invite an organization to give them access to their opportunities."
+          action={<Button $size="sm">Invite partner</Button>}
+        />
+      </Card>
+      <Card>
+        <EmptyState icon={Search} title='No matches for "harbor"' description="Try a different organization name, contact name or email." />
+      </Card>
+    </Stack>
+  );
+}
 
 export function DisplayDemos() {
   const [showMore, setShowMore] = useState(false);

@@ -1,13 +1,37 @@
 import type { Metadata } from "next";
-import { PlaceholderPage } from "../_components/PlaceholderPage";
+import { listOrganizationOptions, listPartnerPeople, listPartners } from "./_data/queries";
+import { PartnersView, type PartnersTab } from "./_components/PartnersView";
 
 export const metadata: Metadata = { title: "Partners" };
 
-export default function Page() {
+function normalizeTab(value: string | undefined): PartnersTab {
+  return value === "people" || value === "removed" ? value : "organizations";
+}
+
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string; q?: string }>;
+}) {
+  const params = await searchParams;
+  const tab = normalizeTab(params.tab);
+  const q = params.q?.trim() ?? "";
+
+  const [organizations, removedOrganizations, people, organizationOptions] = await Promise.all([
+    listPartners("current", q),
+    listPartners("removed", q),
+    listPartnerPeople(q),
+    listOrganizationOptions(),
+  ]);
+
   return (
-    <PlaceholderPage
-      title="Partners"
-      description="Add organizations, manage their profiles and contacts, invite partner users and control their access. Partner rules live here."
+    <PartnersView
+      tab={tab}
+      q={q}
+      organizations={organizations}
+      removedOrganizations={removedOrganizations}
+      people={people}
+      organizationOptions={organizationOptions}
     />
   );
 }

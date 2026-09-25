@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Field } from "@/components/ui/Field";
 import { Select } from "@/components/ui/Select";
+import { CreatableCombobox } from "@/components/ui/CreatableCombobox";
+import { SearchField } from "@/components/ui/SearchField";
 import { DatePicker } from "@/components/ui/DatePicker";
 
 const Section = styled.div`
@@ -55,6 +57,16 @@ export function InputDemo() {
       </Field>
       <Field label="Email" error="Enter a valid email address">
         {(props) => <Input {...props} type="email" defaultValue="not-an-email" />}
+      </Field>
+    </Section>
+  );
+}
+
+export function SearchFieldDemo() {
+  return (
+    <Section>
+      <Field label="Search partners" hint="Matches organization name, contact name or email">
+        {(props) => <SearchField {...props} placeholder="Search partners" />}
       </Field>
     </Section>
   );
@@ -175,6 +187,31 @@ export function SelectDemo() {
       >
         {(props) => (
           <Select {...props} options={contactMethodOptions} placeholder="Not available" />
+        )}
+      </Field>
+    </Section>
+  );
+}
+
+const organizationOptions = [
+  { value: "org_1", label: "Northside Food Bank" },
+  { value: "org_2", label: "Riverbend Youth Collective" },
+  { value: "org_3", label: "Maple Literacy Project" },
+  { value: "org_4", label: "Eastside Newcomer Services" },
+];
+
+export function CreatableComboboxDemo() {
+  return (
+    <Section>
+      <Field label="Organization" hint="Search existing organizations, or create a new one">
+        {(props) => (
+          <CreatableCombobox
+            {...props}
+            options={organizationOptions}
+            existingFieldName="organizationId"
+            createFieldName="organizationName"
+            placeholder="Search or create an organization…"
+          />
         )}
       </Field>
     </Section>

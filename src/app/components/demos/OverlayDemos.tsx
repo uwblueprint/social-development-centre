@@ -40,6 +40,17 @@ import {
 } from "@/components/ui/DropdownMenu";
 import { HoverCard, HoverCardTrigger, HoverCardContent, HoverCardTriggerLink } from "@/components/ui/HoverCard";
 import { AppToastProvider, useToast } from "@/components/ui/Toast";
+import {
+  Sheet,
+  SheetTrigger,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetBody,
+  SheetFooter,
+} from "@/components/ui/Sheet";
+import { Badge } from "@/components/ui/Badge";
 
 const Row = styled.div`
   display: flex;
@@ -219,6 +230,36 @@ function HoverCardDemo() {
   );
 }
 
+function SheetDemo() {
+  return (
+    <Sheet>
+      <SheetTrigger asChild>
+        <Button $variant="secondary">View partner</Button>
+      </SheetTrigger>
+      <SheetContent>
+        <SheetHeader>
+          <SheetTitle>Northside Food Bank</SheetTitle>
+          <SheetDescription>Partner since January 2026</SheetDescription>
+          <Row style={{ marginTop: "var(--space-1)" }}>
+            <Badge $variant="success">Active</Badge>
+          </Row>
+        </SheetHeader>
+        <SheetBody>
+          <Field style={{ marginBottom: "var(--space-4)" }}>
+            <Label>Contacts</Label>
+          </Field>
+          <p style={{ margin: 0, fontSize: "var(--text-sm)", color: "var(--color-text-muted)" }}>
+            Amara Okafor · amara@northsidefood.org
+          </p>
+        </SheetBody>
+        <SheetFooter>
+          <Button $variant="danger">Remove access</Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
 function ToastDemo() {
   const { toast } = useToast();
   return (
@@ -250,6 +291,7 @@ export function OverlayDemos() {
           <DropdownMenuDemo />
           <HoverCardDemo />
           <ToastDemo />
+          <SheetDemo />
         </Row>
       </AppToastProvider>
     </TooltipProvider>

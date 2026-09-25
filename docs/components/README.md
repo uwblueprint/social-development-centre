@@ -12,8 +12,10 @@ Each doc covers when to use it, its API, a working example, content rules, and a
 - [Checkbox](./Checkbox.md) — a tri-state boolean selection.
 - [Label](./Label.md) — the visible label for a form control.
 - [Input](./Input.md) — a single-line text field.
+- [SearchField](./SearchField.md) — a single-line text field for filtering a list.
 - [Textarea](./Textarea.md) — a multi-line text field with a character counter.
 - [Select](./Select.md) — pick one option from a list, dropdown or searchable.
+- [CreatableCombobox](./CreatableCombobox.md) — pick an existing option or create one inline.
 - [RadioGroup](./RadioGroup.md) — mutually exclusive options.
 - [Switch](./Switch.md) — an immediate-effect on/off setting.
 - [Slider](./Slider.md) — a labeled numeric range with synced number inputs.
@@ -23,6 +25,7 @@ Each doc covers when to use it, its API, a working example, content rules, and a
 ## Overlays
 - [Dialog](./Dialog.md) — a modal window for a focused task.
 - [AlertDialog](./AlertDialog.md) — a modal that requires an explicit confirm or cancel.
+- [Sheet](./Sheet.md) — a right-anchored panel for viewing/editing one record.
 - [Popover](./Popover.md) — a small dismissible panel anchored to a trigger.
 - [HoverCard](./HoverCard.md) — a read-only preview panel on hover/focus.
 - [Tooltip](./Tooltip.md) — a short label supplementing a control's meaning.
@@ -38,6 +41,8 @@ Each doc covers when to use it, its API, a working example, content rules, and a
 - [Tabs](./Tabs.md) — switch between panels of related content.
 - [Accordion](./Accordion.md) — expandable/collapsible sections.
 - [Collapsible](./Collapsible.md) — a single expandable/collapsible region.
+- [ListRow](./ListRow.md) — a dense, clickable row for lists and simple tables.
+- [EmptyState](./EmptyState.md) — an empty list, section or no-results placeholder.
 
 ## Foundations
 - [DisabledReason](./DisabledReason.md) — explain why a control is disabled or read-only.

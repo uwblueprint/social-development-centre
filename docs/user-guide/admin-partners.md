@@ -35,7 +35,7 @@ The person gets an email with a link that works for 7 days. They appear as **Pen
 
 ## Edit a partner's details
 1. Open the partner.
-2. To rename the organization, edit its name at the top of the panel.
+2. To rename the organization, change the name at the top of the panel and click **Save**.
 3. To change a person's name or email, open their menu (**⋯**) and choose **Edit**.
 
 Changing someone's email sends a new invitation to the new address. If they were already active, they keep their access; once they accept, they sign in with the new email.

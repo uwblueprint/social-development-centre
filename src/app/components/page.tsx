@@ -2,7 +2,14 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { styled } from "next-yak";
 import { ButtonDemos, ColorDemos } from "./demos/BasicsDemos";
-import { FieldDemo, InputDemo, SelectDemo, TextareaDemo } from "./demos/FormDemos";
+import {
+  FieldDemo,
+  InputDemo,
+  SearchFieldDemo,
+  SelectDemo,
+  CreatableComboboxDemo,
+  TextareaDemo,
+} from "./demos/FormDemos";
 import {
   CheckboxDemo,
   DatePickerDemo,
@@ -13,7 +20,7 @@ import {
   ToggleGroupDemo,
 } from "./demos/ControlDemos";
 import { OverlayDemos } from "./demos/OverlayDemos";
-import { DisplayDemos } from "./demos/DisplayDemos";
+import { DisplayDemos, EmptyStateDemo, ListRowDemo } from "./demos/DisplayDemos";
 
 export const metadata: Metadata = {
   title: "Components · Social Development Centre",
@@ -24,17 +31,21 @@ const sections: { id: string; title: string; description: string; demo: ReactNod
   { id: "buttons", title: "Buttons", description: "Primary, secondary, outline, ghost and danger actions in three sizes.", demo: <ButtonDemos /> },
   { id: "field", title: "Field", description: "Label, hint and error wired to any control for screen readers.", demo: <FieldDemo /> },
   { id: "input", title: "Input", description: "Single-line text entry.", demo: <InputDemo /> },
+  { id: "search-field", title: "Search field", description: "A text entry for filtering a list, with a leading search icon.", demo: <SearchFieldDemo /> },
   { id: "textarea", title: "Textarea", description: "Multi-line text entry.", demo: <TextareaDemo /> },
   { id: "date-picker", title: "Date picker", description: "Type a date or pick one from a calendar.", demo: <DatePickerDemo /> },
   { id: "select", title: "Select", description: "Pick one option from a list.", demo: <SelectDemo /> },
+  { id: "creatable-combobox", title: "Creatable combobox", description: "Pick an existing option or create one inline.", demo: <CreatableComboboxDemo /> },
   { id: "checkbox", title: "Checkbox", description: "Independent on/off choices, including indeterminate.", demo: <CheckboxDemo /> },
   { id: "radio", title: "Radio group", description: "One choice from a small set.", demo: <RadioGroupDemo /> },
   { id: "switch", title: "Switch", description: "Settings that apply immediately.", demo: <SwitchDemo /> },
   { id: "slider", title: "Slider", description: "Choose a value from a range.", demo: <SliderDemo /> },
   { id: "toggle", title: "Toggle", description: "A single pressable on/off button.", demo: <ToggleDemo /> },
   { id: "toggle-group", title: "Toggle group", description: "Segmented control for switching views or options.", demo: <ToggleGroupDemo /> },
-  { id: "overlays", title: "Overlays", description: "Dialog, alert dialog, popover, tooltip, dropdown menu, hover card and toast.", demo: <OverlayDemos /> },
+  { id: "overlays", title: "Overlays", description: "Dialog, alert dialog, sheet, popover, tooltip, dropdown menu, hover card and toast.", demo: <OverlayDemos /> },
   { id: "display", title: "Display & navigation", description: "Card, badge, avatar, progress, tabs, accordion, scroll area and collapsible.", demo: <DisplayDemos /> },
+  { id: "list-row", title: "List row", description: "A dense, clickable row for lists and simple tables.", demo: <ListRowDemo /> },
+  { id: "empty-state", title: "Empty state", description: "An empty list, section or no-results placeholder.", demo: <EmptyStateDemo /> },
 ];
 
 const Shell = styled.div`
