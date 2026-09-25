@@ -16,3 +16,4 @@ civic hubby
 3. Run the SQL in `supabase/migrations/` in the Supabase SQL editor.
 4. In Supabase Auth → URL Configuration, add `http://localhost:3000/auth/confirm` to Redirect URLs.
 5. `pnpm dev`
+
