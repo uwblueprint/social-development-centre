@@ -36,11 +36,13 @@ Every action must verify the caller is an SDC admin.
 
 ## Removing a partner
 - Immediately: revoke portal access and sessions for all contacts; stop recommending all of the organization's opportunities; exclude them from all future automated emails.
-- Each existing opportunity expires at the earlier of its own end date or `removedAt + 1 month`, then disappears from every SDC surface. Needs a scheduled job or expiry computed at read time. **Undated opportunities: expire at `removedAt + 1 month`** (proposed; confirm).
+- Each existing dated opportunity expires at the earlier of its own end date or `removedAt + 1 month` (already-ended ones stay expired); undated ones expire at `removedAt + 1 month`. Expired listings disappear from every SDC surface. Needs a scheduled job or expiry computed at read time.
 - Keep the organization, contacts and all opportunity records for history.
-- Already-sent emails can't be recalled, and external registration links may keep working. SDC-controlled listing and recommendation surfaces must honour expiry. Links in old emails to an expired SDC listing should show an "no longer available" page (proposed; confirm).
+- Already-sent emails can't be recalled, and external registration links may keep working. SDC-controlled listing and recommendation surfaces must honour expiry. Links in old emails to an expired SDC listing show a "no longer available" page.
 
 ## Also needed
 - Opportunities list filter by partner: `/admin/opportunities?partner=<organizationId>`, used by "View opportunities".
 - Audit trail: who invited, cancelled, removed or reinvited, and when.
-- Whether a single person can belong to several organizations is left to the auth design; the UI currently assumes one.
+- A person belongs to one organization at a time but may move between organizations; organizations and people can be renamed and emails change. Key everything on stable IDs. Moving a person needs an action (not built yet).
+
+Decisions and their rationale: [docs/decisions/partners.md](../decisions/partners.md).
