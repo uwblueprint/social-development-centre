@@ -199,11 +199,12 @@ export function SliderField({
   const current = value ?? internal;
   const [texts, setTexts] = React.useState<string[]>(() => current.map(String));
 
-  React.useEffect(() => {
+  const currentKey = current.join(",");
+  const [syncedKey, setSyncedKey] = React.useState(currentKey);
+  if (currentKey !== syncedKey) {
+    setSyncedKey(currentKey);
     setTexts(current.map(String));
-    // Only re-sync when the committed numeric values actually change.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [current.join(",")]);
+  }
 
   function commit(next: number[]) {
     if (value === undefined) setInternal(next);

@@ -6,12 +6,7 @@ import { Label } from "@/components/ui/Label";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Field } from "@/components/ui/Field";
-import { Checkbox } from "@/components/ui/Checkbox";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/RadioGroup";
-import { Select, SelectItem } from "@/components/ui/Select";
-import { Slider } from "@/components/ui/Slider";
-import { Toggle } from "@/components/ui/Toggle";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/ToggleGroup";
+import { Select } from "@/components/ui/Select";
 
 const Section = styled.div`
   display: flex;
@@ -21,16 +16,19 @@ const Section = styled.div`
   margin-bottom: var(--space-7);
 `;
 
-const Row = styled.div`
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
+const FormGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  max-width: 640px;
+  margin-bottom: var(--space-7);
+
+  @media (max-width: 640px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
 `;
 
-const InlineLabel = styled.label`
-  font-size: var(--text-sm);
-  color: var(--color-text);
-`;
+
 
 export function LabelDemo() {
   return (
@@ -44,14 +42,18 @@ export function LabelDemo() {
 export function InputDemo() {
   return (
     <Section>
-      <Field label="Email">
-        {(props) => <Input {...props} type="email" placeholder="you@example.com" />}
+      <Field label="Full name">
+        {(props) => <Input {...props} placeholder="Ada Lovelace" />}
       </Field>
-      <Field label="Disabled field">
-        {(props) => <Input {...props} disabled placeholder="Not editable" />}
+      <Field
+        label="Account ID"
+        disabled
+        disabledReason="Set by your administrator. Contact support to change it."
+      >
+        {(props) => <Input {...props} defaultValue="ACC-1029" />}
       </Field>
-      <Field label="Invalid field" error="This field is required">
-        {(props) => <Input {...props} placeholder="Required" />}
+      <Field label="Email" error="Enter a valid email address">
+        {(props) => <Input {...props} type="email" defaultValue="not-an-email" />}
       </Field>
     </Section>
   );
@@ -60,8 +62,11 @@ export function InputDemo() {
 export function TextareaDemo() {
   return (
     <Section>
-      <Field label="Message" hint="Max 500 characters">
-        {(props) => <Textarea {...props} placeholder="Write your message..." />}
+      <Field label="Message" hint="Tell us a bit about your request">
+        {(props) => <Textarea {...props} maxLength={200} placeholder="Write your message..." />}
+      </Field>
+      <Field label="Feedback" error="Feedback is required">
+        {(props) => <Textarea {...props} placeholder="Required" />}
       </Field>
     </Section>
   );
@@ -69,168 +74,99 @@ export function TextareaDemo() {
 
 export function FieldDemo() {
   return (
-    <Section>
-      <Field label="Organization" hint="This appears on your public profile">
-        {(props) => <Input {...props} placeholder="Social Development Centre" />}
+    <FormGrid>
+      <Field label="Full name" required>
+        {(props) => <Input {...props} placeholder="Ada Lovelace" autoComplete="name" />}
       </Field>
-      <Field label="Website" error="Enter a valid URL">
-        {(props) => <Input {...props} placeholder="https://" aria-invalid />}
+      <Field label="Email" hint="We'll send confirmations here">
+        {(props) => (
+          <Input {...props} type="email" placeholder="you@example.com" autoComplete="email" />
+        )}
       </Field>
-    </Section>
+      <Field label="Phone" hint="Include the country code, e.g. +44 20 7946 0958">
+        {(props) => <Input {...props} type="tel" placeholder="+44 20 7946 0958" autoComplete="tel" />}
+      </Field>
+      <Field label="Password" hint="At least 8 characters, with a number and a symbol">
+        {(props) => <Input {...props} type="password" autoComplete="new-password" />}
+      </Field>
+      <Field label="Website" error="Enter a URL starting with https://">
+        {(props) => (
+          <Input {...props} type="url" placeholder="https://example.org" defaultValue="example.org" />
+        )}
+      </Field>
+      <Field label="Date of birth">{(props) => <Input {...props} type="date" />}</Field>
+      <Field label="Number of volunteers" hint="Between 1 and 500">
+        {(props) => <Input {...props} type="number" min={1} max={500} placeholder="10" />}
+      </Field>
+      <Field
+        label="Organization ID"
+        disabled
+        disabledReason="Set by your administrator. Contact support to change it."
+      >
+        {(props) => <Input {...props} defaultValue="SDC-04821" />}
+      </Field>
+    </FormGrid>
   );
 }
 
-export function CheckboxDemo() {
-  const [indeterminate, setIndeterminate] = React.useState<boolean | "indeterminate">(
-    "indeterminate",
-  );
-  return (
-    <Section>
-      <Row>
-        <Checkbox id="cb-1" defaultChecked />
-        <InlineLabel htmlFor="cb-1">Subscribe to newsletter</InlineLabel>
-      </Row>
-      <Row>
-        <Checkbox id="cb-2" />
-        <InlineLabel htmlFor="cb-2">Accept terms and conditions</InlineLabel>
-      </Row>
-      <Row>
-        <Checkbox
-          id="cb-3"
-          checked={indeterminate}
-          onCheckedChange={(c) => setIndeterminate(c)}
-        />
-        <InlineLabel htmlFor="cb-3">Select all (indeterminate)</InlineLabel>
-      </Row>
-      <Row>
-        <Checkbox id="cb-4" disabled />
-        <InlineLabel htmlFor="cb-4">Disabled option</InlineLabel>
-      </Row>
-    </Section>
-  );
-}
 
-export function RadioGroupDemo() {
-  return (
-    <Section>
-      <Label id="radio-plan-label">Plan</Label>
-      <RadioGroup defaultValue="pro" aria-labelledby="radio-plan-label">
-        <Row>
-          <RadioGroupItem id="plan-free" value="free" />
-          <InlineLabel htmlFor="plan-free">Free</InlineLabel>
-        </Row>
-        <Row>
-          <RadioGroupItem id="plan-pro" value="pro" />
-          <InlineLabel htmlFor="plan-pro">Pro</InlineLabel>
-        </Row>
-        <Row>
-          <RadioGroupItem id="plan-team" value="team" disabled />
-          <InlineLabel htmlFor="plan-team">Team (coming soon)</InlineLabel>
-        </Row>
-      </RadioGroup>
-    </Section>
-  );
-}
+const contactMethodOptions = [
+  { value: "email", label: "Email" },
+  { value: "phone", label: "Phone" },
+  { value: "text", label: "Text message", disabled: true },
+];
+
+const countryOptions = [
+  { value: "us", label: "United States" },
+  { value: "ca", label: "Canada" },
+  { value: "uk", label: "United Kingdom" },
+  { value: "au", label: "Australia" },
+  { value: "de", label: "Germany" },
+  { value: "fr", label: "France" },
+  { value: "in", label: "India" },
+  { value: "jp", label: "Japan" },
+  { value: "br", label: "Brazil" },
+  { value: "za", label: "South Africa" },
+  { value: "mx", label: "Mexico" },
+  { value: "ng", label: "Nigeria" },
+  { value: "kr", label: "South Korea" },
+  { value: "es", label: "Spain" },
+  { value: "it", label: "Italy", disabled: true },
+];
 
 export function SelectDemo() {
   return (
     <Section>
-      <Field label="Country">
+      <Field label="Preferred contact method">
         {(props) => (
-          <Select {...props} defaultValue="us" placeholder="Select a country">
-            <SelectItem value="us">United States</SelectItem>
-            <SelectItem value="ca">Canada</SelectItem>
-            <SelectItem value="uk">United Kingdom</SelectItem>
-            <SelectItem value="au">Australia</SelectItem>
-            <SelectItem value="disabled-example" disabled>
-              Unavailable region
-            </SelectItem>
-          </Select>
+          <Select
+            {...props}
+            options={contactMethodOptions}
+            defaultValue="email"
+            placeholder="Choose a method"
+          />
         )}
       </Field>
-      <Field label="Disabled select">
+      <Field label="Country" hint="Type to search the list">
         {(props) => (
-          <Select {...props} disabled placeholder="Not available">
-            <SelectItem value="a">Option A</SelectItem>
-          </Select>
+          <Select
+            {...props}
+            options={countryOptions}
+            defaultValue="us"
+            placeholder="Select a country"
+          />
         )}
       </Field>
-    </Section>
-  );
-}
-
-export function SliderDemo() {
-  return (
-    <Section>
-      <Label htmlFor="slider-volume">Volume</Label>
-      <Slider id="slider-volume" defaultValue={[40]} max={100} step={1} aria-label="Volume" />
-      <Label htmlFor="slider-range">Price range</Label>
-      <Slider
-        id="slider-range"
-        defaultValue={[20, 70]}
-        max={100}
-        step={1}
-        aria-label="Price range"
-      />
-      <Label htmlFor="slider-disabled">Disabled</Label>
-      <Slider
-        id="slider-disabled"
-        defaultValue={[30]}
-        max={100}
+      <Field
+        label="Region"
         disabled
-        aria-label="Disabled slider"
-      />
+        disabledReason="Set by your administrator. Contact support to change it."
+      >
+        {(props) => (
+          <Select {...props} options={contactMethodOptions} placeholder="Not available" />
+        )}
+      </Field>
     </Section>
   );
 }
 
-export function ToggleDemo() {
-  return (
-    <Section>
-      <Row>
-        <Toggle aria-label="Toggle bold" defaultPressed>
-          Bold
-        </Toggle>
-        <Toggle aria-label="Toggle italic">Italic</Toggle>
-        <Toggle aria-label="Toggle disabled" disabled>
-          Disabled
-        </Toggle>
-      </Row>
-    </Section>
-  );
-}
-
-export function ToggleGroupDemo() {
-  return (
-    <Section>
-      <ToggleGroup type="single" defaultValue="week" aria-label="View range">
-        <ToggleGroupItem value="day" aria-label="Day">
-          Day
-        </ToggleGroupItem>
-        <ToggleGroupItem value="week" aria-label="Week">
-          Week
-        </ToggleGroupItem>
-        <ToggleGroupItem value="month" aria-label="Month">
-          Month
-        </ToggleGroupItem>
-      </ToggleGroup>
-    </Section>
-  );
-}
-
-export function FormDemos() {
-  return (
-    <div>
-      <LabelDemo />
-      <InputDemo />
-      <TextareaDemo />
-      <FieldDemo />
-      <CheckboxDemo />
-      <RadioGroupDemo />
-      <SelectDemo />
-      <SliderDemo />
-      <ToggleDemo />
-      <ToggleGroupDemo />
-    </div>
-  );
-}

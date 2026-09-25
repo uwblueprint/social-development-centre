@@ -26,6 +26,7 @@ export const AccordionItem = styled(AccordionPrimitive.Item)`
 
 const Header = styled(AccordionPrimitive.Header)`
   display: flex;
+  margin: 0;
 `;
 
 const Trigger = styled(AccordionPrimitive.Trigger)`
@@ -37,6 +38,10 @@ const Trigger = styled(AccordionPrimitive.Trigger)`
   gap: var(--space-3);
   padding: 14px 0;
   font-size: var(--text-md);
+
+  &[data-state="open"] {
+    padding-bottom: 6px;
+  }
   font-weight: var(--weight-regular);
   color: var(--color-text);
   cursor: pointer;
