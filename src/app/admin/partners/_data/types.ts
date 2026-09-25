@@ -19,6 +19,8 @@ export interface PartnerContact {
   status: ContactStatus;
   /** Present while an invitation is outstanding, including an email change on an active contact. */
   invitation?: Invitation;
+  /** Set when the person was removed from this organization; kept for history, hidden from lists. */
+  removedAt?: string;
 }
 
 export interface PartnerOrganization {

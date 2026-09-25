@@ -14,7 +14,7 @@ A dev-only in-memory store (`_data/store.ts`) makes the UI work end to end. Repl
 
 ## Data the UI needs
 - Organization: `id`, `name`, `status`, `contacts[]`, `opportunityCount` (current, non-expired), `createdAt`, `removedAt?`.
-- Contact: `id`, `name`, `email`, `status`, `invitation?` (`sentAt`, `expiresAt`, `sendError?`).
+- Contact: `id`, `name`, `email`, `status`, `invitation?` (`sentAt`, `expiresAt`, `sendError?`), `removedAt?` (removed contacts are kept but not listed).
 - Lists: current organizations; removed organizations; all people at current organizations. All searchable by organization name, contact name or email (server-side once lists grow).
 
 ## Actions
@@ -25,6 +25,7 @@ A dev-only in-memory store (`_data/store.ts`) makes the UI work end to end. Repl
 | `cancelInvitation` | Pending contacts only. **Deletes** the contact. Deletes the organization too if no contacts remain and it was never active. |
 | `updateContact` | Fields `name`, `email`. Changing the email sends a fresh invitation and invalidates the old one. **An active contact stays active** until the new address accepts, then sign-in moves to the new address. |
 | `updateOrganization` | Field `name`; unique among organizations. Works for removed partners too. |
+| `removeContact` | Active contacts only (a person left the organization). Revoke that person's access now; keep the record for history (`removedAt`), hide it from lists, and free the email for other organizations. Refuse if they're the organization's only current contact. |
 | `removePartner` | Organization-level. Effects below. |
 | `reinvitePartner` | Removed only. Uses the saved (optionally edited) contacts, sends each a fresh invitation, and returns the organization to the current list as Pending. Does not republish expired opportunities. |
 
@@ -43,6 +44,6 @@ Every action must verify the caller is an SDC admin.
 ## Also needed
 - Opportunities list filter by partner: `/admin/opportunities?partner=<organizationId>`, used by "View opportunities".
 - Audit trail: who invited, cancelled, removed or reinvited, and when.
-- A person belongs to one organization at a time but may move between organizations; organizations and people can be renamed and emails change. Key everything on stable IDs. Moving a person needs an action (not built yet).
+- A person belongs to one organization at a time. Moving = `removeContact` at the old organization, then `invitePartner` at the new one (no dedicated move). Organizations and people can be renamed and emails change; key everything on stable IDs.
 
 Decisions and their rationale: [docs/decisions/partners.md](../decisions/partners.md).

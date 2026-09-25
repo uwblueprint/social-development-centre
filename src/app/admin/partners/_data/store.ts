@@ -56,14 +56,16 @@ export const orgs = (): StoredOrg[] => (globalStore.__partnersStore ??= seed());
 
 export function statusOf(org: StoredOrg): PartnerStatus {
   if (org.removedAt) return "removed";
-  return org.contacts.some((c) => c.status === "active") ? "active" : "pending";
+  return currentContacts(org).some((c) => c.status === "active") ? "active" : "pending";
 }
+
+export const currentContacts = (org: Pick<StoredOrg, "contacts">) => org.contacts.filter((c) => !c.removedAt);
 
 export function toPublic(org: StoredOrg): PartnerOrganization {
   return {
     id: org.id,
     name: org.name,
-    contacts: org.contacts,
+    contacts: currentContacts(org),
     opportunityCount: org.opportunityCount,
     createdAt: org.createdAt,
     removedAt: org.removedAt,

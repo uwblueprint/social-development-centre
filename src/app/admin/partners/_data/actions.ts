@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import type { ActionState } from "@/lib/forms";
-import { newInvitation, nextId, orgs, statusOf } from "./store";
+import { currentContacts, newInvitation, nextId, orgs, statusOf } from "./store";
 
 /*
  * Backend: implement these against the real data store and email service,
@@ -30,7 +30,7 @@ async function sendInvitationEmail(email: string): Promise<string | undefined> {
 
 function findContact(contactId: string) {
   for (const org of orgs()) {
-    const c = org.contacts.find((x) => x.id === contactId);
+    const c = currentContacts(org).find((x) => x.id === contactId);
     if (c) return { org, contact: c };
   }
   return null;
@@ -38,7 +38,9 @@ function findContact(contactId: string) {
 
 function emailInUse(email: string, exceptContactId?: string) {
   return orgs().some(
-    (o) => statusOf(o) !== "removed" && o.contacts.some((c) => c.id !== exceptContactId && c.email.toLowerCase() === email.toLowerCase()),
+    (o) =>
+      statusOf(o) !== "removed" &&
+      currentContacts(o).some((c) => c.id !== exceptContactId && c.email.toLowerCase() === email.toLowerCase()),
   );
 }
 
@@ -96,6 +98,22 @@ export async function cancelInvitation(contactId: string): Promise<ActionState> 
   return done("Invitation cancelled.");
 }
 
+/**
+ * Removes one person from their organization (they left it). Their access ends now; the record is kept
+ * for history and their email can be invited under another organization. The last contact can't be
+ * removed; remove the organization instead.
+ */
+export async function removeContact(contactId: string): Promise<ActionState> {
+  const found = findContact(contactId);
+  if (!found || found.contact.status !== "active") return fail("Only active contacts can be removed. Cancel a pending invitation instead.");
+  if (currentContacts(found.org).length === 1) {
+    return fail("This is the organization's only contact. Remove the organization instead.");
+  }
+  found.contact.removedAt = new Date().toISOString();
+  found.contact.invitation = undefined;
+  return done(`${found.contact.name} was removed from ${found.org.name}. Their access ended now.`);
+}
+
 /** Fields: name, email. Changing the email sends a fresh invitation; active contacts stay active. */
 export async function updateContact(contactId: string, _prev: ActionState, fd: FormData): Promise<ActionState> {
   const found = findContact(contactId);
@@ -139,7 +157,7 @@ export async function updateOrganization(orgId: string, _prev: ActionState, fd: 
 export async function removePartner(orgId: string): Promise<ActionState> {
   const org = orgs().find((o) => o.id === orgId);
   if (!org || statusOf(org) === "removed") return fail("This partner is already removed.");
-  org.everActive ||= org.contacts.some((c) => c.status === "active");
+  org.everActive ||= currentContacts(org).some((c) => c.status === "active");
   org.removedAt = new Date().toISOString();
   return done(`${org.name} was removed. Their access ended now; their opportunities expire within a month.`);
 }
@@ -148,12 +166,13 @@ export async function removePartner(orgId: string): Promise<ActionState> {
 export async function reinvitePartner(orgId: string): Promise<ActionState> {
   const org = orgs().find((o) => o.id === orgId);
   if (!org || statusOf(org) !== "removed") return fail("Only removed partners can be reinvited.");
-  if (org.contacts.length === 0) return fail("Add a contact before reinviting.");
-  const clash = org.contacts.find((c) => emailInUse(c.email));
+  const contacts = currentContacts(org);
+  if (contacts.length === 0) return fail("Add a contact before reinviting.");
+  const clash = contacts.find((c) => emailInUse(c.email));
   if (clash) return fail(`${clash.email} is already a contact at another current partner. Edit it first.`);
 
   const errors: string[] = [];
-  for (const c of org.contacts) {
+  for (const c of contacts) {
     const sendError = await sendInvitationEmail(c.email);
     c.status = "pending";
     c.invitation = { ...newInvitation(), sendError };

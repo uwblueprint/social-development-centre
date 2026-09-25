@@ -48,15 +48,17 @@ Each entry: the decision, which page it's on, what it affects, and when someone 
 - **Affects:** Community members clicking old email links.
 - **When encountered:** After a listing expires, when someone opens an older email.
 
-## 8. A person belongs to one organization at a time; names and emails change
-- **Decision:** A contact belongs to one organization at a time but may move between organizations. Organizations and people can be renamed and people can change email. Records use stable IDs, never names or emails, so history, invitations and opportunities stay linked through changes.
-- **Page:** Admin → Partners → side panel (edit organization name; edit contact name and email).
-- **Affects:** Data model, audit trail, duplicate checks (a name or email is only unique among current records).
-- **When encountered:** When a partner organization rebrands, or a contact changes name, email or employer.
-- **Open:** Moving a person between organizations needs a UI action (proposed: "Move to another organization" in the contact's menu) and a backend rule for their existing invitations and access.
+## 8. People move by being removed and reinvited; names and emails change
+- **Decision:** A contact belongs to one organization at a time. There is no "move" action. If someone leaves an organization, the admin removes them from it; if they join another partner, the admin invites their email under that organization. A move may not be instant. Organizations and people can be renamed and emails can change, so records use stable IDs, never names or emails, and history, invitations and opportunities stay linked through changes.
+- **Page:** Admin → Partners → side panel → contact's menu (Edit, Remove from organization); Invite partner dialog.
+- **Affects:** Data model, audit trail, duplicate checks (an email is only unique among *current* contacts, so a removed person can be invited elsewhere).
+- **When encountered:** When a contact changes employer, name or email, or a partner organization rebrands.
 
-## 9. Removal is organization-level only (for now)
-- **Decision:** "Remove access" removes the whole organization, as the PRD defines. There's no way to remove a single contact in the first version.
-- **Page:** Admin → Partners → side panel → Remove access.
-- **Affects:** Every contact at that organization loses portal access at once.
-- **When encountered:** When a partnership ends. If one person leaves a partner organization, the admin currently edits or replaces that contact rather than removing them.
+## 9. Removing a person vs removing an organization
+- **Decision:**
+  - **Person left the organization:** "Remove from organization" on that active contact. Their portal access ends now; the record is kept for history and hidden from lists; their email can be invited under another organization. Pending contacts are cancelled instead (decision 1).
+  - **Organization dissolved or partnership ended:** "Remove access" on the organization. All its contacts lose access, and the organization moves to Removed with the effects in decision 6.
+  - The last remaining contact can't be removed on its own; the option is disabled with the reason "This is the organization's only contact. Remove the organization instead."
+- **Page:** Admin → Partners → side panel (contact menu; Remove access).
+- **Affects:** Portal access for one person or for everyone at the organization; the Removed tab (organizations only).
+- **When encountered:** When a partner contact leaves, or a partnership ends.

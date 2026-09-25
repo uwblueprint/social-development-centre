@@ -1,5 +1,5 @@
 import type { OrganizationOption, PartnerOrganization, PartnerPerson } from "./types";
-import { orgs, statusOf, toPublic } from "./store";
+import { currentContacts, orgs, statusOf, toPublic } from "./store";
 
 /** Backend: replace these with real queries; keep the signatures. */
 
@@ -9,7 +9,7 @@ const matches = (q: string | undefined, ...fields: string[]) =>
 export async function listPartners(view: "current" | "removed", q?: string): Promise<PartnerOrganization[]> {
   return orgs()
     .filter((o) => (view === "removed" ? statusOf(o) === "removed" : statusOf(o) !== "removed"))
-    .filter((o) => matches(q, o.name, ...o.contacts.flatMap((c) => [c.name, c.email])))
+    .filter((o) => matches(q, o.name, ...currentContacts(o).flatMap((c) => [c.name, c.email])))
     .map(toPublic)
     .sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -18,7 +18,7 @@ export async function listPartnerPeople(q?: string): Promise<PartnerPerson[]> {
   return orgs()
     .filter((o) => statusOf(o) !== "removed")
     .flatMap((o) =>
-      o.contacts.map((c) => ({ ...c, organization: { id: o.id, name: o.name, status: statusOf(o) } })),
+      currentContacts(o).map((c) => ({ ...c, organization: { id: o.id, name: o.name, status: statusOf(o) } })),
     )
     .filter((p) => matches(q, p.name, p.email, p.organization.name))
     .sort((a, b) => a.name.localeCompare(b.name));
