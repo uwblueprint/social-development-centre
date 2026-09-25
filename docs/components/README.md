@@ -42,6 +42,7 @@ Each doc covers when to use it, its API, a working example, content rules, and a
 - [Accordion](./Accordion.md) — expandable/collapsible sections.
 - [Collapsible](./Collapsible.md) — a single expandable/collapsible region.
 - [ListRow](./ListRow.md) — a dense, clickable row for lists and simple tables.
+- [Table](./Table.md) — a semantic data table with column headers, row dividers and an optional clickable row.
 - [EmptyState](./EmptyState.md) — an empty list, section or no-results placeholder.
 - [Pagination](./Pagination.md) — page summary, Previous/Next and page numbers for a paged list.
 

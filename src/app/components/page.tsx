@@ -20,7 +20,7 @@ import {
   ToggleGroupDemo,
 } from "./demos/ControlDemos";
 import { OverlayDemos } from "./demos/OverlayDemos";
-import { DisplayDemos, EmptyStateDemo, ListRowDemo, PaginationDemo } from "./demos/DisplayDemos";
+import { DisplayDemos, EmptyStateDemo, ListRowDemo, PaginationDemo, TableDemo } from "./demos/DisplayDemos";
 
 export const metadata: Metadata = {
   title: "Components · Social Development Centre",
@@ -45,6 +45,7 @@ const sections: { id: string; title: string; description: string; demo: ReactNod
   { id: "overlays", title: "Overlays", description: "Dialog, alert dialog, sheet, popover, tooltip, dropdown menu, hover card and toast.", demo: <OverlayDemos /> },
   { id: "display", title: "Display & navigation", description: "Card, badge, avatar, progress, tabs, accordion, scroll area and collapsible.", demo: <DisplayDemos /> },
   { id: "list-row", title: "List row", description: "A dense, clickable row for lists and simple tables.", demo: <ListRowDemo /> },
+  { id: "table", title: "Table", description: "A semantic data table with column headers, row dividers and a clickable row.", demo: <TableDemo /> },
   { id: "empty-state", title: "Empty state", description: "An empty list, section or no-results placeholder.", demo: <EmptyStateDemo /> },
   { id: "pagination", title: "Pagination", description: "Page summary, Previous/Next and page numbers for a paged list.", demo: <PaginationDemo /> },
 ];

@@ -3,8 +3,9 @@
 import * as React from "react";
 import { useActionState } from "react";
 import { styled } from "next-yak";
+import { ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { Checkbox } from "@/components/ui/Checkbox";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/Collapsible";
 import {
   Dialog,
   DialogActions,
@@ -14,6 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/Dialog";
 import { Field } from "@/components/ui/Field";
+import { Icon } from "@/components/ui/Icon";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Textarea } from "@/components/ui/Textarea";
 import { useToast } from "@/components/ui/Toast";
@@ -30,47 +32,13 @@ const Form = styled.form`
 
 const Step = styled.div`
   display: grid;
-  gap: var(--space-4);
-`;
-
-const SummaryList = styled.dl`
-  display: grid;
-  gap: var(--space-2);
-  margin: 0;
-`;
-
-const SummaryRow = styled.div`
-  display: flex;
-  justify-content: space-between;
   gap: var(--space-3);
-  font-size: var(--text-sm);
 `;
 
-const SummaryLabel = styled.dt`
-  color: var(--color-text-muted);
-`;
-
-const SummaryValue = styled.dd`
+const Summary = styled.p`
   margin: 0;
-  font-weight: var(--weight-medium);
+  font-size: var(--text-sm);
   color: var(--color-text);
-`;
-
-const IssueList = styled.ul`
-  margin: calc(var(--space-1) * -1) 0 0;
-  padding-left: var(--space-5);
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  overflow-wrap: anywhere;
-`;
-
-const Note = styled.p`
-  margin: calc(var(--space-1) * -1) 0 0;
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
 `;
 
 const ErrorNote = styled.p`
@@ -79,12 +47,76 @@ const ErrorNote = styled.p`
   color: var(--color-danger);
 `;
 
-const EmailCount = styled.p`
-  margin: 0;
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
-  color: var(--color-text);
+const IssueList = styled.div`
+  display: grid;
+  gap: 2px;
 `;
+
+const IssueTrigger = styled.button`
+  all: unset;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--color-text);
+  }
+  &:focus-visible {
+    box-shadow: var(--focus-ring);
+    border-radius: var(--radius-sm);
+  }
+`;
+
+const IssueChevron = styled.span<{ $open?: boolean }>`
+  display: inline-flex;
+  transition: transform var(--duration) var(--ease);
+  transform: rotate(${({ $open }) => ($open ? 90 : 0)}deg);
+`;
+
+const IssueAddresses = styled.ul`
+  margin: 0;
+  padding: 2px 0 var(--space-1) var(--space-5);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-wrap: anywhere;
+`;
+
+const DuplicatesNote = styled.p`
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+`;
+
+/** A compact, expandable "N reason" line that reveals the affected addresses. */
+function IssueLine({ label, addresses }: { label: string; addresses: string[] }) {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger asChild>
+        <IssueTrigger type="button" aria-label={`${label}. ${open ? "Hide" : "Show"} addresses`}>
+          <IssueChevron aria-hidden="true" $open={open}>
+            <Icon icon={ChevronRight} size={12} />
+          </IssueChevron>
+          {label}
+        </IssueTrigger>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <IssueAddresses>
+          {addresses.map((email) => (
+            <li key={email}>{email}</li>
+          ))}
+        </IssueAddresses>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
 
 export function AddMembersDialog({
   open,
@@ -98,7 +130,6 @@ export function AddMembersDialog({
   const { toast } = useToast();
   const [step, setStep] = React.useState<"input" | "preview">("input");
   const [emailsText, setEmailsText] = React.useState("");
-  const [skipEmails, setSkipEmails] = React.useState(false);
 
   const [previewState, previewAction] = useActionState(previewImport.bind(null, tab), idlePreviewState);
   const [confirmState, confirmAction, confirmPending] = useActionState(confirmImport.bind(null, tab), idleState);
@@ -125,12 +156,10 @@ export function AddMembersDialog({
 
   const preview = previewState.data;
   const addCount = preview ? preview.toCreate.length + preview.toUpgrade.length : 0;
-  const emailsToSend = preview ? (skipEmails ? 0 : preview.emailsToSend) : 0;
 
   function handleConfirm() {
     const fd = new FormData();
     fd.set("emails", emailsText);
-    fd.set("skipEmails", skipEmails ? "yes" : "no");
     confirmAction(fd);
   }
 
@@ -146,7 +175,7 @@ export function AddMembersDialog({
           <Form action={previewAction}>
             <Field
               label="Email addresses"
-              hint="One per line or separated by commas"
+              hint="Separate with commas or new lines"
               error={fieldError(previewState, "emails")}
               required
             >
@@ -167,73 +196,51 @@ export function AddMembersDialog({
                   Cancel
                 </Button>
               </DialogClose>
-              <SubmitButton>Check addresses</SubmitButton>
+              <SubmitButton>Continue</SubmitButton>
             </DialogActions>
           </Form>
         ) : (
           <Step>
             {previewState.status === "error" && <ErrorNote>{previewState.message}</ErrorNote>}
 
-            <SummaryList>
-              <SummaryRow>
-                <SummaryLabel>New members to add</SummaryLabel>
-                <SummaryValue>{preview.toCreate.length}</SummaryValue>
-              </SummaryRow>
-              {tab === "paying" && (
-                <SummaryRow>
-                  <SummaryLabel>General members to upgrade</SummaryLabel>
-                  <SummaryValue>{preview.toUpgrade.length}</SummaryValue>
-                </SummaryRow>
-              )}
-              <SummaryRow>
-                <SummaryLabel>Already members (skipped)</SummaryLabel>
-                <SummaryValue>{preview.toSkip.length}</SummaryValue>
-              </SummaryRow>
-              {preview.toSkip.length > 0 && <Note>Paying members are never downgraded.</Note>}
-              <SummaryRow>
-                <SummaryLabel>Unsubscribed (not added)</SummaryLabel>
-                <SummaryValue>{preview.unsubscribed.length}</SummaryValue>
-              </SummaryRow>
-              {preview.unsubscribed.length > 0 && (
-                <>
-                  <IssueList>
-                    {preview.unsubscribed.map((email) => (
-                      <li key={email}>{email}</li>
-                    ))}
-                  </IssueList>
-                  <Note>Restore them individually first.</Note>
-                </>
-              )}
-              <SummaryRow>
-                <SummaryLabel>Invalid</SummaryLabel>
-                <SummaryValue>{preview.invalid.length}</SummaryValue>
-              </SummaryRow>
-              {preview.invalid.length > 0 && (
-                <IssueList>
-                  {preview.invalid.map((token) => (
-                    <li key={token}>{token}</li>
-                  ))}
-                </IssueList>
-              )}
-              <SummaryRow>
-                <SummaryLabel>Duplicates removed</SummaryLabel>
-                <SummaryValue>{preview.duplicatesRemoved}</SummaryValue>
-              </SummaryRow>
-            </SummaryList>
+            {addCount > 0 && (
+              <Summary>
+                {addCount} new {addCount === 1 ? "member" : "members"} will be added and get a welcome email.
+              </Summary>
+            )}
 
-            <EmailCount>Emails that will be sent: {emailsToSend}</EmailCount>
-            <Checkbox
-              label="Don't send welcome emails (only for importing SDC's existing list)"
-              checked={skipEmails}
-              onCheckedChange={(value) => setSkipEmails(value === true)}
-            />
+            <IssueList>
+              {preview.toSkip.length > 0 && (
+                <IssueLine
+                  label={`${preview.toSkip.length} already ${preview.toSkip.length === 1 ? "member" : "members"}, skipped`}
+                  addresses={preview.toSkip.map((s) => s.email)}
+                />
+              )}
+              {preview.unsubscribed.length > 0 && (
+                <IssueLine
+                  label={`${preview.unsubscribed.length} unsubscribed, not added`}
+                  addresses={preview.unsubscribed}
+                />
+              )}
+              {preview.invalid.length > 0 && (
+                <IssueLine label={`${preview.invalid.length} invalid`} addresses={preview.invalid} />
+              )}
+              {preview.duplicatesRemoved > 0 && (
+                <DuplicatesNote>{preview.duplicatesRemoved} duplicates removed</DuplicatesNote>
+              )}
+            </IssueList>
 
             <DialogActions>
               <Button type="button" $variant="secondary" onClick={() => setStep("input")} disabled={confirmPending}>
                 Back
               </Button>
-              <Button type="button" onClick={handleConfirm} disabled={confirmPending} aria-busy={confirmPending || undefined}>
-                {confirmPending ? "Adding…" : `Add ${addCount} members`}
+              <Button
+                type="button"
+                onClick={handleConfirm}
+                disabled={confirmPending || addCount === 0}
+                aria-busy={confirmPending || undefined}
+              >
+                {confirmPending ? "Adding…" : `Add ${addCount} ${addCount === 1 ? "member" : "members"}`}
               </Button>
             </DialogActions>
           </Step>

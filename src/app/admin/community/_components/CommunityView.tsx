@@ -6,17 +6,16 @@ import { styled } from "next-yak";
 import { Search as SearchIcon, UsersRound } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Field } from "@/components/ui/Field";
-import { List } from "@/components/ui/ListRow";
 import { Pagination } from "@/components/ui/Pagination";
 import { SearchField } from "@/components/ui/SearchField";
 import { Sheet, SheetContent } from "@/components/ui/Sheet";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
+import { Table } from "@/components/ui/Table";
+import { Tabs, TabsContent, TabsCount, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { AppToastProvider } from "@/components/ui/Toast";
 import type { CommunityCounts, Member, MemberPage, MemberTier } from "../_data/types";
 import { AddMembersDialog } from "./AddMembersDialog";
 import { ExportDialog } from "./ExportDialog";
-import { MemberRow } from "./MemberRows";
+import { memberColumns } from "./MemberRows";
 import { MemberSheetContent } from "./MemberSheetContent";
 
 const Page = styled.div`
@@ -54,25 +53,22 @@ const Description = styled.p`
 
 const Toolbar = styled.div`
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
   flex-wrap: wrap;
 `;
 
 const SearchWrap = styled.div`
-  max-width: 360px;
+  max-width: 280px;
   flex: 1;
-  min-width: 220px;
+  min-width: 200px;
 `;
 
 const ToolbarActions = styled.div`
   display: flex;
   gap: var(--space-2);
-`;
-
-const TabSuffix = styled.span`
-  color: var(--color-text-muted);
+  flex-shrink: 0;
 `;
 
 const TabContentBody = styled.div`
@@ -175,76 +171,78 @@ export function CommunityView({
         <Tabs value={activeTab} onValueChange={handleTabChange}>
           <TabsList aria-label="Community views">
             <TabsTrigger value="general">
-              General members ({counts.general})
-              <TabSuffix> · {counts.unsubscribed} unsubscribed</TabSuffix>
+              General members
+              <TabsCount>
+                ({counts.general} · {counts.unsubscribed} unsubscribed)
+              </TabsCount>
             </TabsTrigger>
-            <TabsTrigger value="paying">Paying members ({counts.paying})</TabsTrigger>
+            <TabsTrigger value="paying">
+              Paying members
+              <TabsCount>({counts.paying})</TabsCount>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value={activeTab}>
             <TabContentBody>
               <Toolbar>
                 <SearchWrap>
-                  <Field label="Search members">
-                    {(p) => (
-                      <SearchField
-                        {...p}
-                        name="q"
-                        placeholder="Search by name or email"
-                        value={searchValue}
-                        onChange={(event) => handleSearchChange(event.target.value)}
-                      />
-                    )}
-                  </Field>
+                  <SearchField
+                    name="q"
+                    aria-label="Search members"
+                    placeholder="Search by name or email"
+                    value={searchValue}
+                    onChange={(event) => handleSearchChange(event.target.value)}
+                  />
                 </SearchWrap>
                 <ToolbarActions>
+                  <Button type="button" $variant="ghost" onClick={openExport}>
+                    Export
+                  </Button>
                   <Button type="button" $variant="secondary" onClick={openAdd}>
                     Add members
-                  </Button>
-                  <Button type="button" $variant="secondary" onClick={openExport}>
-                    Export
                   </Button>
                 </ToolbarActions>
               </Toolbar>
 
-              {memberPage.rows.length === 0 ? (
-                q ? (
-                  <EmptyState
-                    icon={SearchIcon}
-                    title={`No matches for "${q}"`}
-                    description="Try a different name or email."
-                  />
-                ) : (
-                  <EmptyState
-                    icon={UsersRound}
-                    title={activeTab === "paying" ? "No paying members yet" : "No members yet"}
-                    description={
-                      activeTab === "paying"
-                        ? "Give a general member paying access from their record, or add paying members here."
-                        : "People who join or subscribe appear here."
-                    }
-                    action={
-                      <Button type="button" onClick={openAdd}>
-                        Add members
-                      </Button>
-                    }
-                  />
-                )
-              ) : (
-                <>
-                  <List>
-                    {memberPage.rows.map((member) => (
-                      <MemberRow key={member.id} member={member} onOpen={() => setSelectedId(member.id)} />
-                    ))}
-                  </List>
-                  <Pagination
-                    page={memberPage.page}
-                    pageCount={memberPage.pageCount}
-                    pageSize={pageSize}
-                    total={memberPage.total}
-                    onPageChange={handlePageChange}
-                  />
-                </>
+              <Table
+                columns={memberColumns}
+                rows={memberPage.rows}
+                getRowId={(m) => m.id}
+                onRowClick={(m) => setSelectedId(m.id)}
+                aria-label={activeTab === "paying" ? "Paying members" : "General members"}
+                empty={
+                  q ? (
+                    <EmptyState
+                      icon={SearchIcon}
+                      title={`No matches for "${q}"`}
+                      description="Try a different name or email."
+                    />
+                  ) : (
+                    <EmptyState
+                      icon={UsersRound}
+                      title={activeTab === "paying" ? "No paying members yet" : "No members yet"}
+                      description={
+                        activeTab === "paying"
+                          ? "Give a general member paying access from their record, or add paying members here."
+                          : "People who join or subscribe appear here."
+                      }
+                      action={
+                        <Button type="button" onClick={openAdd}>
+                          Add members
+                        </Button>
+                      }
+                    />
+                  )
+                }
+              />
+              {memberPage.rows.length > 0 && (
+                <Pagination
+                  page={memberPage.page}
+                  pageCount={memberPage.pageCount}
+                  pageSize={pageSize}
+                  total={memberPage.total}
+                  onPageChange={handlePageChange}
+                />
               )}
             </TabContentBody>
           </TabsContent>

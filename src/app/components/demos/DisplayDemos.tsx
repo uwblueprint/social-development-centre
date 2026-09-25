@@ -15,6 +15,8 @@ import { Tag, SelectableTag, RemovableTag, TagList } from "@/components/ui/Tag";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { List, ListRow } from "@/components/ui/ListRow";
 import { Pagination } from "@/components/ui/Pagination";
+import { Table } from "@/components/ui/Table";
+import type { TableColumn } from "@/components/ui/Table";
 import { Building2, ChevronRight, Search } from "lucide-react";
 import { Icon } from "@/components/ui/Icon";
 
@@ -150,6 +152,39 @@ export function ListRowDemo() {
         </ListRow>
       ))}
     </List>
+  );
+}
+
+interface DemoMember {
+  id: string;
+  name: string | null;
+  email: string;
+  subscribed: boolean;
+  addedAt: string;
+}
+
+const TABLE_ROWS: DemoMember[] = [
+  { id: "1", name: "Amara Okafor", email: "amara@example.org", subscribed: true, addedAt: "2026-01-14" },
+  { id: "2", name: null, email: "grace@example.org", subscribed: true, addedAt: "2026-02-02" },
+  { id: "3", name: "Luis Romero", email: "luis@example.org", subscribed: false, addedAt: "2025-11-30" },
+];
+
+const TABLE_COLUMNS: TableColumn<DemoMember>[] = [
+  { key: "name", header: "Name", render: (m) => (m.name ? m.name : <span style={{ color: "var(--color-text-muted)" }}>No name</span>) },
+  { key: "email", header: "Email", render: (m) => m.email },
+  { key: "status", header: "Status", render: (m) => (!m.subscribed ? <Badge $variant="outline">Unsubscribed</Badge> : null) },
+  { key: "added", header: "Added", render: (m) => new Date(m.addedAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) },
+];
+
+export function TableDemo() {
+  return (
+    <Table
+      columns={TABLE_COLUMNS}
+      rows={TABLE_ROWS}
+      getRowId={(m) => m.id}
+      onRowClick={() => {}}
+      aria-label="Members"
+    />
   );
 }
 

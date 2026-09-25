@@ -7,14 +7,14 @@ import { Archive, Building2, Search as SearchIcon, UserRound } from "lucide-reac
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Field } from "@/components/ui/Field";
-import { List } from "@/components/ui/ListRow";
 import { SearchField } from "@/components/ui/SearchField";
 import { Sheet, SheetContent } from "@/components/ui/Sheet";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
+import { Table } from "@/components/ui/Table";
+import { Tabs, TabsContent, TabsCount, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { AppToastProvider } from "@/components/ui/Toast";
 import type { OrganizationOption, PartnerOrganization, PartnerPerson } from "../_data/types";
 import { InviteDialog } from "./InviteDialog";
-import { OrganizationRow, PersonRow, RemovedRow } from "./PartnerRows";
+import { organizationColumns, personColumns, removedColumns } from "./PartnerRows";
 import { PartnerSheetContent } from "./PartnerSheetContent";
 
 export type PartnersTab = "organizations" | "people" | "removed";
@@ -170,83 +170,91 @@ export function PartnersView({
 
         <Tabs value={activeTab} onValueChange={handleTabChange}>
           <TabsList aria-label="Partner views">
-            <TabsTrigger value="organizations">Organizations ({organizations.length})</TabsTrigger>
-            <TabsTrigger value="people">People ({people.length})</TabsTrigger>
-            <TabsTrigger value="removed">Removed ({removedOrganizations.length})</TabsTrigger>
+            <TabsTrigger value="organizations">
+              Organizations
+              <TabsCount>({organizations.length})</TabsCount>
+            </TabsTrigger>
+            <TabsTrigger value="people">
+              People
+              <TabsCount>({people.length})</TabsCount>
+            </TabsTrigger>
+            <TabsTrigger value="removed">
+              Removed
+              <TabsCount>({removedOrganizations.length})</TabsCount>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="organizations">
-            {organizations.length === 0 ? (
-              q ? (
-                <EmptyState
-                  icon={SearchIcon}
-                  title={`No matches for "${q}"`}
-                  description="Try a different organization name, contact name or email."
-                />
-              ) : (
-                <EmptyState
-                  icon={Building2}
-                  title="No partners yet"
-                  description="Invite an organization to give them access to their opportunities."
-                  action={<Button onClick={() => openInvite()}>Invite partner</Button>}
-                />
-              )
-            ) : (
-              <List>
-                {organizations.map((org) => (
-                  <OrganizationRow key={org.id} org={org} onOpen={() => setPanel({ orgId: org.id })} />
-                ))}
-              </List>
-            )}
+            <Table
+              columns={organizationColumns}
+              rows={organizations}
+              getRowId={(org) => org.id}
+              onRowClick={(org) => setPanel({ orgId: org.id })}
+              aria-label="Organizations"
+              empty={
+                q ? (
+                  <EmptyState
+                    icon={SearchIcon}
+                    title={`No matches for "${q}"`}
+                    description="Try a different organization name, contact name or email."
+                  />
+                ) : (
+                  <EmptyState
+                    icon={Building2}
+                    title="No partners yet"
+                    description="Invite an organization to give them access to their opportunities."
+                    action={<Button onClick={() => openInvite()}>Invite partner</Button>}
+                  />
+                )
+              }
+            />
           </TabsContent>
 
           <TabsContent value="people">
-            {people.length === 0 ? (
-              q ? (
-                <EmptyState
-                  icon={SearchIcon}
-                  title={`No matches for "${q}"`}
-                  description="Try a different name, email or organization."
-                />
-              ) : (
-                <EmptyState
-                  icon={UserRound}
-                  title="No people yet"
-                  description="Invite a partner to add their first contact."
-                  action={<Button onClick={() => openInvite()}>Invite partner</Button>}
-                />
-              )
-            ) : (
-              <List>
-                {people.map((person) => (
-                  <PersonRow
-                    key={person.id}
-                    person={person}
-                    onOpen={() => setPanel({ orgId: person.organization.id, highlightContactId: person.id })}
+            <Table
+              columns={personColumns}
+              rows={people}
+              getRowId={(person) => person.id}
+              onRowClick={(person) => setPanel({ orgId: person.organization.id, highlightContactId: person.id })}
+              aria-label="People"
+              empty={
+                q ? (
+                  <EmptyState
+                    icon={SearchIcon}
+                    title={`No matches for "${q}"`}
+                    description="Try a different name, email or organization."
                   />
-                ))}
-              </List>
-            )}
+                ) : (
+                  <EmptyState
+                    icon={UserRound}
+                    title="No people yet"
+                    description="Invite a partner to add their first contact."
+                    action={<Button onClick={() => openInvite()}>Invite partner</Button>}
+                  />
+                )
+              }
+            />
           </TabsContent>
 
           <TabsContent value="removed">
-            {removedOrganizations.length === 0 ? (
-              q ? (
-                <EmptyState
-                  icon={SearchIcon}
-                  title={`No matches for "${q}"`}
-                  description="Try a different organization name, contact name or email."
-                />
-              ) : (
-                <EmptyState icon={Archive} title="No removed partners" description="Partners whose access you remove appear here." />
-              )
-            ) : (
-              <List>
-                {removedOrganizations.map((org) => (
-                  <RemovedRow key={org.id} org={org} onOpen={() => setPanel({ orgId: org.id })} />
-                ))}
-              </List>
-            )}
+            <Table
+              columns={removedColumns}
+              rows={removedOrganizations}
+              getRowId={(org) => org.id}
+              onRowClick={(org) => setPanel({ orgId: org.id })}
+              aria-label="Removed partners"
+              empty={
+                q ? (
+                  <EmptyState
+                    icon={SearchIcon}
+                    title={`No matches for "${q}"`}
+                    description="Try a different organization name, contact name or email."
+                  />
+                ) : (
+                  <EmptyState icon={Archive} title="No removed partners" description="Partners whose access you remove appear here." />
+                )
+              }
+            />
           </TabsContent>
         </Tabs>
 
