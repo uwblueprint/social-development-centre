@@ -14,6 +14,7 @@ import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/component
 import { Tag, SelectableTag, RemovableTag, TagList } from "@/components/ui/Tag";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { List, ListRow } from "@/components/ui/ListRow";
+import { Pagination } from "@/components/ui/Pagination";
 import { Building2, ChevronRight, Search } from "lucide-react";
 import { Icon } from "@/components/ui/Icon";
 
@@ -149,6 +150,21 @@ export function ListRowDemo() {
         </ListRow>
       ))}
     </List>
+  );
+}
+
+export function PaginationDemo() {
+  const [page, setPage] = useState(2);
+  const total = 962;
+  const pageSize = 50;
+  return (
+    <Pagination
+      page={page}
+      pageCount={Math.ceil(total / pageSize)}
+      pageSize={pageSize}
+      total={total}
+      onPageChange={setPage}
+    />
   );
 }
 

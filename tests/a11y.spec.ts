@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
-for (const path of ["/components", "/admin/opportunities", "/admin/partners"]) test(`${path} has no WCAG 2.2 AA violations`, async ({ page }) => {
+for (const path of ["/components", "/admin/opportunities", "/admin/partners", "/admin/community"]) test(`${path} has no WCAG 2.2 AA violations`, async ({ page }) => {
   await page.goto(path);
   // Wait for the variable font to finish loading and settle a frame: scanning
   // mid-swap can make axe misjudge text contrast from anti-aliased glyphs.

@@ -20,7 +20,7 @@ import {
   ToggleGroupDemo,
 } from "./demos/ControlDemos";
 import { OverlayDemos } from "./demos/OverlayDemos";
-import { DisplayDemos, EmptyStateDemo, ListRowDemo } from "./demos/DisplayDemos";
+import { DisplayDemos, EmptyStateDemo, ListRowDemo, PaginationDemo } from "./demos/DisplayDemos";
 
 export const metadata: Metadata = {
   title: "Components · Social Development Centre",
@@ -46,6 +46,7 @@ const sections: { id: string; title: string; description: string; demo: ReactNod
   { id: "display", title: "Display & navigation", description: "Card, badge, avatar, progress, tabs, accordion, scroll area and collapsible.", demo: <DisplayDemos /> },
   { id: "list-row", title: "List row", description: "A dense, clickable row for lists and simple tables.", demo: <ListRowDemo /> },
   { id: "empty-state", title: "Empty state", description: "An empty list, section or no-results placeholder.", demo: <EmptyStateDemo /> },
+  { id: "pagination", title: "Pagination", description: "Page summary, Previous/Next and page numbers for a paged list.", demo: <PaginationDemo /> },
 ];
 
 const Shell = styled.div`

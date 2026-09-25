@@ -43,6 +43,7 @@ Each doc covers when to use it, its API, a working example, content rules, and a
 - [Collapsible](./Collapsible.md) — a single expandable/collapsible region.
 - [ListRow](./ListRow.md) — a dense, clickable row for lists and simple tables.
 - [EmptyState](./EmptyState.md) — an empty list, section or no-results placeholder.
+- [Pagination](./Pagination.md) — page summary, Previous/Next and page numbers for a paged list.
 
 ## Foundations
 - [DisabledReason](./DisabledReason.md) — explain why a control is disabled or read-only.
