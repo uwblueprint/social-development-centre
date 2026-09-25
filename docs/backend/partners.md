@@ -1,42 +1,46 @@
 # Partners: backend requirements
 
-From the Partners PRD. The frontend is built against these; the UI shows placeholder data until they exist.
+From the Partners PRD plus product decisions. The UI is built against:
+- **Types:** `src/app/admin/partners/_data/types.ts`
+- **Queries:** `_data/queries.ts`
+- **Server actions:** `_data/actions.ts` (FormData field names and `ActionState` results are the contract)
+
+A dev-only in-memory store (`_data/store.ts`) makes the UI work end to end. Replace `queries.ts` and `actions.ts`, then delete `store.ts`.
+
+## Model
+- An **organization** (partner) has one or more **contacts** (people; typically 4–5). Admins invite a *person* and attach them to an existing organization or create one inline.
+- Contact status: `pending` until they accept their invitation, then `active`.
+- Organization status (derived): `removed` if access was removed; otherwise `active` once any contact has accepted, else `pending`. Only Pending is labelled in the UI.
 
 ## Data the UI needs
-`Partner`
-- `id`, `organizationName`, `contactName`, `contactEmail`
-- `status`: `pending` | `active` | `removed`
-- `opportunityCount` (current, non-expired listings)
-- `invitation` (pending only): `sentAt`, `expiresAt`, `lastSendError?`
-- `removedAt?`, `createdAt`, `updatedAt`
+- Organization: `id`, `name`, `status`, `contacts[]`, `opportunityCount` (current, non-expired), `createdAt`, `removedAt?`.
+- Contact: `id`, `name`, `email`, `status`, `invitation?` (`sentAt`, `expiresAt`, `sendError?`).
+- Lists: current organizations; removed organizations; all people at current organizations. All searchable by organization name, contact name or email (server-side once lists grow).
 
-Lists: current partners (`pending` + `active`) and removed partners, each searchable by organization or contact name/email (server-side search once lists get long).
-
-## Actions (server actions returning `ActionState`)
+## Actions
 | Action | Rules |
 |---|---|
-| Create + invite | Require organization, contact name, contact email (valid). Reject duplicates of an active or pending partner for the same organization/contact (`fieldErrors`). Send the invitation email; on success the partner is `pending`. On send failure, keep the record, return `lastSendError`, and allow retry. |
-| Resend invitation | Pending only. New link, one-week expiry; old link invalid. |
-| Cancel invitation | Pending only. Invalidate the link. Needs a decision: delete the record or move it to Removed. |
-| Edit details | Pending, active or removed. Changing the contact email sends a fresh invitation and invalidates the old one (for active partners: needs a decision, see questions). |
-| Remove access | Active or pending. Effects below. |
-| Reinvite | Removed only. Uses saved (optionally edited) details; on success returns to current list as `pending`. Does not republish expired opportunities. |
+| `invitePartner` | Fields `name`, `email`, and `organizationId` or `organizationName` (new). Reject a duplicate email among current contacts and a duplicate organization name (as field errors). Send the invitation; on send failure keep the contact with `sendError` so the admin can retry. |
+| `resendInvitation` | New link (7-day expiry, single use); previous link stops working. |
+| `cancelInvitation` | Pending contacts only. **Deletes** the contact. Deletes the organization too if no contacts remain and it was never active. |
+| `updateContact` | Fields `name`, `email`. Changing the email sends a fresh invitation and invalidates the old one. **An active contact stays active** until the new address accepts, then sign-in moves to the new address. |
+| `updateOrganization` | Field `name`; unique among organizations. Works for removed partners too. |
+| `removePartner` | Organization-level. Effects below. |
+| `reinvitePartner` | Removed only. Uses the saved (optionally edited) contacts, sends each a fresh invitation, and returns the organization to the current list as Pending. Does not republish expired opportunities. |
+
+Every action must verify the caller is an SDC admin.
 
 ## Invitation acceptance
 - Link valid for 7 days (auth design default), single use.
-- On acceptance: status becomes `active` (UI drops the Pending badge); partner can manage their own opportunities.
+- On acceptance the contact becomes `active`. The Pending badge clears once any contact at the organization is active. The contact can then manage the organization's opportunities.
 
 ## Removing a partner
-- Immediately: revoke portal access and sessions; stop recommending all its opportunities; exclude them from all future automated emails.
-- Each existing opportunity expires at the earlier of its own end date or `removedAt + 1 month`, after which it no longer appears anywhere on the platform. Needs a scheduled job (or expiry computed at read time).
-- Keep the partner record and all opportunity records for history.
-- Already-sent emails can't be recalled; external registration links may keep working. SDC-controlled listing and recommendation surfaces must honour expiry.
-
-## Reinstating
-- Successful reinvitation returns the partner to `pending`, then `active` on acceptance.
-- Expired opportunities stay expired until an admin or the partner reviews and republishes each one.
+- Immediately: revoke portal access and sessions for all contacts; stop recommending all of the organization's opportunities; exclude them from all future automated emails.
+- Each existing opportunity expires at the earlier of its own end date or `removedAt + 1 month`, then disappears from every SDC surface. Needs a scheduled job or expiry computed at read time. **Undated opportunities: expire at `removedAt + 1 month`** (proposed; confirm).
+- Keep the organization, contacts and all opportunity records for history.
+- Already-sent emails can't be recalled, and external registration links may keep working. SDC-controlled listing and recommendation surfaces must honour expiry. Links in old emails to an expired SDC listing should show an "no longer available" page (proposed; confirm).
 
 ## Also needed
-- Filter for the opportunities list by partner (`/admin/opportunities?partner=<id>`), used by the "View opportunities" link.
-- Audit trail (who invited, removed, reinstated, when) so admins can inspect history.
-- Admin role check on every action, not just page access.
+- Opportunities list filter by partner: `/admin/opportunities?partner=<organizationId>`, used by "View opportunities".
+- Audit trail: who invited, cancelled, removed or reinvited, and when.
+- Whether a single person can belong to several organizations is left to the auth design; the UI currently assumes one.
