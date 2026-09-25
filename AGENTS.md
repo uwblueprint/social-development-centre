@@ -5,6 +5,8 @@ This file is for AI coding agents and humans alike. Read it before writing any U
 ## Where things live
 
 - `src/components/ui/`: the component kit. Import from here and nowhere else.
+- `src/components/patterns/`: layouts composed from the kit, e.g. `SidebarLayout` (docs in `docs/patterns/`).
+- `src/app/admin/`: the admin portal. Its sidebar config lives in `src/app/admin/_components/AdminShell.tsx`; each section is a route (`/admin/opportunities`, `/admin/partners`, `/admin/community`, `/admin/insights`). Sub-areas of a section use in-page tabs, not new sidebar items.
 - `src/components/ui/tokens.ts`: every color, space, radius, type size, line height, shadow and duration.
 - `docs/components/<Component>.md`: when to use each component, when not to, content rules and accessibility notes. Read the doc before using a component for the first time.
 - `docs/design/principles.md`: the design rules behind the kit. `docs/design/research.md`: the evidence (Linear, Ramp, NN/g).

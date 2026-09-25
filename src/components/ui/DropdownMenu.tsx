@@ -22,6 +22,11 @@ const Content = styled(DropdownMenuPrimitive.Content)`
   animation: ${contentShow} var(--duration) var(--ease);
   transform-origin: var(--radix-dropdown-menu-content-transform-origin);
 
+  /* The indicator column only exists when something in the menu can be checked. */
+  &:not(:has([role="menuitemcheckbox"], [role="menuitemradio"])) > * {
+    padding-left: var(--space-3);
+  }
+
   &:focus {
     outline: none;
   }
