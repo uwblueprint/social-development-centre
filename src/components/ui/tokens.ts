@@ -95,6 +95,10 @@ globalStyle`
     --focus-ring: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-focus);
     --duration: 160ms;
     --duration-slow: 240ms;
+    /* First-load entrance for app shells: slow enough to feel calm, short enough not to block work. */
+    --duration-enter: 480ms;
+    --stagger: 40ms;
+    --enter-offset: 12px;
     --ease: cubic-bezier(0.215, 0.61, 0.355, 1);
     --ease-spring: cubic-bezier(0.34, 1.3, 0.64, 1);
   }
@@ -118,7 +122,9 @@ globalStyle`
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: 0.01ms !important;
+      animation-delay: 0ms !important;
       transition-duration: 0.01ms !important;
+      transition-delay: 0ms !important;
     }
   }
 `;

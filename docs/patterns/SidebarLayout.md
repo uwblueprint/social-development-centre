@@ -23,6 +23,8 @@ Config must be built in a client component (icons are components and can't cross
 - Desktop: always expanded (no collapse), so labels stay visible.
 - Below 768px: the sidebar becomes a drawer opened from a top bar; Escape, the backdrop or navigating closes it.
 
+- First load: the sidebar settles in, nav items slide and fade in on a stagger, then the page content fades in (`--duration-enter`, `--stagger`, `--enter-offset`). Plays once per visit, not on every navigation, and not at all with reduced motion.
+
 ## Accessibility
 - Nav is a labelled `<nav>` landmark; the current page uses `aria-current="page"`.
 - The drawer is hidden from assistive tech and the tab order when closed.

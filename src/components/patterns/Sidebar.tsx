@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { css, styled } from "next-yak";
+import { css, keyframes, styled } from "next-yak";
 import type { LucideIcon } from "lucide-react";
 import { ChevronsUpDown, Menu } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
@@ -51,7 +51,37 @@ const Shell = styled.div`
   background: var(--color-bg);
 `;
 
+// Entrance on first load. Uses `translate` (not `transform`) so it can't fight the mobile drawer's transform.
+const slideIn = keyframes`
+  from {
+    opacity: 0;
+    translate: calc(var(--enter-offset) * -1) 0;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+`;
+
+const fadeIn = keyframes`
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+`;
+
+const enter = css`
+  animation: ${slideIn} var(--duration-enter) var(--ease) both;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+`;
+
 const Aside = styled.aside<{ $mobileOpen: boolean }>`
+  ${enter}
   position: sticky;
   top: 0;
   flex-shrink: 0;
@@ -101,6 +131,12 @@ const Scrim = styled.button`
 `;
 
 const Main = styled.main`
+  animation: ${fadeIn} var(--duration-enter) var(--ease) calc(var(--stagger) * 6) both;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+
   flex: 1;
   min-width: 0;
 `;
@@ -190,6 +226,9 @@ const Nav = styled.nav`
 `;
 
 const ItemLink = styled(Link)`
+  ${enter}
+  animation-delay: calc(var(--stagger) * (var(--i, 0) + 2));
+
   display: flex;
   align-items: center;
   gap: var(--space-3);
@@ -290,6 +329,12 @@ const RecentContext = styled.span`
 `;
 
 const Footer = styled.div`
+  animation: ${fadeIn} var(--duration-enter) var(--ease) calc(var(--stagger) * 7) both;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+
   margin-top: auto;
   padding-top: var(--space-3);
   border-top: 1px solid var(--color-border);
@@ -368,9 +413,10 @@ function SidebarContent({ config, onNavigate }: { config: SidebarConfig; onNavig
       </Header>
 
       <Nav aria-label={config.navLabel}>
-        {config.items.map((item) => (
+        {config.items.map((item, i) => (
           <ItemLink
             key={item.href}
+            style={{ "--i": i } as React.CSSProperties}
             href={item.href}
             aria-current={isActive(pathname, item.href) ? "page" : undefined}
             onClick={onNavigate}
