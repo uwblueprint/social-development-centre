@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import "@/components/ui/tokens";
 
 export const metadata: Metadata = {
   title: "Social Development Centre",
