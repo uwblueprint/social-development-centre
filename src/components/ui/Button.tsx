@@ -9,7 +9,7 @@ export const Button = styled.button<{ $variant?: Variant; $size?: Size }>`
   justify-content: center;
   gap: 6px;
   border: 1px solid transparent;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-md);
   font-family: inherit;
   font-weight: var(--weight-regular);
   line-height: 1;

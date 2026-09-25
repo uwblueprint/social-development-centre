@@ -2,14 +2,16 @@
 
 import * as React from "react";
 import { styled } from "next-yak";
+import { Lock } from "lucide-react";
+import { Icon } from "./Icon";
 import { Tooltip } from "./Tooltip";
 
 /*
- * Every disabled control must explain why it is disabled.
+ * Every disabled control should explain why it is disabled.
  * The reason is product copy: ask the product owner for it, never invent one.
- * Disabled controls can't take focus, so the reason is also exposed through a
- * focusable lock button whose accessible name includes the reason.
+ * If they decline or it isn't known, pass `null` to opt out explicitly.
  */
+export type DisabledReasonText = string | null;
 
 const Area = styled.span<{ $block?: boolean }>`
   display: ${({ $block }) => ($block ? "flex" : "inline-flex")};
@@ -24,6 +26,7 @@ const Area = styled.span<{ $block?: boolean }>`
   }
 `;
 
+// Focusable so keyboard and screen-reader users can reach the reason; styled to blend with the disabled control.
 const LockButton = styled.button`
   all: unset;
   display: inline-flex;
@@ -32,32 +35,20 @@ const LockButton = styled.button`
   width: 20px;
   height: 20px;
   flex-shrink: 0;
-  border-radius: var(--radius-full);
-  color: var(--color-text-muted);
-  cursor: help;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-subtle);
+  cursor: not-allowed;
 
-  &:hover {
-    color: var(--color-text);
-    background: var(--color-secondary);
-  }
   &:focus-visible {
     box-shadow: var(--focus-ring);
   }
 `;
 
-export function LockIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <rect x="3" y="7" width="10" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" stroke="currentColor" strokeWidth="1.5" />
-    </svg>
-  );
-}
-
-export function DisabledIcon({ reason }: { reason: string }) {
+export function DisabledIcon({ reason }: { reason: DisabledReasonText }) {
+  if (!reason) return null;
   return (
     <LockButton type="button" aria-label={`Unavailable: ${reason}`}>
-      <LockIcon />
+      <Icon icon={Lock} size={14} />
     </LockButton>
   );
 }
@@ -68,10 +59,11 @@ export function DisabledArea({
   block,
   children,
 }: {
-  reason: string;
+  reason: DisabledReasonText;
   block?: boolean;
   children: React.ReactNode;
 }) {
+  if (!reason) return <Area $block={block}>{children}</Area>;
   return (
     <Tooltip content={reason}>
       <Area $block={block}>{children}</Area>
@@ -84,7 +76,7 @@ export function DisabledReason({
   reason,
   children,
 }: {
-  reason: string;
+  reason: DisabledReasonText;
   children: React.ReactNode;
 }) {
   return (

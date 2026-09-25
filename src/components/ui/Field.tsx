@@ -3,7 +3,9 @@
 import * as React from "react";
 import { styled } from "next-yak";
 import { Label } from "./Label";
-import { DisabledArea, DisabledIcon } from "./DisabledReason";
+import { DisabledArea, DisabledIcon, type DisabledReasonText } from "./DisabledReason";
+import { CircleAlert } from "lucide-react";
+import { Icon } from "./Icon";
 
 const Wrapper = styled.div`
   display: flex;
@@ -42,13 +44,7 @@ const ErrorMessage = styled.span`
 `;
 
 export function ErrorIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <circle cx="8" cy="8" r="6.75" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M8 4.75v3.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-      <circle cx="8" cy="11" r="0.9" fill="currentColor" />
-    </svg>
-  );
+  return <Icon icon={CircleAlert} size={14} />;
 }
 
 export interface FieldControlProps {
@@ -72,8 +68,11 @@ type DisabledProps =
   | { disabled?: false; disabledReason?: never }
   | {
       disabled: true;
-      /** Required. Ask the product owner for the real reason; never invent one. */
-      disabledReason: string;
+      /**
+       * Ask the product owner for the real reason; never invent one.
+       * Pass null only if they decline or it isn't known.
+       */
+      disabledReason: DisabledReasonText;
     };
 
 export type FieldProps = BaseFieldProps & DisabledProps;
