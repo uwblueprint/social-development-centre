@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { styled } from "next-yak";
-import { ButtonDemos } from "./demos/BasicsDemos";
+import { ButtonDemos, ColorDemos } from "./demos/BasicsDemos";
 import { FieldDemo, InputDemo, SelectDemo, TextareaDemo } from "./demos/FormDemos";
 import {
   CheckboxDemo,
@@ -20,6 +20,7 @@ export const metadata: Metadata = {
 };
 
 const sections: { id: string; title: string; description: string; demo: ReactNode }[] = [
+  { id: "colors", title: "Colors", description: "Stone neutrals, one accent, and status colors. Tokens live in tokens.ts.", demo: <ColorDemos /> },
   { id: "buttons", title: "Buttons", description: "Primary, secondary, outline, ghost and danger actions in three sizes.", demo: <ButtonDemos /> },
   { id: "field", title: "Field", description: "Label, hint and error wired to any control for screen readers.", demo: <FieldDemo /> },
   { id: "input", title: "Input", description: "Single-line text entry.", demo: <InputDemo /> },
