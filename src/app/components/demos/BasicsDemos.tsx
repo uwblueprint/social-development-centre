@@ -3,6 +3,7 @@
 import { styled } from "next-yak";
 import { Button } from "@/components/ui/Button";
 import { Switch } from "@/components/ui/Switch";
+import { DisabledReason } from "@/components/ui/DisabledReason";
 
 const Row = styled.div`
   display: flex;
@@ -40,10 +41,14 @@ export function ButtonDemos() {
         <Button $size="lg">Large</Button>
       </Row>
       <Row>
-        <Button disabled>Disabled</Button>
-        <Button $variant="secondary" disabled>
-          Disabled
-        </Button>
+        <DisabledReason reason="Add at least one volunteer before publishing.">
+          <Button disabled>Publish</Button>
+        </DisabledReason>
+        <DisabledReason reason="Only organization admins can export data.">
+          <Button $variant="secondary" disabled>
+            Export
+          </Button>
+        </DisabledReason>
       </Row>
     </Stack>
   );

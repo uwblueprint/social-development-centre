@@ -1,12 +1,14 @@
 import { globalStyle } from "next-yak";
 
-// Modelled on jackandjill.ai. Their fonts (ABC Diatype, ABC Marist) are commercial;
-// Geist and Instrument Serif stand in until licensed. Only #f9f9f6 is their exact value.
+// Modelled on jackandjill.ai; only #f9f9f6 is their exact value.
 globalStyle`
   :root {
-    --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-    --font-display: "Instrument Serif", ui-serif, Georgia, serif;
-    --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+    --font-sans: "Onest Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-display: var(--font-sans);
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    --weight-regular: 400;
+    --weight-medium: 500;
 
     --color-bg: #ffffff;
     --color-surface: #f9f9f6;
@@ -47,7 +49,7 @@ globalStyle`
     --text-md: 1rem;
     --text-lg: 1.1875rem;
     --text-xl: clamp(1.75rem, 3vw, 2.5rem);
-    --text-display: clamp(3rem, 8vw, 6rem);
+    --text-display: clamp(2.75rem, 6vw, 4.5rem);
     --tracking-tight: -0.02em;
 
     --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.05);

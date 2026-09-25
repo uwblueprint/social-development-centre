@@ -94,7 +94,7 @@ const Title = styled.h1`
   margin: 0;
   font-family: var(--font-display);
   font-size: var(--text-display);
-  font-weight: 400;
+  font-weight: var(--weight-medium);
   letter-spacing: var(--tracking-tight);
   line-height: 1;
 `;
@@ -123,7 +123,7 @@ const SectionTitle = styled.h2`
   margin: 0;
   font-family: var(--font-display);
   font-size: var(--text-xl);
-  font-weight: 400;
+  font-weight: var(--weight-medium);
   letter-spacing: var(--tracking-tight);
   line-height: 1.1;
 `;
