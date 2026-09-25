@@ -11,6 +11,8 @@ This file is for AI coding agents and humans alike. Read it before writing any U
 - `docs/components/<Component>.md`: when to use each component, when not to, content rules and accessibility notes. Read the doc before using a component for the first time.
 - `docs/design/principles.md`: the design rules behind the kit. `docs/design/research.md`: the evidence (Linear, Ramp, NN/g).
 - `docs/backend/`: how the backend connects (data seams, server actions returning `ActionState`, `SubmitButton`) and per-feature backend requirements. `/components/form-contract` shows exactly what a form submits.
+- `docs/user-guide/`: task-based user guide ("to do X, click Y"). The source for end-user documentation.
+- `docs/decisions/`: product decisions per feature (what, which page, what it affects, when users meet it).
 - `/components`: live showcase of every component in every state. Run `pnpm dev` and open http://localhost:3000/components.
 
 ## Hard rules (lint, types or CI enforce these)
@@ -37,6 +39,13 @@ This file is for AI coding agents and humans alike. Read it before writing any U
 6. Accent (`--color-accent`) marks at most one thing per screen. Use status tokens (`--color-success`, `-warning`, `-danger`, `-info` with their `-subtle` backgrounds) for status.
 7. Motion uses `--duration`/`--duration-slow` with `--ease`/`--ease-spring`, only for real state changes. Reduced motion is handled globally; don't override it.
 8. Verify in the browser: open the page, try it with the keyboard only, and check hover, focus and disabled states.
+
+## Shipping a product change
+
+Any change users will notice must, in the same change:
+1. Update `docs/user-guide/` as task-based steps using the exact on-screen labels (see its README for the writing rules). Add a new workflow, or edit the ones whose steps changed.
+2. Record any new product decision in `docs/decisions/<feature>.md`.
+3. List backend needs in `docs/backend/<feature>.md` if the UI depends on data or actions that don't exist yet.
 
 ## Changing the kit
 
