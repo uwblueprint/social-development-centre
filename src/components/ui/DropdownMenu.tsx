@@ -54,7 +54,7 @@ const itemStyles = css`
   position: relative;
 
   &[data-highlighted] {
-    background: var(--stone-100);
+    background: var(--color-bg-hover);
   }
   &[data-disabled] {
     color: var(--color-text-muted);
@@ -122,8 +122,8 @@ const Shortcut = styled.kbd`
   font-size: var(--text-xs);
   line-height: var(--leading-none);
   color: var(--color-text-subtle);
-  background: var(--stone-100);
-  border: 1px solid var(--stone-200);
+  background: var(--color-bg-hover);
+  border: 1px solid var(--color-bg-selected);
   border-radius: var(--radius-sm);
 `;
 

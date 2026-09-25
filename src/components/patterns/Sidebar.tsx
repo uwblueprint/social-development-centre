@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { css, styled } from "next-yak";
 import type { LucideIcon } from "lucide-react";
-import { ChevronsUpDown, Menu, PanelLeft } from "lucide-react";
+import { ChevronsUpDown, Menu } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import {
   DropdownMenu,
@@ -15,7 +15,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/DropdownMenu";
 import { Icon } from "@/components/ui/Icon";
-import { Tooltip } from "@/components/ui/Tooltip";
 
 export interface SidebarNavItem {
   href: string;
@@ -52,7 +51,7 @@ const Shell = styled.div`
   background: var(--color-bg);
 `;
 
-const Aside = styled.aside<{ $collapsed: boolean; $mobileOpen: boolean }>`
+const Aside = styled.aside<{ $mobileOpen: boolean }>`
   position: sticky;
   top: 0;
   flex-shrink: 0;
@@ -63,14 +62,7 @@ const Aside = styled.aside<{ $collapsed: boolean; $mobileOpen: boolean }>`
   padding: var(--space-3);
   background: var(--color-surface);
   border-right: 1px solid var(--color-border);
-  transition: width var(--duration-slow) var(--ease);
 
-  ${({ $collapsed }) =>
-    $collapsed &&
-    css`
-      width: 64px;
-      padding: var(--space-3) var(--space-2);
-    `}
 
   ${MOBILE} {
     position: fixed;
@@ -127,7 +119,7 @@ const MobileBar = styled.div`
   }
 `;
 
-const Header = styled.div<{ $collapsed: boolean }>`
+const Header = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -136,13 +128,6 @@ const Header = styled.div<{ $collapsed: boolean }>`
   padding: 0 var(--space-1) 0 var(--space-2);
   margin-bottom: var(--space-3);
 
-  ${({ $collapsed }) =>
-    $collapsed &&
-    css`
-      flex-direction: column;
-      height: auto;
-      padding: 0;
-    `}
 `;
 
 const Brand = styled.span`
@@ -186,7 +171,7 @@ const iconButton = css`
     color var(--duration) var(--ease);
 
   &:hover {
-    background: var(--stone-200);
+    background: var(--color-bg-hover);
     color: var(--color-text);
   }
   &:focus-visible {
@@ -204,7 +189,7 @@ const Nav = styled.nav`
   gap: 2px;
 `;
 
-const ItemLink = styled(Link)<{ $collapsed: boolean }>`
+const ItemLink = styled(Link)`
   display: flex;
   align-items: center;
   gap: var(--space-3);
@@ -220,11 +205,11 @@ const ItemLink = styled(Link)<{ $collapsed: boolean }>`
     color var(--duration) var(--ease);
 
   &:hover {
-    background: var(--stone-100);
+    background: var(--color-bg-hover);
     color: var(--color-text);
   }
   &[aria-current="page"] {
-    background: var(--stone-200);
+    background: var(--color-bg-selected);
     color: var(--color-text);
   }
   &:focus-visible {
@@ -232,12 +217,6 @@ const ItemLink = styled(Link)<{ $collapsed: boolean }>`
     box-shadow: var(--focus-ring);
   }
 
-  ${({ $collapsed }) =>
-    $collapsed &&
-    css`
-      justify-content: center;
-      padding: 0;
-    `}
 `;
 
 const ItemLabel = styled.span`
@@ -291,7 +270,7 @@ const RecentLink = styled(Link)`
     color: var(--color-text-muted);
   }
   &:hover {
-    background: var(--stone-100);
+    background: var(--color-bg-hover);
   }
   &:focus-visible {
     outline: none;
@@ -316,7 +295,7 @@ const Footer = styled.div`
   border-top: 1px solid var(--color-border);
 `;
 
-const ProfileButton = styled.button<{ $collapsed: boolean }>`
+const ProfileButton = styled.button`
   all: unset;
   box-sizing: border-box;
   display: flex;
@@ -330,18 +309,12 @@ const ProfileButton = styled.button<{ $collapsed: boolean }>`
 
   &:hover,
   &[data-state="open"] {
-    background: var(--stone-100);
+    background: var(--color-bg-hover);
   }
   &:focus-visible {
     box-shadow: var(--focus-ring);
   }
 
-  ${({ $collapsed }) =>
-    $collapsed &&
-    css`
-      justify-content: center;
-      padding: var(--space-1) 0;
-    `}
 `;
 
 const ProfileText = styled.span`
@@ -382,68 +355,34 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function SidebarContent({
-  config,
-  collapsed,
-  onToggleCollapsed,
-  onNavigate,
-}: {
-  config: SidebarConfig;
-  collapsed: boolean;
-  onToggleCollapsed?: () => void;
-  onNavigate: () => void;
-}) {
+function SidebarContent({ config, onNavigate }: { config: SidebarConfig; onNavigate: () => void }) {
   const pathname = usePathname();
 
   return (
     <>
-      <Header $collapsed={collapsed}>
+      <Header>
         <Brand>
           <BrandMark aria-hidden="true">{config.product.initials}</BrandMark>
-          {!collapsed && config.product.name}
+          {config.product.name}
         </Brand>
-        {onToggleCollapsed && (
-          <Tooltip content={collapsed ? "Expand sidebar" : "Collapse sidebar"} side="right">
-            <IconButton
-              type="button"
-              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-              onClick={onToggleCollapsed}
-            >
-              <Icon icon={PanelLeft} size={18} />
-            </IconButton>
-          </Tooltip>
-        )}
       </Header>
 
       <Nav aria-label={config.navLabel}>
-        {config.items.map((item) => {
-          const link = (
-            <ItemLink
-              key={item.href}
-              href={item.href}
-              $collapsed={collapsed}
-              aria-current={isActive(pathname, item.href) ? "page" : undefined}
-              aria-label={collapsed ? item.label : undefined}
-              onClick={onNavigate}
-            >
-              <Icon icon={item.icon} size={18} />
-              {!collapsed && <ItemLabel>{item.label}</ItemLabel>}
-              {!collapsed && item.count ? (
-                <Count aria-label={`${item.count} new`}>{item.count}</Count>
-              ) : null}
-            </ItemLink>
-          );
-          return collapsed ? (
-            <Tooltip key={item.href} content={item.label} side="right">
-              {link}
-            </Tooltip>
-          ) : (
-            link
-          );
-        })}
+        {config.items.map((item) => (
+          <ItemLink
+            key={item.href}
+            href={item.href}
+            aria-current={isActive(pathname, item.href) ? "page" : undefined}
+            onClick={onNavigate}
+          >
+            <Icon icon={item.icon} size={18} />
+            <ItemLabel>{item.label}</ItemLabel>
+            {item.count ? <Count aria-label={`${item.count} new`}>{item.count}</Count> : null}
+          </ItemLink>
+        ))}
       </Nav>
 
-      {config.recent && !collapsed && config.recent.items.length > 0 && (
+      {config.recent && config.recent.items.length > 0 && (
         <>
           <Divider />
           <nav aria-label={config.recent.label}>
@@ -464,23 +403,15 @@ function SidebarContent({
       <Footer>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <ProfileButton
-              type="button"
-              $collapsed={collapsed}
-              aria-label={`Account menu for ${config.user.name}`}
-            >
+            <ProfileButton type="button" aria-label={`Account menu for ${config.user.name}`}>
               <Avatar initials={config.user.initials} src={config.user.avatarSrc} size="sm" />
-              {!collapsed && (
-                <>
-                  <ProfileText>
-                    <ProfileName>{config.user.name}</ProfileName>
-                    <ProfileEmail>{config.user.email}</ProfileEmail>
-                  </ProfileText>
-                  <Muted>
-                    <Icon icon={ChevronsUpDown} size={16} />
-                  </Muted>
-                </>
-              )}
+              <ProfileText>
+                <ProfileName>{config.user.name}</ProfileName>
+                <ProfileEmail>{config.user.email}</ProfileEmail>
+              </ProfileText>
+              <Muted>
+                <Icon icon={ChevronsUpDown} size={16} />
+              </Muted>
             </ProfileButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent side="top" align="start" style={{ minWidth: 220 }}>
@@ -498,7 +429,7 @@ function SidebarContent({
   );
 }
 
-/** App layout with a left sidebar. Collapses to icons on desktop; becomes a drawer below 768px. */
+/** App layout with a left sidebar; becomes a drawer below 768px. */
 export function SidebarLayout({
   config,
   children,
@@ -506,7 +437,6 @@ export function SidebarLayout({
   config: SidebarConfig;
   children: React.ReactNode;
 }) {
-  const [collapsed, setCollapsed] = React.useState(false);
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const asideId = React.useId();
 
@@ -519,13 +449,8 @@ export function SidebarLayout({
 
   return (
     <Shell>
-      <Aside id={asideId} $collapsed={collapsed} $mobileOpen={mobileOpen}>
-        <SidebarContent
-          config={config}
-          collapsed={collapsed && !mobileOpen}
-          onToggleCollapsed={mobileOpen ? undefined : () => setCollapsed((c) => !c)}
-          onNavigate={() => setMobileOpen(false)}
-        />
+      <Aside id={asideId} $mobileOpen={mobileOpen}>
+        <SidebarContent config={config} onNavigate={() => setMobileOpen(false)} />
       </Aside>
       {mobileOpen && (
         <Scrim type="button" tabIndex={-1} aria-hidden="true" onClick={() => setMobileOpen(false)} />

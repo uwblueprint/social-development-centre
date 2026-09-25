@@ -1,6 +1,6 @@
 import { globalStyle } from "next-yak";
 
-// Neutrals are Tailwind Stone hex values. Accent is Tailwind Orange; statuses use the -700 step for 4.5:1 text on white.
+// Neutrals are Tailwind Taupe (converted from its OKLCH values). Accent is Tailwind Orange; statuses use the -700 step for 4.5:1 text on white.
 globalStyle`
   :root {
     --font-sans: "Onest Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -10,32 +10,35 @@ globalStyle`
     --weight-regular: 400;
     --weight-medium: 500;
 
-    --stone-50: #fafaf9;
-    --stone-100: #f5f5f4;
-    --stone-200: #e7e5e4;
-    --stone-300: #d6d3d1;
-    --stone-400: #a8a29e;
-    --stone-500: #78716c;
-    --stone-600: #57534e;
-    --stone-700: #44403c;
-    --stone-800: #292524;
-    --stone-900: #1c1917;
+    --taupe-50: #fbfaf9;
+    --taupe-100: #f3f1f1;
+    --taupe-200: #e8e4e3;
+    --taupe-300: #d8d2d0;
+    --taupe-400: #aba09c;
+    --taupe-500: #7c6d67;
+    --taupe-600: #5b4f4b;
+    --taupe-700: #473c39;
+    --taupe-800: #2b2422;
+    --taupe-900: #1d1816;
 
     --color-bg: #ffffff;
-    --color-surface: var(--stone-50);
+    --color-surface: var(--taupe-50);
     --color-surface-raised: #ffffff;
-    --color-text: var(--stone-900);
-    --color-text-muted: var(--stone-600);
-    --color-text-subtle: var(--stone-500);
-    --color-border: var(--stone-200);
-    /* Form control boundaries need 3:1 against white (WCAG 1.4.11); stone-500 is 4.8:1. */
-    --color-border-strong: var(--stone-500);
-    --color-primary: var(--stone-900);
-    --color-primary-hover: var(--stone-800);
-    --color-on-primary: var(--stone-50);
-    --color-secondary: var(--stone-100);
-    --color-secondary-hover: var(--stone-200);
-    --color-disabled-bg: var(--stone-100);
+    --color-text: var(--taupe-900);
+    --color-text-muted: var(--taupe-600);
+    --color-text-subtle: var(--taupe-500);
+    --color-border: var(--taupe-200);
+    /* Form control boundaries need 3:1 against white (WCAG 1.4.11); taupe-500 is 4.95:1. */
+    --color-border-strong: var(--taupe-500);
+    --color-primary: var(--taupe-900);
+    --color-primary-hover: var(--taupe-800);
+    --color-on-primary: var(--taupe-50);
+    --color-secondary: var(--taupe-100);
+    --color-secondary-hover: var(--taupe-200);
+    --color-disabled-bg: var(--taupe-100);
+    /* One hover and one selected fill for every list row, menu item, nav link and ghost control. */
+    --color-bg-hover: var(--taupe-100);
+    --color-bg-selected: var(--taupe-200);
 
     --color-accent: #c2410c;
     --color-accent-hover: #9a3412;
@@ -50,11 +53,11 @@ globalStyle`
     --color-success-subtle: #ecfdf5;
     --color-warning: #b45309;
     --color-warning-subtle: #fffbeb;
-    --color-info: #0369a1;
-    --color-info-subtle: #f0f9ff;
+    --color-info: #3a6c88;
+    --color-info-subtle: #eef4f7;
 
-    --color-focus: var(--stone-900);
-    --color-overlay: rgb(28 25 23 / 0.4);
+    --color-focus: var(--taupe-900);
+    --color-overlay: rgb(29 24 22 / 0.4);
 
     --radius-sm: 4px;
     --radius-md: 6px;
@@ -85,9 +88,9 @@ globalStyle`
     --leading-ui: 1.4;
     --leading-body: 1.5;
 
-    --shadow-sm: 0 1px 2px rgb(28 25 23 / 0.06);
-    --shadow-md: 0 4px 16px rgb(28 25 23 / 0.08), 0 1px 2px rgb(28 25 23 / 0.06);
-    --shadow-lg: 0 16px 40px rgb(28 25 23 / 0.14);
+    --shadow-sm: 0 1px 2px rgb(29 24 22 / 0.06);
+    --shadow-md: 0 4px 16px rgb(29 24 22 / 0.08), 0 1px 2px rgb(29 24 22 / 0.06);
+    --shadow-lg: 0 16px 40px rgb(29 24 22 / 0.14);
 
     --focus-ring: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-focus);
     --duration: 160ms;

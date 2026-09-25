@@ -31,13 +31,9 @@ export const CardContent = styled.div`
   padding: var(--space-5);
 `;
 
-/* A top divider clearly separates action buttons from the body content
-   above, the same rule used across popovers/dialogs. */
 export const CardFooter = styled.div`
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  margin-top: var(--space-2);
-  padding: var(--space-4) var(--space-5) var(--space-5);
-  border-top: 1px solid var(--color-border);
+  padding: var(--space-2) var(--space-5) var(--space-5);
 `;

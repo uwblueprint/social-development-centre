@@ -34,7 +34,7 @@ const Root = styled(TogglePrimitive.Root)`
     border-color var(--duration) var(--ease);
 
   &:hover:not([data-disabled]) {
-    background: var(--color-secondary);
+    background: var(--color-bg-hover);
     color: var(--color-text);
   }
 

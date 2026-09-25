@@ -12,7 +12,7 @@ A bordered, raised container for a self-contained block of content, with header/
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/Card";
 ```
 - All are plain styled elements (`div`, `h3`, `p`) with no special props beyond their native ones — compose them in order.
-- `CardFooter` renders a top divider automatically; use it for action rows.
+- `CardFooter` holds the action row, separated from content by spacing.
 
 ## Example
 ```tsx

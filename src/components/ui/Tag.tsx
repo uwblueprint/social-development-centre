@@ -83,7 +83,7 @@ const RemoveButton = styled.button`
   cursor: pointer;
 
   &:hover {
-    background: var(--color-secondary);
+    background: var(--color-bg-hover);
     color: var(--color-text);
   }
   &:focus-visible {

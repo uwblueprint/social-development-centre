@@ -10,7 +10,7 @@ import { Label } from "./Label";
  * Two distinct non-interactive states:
  * - disabled: the underlying value is unknown/unavailable, so the box always
  *   renders blank (no check, no dash) regardless of `checked`, filled with
- *   --stone-100 to read as "off".
+ *   --color-disabled-bg to read as "off".
  * - readOnly: the value IS known and stays visible (check/dash shown, muted
  *   colors) but can't be changed. Still focusable so the reason is reachable.
  * Both show a lock icon with the reason on hover/focus.
@@ -52,15 +52,15 @@ const Root = styled(CheckboxPrimitive.Root)`
 
   /* Disabled: state unknown, always blank, never shows a check. */
   &[data-disabled] {
-    background: var(--stone-100);
-    border-color: var(--stone-100);
+    background: var(--color-bg-hover);
+    border-color: var(--color-bg-hover);
     cursor: not-allowed;
   }
 
   &[data-disabled][data-state="checked"],
   &[data-disabled][data-state="indeterminate"] {
-    background: var(--stone-100);
-    border-color: var(--stone-100);
+    background: var(--color-bg-hover);
+    border-color: var(--color-bg-hover);
   }
 
   /* Read-only: value stays visible, muted, but can't be toggled. */

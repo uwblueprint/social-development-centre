@@ -60,7 +60,7 @@ const CloseButton = styled(DialogPrimitive.Close)`
   cursor: pointer;
 
   &:hover {
-    background: var(--color-surface);
+    background: var(--color-bg-hover);
     color: var(--color-text);
   }
   &:focus-visible {
@@ -85,15 +85,11 @@ const Description = styled(DialogPrimitive.Description)`
   color: var(--color-text-muted);
 `;
 
-/* A top divider clearly separates action buttons from the body content
-   above, the same rule used across cards/popovers/alert dialogs. */
 const Actions = styled.div`
   display: flex;
   justify-content: flex-end;
   gap: var(--space-3);
-  margin-top: var(--space-4);
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--color-border);
+  margin-top: var(--space-5);
 `;
 
 export const Dialog = DialogPrimitive.Root;

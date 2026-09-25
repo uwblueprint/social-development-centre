@@ -30,7 +30,7 @@ toast({
 Title is a short, past-tense confirmation ("Changes saved"), sentence case. Description adds one clarifying sentence at most. `actionLabel` is a verb ("Undo").
 
 ## Accessibility
-Announced via a Radix live region; swipeable to dismiss, closable via the labeled × button. `ToastAction` sits below a divider so it's never confused with close, and needs its own `altText`.
+Announced via a Radix live region; swipeable to dismiss, closable via the labeled × button. `ToastAction` sits on its own right-aligned row so it's never confused with close, and needs its own `altText`.
 
 ## Don't
 1. Using a toast for anything requiring action before continuing — it can disappear unread.

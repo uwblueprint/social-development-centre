@@ -20,12 +20,11 @@ import { SidebarLayout, type SidebarConfig } from "@/components/patterns/Sidebar
 Config must be built in a client component (icons are components and can't cross from server to client). See `src/app/admin/_components/AdminShell.tsx`.
 
 ## Behavior
-- Desktop: collapse to icons with the panel button; labels move to tooltips.
+- Desktop: always expanded (no collapse), so labels stay visible.
 - Below 768px: the sidebar becomes a drawer opened from a top bar; Escape, the backdrop or navigating closes it.
 
 ## Accessibility
 - Nav is a labelled `<nav>` landmark; the current page uses `aria-current="page"`.
-- Collapsed icon links keep their names via `aria-label` and tooltips.
 - The drawer is hidden from assistive tech and the tab order when closed.
 
 ## Don't

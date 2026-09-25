@@ -46,7 +46,7 @@ const CloseButton = styled(PopoverPrimitive.Close)`
   cursor: pointer;
 
   &:hover {
-    background: var(--color-surface);
+    background: var(--color-bg-hover);
     color: var(--color-text);
   }
   &:focus-visible {
@@ -54,16 +54,11 @@ const CloseButton = styled(PopoverPrimitive.Close)`
   }
 `;
 
-/* Optional footer for popovers that end in an action: a top divider keeps
-   it clearly separated from the body content above, matching the same rule
-   used in cards and dialogs. */
 export const PopoverActions = styled.div`
   display: flex;
   justify-content: flex-end;
   gap: var(--space-2);
-  margin-top: var(--space-3);
-  padding-top: var(--space-3);
-  border-top: 1px solid var(--color-border);
+  margin-top: var(--space-4);
 `;
 
 export const Popover = PopoverPrimitive.Root;

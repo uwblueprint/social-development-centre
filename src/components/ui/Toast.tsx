@@ -61,17 +61,12 @@ const Description = styled(ToastPrimitive.Description)`
   margin: var(--space-1) 0 0;
 `;
 
-/* Separated from the title/description with its own top divider and gap so
-   it never reads as part of the message body, and right-aligned like a
-   dialog/card's action row. */
 const Action = styled(ToastPrimitive.Action)`
   grid-column: 1 / -1;
   justify-self: end;
   margin-top: var(--space-3);
-  padding-top: var(--space-2);
   width: 100%;
   border: none;
-  border-top: 1px solid var(--color-border);
   background: none;
   text-align: right;
   font-size: var(--text-xs);
@@ -99,7 +94,7 @@ const Close = styled(ToastPrimitive.Close)`
   cursor: pointer;
 
   &:hover {
-    background: var(--color-surface);
+    background: var(--color-bg-hover);
     color: var(--color-text);
   }
   &:focus-visible {

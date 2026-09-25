@@ -62,7 +62,7 @@ export const Button = styled.button<{ $variant?: Variant; $size?: Size }>`
       color: var(--color-text);
       border-color: var(--color-border-strong);
       &:hover:not(:disabled) {
-        background: var(--color-surface);
+        background: var(--color-bg-hover);
       }
     `}
   ${({ $variant }) =>
@@ -71,7 +71,7 @@ export const Button = styled.button<{ $variant?: Variant; $size?: Size }>`
       background: transparent;
       color: var(--color-text);
       &:hover:not(:disabled) {
-        background: var(--color-secondary);
+        background: var(--color-bg-hover);
       }
     `}
   ${({ $variant }) =>

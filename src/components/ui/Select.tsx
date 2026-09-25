@@ -183,7 +183,7 @@ const Item = styled(SelectPrimitive.Item)`
   cursor: pointer;
 
   &[data-highlighted] {
-    background: var(--color-secondary);
+    background: var(--color-bg-hover);
     outline: none;
   }
 
@@ -353,7 +353,7 @@ const ComboItem = styled(Command.Item)`
   scroll-margin: var(--space-1);
 
   &[data-selected="true"] {
-    background: var(--color-secondary);
+    background: var(--color-bg-hover);
   }
 
   &[data-disabled="true"] {

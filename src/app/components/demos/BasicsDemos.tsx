@@ -79,8 +79,8 @@ const SwatchName = styled.span`
 
 const palette: { title: string; tokens: string[] }[] = [
   {
-    title: "Stone neutrals",
-    tokens: ["stone-50", "stone-100", "stone-200", "stone-300", "stone-400", "stone-500", "stone-600", "stone-700", "stone-800", "stone-900"],
+    title: "Taupe neutrals",
+    tokens: ["taupe-50", "taupe-100", "taupe-200", "taupe-300", "taupe-400", "taupe-500", "taupe-600", "taupe-700", "taupe-800", "taupe-900"],
   },
   { title: "Accent (one per screen)", tokens: ["color-accent", "color-accent-hover", "color-accent-subtle", "color-accent-border"] },
   {

@@ -3,7 +3,7 @@
 The rules behind the component kit. Evidence and sources: [research.md](./research.md).
 
 ## 1. Calm, paper-like, one accent
-- Neutrals are Tailwind Stone (warm grays). No other grays.
+- Neutrals are Tailwind Taupe (warm, paper-like). No other grays.
 - One accent (orange, `--color-accent`) marks the single most important thing on a screen. Status colors (success, warning, danger, info) are for status only.
 - Separate with 1px hairlines (`--color-border`). Shadows are for things that float: menus, dialogs, toasts.
 

@@ -75,7 +75,7 @@ const Row = styled.label`
   transition: background-color var(--duration) var(--ease);
 
   &:hover:not([data-disabled]) {
-    background: var(--stone-100);
+    background: var(--color-bg-hover);
   }
 
   &:hover:not([data-disabled]) ${Item}:not([data-disabled]) {

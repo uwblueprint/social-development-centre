@@ -28,5 +28,5 @@ Set `decorative` (default behavior when used purely for visual spacing) so scree
 
 ## Don't
 1. Using a full `--shadow-md` card border where a `Separator` would do — reserve shadows for overlays.
-2. Stacking a `Separator` on top of a component that already renders its own divider (`CardFooter`, `DialogActions`).
+2. Adding a `Separator` between content and actions in dialogs, toasts, popovers or cards; those use spacing, not lines.
 3. Using `margin`/`padding` with raw pixel values around it instead of `--space-*` tokens.

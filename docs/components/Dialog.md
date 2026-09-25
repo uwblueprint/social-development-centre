@@ -17,7 +17,7 @@ import {
 - `Dialog` (Root): `open`/`onOpenChange`.
 - `DialogTrigger asChild` — wrap your own `Button`.
 - `DialogContent` — the overlay, panel, and a built-in labeled close (×) button.
-- `DialogTitle` (required), `DialogDescription` (optional), `DialogActions` — right-aligned action row with a top divider.
+- `DialogTitle` (required), `DialogDescription` (optional), `DialogActions` — right-aligned action row, separated from the body by spacing.
 
 ## Example
 ```tsx
@@ -44,4 +44,4 @@ Focus moves into the dialog on open and returns to the trigger on close. Esc and
 ## Don't
 1. Omitting `DialogTitle`.
 2. Using `Dialog` for a destructive confirmation — use `AlertDialog`.
-3. Hand-rolling a footer instead of `DialogActions` — keep the divider consistent.
+3. Hand-rolling a footer instead of `DialogActions` — keep action spacing consistent.
