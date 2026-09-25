@@ -30,7 +30,7 @@ const Root = styled(ToastPrimitive.Root)`
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
-  padding: var(--space-4);
+  padding: 12px 16px;
   display: grid;
   grid-template-columns: 1fr auto;
   align-items: start;
@@ -46,7 +46,7 @@ const Root = styled(ToastPrimitive.Root)`
 
 const Title = styled(ToastPrimitive.Title)`
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: var(--weight-medium);
   color: var(--color-text);
   margin: 0 0 var(--space-1);
 `;
@@ -65,7 +65,7 @@ const Action = styled(ToastPrimitive.Action)`
   border: none;
   padding: 0;
   font-size: var(--text-xs);
-  font-weight: 600;
+  font-weight: var(--weight-medium);
   color: var(--color-accent);
   cursor: pointer;
 

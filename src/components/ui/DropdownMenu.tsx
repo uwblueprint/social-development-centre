@@ -16,7 +16,7 @@ const Content = styled(DropdownMenuPrimitive.Content)`
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-md);
-  padding: var(--space-2);
+  padding: 4px;
   animation: ${contentShow} var(--duration) var(--ease);
   transform-origin: var(--radix-dropdown-menu-content-transform-origin);
 
@@ -29,7 +29,8 @@ const itemStyles = css`
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
+  min-height: 32px;
+  padding: 0 var(--space-2);
   border-radius: var(--radius-sm);
   font-size: var(--text-sm);
   color: var(--color-text);
@@ -78,7 +79,7 @@ const ItemIndicator = styled(DropdownMenuPrimitive.ItemIndicator)`
 const Label = styled(DropdownMenuPrimitive.Label)`
   padding: var(--space-2) var(--space-3);
   font-size: var(--text-xs);
-  font-weight: 600;
+  font-weight: var(--weight-medium);
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;

@@ -18,8 +18,10 @@ export const TabsTrigger = styled(TabsPrimitive.Trigger)`
   padding: 10px var(--space-4);
   border-radius: var(--radius-full);
   font-size: var(--text-sm);
-  font-weight: 500;
-  color: var(--color-text-muted);
+  font-weight: var(--weight-regular);
+  /* rgb(26 26 24 / 0.62) (--color-text-muted) is ~4.5:1 on --color-border at best;
+     use a darker tint so inactive labels stay comfortably above 4.5:1. */
+  color: rgb(26 26 24 / 0.72);
   cursor: pointer;
   transition:
     color var(--duration) var(--ease),
@@ -28,9 +30,16 @@ export const TabsTrigger = styled(TabsPrimitive.Trigger)`
 
   &:hover {
     color: var(--color-text);
+    background: rgb(255 255 255 / 0.5);
   }
 
   &[data-state="active"] {
+    color: var(--color-text);
+    background: var(--color-bg);
+    box-shadow: var(--shadow-sm);
+  }
+
+  &[data-state="active"]:hover {
     color: var(--color-text);
     background: var(--color-bg);
     box-shadow: var(--shadow-sm);

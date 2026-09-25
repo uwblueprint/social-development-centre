@@ -35,9 +35,9 @@ const Trigger = styled(AccordionPrimitive.Trigger)`
   justify-content: space-between;
   flex: 1;
   gap: var(--space-3);
-  padding: var(--space-4) var(--space-1);
+  padding: 14px 0;
   font-size: var(--text-md);
-  font-weight: 500;
+  font-weight: var(--weight-regular);
   color: var(--color-text);
   cursor: pointer;
 
@@ -52,13 +52,24 @@ const Trigger = styled(AccordionPrimitive.Trigger)`
   }
 `;
 
-const Chevron = styled.svg`
+/**
+ * Plus that morphs into a minus: the horizontal bar always stays, the
+ * vertical bar rotates 90deg and fades out when the item opens.
+ */
+const PlusMinus = styled.svg`
   flex-shrink: 0;
   color: var(--color-text-muted);
-  transition: transform var(--duration) var(--ease);
 
-  [data-state="open"] > & {
-    transform: rotate(180deg);
+  rect:last-child {
+    transform-origin: 8px 8px;
+    transition:
+      transform var(--duration) var(--ease),
+      opacity var(--duration) var(--ease);
+  }
+
+  [data-state="open"] & rect:last-child {
+    transform: rotate(90deg);
+    opacity: 0;
   }
 `;
 
@@ -75,7 +86,7 @@ export const AccordionContent = styled(AccordionPrimitive.Content)`
   }
 
   & > div {
-    padding: 0 var(--space-1) var(--space-4);
+    padding: 0 0 14px;
   }
 `;
 
@@ -87,9 +98,10 @@ export function AccordionTrigger({
     <Header>
       <Trigger {...props}>
         {children}
-        <Chevron width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-          <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        </Chevron>
+        <PlusMinus width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <rect x="3" y="7.25" width="10" height="1.5" rx="0.75" fill="currentColor" />
+          <rect x="7.25" y="3" width="1.5" height="10" rx="0.75" fill="currentColor" />
+        </PlusMinus>
       </Trigger>
     </Header>
   );

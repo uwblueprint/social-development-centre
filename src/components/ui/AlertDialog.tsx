@@ -34,7 +34,7 @@ const Content = styled(AlertDialogPrimitive.Content)`
   background: var(--color-surface-raised);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
-  padding: var(--space-6);
+  padding: 20px;
   z-index: 41;
   animation: ${contentShow} var(--duration) var(--ease);
 
@@ -43,16 +43,40 @@ const Content = styled(AlertDialogPrimitive.Content)`
   }
 `;
 
+const CloseButton = styled(AlertDialogPrimitive.Cancel)`
+  all: unset;
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  color: var(--color-text-muted);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--color-surface);
+    color: var(--color-text);
+  }
+  &:focus-visible {
+    box-shadow: var(--focus-ring);
+  }
+`;
+
 const Title = styled(AlertDialogPrimitive.Title)`
-  margin: 0 0 var(--space-2);
+  margin: 0 0 4px;
   font-size: var(--text-lg);
-  font-weight: 600;
+  font-weight: var(--weight-medium);
   letter-spacing: var(--tracking-tight);
   color: var(--color-text);
+  padding-right: var(--space-6);
 `;
 
 const Description = styled(AlertDialogPrimitive.Description)`
-  margin: 0 0 var(--space-5);
+  margin: 0 0 20px;
   font-size: var(--text-sm);
   color: var(--color-text-muted);
 `;
@@ -62,6 +86,14 @@ const Actions = styled.div`
   justify-content: flex-end;
   gap: var(--space-3);
 `;
+
+function CloseIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M3 3L13 13M13 3L3 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 export const AlertDialog = AlertDialogPrimitive.Root;
 export const AlertDialogTrigger = AlertDialogPrimitive.Trigger;
@@ -78,7 +110,12 @@ export function AlertDialogContent({
   return (
     <AlertDialogPrimitive.Portal>
       <Overlay />
-      <Content {...props}>{children}</Content>
+      <Content {...props}>
+        {children}
+        <CloseButton aria-label="Close">
+          <CloseIcon />
+        </CloseButton>
+      </Content>
     </AlertDialogPrimitive.Portal>
   );
 }

@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/Separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/Accordion";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/Collapsible";
-import { ScrollArea } from "@/components/ui/ScrollArea";
+import { Tag, SelectableTag, RemovableTag, TagList } from "@/components/ui/Tag";
 
 const Grid = styled.div`
   display: grid;
@@ -70,17 +70,19 @@ const FaqAnswer = styled.p`
   line-height: 1.6;
 `;
 
-const TagScrollArea = styled(ScrollArea)`
-  height: 180px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-4);
+const TagSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 `;
 
-const TagList = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
+const TagSectionLabel = styled.p`
+  margin: 0;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 `;
 
 const CollapsibleCard = styled.div`
@@ -96,7 +98,20 @@ const CollapsibleBody = styled.div`
   line-height: 1.6;
 `;
 
-const TAGS = Array.from({ length: 20 }, (_, i) => `topic-${i + 1}`);
+const TOPICS = [
+  "Literacy",
+  "Mentorship",
+  "Food security",
+  "Housing",
+  "Youth programs",
+  "Seniors",
+  "Newcomer services",
+  "Employment",
+  "Mental health",
+  "Volunteering",
+  "Community events",
+  "Advocacy",
+];
 
 const FAQ = [
   {
@@ -115,6 +130,17 @@ const FAQ = [
 
 export function DisplayDemos() {
   const [showMore, setShowMore] = useState(false);
+  const [selectedTopics, setSelectedTopics] = useState<string[]>(["Literacy", "Mentorship"]);
+
+  const toggleTopic = (topic: string) => {
+    setSelectedTopics((prev) =>
+      prev.includes(topic) ? prev.filter((t) => t !== topic) : [...prev, topic],
+    );
+  };
+
+  const removeTopic = (topic: string) => {
+    setSelectedTopics((prev) => prev.filter((t) => t !== topic));
+  };
 
   return (
     <Stack>
@@ -143,7 +169,7 @@ export function DisplayDemos() {
                   <span style={{ fontSize: "var(--text-sm)", color: "var(--color-text-muted)" }}>
                     Enrollment goal
                   </span>
-                  <span style={{ fontSize: "var(--text-sm)", fontWeight: 600 }}>68%</span>
+                  <span style={{ fontSize: "var(--text-sm)", fontWeight: "var(--weight-medium)" }}>68%</span>
                 </Row>
                 <Progress value={68} aria-label="Enrollment goal progress" />
               </div>
@@ -216,17 +242,39 @@ export function DisplayDemos() {
       <Grid>
         <Card>
           <CardHeader>
-            <CardTitle>Popular tags</CardTitle>
-            <CardDescription>Scroll to see all topics covered this quarter.</CardDescription>
+            <CardTitle>Topics</CardTitle>
+            <CardDescription>Pick the areas you&apos;d like to hear about.</CardDescription>
           </CardHeader>
           <CardContent>
-            <TagScrollArea>
-              <TagList>
-                {TAGS.map((tag) => (
-                  <Badge key={tag}>{tag}</Badge>
-                ))}
-              </TagList>
-            </TagScrollArea>
+            <Stack style={{ gap: "var(--space-4)" }}>
+              <TagSection>
+                <TagList role="group" aria-label="Available topics">
+                  {TOPICS.map((topic) => (
+                    <SelectableTag
+                      key={topic}
+                      selected={selectedTopics.includes(topic)}
+                      onClick={() => toggleTopic(topic)}
+                    >
+                      {topic}
+                    </SelectableTag>
+                  ))}
+                </TagList>
+              </TagSection>
+              <TagSection>
+                <TagSectionLabel>Selected</TagSectionLabel>
+                {selectedTopics.length > 0 ? (
+                  <TagList>
+                    {selectedTopics.map((topic) => (
+                      <RemovableTag key={topic} onRemove={() => removeTopic(topic)}>
+                        {topic}
+                      </RemovableTag>
+                    ))}
+                  </TagList>
+                ) : (
+                  <Tag>None selected</Tag>
+                )}
+              </TagSection>
+            </Stack>
           </CardContent>
         </Card>
 

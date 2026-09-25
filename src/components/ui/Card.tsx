@@ -14,7 +14,7 @@ export const CardHeader = styled.div`
 export const CardTitle = styled.h3`
   margin: 0 0 var(--space-1);
   font-size: var(--text-lg);
-  font-weight: 600;
+  font-weight: var(--weight-medium);
   letter-spacing: var(--tracking-tight);
   color: var(--color-text);
 `;

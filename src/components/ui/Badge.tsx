@@ -10,7 +10,7 @@ export const Badge = styled.span<{ $variant?: Variant }>`
   padding: 0 var(--space-3);
   border-radius: var(--radius-full);
   font-size: var(--text-xs);
-  font-weight: 600;
+  font-weight: var(--weight-regular);
   line-height: 1;
   white-space: nowrap;
   border: 1px solid transparent;

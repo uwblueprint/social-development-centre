@@ -11,7 +11,7 @@ export const Button = styled.button<{ $variant?: Variant; $size?: Size }>`
   border: 1px solid transparent;
   border-radius: var(--radius-full);
   font-family: inherit;
-  font-weight: 500;
+  font-weight: var(--weight-regular);
   line-height: 1;
   white-space: nowrap;
   cursor: pointer;

@@ -58,7 +58,7 @@ const HoverCardBody = styled.div`
 const HoverCardName = styled.p`
   margin: 0;
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: var(--weight-medium);
   color: var(--color-text);
 `;
 
@@ -161,8 +161,8 @@ function PopoverDemo() {
 
 function TooltipDemo() {
   return (
-    <Tooltip content="Settings">
-      <Button $variant="ghost" $size="sm" aria-label="Settings">
+    <Tooltip content="Cohorts run every quarter and are free to join.">
+      <Button $variant="ghost" $size="sm" aria-label="More info">
         <InfoIcon />
       </Button>
     </Tooltip>

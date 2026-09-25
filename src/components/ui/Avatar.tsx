@@ -46,7 +46,7 @@ const Fallback = styled(AvatarPrimitive.Fallback)<{ $size?: Size }>`
   width: 100%;
   height: 100%;
   color: var(--color-text-muted);
-  font-weight: 600;
+  font-weight: var(--weight-regular);
   font-size: var(--text-sm);
 
   ${({ $size }) =>

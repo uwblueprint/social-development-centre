@@ -16,7 +16,7 @@ const Content = styled(HoverCardPrimitive.Content)`
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-md);
-  padding: var(--space-4);
+  padding: 12px;
   animation: ${contentShow} var(--duration) var(--ease);
   transform-origin: var(--radix-hover-card-content-transform-origin);
 

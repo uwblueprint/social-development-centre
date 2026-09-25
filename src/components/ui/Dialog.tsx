@@ -34,7 +34,7 @@ const Content = styled(DialogPrimitive.Content)`
   background: var(--color-surface-raised);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
-  padding: var(--space-6);
+  padding: 20px;
   z-index: 41;
   animation: ${contentShow} var(--duration) var(--ease);
 
@@ -46,8 +46,8 @@ const Content = styled(DialogPrimitive.Content)`
 const CloseButton = styled(DialogPrimitive.Close)`
   all: unset;
   position: absolute;
-  top: var(--space-4);
-  right: var(--space-4);
+  top: 14px;
+  right: 14px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -67,16 +67,16 @@ const CloseButton = styled(DialogPrimitive.Close)`
 `;
 
 const Title = styled(DialogPrimitive.Title)`
-  margin: 0 0 var(--space-2);
+  margin: 0 0 4px;
   font-size: var(--text-lg);
-  font-weight: 600;
+  font-weight: var(--weight-medium);
   letter-spacing: var(--tracking-tight);
   color: var(--color-text);
   padding-right: var(--space-6);
 `;
 
 const Description = styled(DialogPrimitive.Description)`
-  margin: 0 0 var(--space-4);
+  margin: 0 0 20px;
   font-size: var(--text-sm);
   color: var(--color-text-muted);
 `;
