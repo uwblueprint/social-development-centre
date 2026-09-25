@@ -5,11 +5,12 @@ import { ToggleGroup as ToggleGroupPrimitive } from "radix-ui";
 
 export const ToggleGroup = styled(ToggleGroupPrimitive.Root)`
   display: inline-flex;
+  width: fit-content;
   align-items: center;
   gap: 2px;
-  padding: 3px;
+  padding: var(--space-1);
   border-radius: var(--radius-full);
-  background: var(--color-surface);
+  background: var(--color-border);
 `;
 
 export const ToggleGroupItem = styled(ToggleGroupPrimitive.Item)`

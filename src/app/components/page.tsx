@@ -2,14 +2,38 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { styled } from "next-yak";
 import { ButtonDemos, SwitchDemos } from "./demos/BasicsDemos";
+import {
+  CheckboxDemo,
+  FieldDemo,
+  InputDemo,
+  RadioGroupDemo,
+  SelectDemo,
+  SliderDemo,
+  TextareaDemo,
+  ToggleDemo,
+  ToggleGroupDemo,
+} from "./demos/FormDemos";
+import { OverlayDemos } from "./demos/OverlayDemos";
+import { DisplayDemos } from "./demos/DisplayDemos";
 
 export const metadata: Metadata = {
   title: "Components · Social Development Centre",
 };
 
 const sections: { id: string; title: string; description: string; demo: ReactNode }[] = [
-  { id: "buttons", title: "Buttons", description: "Primary, secondary, ghost and danger actions in three sizes.", demo: <ButtonDemos /> },
-  { id: "switch", title: "Switch", description: "Binary on/off settings that apply immediately.", demo: <SwitchDemos /> },
+  { id: "buttons", title: "Buttons", description: "Primary, secondary, outline, ghost and danger actions in three sizes.", demo: <ButtonDemos /> },
+  { id: "field", title: "Field", description: "Label, hint and error wired to any control for screen readers.", demo: <FieldDemo /> },
+  { id: "input", title: "Input", description: "Single-line text entry.", demo: <InputDemo /> },
+  { id: "textarea", title: "Textarea", description: "Multi-line text entry.", demo: <TextareaDemo /> },
+  { id: "select", title: "Select", description: "Pick one option from a list.", demo: <SelectDemo /> },
+  { id: "checkbox", title: "Checkbox", description: "Independent on/off choices, including indeterminate.", demo: <CheckboxDemo /> },
+  { id: "radio", title: "Radio group", description: "One choice from a small set.", demo: <RadioGroupDemo /> },
+  { id: "switch", title: "Switch", description: "Settings that apply immediately.", demo: <SwitchDemos /> },
+  { id: "slider", title: "Slider", description: "Choose a value from a range.", demo: <SliderDemo /> },
+  { id: "toggle", title: "Toggle", description: "A single pressable on/off button.", demo: <ToggleDemo /> },
+  { id: "toggle-group", title: "Toggle group", description: "Segmented control for switching views or options.", demo: <ToggleGroupDemo /> },
+  { id: "overlays", title: "Overlays", description: "Dialog, alert dialog, popover, tooltip, dropdown menu, hover card and toast.", demo: <OverlayDemos /> },
+  { id: "display", title: "Display & navigation", description: "Card, badge, avatar, progress, tabs, accordion, scroll area and collapsible.", demo: <DisplayDemos /> },
 ];
 
 const Shell = styled.div`
@@ -70,7 +94,7 @@ const Title = styled.h1`
   margin: 0;
   font-family: var(--font-display);
   font-size: var(--text-display);
-  font-weight: 600;
+  font-weight: 400;
   letter-spacing: var(--tracking-tight);
   line-height: 1;
 `;
@@ -99,7 +123,7 @@ const SectionTitle = styled.h2`
   margin: 0;
   font-family: var(--font-display);
   font-size: var(--text-xl);
-  font-weight: 600;
+  font-weight: 400;
   letter-spacing: var(--tracking-tight);
   line-height: 1.1;
 `;

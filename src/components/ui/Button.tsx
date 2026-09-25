@@ -1,40 +1,42 @@
 import { css, styled } from "next-yak";
 
-type Variant = "primary" | "secondary" | "ghost" | "danger";
+type Variant = "primary" | "secondary" | "outline" | "ghost" | "danger";
 type Size = "sm" | "md" | "lg";
 
 export const Button = styled.button<{ $variant?: Variant; $size?: Size }>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
+  gap: 6px;
   border: 1px solid transparent;
   border-radius: var(--radius-full);
   font-family: inherit;
   font-weight: 500;
   line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
   transition:
     background-color var(--duration) var(--ease),
     border-color var(--duration) var(--ease),
-    color var(--duration) var(--ease);
+    color var(--duration) var(--ease),
+    transform var(--duration) var(--ease);
 
-  height: 40px;
-  padding: 0 var(--space-5);
+  height: 36px;
+  padding: 0 var(--space-4);
   font-size: var(--text-sm);
 
   ${({ $size }) =>
     $size === "sm" &&
     css`
       height: 32px;
-      padding: 0 var(--space-4);
+      padding: 0 var(--space-3);
       font-size: var(--text-xs);
     `}
   ${({ $size }) =>
     $size === "lg" &&
     css`
-      height: 48px;
-      padding: 0 var(--space-6);
+      height: 44px;
+      padding: 0 var(--space-5);
       font-size: var(--text-md);
     `}
 
@@ -46,6 +48,15 @@ export const Button = styled.button<{ $variant?: Variant; $size?: Size }>`
 
   ${({ $variant }) =>
     $variant === "secondary" &&
+    css`
+      background: var(--color-secondary);
+      color: var(--color-text);
+      &:hover:not(:disabled) {
+        background: var(--color-secondary-hover);
+      }
+    `}
+  ${({ $variant }) =>
+    $variant === "outline" &&
     css`
       background: var(--color-bg);
       color: var(--color-text);
@@ -60,7 +71,7 @@ export const Button = styled.button<{ $variant?: Variant; $size?: Size }>`
       background: transparent;
       color: var(--color-text);
       &:hover:not(:disabled) {
-        background: var(--color-surface);
+        background: var(--color-secondary);
       }
     `}
   ${({ $variant }) =>
@@ -73,6 +84,10 @@ export const Button = styled.button<{ $variant?: Variant; $size?: Size }>`
         filter: brightness(0.92);
       }
     `}
+
+  &:active:not(:disabled) {
+    transform: scale(0.96);
+  }
 
   &:focus-visible {
     outline: none;

@@ -1,31 +1,36 @@
 import { globalStyle } from "next-yak";
 
-// Provisional values until the Jack & Jill reference can be pulled; swap here only.
+// Modelled on jackandjill.ai. Their fonts (ABC Diatype, ABC Marist) are commercial;
+// Geist and Instrument Serif stand in until licensed. Only #f9f9f6 is their exact value.
 globalStyle`
   :root {
-    --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    --font-display: var(--font-sans);
+    --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-display: "Instrument Serif", ui-serif, Georgia, serif;
+    --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
     --color-bg: #ffffff;
-    --color-surface: #f6f6f4;
+    --color-surface: #f9f9f6;
     --color-surface-raised: #ffffff;
-    --color-text: #111111;
-    --color-text-muted: #6b6b6b;
-    --color-border: #e4e4e0;
-    --color-border-strong: #c9c9c4;
-    --color-primary: #111111;
-    --color-primary-hover: #333333;
-    --color-on-primary: #ffffff;
-    --color-accent: #3d5afe;
-    --color-danger: #d92d20;
+    --color-text: #1a1a18;
+    --color-text-muted: rgb(26 26 24 / 0.62);
+    --color-border: #e8e7e1;
+    /* Darker than the reference's 12% borders so inputs meet WCAG 1.4.11 (3:1). */
+    --color-border-strong: rgb(26 26 24 / 0.5);
+    --color-primary: #262624;
+    --color-primary-hover: rgb(38 38 36 / 0.9);
+    --color-on-primary: #f9f9f6;
+    --color-secondary: #efeee9;
+    --color-secondary-hover: #e6e5df;
+    --color-accent: #3b6fe0;
+    --color-danger: #c8321f;
     --color-on-danger: #ffffff;
-    --color-success: #12805c;
-    --color-focus: #3d5afe;
-    --color-overlay: rgb(17 17 17 / 0.45);
+    --color-success: #1f7a4d;
+    --color-focus: #262624;
+    --color-overlay: rgb(26 26 24 / 0.4);
 
-    --radius-sm: 6px;
-    --radius-md: 10px;
-    --radius-lg: 16px;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 20px;
     --radius-full: 999px;
 
     --space-1: 4px;
@@ -37,21 +42,21 @@ globalStyle`
     --space-7: 48px;
     --space-8: 64px;
 
-    --text-xs: 0.75rem;
+    --text-xs: 0.8125rem;
     --text-sm: 0.875rem;
     --text-md: 1rem;
-    --text-lg: 1.25rem;
-    --text-xl: 2rem;
-    --text-display: clamp(2.5rem, 6vw, 4.5rem);
-    --tracking-tight: -0.03em;
+    --text-lg: 1.1875rem;
+    --text-xl: clamp(1.75rem, 3vw, 2.5rem);
+    --text-display: clamp(3rem, 8vw, 6rem);
+    --tracking-tight: -0.02em;
 
-    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.06);
-    --shadow-md: 0 8px 24px rgb(0 0 0 / 0.08), 0 1px 3px rgb(0 0 0 / 0.06);
-    --shadow-lg: 0 24px 48px rgb(0 0 0 / 0.14);
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.05);
+    --shadow-md: 0 8px 24px rgb(26 26 24 / 0.08), 0 1px 2px rgb(0 0 0 / 0.05);
+    --shadow-lg: 0 24px 56px rgb(26 26 24 / 0.16);
 
     --focus-ring: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-focus);
-    --duration: 150ms;
-    --ease: cubic-bezier(0.2, 0, 0, 1);
+    --duration: 160ms;
+    --ease: cubic-bezier(0.215, 0.61, 0.355, 1);
   }
 
   *, *::before, *::after { box-sizing: border-box; }
