@@ -2,7 +2,9 @@
 
 import { keyframes, styled } from "next-yak";
 import { Popover as PopoverPrimitive } from "radix-ui";
+import { X } from "lucide-react";
 import type { ReactNode } from "react";
+import { Icon } from "./Icon";
 
 const contentShow = keyframes`
   from { opacity: 0; transform: translateY(4px) scale(0.98); }
@@ -13,7 +15,7 @@ const Content = styled(PopoverPrimitive.Content)`
   z-index: 50;
   width: 280px;
   background: var(--color-surface-raised);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-md);
   padding: 12px;
@@ -52,6 +54,18 @@ const CloseButton = styled(PopoverPrimitive.Close)`
   }
 `;
 
+/* Optional footer for popovers that end in an action: a top divider keeps
+   it clearly separated from the body content above, matching the same rule
+   used in cards and dialogs. */
+export const PopoverActions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+`;
+
 export const Popover = PopoverPrimitive.Root;
 export const PopoverTrigger = PopoverPrimitive.Trigger;
 export const PopoverAnchor = PopoverPrimitive.Anchor;
@@ -67,7 +81,11 @@ export function PopoverContent({
     <PopoverPrimitive.Portal>
       <Content sideOffset={sideOffset} {...props}>
         {children}
-        {showClose && <CloseButton aria-label="Close">×</CloseButton>}
+        {showClose && (
+          <CloseButton aria-label="Close">
+            <Icon icon={X} size={14} />
+          </CloseButton>
+        )}
         <Arrow />
       </Content>
     </PopoverPrimitive.Portal>

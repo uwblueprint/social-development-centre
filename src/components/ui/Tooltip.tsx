@@ -17,7 +17,7 @@ const Content = styled(TooltipPrimitive.Content)`
   color: var(--color-bg);
   font-size: var(--text-xs);
   font-weight: var(--weight-regular);
-  line-height: 1.4;
+  line-height: var(--leading-ui);
   border-radius: var(--radius-sm);
   padding: 6px 10px;
   box-shadow: var(--shadow-md);

@@ -2,7 +2,9 @@
 
 import { keyframes, styled } from "next-yak";
 import { AlertDialog as AlertDialogPrimitive } from "radix-ui";
+import { X } from "lucide-react";
 import type { ReactNode } from "react";
+import { Icon } from "./Icon";
 
 const overlayShow = keyframes`
   from { opacity: 0; }
@@ -70,30 +72,29 @@ const Title = styled(AlertDialogPrimitive.Title)`
   margin: 0 0 4px;
   font-size: var(--text-lg);
   font-weight: var(--weight-medium);
+  line-height: var(--leading-heading);
   letter-spacing: var(--tracking-tight);
   color: var(--color-text);
   padding-right: var(--space-6);
 `;
 
 const Description = styled(AlertDialogPrimitive.Description)`
-  margin: 0 0 20px;
+  margin: 0 0 var(--space-4);
   font-size: var(--text-sm);
+  line-height: var(--leading-body);
   color: var(--color-text-muted);
 `;
 
+/* A top divider clearly separates action buttons from the body content
+   above, the same rule used across cards/popovers/dialogs. */
 const Actions = styled.div`
   display: flex;
   justify-content: flex-end;
   gap: var(--space-3);
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
 `;
-
-function CloseIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M3 3L13 13M13 3L3 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  );
-}
 
 export const AlertDialog = AlertDialogPrimitive.Root;
 export const AlertDialogTrigger = AlertDialogPrimitive.Trigger;
@@ -113,7 +114,7 @@ export function AlertDialogContent({
       <Content {...props}>
         {children}
         <CloseButton aria-label="Close">
-          <CloseIcon />
+          <Icon icon={X} size={16} />
         </CloseButton>
       </Content>
     </AlertDialogPrimitive.Portal>

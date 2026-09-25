@@ -2,7 +2,9 @@
 
 import { keyframes, styled } from "next-yak";
 import { Toast as ToastPrimitive } from "radix-ui";
+import { X } from "lucide-react";
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
+import { Icon } from "./Icon";
 
 const slideIn = keyframes`
   from { opacity: 0; transform: translateX(16px); }
@@ -28,9 +30,9 @@ const Viewport = styled(ToastPrimitive.Viewport)`
 const Root = styled(ToastPrimitive.Root)`
   background: var(--color-surface-raised);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
-  padding: 12px 16px;
+  padding: 14px 16px;
   display: grid;
   grid-template-columns: 1fr auto;
   align-items: start;
@@ -47,23 +49,31 @@ const Root = styled(ToastPrimitive.Root)`
 const Title = styled(ToastPrimitive.Title)`
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
+  line-height: var(--leading-ui);
   color: var(--color-text);
-  margin: 0 0 var(--space-1);
+  margin: 0;
 `;
 
 const Description = styled(ToastPrimitive.Description)`
   font-size: var(--text-xs);
+  line-height: var(--leading-ui);
   color: var(--color-text-muted);
-  margin: 0;
+  margin: var(--space-1) 0 0;
 `;
 
+/* Separated from the title/description with its own top divider and gap so
+   it never reads as part of the message body, and right-aligned like a
+   dialog/card's action row. */
 const Action = styled(ToastPrimitive.Action)`
   grid-column: 1 / -1;
-  justify-self: start;
-  margin-top: var(--space-2);
-  background: none;
+  justify-self: end;
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
+  width: 100%;
   border: none;
-  padding: 0;
+  border-top: 1px solid var(--color-border);
+  background: none;
+  text-align: right;
   font-size: var(--text-xs);
   font-weight: var(--weight-medium);
   color: var(--color-accent);
@@ -111,7 +121,9 @@ export function Toast({
   return (
     <Root {...props}>
       {children}
-      <Close aria-label="Close">×</Close>
+      <Close aria-label="Close">
+        <Icon icon={X} size={14} />
+      </Close>
     </Root>
   );
 }

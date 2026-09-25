@@ -2,7 +2,9 @@
 
 import { css, keyframes, styled } from "next-yak";
 import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui";
+import { Check } from "lucide-react";
 import type { ReactNode } from "react";
+import { Icon } from "./Icon";
 
 const contentShow = keyframes`
   from { opacity: 0; transform: translateY(-4px) scale(0.98); }
@@ -13,7 +15,7 @@ const Content = styled(DropdownMenuPrimitive.Content)`
   z-index: 50;
   min-width: 220px;
   background: var(--color-surface-raised);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-md);
   padding: 4px;
@@ -25,12 +27,19 @@ const Content = styled(DropdownMenuPrimitive.Content)`
   }
 `;
 
+/*
+ * Every row reserves the same leading column (whether or not it renders a
+ * checkbox glyph there) so item labels line up regardless of item type, and
+ * every row is a uniform 32px tall with matching line-height (modeled on
+ * Linear's menus).
+ */
 const itemStyles = css`
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  min-height: 32px;
-  padding: 0 var(--space-2);
+  height: 32px;
+  line-height: var(--leading-ui);
+  padding: 0 var(--space-3) 0 var(--space-7);
   border-radius: var(--radius-sm);
   font-size: var(--text-sm);
   color: var(--color-text);
@@ -38,34 +47,29 @@ const itemStyles = css`
   outline: none;
   user-select: none;
   position: relative;
+
+  &[data-highlighted] {
+    background: var(--stone-100);
+  }
+  &[data-disabled] {
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+  }
 `;
 
 const Item = styled(DropdownMenuPrimitive.Item)`
   ${itemStyles}
-
-  &[data-highlighted] {
-    background: var(--color-surface);
-  }
-  &[data-disabled] {
-    color: var(--color-text-muted);
-    cursor: not-allowed;
-  }
 `;
 
 const CheckboxItem = styled(DropdownMenuPrimitive.CheckboxItem)`
   ${itemStyles}
-  padding-left: var(--space-7);
-
-  &[data-highlighted] {
-    background: var(--color-surface);
-  }
-  &[data-disabled] {
-    color: var(--color-text-muted);
-    cursor: not-allowed;
-  }
 `;
 
-const ItemIndicator = styled(DropdownMenuPrimitive.ItemIndicator)`
+/*
+ * Always rendered (forceMount), even when unchecked, so unchecked items show
+ * an empty box and read as checkable at a glance.
+ */
+const IndicatorBox = styled(DropdownMenuPrimitive.ItemIndicator)`
   position: absolute;
   left: var(--space-2);
   display: inline-flex;
@@ -73,11 +77,26 @@ const ItemIndicator = styled(DropdownMenuPrimitive.ItemIndicator)`
   justify-content: center;
   width: 16px;
   height: 16px;
-  color: var(--color-text);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-bg);
+  color: var(--color-on-primary);
+
+  svg {
+    opacity: 0;
+  }
+
+  &[data-state="checked"] {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+  }
+  &[data-state="checked"] svg {
+    opacity: 1;
+  }
 `;
 
 const Label = styled(DropdownMenuPrimitive.Label)`
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--space-3) var(--space-2) var(--space-7);
   font-size: var(--text-xs);
   font-weight: var(--weight-medium);
   color: var(--color-text-muted);
@@ -91,19 +110,17 @@ const Separator = styled(DropdownMenuPrimitive.Separator)`
   background: var(--color-border);
 `;
 
-const Shortcut = styled.span`
+const Shortcut = styled.kbd`
   margin-left: auto;
+  padding: 2px 6px;
+  font-family: var(--font-mono);
   font-size: var(--text-xs);
-  color: var(--color-text-muted);
+  line-height: var(--leading-none);
+  color: var(--color-text-subtle);
+  background: var(--stone-100);
+  border: 1px solid var(--stone-200);
+  border-radius: var(--radius-sm);
 `;
-
-function CheckIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M3 8.5L6.5 12L13 4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
 
 export const DropdownMenu = DropdownMenuPrimitive.Root;
 export const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
@@ -134,9 +151,9 @@ export function DropdownMenuCheckboxItem({
 }: DropdownMenuPrimitive.DropdownMenuCheckboxItemProps & { children: ReactNode }) {
   return (
     <CheckboxItem {...props}>
-      <ItemIndicator>
-        <CheckIcon />
-      </ItemIndicator>
+      <IndicatorBox forceMount>
+        <Icon icon={Check} size={12} />
+      </IndicatorBox>
       {children}
     </CheckboxItem>
   );

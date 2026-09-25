@@ -1,14 +1,16 @@
 "use client";
 
 import { css, styled } from "next-yak";
+import { Check, Plus } from "lucide-react";
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from "react";
+import { Icon } from "./Icon";
 
 const tagBase = css`
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-sm);
   border: 1px solid var(--color-border);
   background: var(--color-bg);
   font-size: var(--text-sm);
@@ -57,6 +59,17 @@ const RemovableTagRoot = styled.span`
   padding-right: 6px;
 `;
 
+/* Fixed size regardless of selected state, so toggling never changes the
+   tag's width or reflows a line of tags. */
+const IconSlot = styled.span`
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+`;
+
 const RemoveButton = styled.button`
   all: unset;
   display: inline-flex;
@@ -78,20 +91,6 @@ const RemoveButton = styled.button`
     box-shadow: var(--focus-ring);
   }
 `;
-
-function CheckIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path
-        d="M3 8.5L6.5 12L13 4.5"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
 
 function XIcon() {
   return (
@@ -124,7 +123,9 @@ export function SelectableTag({
 }) {
   return (
     <SelectableTagRoot type="button" $selected={selected} aria-pressed={selected} {...props}>
-      {selected && <CheckIcon />}
+      <IconSlot aria-hidden="true">
+        <Icon icon={selected ? Check : Plus} size={14} />
+      </IconSlot>
       {children}
     </SelectableTagRoot>
   );

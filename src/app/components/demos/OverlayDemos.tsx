@@ -2,6 +2,8 @@
 
 import { styled } from "next-yak";
 import { useState } from "react";
+import { Info } from "lucide-react";
+import { Icon } from "@/components/ui/Icon";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -12,6 +14,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogClose,
+  DialogActions,
 } from "@/components/ui/Dialog";
 import {
   AlertDialog,
@@ -23,7 +26,7 @@ import {
   AlertDialogAction,
   AlertDialogActions,
 } from "@/components/ui/AlertDialog";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/Popover";
+import { Popover, PopoverTrigger, PopoverContent, PopoverActions } from "@/components/ui/Popover";
 import { Tooltip, TooltipProvider } from "@/components/ui/Tooltip";
 import {
   DropdownMenu,
@@ -35,7 +38,7 @@ import {
   DropdownMenuShortcut,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/DropdownMenu";
-import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/HoverCard";
+import { HoverCard, HoverCardTrigger, HoverCardContent, HoverCardTriggerLink } from "@/components/ui/HoverCard";
 import { AppToastProvider, useToast } from "@/components/ui/Toast";
 
 const Row = styled.div`
@@ -59,24 +62,16 @@ const HoverCardName = styled.p`
   margin: 0;
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
+  line-height: var(--leading-ui);
   color: var(--color-text);
 `;
 
 const HoverCardMeta = styled.p`
   margin: 0;
   font-size: var(--text-xs);
+  line-height: var(--leading-ui);
   color: var(--color-text-muted);
 `;
-
-function InfoIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.3" />
-      <path d="M8 7.2V11.4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-      <circle cx="8" cy="5" r="0.8" fill="currentColor" />
-    </svg>
-  );
-}
 
 function DialogDemo() {
   const [open, setOpen] = useState(false);
@@ -102,14 +97,14 @@ function DialogDemo() {
             <Label htmlFor="demo-bio">Bio</Label>
             <Input id="demo-bio" name="bio" placeholder="Tell us about yourself" />
           </Field>
-          <Row style={{ justifyContent: "flex-end" }}>
+          <DialogActions>
             <DialogClose asChild>
               <Button type="button" $variant="secondary">
                 Cancel
               </Button>
             </DialogClose>
             <Button type="submit">Save changes</Button>
-          </Row>
+          </DialogActions>
         </form>
       </DialogContent>
     </Dialog>
@@ -147,13 +142,15 @@ function PopoverDemo() {
         <Button $variant="secondary">Share</Button>
       </PopoverTrigger>
       <PopoverContent>
-        <Field style={{ marginBottom: "var(--space-2)" }}>
+        <Field style={{ marginBottom: 0 }}>
           <Label htmlFor="demo-link">Link</Label>
           <Input id="demo-link" readOnly defaultValue="https://example.com/s/abc123" />
         </Field>
-        <Button $size="sm" style={{ width: "100%" }}>
-          Copy link
-        </Button>
+        <PopoverActions>
+          <Button $size="sm" style={{ width: "100%" }}>
+            Copy link
+          </Button>
+        </PopoverActions>
       </PopoverContent>
     </Popover>
   );
@@ -163,7 +160,7 @@ function TooltipDemo() {
   return (
     <Tooltip content="Cohorts run every quarter and are free to join.">
       <Button $variant="ghost" $size="sm" aria-label="More info">
-        <InfoIcon />
+        <Icon icon={Info} size={16} />
       </Button>
     </Tooltip>
   );
@@ -209,7 +206,7 @@ function HoverCardDemo() {
   return (
     <HoverCard>
       <HoverCardTrigger asChild>
-        <Button $variant="ghost">@janedoe</Button>
+        <HoverCardTriggerLink type="button">@janedoe</HoverCardTriggerLink>
       </HoverCardTrigger>
       <HoverCardContent>
         <HoverCardBody>

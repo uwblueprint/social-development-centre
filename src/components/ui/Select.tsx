@@ -4,7 +4,9 @@ import * as React from "react";
 import { css, styled } from "next-yak";
 import { Popover as PopoverPrimitive, Select as SelectPrimitive } from "radix-ui";
 import { Command } from "cmdk";
+import { Check, ChevronDown, Search } from "lucide-react";
 import { ErrorIcon } from "./Field";
+import { Icon } from "./Icon";
 
 export interface SelectOption {
   value: string;
@@ -138,40 +140,15 @@ const UnavailableBadge = styled.span`
 `;
 
 function ChevronIcon() {
-  return (
-    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
-      <path
-        d="M2 3.5L5 6.5L8 3.5"
-        stroke="currentColor"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
+  return <Icon icon={ChevronDown} size={14} />;
 }
 
 function CheckIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-      <path
-        d="M2 6.2L4.6 8.8L10 3"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
+  return <Icon icon={Check} size={14} />;
 }
 
 function SearchIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M11 11L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  );
+  return <Icon icon={Search} size={14} />;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -182,7 +159,7 @@ const Content = styled(SelectPrimitive.Content)`
   overflow: hidden;
   min-width: var(--radix-select-trigger-width);
   background: var(--color-surface-raised);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
   border: 1px solid var(--color-border);
   z-index: 50;
@@ -315,7 +292,7 @@ const ComboContent = styled(PopoverPrimitive.Content)`
   display: flex;
   flex-direction: column;
   background: var(--color-surface-raised);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-md);
   padding: var(--space-1);
