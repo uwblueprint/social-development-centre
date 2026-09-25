@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "eslint --cache --cache-location node_modules/.cache/eslint/",
     "typecheck": "tsc --noEmit",
     "test:a11y": "playwright test",
     "check": "pnpm typecheck && pnpm lint && pnpm test:a11y"
