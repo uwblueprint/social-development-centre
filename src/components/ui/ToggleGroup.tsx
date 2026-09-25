@@ -122,28 +122,48 @@ function useActiveItemRect(containerRef: React.RefObject<HTMLElement | null>) {
   return rect;
 }
 
-type ToggleGroupProps =
+type ToggleGroupProps = (
   | ToggleGroupPrimitive.ToggleGroupSingleProps
-  | ToggleGroupPrimitive.ToggleGroupMultipleProps;
+  | ToggleGroupPrimitive.ToggleGroupMultipleProps
+) & {
+  /** Submits the selected value(s) with the surrounding form (one field per value). */
+  name?: string;
+};
 
 /**
  * Segmented control. `type="single"` shows one sliding pill that animates to
  * the active item; `type="multiple"` (more than one item can be pressed)
  * falls back to a static background per pressed item.
  */
-export function ToggleGroup({ children, ...props }: ToggleGroupProps) {
+export function ToggleGroup({ children, name, ...props }: ToggleGroupProps) {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const isSingle = props.type === "single";
   const { x, width, ready } = useActiveItemRect(containerRef);
+  const [inner, setInner] = React.useState<string | string[]>(
+    props.defaultValue ?? (isSingle ? "" : []),
+  );
+  const current = props.value ?? inner;
+  const submitted = (Array.isArray(current) ? current : [current]).filter(Boolean);
+
+  const handleChange = (next: string & string[]) => {
+    setInner(next);
+    (props.onValueChange as ((v: string | string[]) => void) | undefined)?.(next);
+  };
 
   return (
-    <Root ref={containerRef} data-multi={isSingle ? undefined : ""} {...props}>
+    <Root
+      ref={containerRef}
+      data-multi={isSingle ? undefined : ""}
+      {...props}
+      onValueChange={handleChange}
+    >
       {isSingle && (
         <Indicator
           aria-hidden="true"
           style={{ transform: `translateX(${x}px)`, width: `${width}px`, opacity: ready ? 1 : 0 }}
         />
       )}
+      {name && submitted.map((v) => <input key={v} type="hidden" name={name} value={v} />)}
       {children}
     </Root>
   );

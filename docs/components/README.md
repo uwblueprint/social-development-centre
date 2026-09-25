@@ -44,5 +44,8 @@ Each doc covers when to use it, its API, a working example, content rules, and a
 - [Field](./Field.md) — labels a form control with hint, error, and required state.
 - [Icon](./Icon.md) — a consistent wrapper around `lucide-react` glyphs.
 
+## Forms and the backend
+- [SubmitButton](./SubmitButton.md): pending-aware submit for server-action forms. See also [docs/backend](../backend/README.md).
+
 ## Patterns
 - [SidebarLayout](../patterns/SidebarLayout.md): app shell with left navigation (admin portal, partner portal).

@@ -10,6 +10,7 @@ This file is for AI coding agents and humans alike. Read it before writing any U
 - `src/components/ui/tokens.ts`: every color, space, radius, type size, line height, shadow and duration.
 - `docs/components/<Component>.md`: when to use each component, when not to, content rules and accessibility notes. Read the doc before using a component for the first time.
 - `docs/design/principles.md`: the design rules behind the kit. `docs/design/research.md`: the evidence (Linear, Ramp, NN/g).
+- `docs/backend/`: how the backend connects (data seams, server actions returning `ActionState`, `SubmitButton`) and per-feature backend requirements. `/components/form-contract` shows exactly what a form submits.
 - `/components`: live showcase of every component in every state. Run `pnpm dev` and open http://localhost:3000/components.
 
 ## Hard rules (lint, types or CI enforce these)

@@ -254,6 +254,8 @@ interface SliderFieldBaseProps {
   /** Appended to every formatted value, e.g. "%" or " hrs". */
   suffix?: string;
   id?: string;
+  /** Submits the value with the surrounding form; ranges submit two values under this name. */
+  name?: string;
 }
 
 type SliderFieldDisabledProps =
@@ -282,6 +284,7 @@ export function SliderField({
   disabled,
   disabledReason,
   id,
+  name,
 }: SliderFieldProps) {
   const reactId = React.useId();
   const baseId = id ?? reactId;
@@ -347,6 +350,7 @@ export function SliderField({
         <>
           <TrackArea>
             <Root
+              name={name}
               aria-labelledby={groupLabelId}
               value={current}
               min={min}
@@ -408,6 +412,7 @@ export function SliderField({
         <TrackRow>
           <TrackArea>
             <Root
+              name={name}
               aria-labelledby={groupLabelId}
               value={current}
               min={min}
