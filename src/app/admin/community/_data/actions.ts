@@ -67,17 +67,16 @@ export async function previewImport(tier: MemberTier, _prev: ActionState<ImportP
 }
 
 /**
- * Fields: emails (same text as the preview), skipEmails ("yes" only for the one-time backfill of SDC's
- * existing list). Re-checks on the server; never resubscribes unsubscribed addresses or downgrades paying members.
+ * Field: emails (same text as the preview). Re-checks on the server; never resubscribes unsubscribed
+ * addresses or downgrades paying members. The initial backfill of SDC's list is a code-side migration, not this action.
  */
 export async function confirmImport(tier: MemberTier, _prev: ActionState, fd: FormData): Promise<ActionState> {
   const preview = analyse(tier, text(fd, "emails"));
-  const sendEmails = fd.get("skipEmails") !== "yes";
   const now = new Date().toISOString();
   for (const email of preview.toCreate) members().push({ id: nextMemberId(), email, tier, subscribed: true, addedAt: now });
   for (const email of preview.toUpgrade) findByEmail(email)!.tier = "paying";
   const added = preview.toCreate.length + preview.toUpgrade.length;
-  const sent = sendEmails ? preview.emailsToSend : 0;
+  const sent = preview.emailsToSend;
   return done(`${added} ${added === 1 ? "member" : "members"} added. ${sent} ${sent === 1 ? "email" : "emails"} sent.`);
 }
 

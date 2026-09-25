@@ -30,7 +30,7 @@ export interface CommunityCounts {
 /** Result of checking pasted addresses before anything is saved or sent. */
 export interface ImportPreview {
   tier: MemberTier;
-  /** New people who will be created (and emailed unless the backfill option is on). */
+  /** New people who will be created and welcomed. */
   toCreate: string[];
   /** Existing subscribed general members who will be upgraded (paying tab only). */
   toUpgrade: string[];

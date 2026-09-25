@@ -15,7 +15,7 @@ UI contract: `src/app/admin/community/_data/{types,queries,actions}.ts`. `store.
 | Action | Rules | Email |
 |---|---|---|
 | `previewImport(tier, emails)` | Parse commas, semicolons, spaces, new lines; lowercase; dedupe; classify: new, upgrade (paying tab, existing subscribed general), skip (already in tier; paying never downgraded), unsubscribed (never imported), invalid. Saves nothing. | none |
-| `confirmImport(tier, emails, skipEmails?)` | Re-run the classification server-side, then create/upgrade. `skipEmails=yes` only for the one-time backfill. | General welcome / New paying welcome / Upgrade (unless skipped) |
+| `confirmImport(tier, emails)` | Re-run the classification server-side, then create/upgrade. | General welcome / New paying welcome / Upgrade |
 | `updateMember(id, name, email)` | Email unique across current **and** unsubscribed records. | none |
 | `grantPaidAccess(id)` | Subscribed general only → paying; entitlement active immediately. | Upgrade |
 | `revokePaidAccess(id)` | Paying → general; entitlement removed immediately. | Revoked |
@@ -27,6 +27,6 @@ UI contract: `src/app/admin/community/_data/{types,queries,actions}.ts`. `store.
 - **Signup sync:** new signups from SDC's current collection tool flow in automatically as general members (provider and mechanism TBC). Imports are the fallback.
 - **Unsubscribes flow both ways:** an unsubscribe in the email provider must mark the record unsubscribed here, and vice versa, so nobody unsubscribed is emailed by the integrated system.
 - **Sending ownership:** decide whether our system or the existing provider sends welcomes, so nobody gets two.
-- **Initial backfill:** SDC's existing list must be imported with emails skipped (or via a migration script), never through the normal welcome path.
+- **Initial backfill:** SDC's existing list is loaded by a one-time migration script that sends no emails. It never goes through Add members.
 - **Access enforcement:** protected member pages and automated sends read the current `tier`/`subscribed` state; paid access delivery (sign-in) follows the Authentication PRD.
 - Confirm the paid benefit and access link before finalizing the paying-member emails ([drafts](../emails/community.md)).

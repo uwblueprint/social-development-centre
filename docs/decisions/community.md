@@ -26,11 +26,11 @@ Assumptions made while building the UI from the Community PRD. Each can be revis
 - **Affects:** Consent; the integrated sender.
 - **When encountered:** Importing a list that contains people who unsubscribed earlier.
 
-## 5. Backfill without welcome emails
-- **Decision:** The review step has "Don't send welcome emails (only for importing SDC's existing list)". Off by default; when on, the email count reads 0.
-- **Page:** Admin → Community → Add members (review step).
-- **Affects:** The one-time migration of SDC's existing list.
-- **When encountered:** Once, during launch. A migration script may replace this.
+## 5. The initial backfill is a code-side migration
+- **Decision:** SDC's existing list is loaded once by a migration script that sends no emails. The admin UI has no "skip welcome emails" option; Add members always sends the matching email.
+- **Page:** None in the admin UI (engineering task at launch).
+- **Affects:** Launch migration; prevents accidental mass welcomes.
+- **When encountered:** Once, before launch.
 
 ## 6. Restoring email eligibility is built but switched off
 - **Decision:** Unsubscribed records show **Restore email eligibility**, disabled with the reason "Turned off until SDC confirms its consent rules for resubscribing people." Restoring would make them a general member only.

@@ -17,8 +17,6 @@ People who unsubscribed appear at the end of **General members** with an **Unsub
 
 New general members get the general welcome email. New paying members get the paying-member welcome; existing general members moved to paying get the upgrade email. Paying members are never moved down to general by an import, and unsubscribed people are never re-added.
 
-**Importing SDC's existing list for the first time:** in the review step, check **Don't send welcome emails** so hundreds of welcomes aren't sent by accident.
-
 ## Edit someone's name or email
 1. Click the person's row.
 2. Change **Name** or **Email** and click **Save**.
