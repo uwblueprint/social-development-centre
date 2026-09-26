@@ -1,12 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { styled } from "next-yak";
-import { Archive, Building2, Search as SearchIcon, UserRound } from "lucide-react";
+import { Archive, Building2, Search as SearchIcon, UserPlus, UserRound } from "lucide-react";
+import { ListPage, ListPageHeader, ListPageToolbar, useListParams, useListSearch } from "@/components/patterns/ListPage";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Field } from "@/components/ui/Field";
+import { Icon } from "@/components/ui/Icon";
 import { SearchField } from "@/components/ui/SearchField";
 import { Sheet, SheetContent } from "@/components/ui/Sheet";
 import { Table } from "@/components/ui/Table";
@@ -19,51 +18,7 @@ import { PartnerSheetContent } from "./PartnerSheetContent";
 
 export type PartnersTab = "organizations" | "people" | "removed";
 
-const Page = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-5);
-  max-width: 960px;
-  padding: var(--space-7) var(--space-6);
-
-  @media (max-width: 767px) {
-    padding: var(--space-5) var(--space-4);
-  }
-`;
-
-const Header = styled.div`
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-4);
-  flex-wrap: wrap;
-`;
-
-const HeaderText = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  min-width: 0;
-  max-width: 60ch;
-`;
-
-const Title = styled.h1`
-  margin: 0;
-  font-size: var(--text-xl);
-  font-weight: var(--weight-medium);
-  line-height: var(--leading-heading);
-  letter-spacing: var(--tracking-tight);
-`;
-
-const Description = styled.p`
-  margin: 0;
-  color: var(--color-text-muted);
-  line-height: var(--leading-body);
-`;
-
-const SearchWrap = styled.div`
-  max-width: 360px;
-`;
+const SEARCH_LABEL = "Search by name or email";
 
 function normalizeTab(value: string): PartnersTab {
   return value === "people" || value === "removed" ? value : "organizations";
@@ -84,11 +39,10 @@ export function PartnersView({
   people: PartnerPerson[];
   organizationOptions: OrganizationOption[];
 }) {
-  const router = useRouter();
-  const pathname = usePathname();
+  const { setParams } = useListParams();
+  const searchState = useListSearch(q);
 
   const [activeTab, setActiveTab] = React.useState<PartnersTab>(tab);
-  const [searchValue, setSearchValue] = React.useState(q);
 
   // Keeps local UI state in step with the URL (e.g. browser back/forward)
   // without an effect: derived at render time from the server-provided props.
@@ -97,41 +51,16 @@ export function PartnersView({
     setPrevTab(tab);
     setActiveTab(tab);
   }
-  const [prevQ, setPrevQ] = React.useState(q);
-  if (q !== prevQ) {
-    setPrevQ(q);
-    setSearchValue(q);
-  }
 
   const [panel, setPanel] = React.useState<{ orgId: string; highlightContactId?: string } | null>(null);
   const [inviteOpen, setInviteOpen] = React.useState(false);
   const [invitePreset, setInvitePreset] = React.useState<{ id: string; name: string } | undefined>(undefined);
   const [inviteKey, setInviteKey] = React.useState(0);
 
-  function syncUrl(next: { tab?: PartnersTab; q?: string }) {
-    const nextTab = next.tab ?? activeTab;
-    const nextQ = next.q ?? searchValue;
-    const params = new URLSearchParams();
-    if (nextTab !== "organizations") params.set("tab", nextTab);
-    if (nextQ) params.set("q", nextQ);
-    const qs = params.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-  }
-
   function handleTabChange(value: string) {
     const next = normalizeTab(value);
     setActiveTab(next);
-    syncUrl({ tab: next });
-  }
-
-  function handleSearchSubmit(value: string) {
-    setSearchValue(value);
-    syncUrl({ q: value });
-  }
-
-  function handleSearchClear() {
-    setSearchValue("");
-    syncUrl({ q: "" });
+    setParams({ tab: next === "organizations" ? undefined : next });
   }
 
   function openInvite(preset?: { id: string; name: string }) {
@@ -146,48 +75,47 @@ export function PartnersView({
 
   return (
     <AppToastProvider>
-      <Page>
-        <Header>
-          <HeaderText>
-            <Title>Partners</Title>
-            <Description>
-              Invite organizations, manage their contacts, and control their access to opportunities.
-            </Description>
-          </HeaderText>
-          <Button onClick={() => openInvite()}>Invite partner</Button>
-        </Header>
-
-        <SearchWrap>
-          <Field label="Search partners" hint="Matches organization name, contact name or email">
-            {(p) => (
-              <SearchField
-                {...p}
-                name="q"
-                placeholder="Search partners"
-                value={searchValue}
-                onChange={(event) => setSearchValue(event.target.value)}
-                onSubmit={handleSearchSubmit}
-                onClear={handleSearchClear}
-              />
-            )}
-          </Field>
-        </SearchWrap>
+      <ListPage>
+        <ListPageHeader
+          title="Partners"
+          actions={
+            <Button type="button" onClick={() => openInvite()}>
+              <Icon icon={UserPlus} size={16} />
+              Invite partner
+            </Button>
+          }
+        />
 
         <Tabs value={activeTab} onValueChange={handleTabChange}>
-          <TabsList aria-label="Partner views">
-            <TabsTrigger value="organizations">
-              Organizations
-              <TabsCount>({organizations.length})</TabsCount>
-            </TabsTrigger>
-            <TabsTrigger value="people">
-              People
-              <TabsCount>({people.length})</TabsCount>
-            </TabsTrigger>
-            <TabsTrigger value="removed">
-              Removed
-              <TabsCount>({removedOrganizations.length})</TabsCount>
-            </TabsTrigger>
-          </TabsList>
+          <ListPageToolbar
+            tabs={
+              <TabsList aria-label="Partner views">
+                <TabsTrigger value="organizations">
+                  Organizations
+                  <TabsCount>({organizations.length})</TabsCount>
+                </TabsTrigger>
+                <TabsTrigger value="people">
+                  People
+                  <TabsCount>({people.length})</TabsCount>
+                </TabsTrigger>
+                <TabsTrigger value="removed">
+                  Removed
+                  <TabsCount>({removedOrganizations.length})</TabsCount>
+                </TabsTrigger>
+              </TabsList>
+            }
+            search={
+              <SearchField
+                name="q"
+                aria-label={SEARCH_LABEL}
+                placeholder={SEARCH_LABEL}
+                value={searchState.value}
+                onChange={(event) => searchState.setValue(event.target.value)}
+                onSearch={searchState.search}
+                pending={searchState.pending}
+              />
+            }
+          />
 
           <TabsContent value="organizations">
             <Table
@@ -208,7 +136,12 @@ export function PartnersView({
                     icon={Building2}
                     title="No partners yet"
                     description="Invite an organization to give them access to their opportunities."
-                    action={<Button onClick={() => openInvite()}>Invite partner</Button>}
+                    action={
+                      <Button type="button" onClick={() => openInvite()}>
+                        <Icon icon={UserPlus} size={16} />
+                        Invite partner
+                      </Button>
+                    }
                   />
                 )
               }
@@ -234,7 +167,12 @@ export function PartnersView({
                     icon={UserRound}
                     title="No people yet"
                     description="Invite a partner to add their first contact."
-                    action={<Button onClick={() => openInvite()}>Invite partner</Button>}
+                    action={
+                      <Button type="button" onClick={() => openInvite()}>
+                        <Icon icon={UserPlus} size={16} />
+                        Invite partner
+                      </Button>
+                    }
                   />
                 )
               }
@@ -283,7 +221,7 @@ export function PartnersView({
           organizationOptions={organizationOptions}
           presetOrganization={invitePreset}
         />
-      </Page>
+      </ListPage>
     </AppToastProvider>
   );
 }

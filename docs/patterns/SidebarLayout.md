@@ -13,7 +13,7 @@ import { SidebarLayout, type SidebarConfig } from "@/components/patterns/Sidebar
 ```
 - `config.product`: `{ name, initials }` shown top-left.
 - `config.navLabel`: accessible name of the nav landmark ("Admin").
-- `config.items`: `{ href, label, icon, count? }[]`. Active state comes from the URL (`aria-current="page"`). `count` shows an accent badge beside the label; use it only for things that need attention. The badge is just a number, so the section's page must say what it counts (e.g. "3 partners awaiting review").
+- `config.items`: `{ href, label, icon, count?, description? }[]`. `description` is one sentence on what the section is for (it replaces the page description). It shows as a `Tooltip` to the right after ~600ms of hover or keyboard focus, and is never pinned by a click. Active state comes from the URL (`aria-current="page"`). `count` shows an accent badge beside the label; use it only for things that need attention. The badge is just a number, so the section's page must say what it counts (e.g. "3 partners awaiting review").
 - `config.recent?`: `{ label, items: { href, icon, title, context? }[] }`.
 - `config.user`, `config.accountHref`, `config.onSignOut`: the profile menu holds only "My account" and "Sign out".
 

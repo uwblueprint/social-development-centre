@@ -4,6 +4,7 @@ import * as React from "react";
 import { useActionState } from "react";
 import { styled } from "next-yak";
 import { UserPlus } from "lucide-react";
+import { ListPageHeader } from "@/components/patterns/ListPage";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
@@ -24,35 +25,14 @@ const copy = partnerCopy.organization;
 const Page = styled.div`
   display: flex;
   flex-direction: column;
-  gap: var(--space-7);
+  gap: var(--space-6);
   max-width: 640px;
-  padding: var(--space-7) var(--space-6);
+  padding: var(--space-5) var(--space-6);
 
   @media (max-width: 767px) {
-    gap: var(--space-6);
-    padding: var(--space-5) var(--space-4);
+    gap: var(--space-5);
+    padding: var(--space-4);
   }
-`;
-
-const Header = styled.header`
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-`;
-
-const Title = styled.h1`
-  margin: 0;
-  font-size: var(--text-xl);
-  font-weight: var(--weight-medium);
-  line-height: var(--leading-heading);
-  letter-spacing: var(--tracking-tight);
-`;
-
-const Muted = styled.p`
-  margin: 0;
-  font-size: var(--text-sm);
-  line-height: var(--leading-body);
-  color: var(--color-text-muted);
 `;
 
 const Section = styled.section`
@@ -102,10 +82,7 @@ export function OrganizationView({ org, currentContactId }: { org: PartnerOrgani
 
   return (
     <Page>
-      <Header>
-        <Title>{copy.title}</Title>
-        <Muted>{copy.description}</Muted>
-      </Header>
+      <ListPageHeader title={copy.title} />
 
       <Section aria-labelledby="profile-heading">
         <SectionTitle id="profile-heading">{copy.profileHeading}</SectionTitle>

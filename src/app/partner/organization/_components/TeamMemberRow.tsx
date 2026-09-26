@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { CircleAlert, MoreVertical } from "lucide-react";
+import { CircleAlert, MailX, MoreVertical, Send, UserMinus } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -69,7 +69,7 @@ export function TeamMemberRow({ contact, isSelf }: { contact: PartnerContact; is
             {contact.name}
             {isSelf && ` ${copy.you}`}
           </span>
-          {pending && <Badge $variant="neutral">{copy.pending}</Badge>}
+          {pending && <Badge $variant="warning">{copy.pending}</Badge>}
         </ContactName>
         <ContactEmail>{contact.email}</ContactEmail>
         {pending &&
@@ -97,13 +97,17 @@ export function TeamMemberRow({ contact, isSelf }: { contact: PartnerContact; is
           <DropdownMenuContent align="end">
             {pending ? (
               <>
-                <DropdownMenuItem onSelect={handleResend}>{copy.resendInvitation}</DropdownMenuItem>
+                <DropdownMenuItem onSelect={handleResend}>
+                  <Icon icon={Send} size={16} />
+                  {copy.resendInvitation}
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   onSelect={(event) => {
                     event.preventDefault();
                     setConfirm("cancel");
                   }}
                 >
+                  <Icon icon={MailX} size={16} />
                   {copy.cancelInvitation}
                 </DropdownMenuItem>
               </>
@@ -114,6 +118,7 @@ export function TeamMemberRow({ contact, isSelf }: { contact: PartnerContact; is
                   setConfirm("remove");
                 }}
               >
+                <Icon icon={UserMinus} size={16} />
                 {copy.removeFromOrganization}
               </DropdownMenuItem>
             )}

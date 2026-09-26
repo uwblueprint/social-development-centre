@@ -5,8 +5,6 @@
 export const copy = {
   page: {
     title: "Opportunities",
-    adminDescription: "Events, petitions, volunteer roles and jobs from SDC and Civic Hub partners.",
-    partnerDescription: "What your organization shares with the SDC community.",
     newButton: "New opportunity",
     newMenuLabel: "Choose a type",
   },

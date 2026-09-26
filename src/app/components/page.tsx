@@ -31,7 +31,7 @@ const sections: { id: string; title: string; description: string; demo: ReactNod
   { id: "buttons", title: "Buttons", description: "Primary, secondary, outline, ghost and danger actions in three sizes.", demo: <ButtonDemos /> },
   { id: "field", title: "Field", description: "Label, hint and error wired to any control for screen readers.", demo: <FieldDemo /> },
   { id: "input", title: "Input", description: "Single-line text entry.", demo: <InputDemo /> },
-  { id: "search-field", title: "Search field", description: "A text entry for filtering a list, with a leading search icon.", demo: <SearchFieldDemo /> },
+  { id: "search-field", title: "Search field", description: "Instant search for a list: results update 300ms after typing stops, Enter searches now, × clears.", demo: <SearchFieldDemo /> },
   { id: "textarea", title: "Textarea", description: "Multi-line text entry.", demo: <TextareaDemo /> },
   { id: "date-picker", title: "Date picker", description: "Type a date or pick one from a calendar.", demo: <DatePickerDemo /> },
   { id: "select", title: "Select", description: "Pick one option from a list.", demo: <SelectDemo /> },

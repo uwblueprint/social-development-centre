@@ -62,12 +62,49 @@ export function InputDemo() {
   );
 }
 
+const SEARCH_PEOPLE = ["Ada Lovelace", "Grace Hopper", "Katherine Johnson", "Margaret Hamilton", "Radia Perlman"];
+
+const SearchResults = styled.p`
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+`;
+
 export function SearchFieldDemo() {
+  const [text, setText] = React.useState("");
+  const [query, setQuery] = React.useState("");
+  const [pending, setPending] = React.useState(false);
+  const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  React.useEffect(() => () => {
+    if (timer.current) clearTimeout(timer.current);
+  }, []);
+
+  // Stands in for a server round trip so the spinner is visible.
+  function runSearch(value: string) {
+    setPending(true);
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => {
+      setQuery(value.trim().toLowerCase());
+      setPending(false);
+    }, 500);
+  }
+
+  const matches = SEARCH_PEOPLE.filter((name) => name.toLowerCase().includes(query));
+
   return (
     <Section>
-      <Field label="Search partners" hint="Matches organization name, contact name or email">
-        {(props) => <SearchField {...props} placeholder="Search partners" />}
-      </Field>
+      <SearchField
+        aria-label="Search by name or email"
+        placeholder="Search by name or email"
+        value={text}
+        onChange={(event) => setText(event.target.value)}
+        onSearch={runSearch}
+        pending={pending}
+      />
+      <SearchResults aria-live="polite">
+        {matches.length ? matches.join(", ") : `No matches for "${query}"`}
+      </SearchResults>
+      <SearchField aria-label="Search opportunities" placeholder="Loading state" defaultValue="food bank" onSearch={() => {}} pending />
     </Section>
   );
 }

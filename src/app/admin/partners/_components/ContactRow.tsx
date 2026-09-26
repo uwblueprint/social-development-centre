@@ -164,7 +164,7 @@ export function ContactRow({
       <Info>
         <NameLine>
           {contact.name}
-          {contact.status === "pending" && <Badge $variant="neutral">Invitation pending</Badge>}
+          {contact.status === "pending" && <Badge $variant="warning">Invitation pending</Badge>}
         </NameLine>
         <Email>{contact.email}</Email>
         {contact.status === "pending" &&

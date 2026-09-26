@@ -1,13 +1,13 @@
 import { css, styled } from "next-yak";
 
-type Variant = "neutral" | "primary" | "success" | "danger" | "outline";
+type Variant = "neutral" | "primary" | "success" | "warning" | "danger" | "outline";
 
 export const Badge = styled.span<{ $variant?: Variant }>`
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
   height: 24px;
-  padding: 0 var(--space-3);
+  padding: 0 calc(var(--space-3) / 2);
   border-radius: var(--radius-sm);
   font-size: var(--text-xs);
   font-weight: var(--weight-regular);
@@ -29,6 +29,12 @@ export const Badge = styled.span<{ $variant?: Variant }>`
     css`
       background: var(--color-success-subtle);
       color: var(--color-success);
+    `}
+  ${({ $variant }) =>
+    $variant === "warning" &&
+    css`
+      background: var(--color-warning-subtle);
+      color: var(--color-warning);
     `}
   ${({ $variant }) =>
     $variant === "danger" &&

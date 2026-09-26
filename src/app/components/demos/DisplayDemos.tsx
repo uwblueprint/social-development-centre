@@ -66,6 +66,13 @@ const Row = styled.div`
   gap: var(--space-3);
 `;
 
+const BadgeRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+`;
+
 const MetaRow = styled.div`
   display: flex;
   align-items: center;
@@ -310,6 +317,15 @@ export function DisplayDemos() {
           </CardContent>
         </Card>
       </Grid>
+
+      <BadgeRow aria-label="Badge variants">
+        <Badge>Neutral</Badge>
+        <Badge $variant="primary">Primary</Badge>
+        <Badge $variant="success">Active</Badge>
+        <Badge $variant="warning">Invitation pending</Badge>
+        <Badge $variant="danger">Bounced</Badge>
+        <Badge $variant="outline">11 members</Badge>
+      </BadgeRow>
 
       <Card>
         <CardHeader>

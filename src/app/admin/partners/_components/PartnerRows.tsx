@@ -24,7 +24,7 @@ export const organizationColumns: TableColumn<PartnerOrganization>[] = [
     render: (org) => (
       <NameLine>
         {org.name}
-        {org.status === "pending" && <Badge $variant="neutral">Invitation pending</Badge>}
+        {org.status === "pending" && <Badge $variant="warning">Invitation pending</Badge>}
       </NameLine>
     ),
   },
@@ -54,7 +54,7 @@ export const personColumns: TableColumn<PartnerPerson>[] = [
     render: (person) => (
       <NameLine>
         {person.name}
-        {person.status === "pending" && <Badge $variant="neutral">Invitation pending</Badge>}
+        {person.status === "pending" && <Badge $variant="warning">Invitation pending</Badge>}
       </NameLine>
     ),
   },

@@ -62,42 +62,82 @@ export function TooltipContent({
 }
 
 /**
- * Opens instantly on hover or focus, and also on click/tap (stays open until
- * clicked again, Escape, or a click outside) so touch users can reach it.
+ * Opens on hover or focus (instantly by default; pass `delayDuration` to wait), and also on click/tap
+ * (stays open until clicked again, Escape, or a click outside) so touch users can reach it.
+ * Pass `pinOnClick={false}` when the trigger does something on click (e.g. a nav link): a click then
+ * closes the tooltip instead of pinning it.
  */
 export function Tooltip({
   content,
   children,
   side,
+  delayDuration = 0,
+  pinOnClick = true,
 }: {
   content: ReactNode;
   children: React.ReactElement;
   side?: TooltipPrimitive.TooltipContentProps["side"];
+  /** Milliseconds to wait on hover or focus before opening. Default 0 (instant). */
+  delayDuration?: number;
+  /** Click/tap toggles a pinned tooltip (default). `false`: hover and focus only, and a click closes it. */
+  pinOnClick?: boolean;
 }) {
   const [open, setOpen] = React.useState(false);
   const pinned = React.useRef(false);
   const pressing = React.useRef(false);
+  // Radix opens on keyboard focus instantly; with a delay, focus waits the same as hover.
+  const pointerDown = React.useRef(false);
+  // With pinOnClick off, a click keeps it shut (even a pending hover-open) until the pointer leaves.
+  const suppressed = React.useRef(false);
+  const focusTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clearFocusTimer = () => {
+    if (focusTimer.current) clearTimeout(focusTimer.current);
+    focusTimer.current = null;
+  };
+  React.useEffect(() => clearFocusTimer, []);
 
   const close = () => {
+    clearFocusTimer();
     pinned.current = false;
     setOpen(false);
   };
 
   return (
     <TooltipRoot
-      delayDuration={0}
+      delayDuration={delayDuration}
       open={open}
       onOpenChange={(next) => {
         if (!next && (pinned.current || pressing.current)) return;
+        if (next && suppressed.current) return;
         setOpen(next);
       }}
     >
       <TooltipTrigger
         asChild
         onPointerDown={() => {
-          pressing.current = true;
+          pointerDown.current = true;
+          if (pinOnClick) pressing.current = true;
+        }}
+        onPointerUp={() => {
+          pointerDown.current = false;
+        }}
+        onPointerLeave={() => {
+          suppressed.current = false;
+        }}
+        onFocus={(event) => {
+          if (delayDuration <= 0) return;
+          // Stops Radix's instant open; a focus that comes from a click doesn't open it at all.
+          event.preventDefault();
+          if (pointerDown.current) return;
+          clearFocusTimer();
+          focusTimer.current = setTimeout(() => !suppressed.current && setOpen(true), delayDuration);
         }}
         onClick={() => {
+          if (!pinOnClick) {
+            suppressed.current = true;
+            close();
+            return;
+          }
           pressing.current = false;
           if (pinned.current) {
             close();
@@ -107,6 +147,8 @@ export function Tooltip({
           }
         }}
         onBlur={() => {
+          clearFocusTimer();
+          suppressed.current = false;
           pinned.current = false;
         }}
       >

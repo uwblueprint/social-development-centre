@@ -1,10 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { usePathname, useRouter } from "next/navigation";
 import { styled } from "next-yak";
-import { Search as SearchIcon, UsersRound } from "lucide-react";
+import { Download, Search as SearchIcon, UserPlus, UsersRound } from "lucide-react";
+import { ListPage, ListPageHeader, ListPageToolbar, useListParams, useListSearch } from "@/components/patterns/ListPage";
 import { Button } from "@/components/ui/Button";
+import { Icon } from "@/components/ui/Icon";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Pagination } from "@/components/ui/Pagination";
 import { SearchField } from "@/components/ui/SearchField";
@@ -19,58 +20,8 @@ import { ExportDialog } from "./ExportDialog";
 import { memberColumns } from "./MemberRows";
 import { MemberSheetContent } from "./MemberSheetContent";
 
-const Page = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-5);
-  max-width: 960px;
-  padding: var(--space-7) var(--space-6);
-
-  @media (max-width: 767px) {
-    padding: var(--space-5) var(--space-4);
-  }
-`;
-
-const HeaderText = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  max-width: 60ch;
-`;
-
-const Title = styled.h1`
-  margin: 0;
-  font-size: var(--text-xl);
-  font-weight: var(--weight-medium);
-  line-height: var(--leading-heading);
-  letter-spacing: var(--tracking-tight);
-`;
-
-const Description = styled.p`
-  margin: 0;
-  color: var(--color-text-muted);
-  line-height: var(--leading-body);
-`;
-
-const Toolbar = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-  flex-wrap: wrap;
-`;
-
-const SearchWrap = styled.div`
-  max-width: 280px;
-  flex: 1;
-  min-width: 200px;
-`;
-
-const ToolbarActions = styled.div`
-  display: flex;
-  gap: var(--space-2);
-  flex-shrink: 0;
-`;
+// TODO(Community agent): set _copy.ts toolbar.searchAriaLabel to this string, use it here, and delete page.description.
+const SEARCH_LABEL = "Search by name or email";
 
 const TabContentBody = styled.div`
   display: flex;
@@ -95,11 +46,10 @@ export function CommunityView({
   counts: CommunityCounts;
   pageSize: number;
 }) {
-  const router = useRouter();
-  const pathname = usePathname();
+  const { setParams } = useListParams();
+  const searchState = useListSearch(q);
 
   const [activeTab, setActiveTab] = React.useState<MemberTier>(tab);
-  const [searchValue, setSearchValue] = React.useState(q);
 
   // Keeps local UI state in step with the URL (e.g. browser back/forward)
   // without an effect: derived at render time from the server-provided props.
@@ -108,11 +58,6 @@ export function CommunityView({
     setPrevTab(tab);
     setActiveTab(tab);
   }
-  const [prevQ, setPrevQ] = React.useState(q);
-  if (q !== prevQ) {
-    setPrevQ(q);
-    setSearchValue(q);
-  }
 
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
   const [addOpen, setAddOpen] = React.useState(false);
@@ -120,36 +65,14 @@ export function CommunityView({
   const [exportOpen, setExportOpen] = React.useState(false);
   const [exportKey, setExportKey] = React.useState(0);
 
-  function syncUrl(next: { tab?: MemberTier; q?: string; page?: number }) {
-    const nextTab = next.tab ?? activeTab;
-    const nextQ = next.q ?? searchValue;
-    const nextPage = next.page ?? memberPage.page;
-    const params = new URLSearchParams();
-    if (nextTab !== "general") params.set("tab", nextTab);
-    if (nextQ) params.set("q", nextQ);
-    if (nextPage > 1) params.set("page", String(nextPage));
-    const qs = params.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-  }
-
   function handleTabChange(value: string) {
     const next = normalizeTab(value);
     setActiveTab(next);
-    syncUrl({ tab: next, page: 1 });
-  }
-
-  function handleSearchSubmit(value: string) {
-    setSearchValue(value);
-    syncUrl({ q: value, page: 1 });
-  }
-
-  function handleSearchClear() {
-    setSearchValue("");
-    syncUrl({ q: "", page: 1 });
+    setParams({ tab: next === "general" ? undefined : next, page: undefined });
   }
 
   function handlePageChange(page: number) {
-    syncUrl({ page });
+    setParams({ page: page > 1 ? String(page) : undefined });
   }
 
   function openAdd() {
@@ -166,48 +89,52 @@ export function CommunityView({
 
   return (
     <AppToastProvider>
-      <Page>
-        <HeaderText>
-          <Title>{copy.page.title}</Title>
-          <Description>{copy.page.description}</Description>
-        </HeaderText>
+      <ListPage>
+        <ListPageHeader
+          title={copy.page.title}
+          actions={
+            <>
+              <Button type="button" $variant="secondary" onClick={openExport}>
+                <Icon icon={Download} size={16} />
+                {copy.toolbar.export}
+              </Button>
+              <Button type="button" onClick={openAdd}>
+                <Icon icon={UserPlus} size={16} />
+                {copy.toolbar.addMembers}
+              </Button>
+            </>
+          }
+        />
 
         <Tabs value={activeTab} onValueChange={handleTabChange}>
-          <TabsList aria-label={copy.tabs.ariaLabel}>
-            <TabsTrigger value="general">
-              {copy.tabs.general}
-              <TabsCount>{copy.tabs.generalCount(counts.general, counts.unsubscribed)}</TabsCount>
-            </TabsTrigger>
-            <TabsTrigger value="paying">
-              {copy.tabs.paying}
-              <TabsCount>{copy.tabs.payingCount(counts.paying)}</TabsCount>
-            </TabsTrigger>
-          </TabsList>
+          <ListPageToolbar
+            tabs={
+              <TabsList aria-label={copy.tabs.ariaLabel}>
+                <TabsTrigger value="general">
+                  {copy.tabs.general}
+                  <TabsCount>{copy.tabs.generalCount(counts.general)}</TabsCount>
+                </TabsTrigger>
+                <TabsTrigger value="paying">
+                  {copy.tabs.paying}
+                  <TabsCount>{copy.tabs.payingCount(counts.paying)}</TabsCount>
+                </TabsTrigger>
+              </TabsList>
+            }
+            search={
+              <SearchField
+                name="q"
+                aria-label={SEARCH_LABEL}
+                placeholder={SEARCH_LABEL}
+                value={searchState.value}
+                onChange={(event) => searchState.setValue(event.target.value)}
+                onSearch={searchState.search}
+                pending={searchState.pending}
+              />
+            }
+          />
 
           <TabsContent value={activeTab}>
             <TabContentBody>
-              <Toolbar>
-                <SearchWrap>
-                  <SearchField
-                    name="q"
-                    aria-label={copy.toolbar.searchAriaLabel}
-                    placeholder={copy.toolbar.searchPlaceholder}
-                    value={searchValue}
-                    onChange={(event) => setSearchValue(event.target.value)}
-                    onSubmit={handleSearchSubmit}
-                    onClear={handleSearchClear}
-                  />
-                </SearchWrap>
-                <ToolbarActions>
-                  <Button type="button" $variant="ghost" onClick={openExport}>
-                    {copy.toolbar.export}
-                  </Button>
-                  <Button type="button" $variant="secondary" onClick={openAdd}>
-                    {copy.toolbar.addMembers}
-                  </Button>
-                </ToolbarActions>
-              </Toolbar>
-
               <Table
                 columns={memberColumns}
                 rows={memberPage.rows}
@@ -224,6 +151,7 @@ export function CommunityView({
                       description={activeTab === "paying" ? copy.empty.payingDescription : copy.empty.generalDescription}
                       action={
                         <Button type="button" onClick={openAdd}>
+                          <Icon icon={UserPlus} size={16} />
                           {copy.toolbar.addMembers}
                         </Button>
                       }
@@ -254,7 +182,7 @@ export function CommunityView({
 
         <AddMembersDialog key={`add-${addKey}`} open={addOpen} onOpenChange={setAddOpen} tab={activeTab} />
         <ExportDialog key={`export-${exportKey}`} open={exportOpen} onOpenChange={setExportOpen} tab={activeTab} />
-      </Page>
+      </ListPage>
     </AppToastProvider>
   );
 }

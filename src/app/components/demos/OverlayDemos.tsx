@@ -2,7 +2,7 @@
 
 import { styled } from "next-yak";
 import { useState } from "react";
-import { Info } from "lucide-react";
+import { Copy, ExternalLink, Info, MoreHorizontal, Trash2 } from "lucide-react";
 import { Icon } from "@/components/ui/Icon";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -177,6 +177,42 @@ function TooltipDemo() {
   );
 }
 
+function DelayedTooltipDemo() {
+  return (
+    <Tooltip content="Everyone on SDC's email list, and who has paid access." side="right" delayDuration={600} pinOnClick={false}>
+      <Button $variant="ghost">Community</Button>
+    </Tooltip>
+  );
+}
+
+/** When one item has an icon, every item in that menu has one. */
+function IconMenuDemo() {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button $variant="ghost" aria-label="More actions">
+          <Icon icon={MoreHorizontal} size={16} />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start">
+        <DropdownMenuItem>
+          <Icon icon={ExternalLink} size={16} />
+          Open link
+        </DropdownMenuItem>
+        <DropdownMenuItem>
+          <Icon icon={Copy} size={16} />
+          Duplicate
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem>
+          <Icon icon={Trash2} size={16} />
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 function DropdownMenuDemo() {
   const [showActivity, setShowActivity] = useState(true);
   const [showPanel, setShowPanel] = useState(false);
@@ -288,7 +324,9 @@ export function OverlayDemos() {
           <AlertDialogDemo />
           <PopoverDemo />
           <TooltipDemo />
+          <DelayedTooltipDemo />
           <DropdownMenuDemo />
+          <IconMenuDemo />
           <HoverCardDemo />
           <ToastDemo />
           <SheetDemo />

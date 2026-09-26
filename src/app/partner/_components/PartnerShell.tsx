@@ -8,9 +8,9 @@ import { signOut } from "@/app/login/actions";
 import type { PartnerSection, PartnerUser } from "../_data/types";
 import { partnerCopy as copy } from "../_copy";
 
-const sections: { key: PartnerSection; label: string; icon: SidebarNavItem["icon"] }[] = [
-  { key: "opportunities", label: copy.nav.opportunities, icon: BriefcaseBusiness },
-  { key: "organization", label: copy.nav.organization, icon: Building },
+const sections: { key: PartnerSection; label: string; description: string; icon: SidebarNavItem["icon"] }[] = [
+  { key: "opportunities", label: copy.nav.opportunities, description: copy.nav.opportunitiesDescription, icon: BriefcaseBusiness },
+  { key: "organization", label: copy.nav.organization, description: copy.nav.organizationDescription, icon: Building },
 ];
 
 /** "Northside Food Bank" → "NF"; single words give one letter. */
@@ -25,7 +25,7 @@ function initialsOf(name: string) {
 }
 
 export function PartnerShell({ user, children }: { user: PartnerUser; children: ReactNode }) {
-  const items = sections.map((s) => ({ href: `/partner/${s.key}`, label: s.label, icon: s.icon }));
+  const items = sections.map((s) => ({ href: `/partner/${s.key}`, label: s.label, description: s.description, icon: s.icon }));
   return (
     <SidebarLayout
       config={{

@@ -2,9 +2,9 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { styled } from "next-yak";
-import { Archive, ChevronDown, FilePen, Megaphone, Search as SearchIcon } from "lucide-react";
+import { Archive, ChevronDown, FilePen, FilterX, Megaphone, Plus, Search as SearchIcon } from "lucide-react";
+import { ListPage, ListPageHeader, ListPageToolbar, useListParams, useListSearch } from "@/components/patterns/ListPage";
 import { Button } from "@/components/ui/Button";
 import {
   DropdownMenu,
@@ -36,70 +36,17 @@ import { KindIcon } from "./KindIcon";
 import { opportunityColumns } from "./opportunityColumns";
 import { OpportunitySheetContent } from "./OpportunitySheetContent";
 
-const Page = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-5);
-  max-width: 960px;
-  padding: var(--space-7) var(--space-6);
-
-  @media (max-width: 767px) {
-    padding: var(--space-5) var(--space-4);
-  }
-`;
-
-const Header = styled.div`
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-4);
-  flex-wrap: wrap;
-`;
-
-const HeaderText = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  min-width: 0;
-  max-width: 60ch;
-`;
-
-const Title = styled.h1`
-  margin: 0;
-  font-size: var(--text-xl);
-  font-weight: var(--weight-medium);
-  line-height: var(--leading-heading);
-  letter-spacing: var(--tracking-tight);
-`;
-
-const Description = styled.p`
-  margin: 0;
-  color: var(--color-text-muted);
-  line-height: var(--leading-body);
-`;
-
-const MenuItemIcon = styled.span`
-  display: inline-flex;
-  color: var(--color-text-muted);
-`;
-
 const TabContentBody = styled.div`
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
 `;
 
-const Toolbar = styled.div`
+const Filters = styled.div`
   display: flex;
   align-items: flex-start;
   gap: var(--space-3);
   flex-wrap: wrap;
-`;
-
-const SearchWrap = styled.div`
-  flex: 1 1 240px;
-  max-width: 320px;
-  min-width: 0;
 `;
 
 const FilterWrap = styled.div`
@@ -130,14 +77,10 @@ export interface OpportunitiesViewProps {
 
 /** The Opportunities list shared by the admin and partner portals: status tabs, filters, table and side panel. */
 export function OpportunitiesView({ scope, basePath, tab, filters, items, counts, organizations, actions }: OpportunitiesViewProps) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const [, startTransition] = React.useTransition();
+  const { setParams: syncUrl } = useListParams();
+  const searchState = useListSearch(filters.q ?? "");
 
-  const q = filters.q ?? "";
   const [activeTab, setActiveTab] = React.useState<OpportunityTab>(tab);
-  const [searchValue, setSearchValue] = React.useState(q);
 
   // Keeps local UI state in step with the URL (e.g. browser back/forward)
   // without an effect: derived at render time from the server-provided props.
@@ -146,25 +89,9 @@ export function OpportunitiesView({ scope, basePath, tab, filters, items, counts
     setPrevTab(tab);
     setActiveTab(tab);
   }
-  const [prevQ, setPrevQ] = React.useState(q);
-  if (q !== prevQ) {
-    setPrevQ(q);
-    setSearchValue(q);
-  }
 
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
   const selected = items.find((o) => o.id === selectedId);
-
-  /** Sets or removes the given params and keeps every other one. */
-  function syncUrl(next: Record<string, string | undefined>) {
-    const params = new URLSearchParams(searchParams.toString());
-    for (const [key, value] of Object.entries(next)) {
-      if (value) params.set(key, value);
-      else params.delete(key);
-    }
-    const qs = params.toString();
-    startTransition(() => router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false }));
-  }
 
   function handleTabChange(value: string) {
     const next = normalizeTab(value);
@@ -173,13 +100,8 @@ export function OpportunitiesView({ scope, basePath, tab, filters, items, counts
     syncUrl({ tab: next === "live" ? undefined : next });
   }
 
-  function handleSearchSubmit(value: string) {
-    setSearchValue(value);
-    syncUrl({ q: value.trim() || undefined });
-  }
-
   function clearFilters() {
-    setSearchValue("");
+    searchState.setValue("");
     syncUrl({ q: undefined, kind: undefined, org: undefined });
   }
 
@@ -200,63 +122,61 @@ export function OpportunitiesView({ scope, basePath, tab, filters, items, counts
   const columns = opportunityColumns(scope, tab);
 
   return (
-    <Page>
-      <Header>
-        <HeaderText>
-          <Title>{copy.page.title}</Title>
-          <Description>{scope === "admin" ? copy.page.adminDescription : copy.page.partnerDescription}</Description>
-        </HeaderText>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button type="button">
-              {copy.page.newButton}
-              <Icon icon={ChevronDown} size={14} />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>{copy.page.newMenuLabel}</DropdownMenuLabel>
-            {KINDS.map((kind: OpportunityKind) => (
-              <DropdownMenuItem key={kind} asChild>
-                <Link href={`${basePath}/new?kind=${kind}`}>
-                  <MenuItemIcon>
+    <ListPage>
+      <ListPageHeader
+        title={copy.page.title}
+        actions={
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button type="button">
+                <Icon icon={Plus} size={16} />
+                {copy.page.newButton}
+                <Icon icon={ChevronDown} size={14} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>{copy.page.newMenuLabel}</DropdownMenuLabel>
+              {KINDS.map((kind: OpportunityKind) => (
+                <DropdownMenuItem key={kind} asChild>
+                  <Link href={`${basePath}/new?kind=${kind}`}>
                     <KindIcon kind={kind} />
-                  </MenuItemIcon>
-                  {KIND_LABEL[kind]}
-                </Link>
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </Header>
+                    {KIND_LABEL[kind]}
+                  </Link>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        }
+      />
 
       <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <TabsList aria-label={copy.page.title}>
-          {TABS.map((t) => (
-            <TabsTrigger key={t} value={t}>
-              {copy.tabs[t]}
-              <TabsCount>({counts[t]})</TabsCount>
-            </TabsTrigger>
-          ))}
-        </TabsList>
+        <ListPageToolbar
+          tabs={
+            <TabsList aria-label={copy.page.title}>
+              {TABS.map((t) => (
+                <TabsTrigger key={t} value={t}>
+                  {copy.tabs[t]}
+                  <TabsCount>({counts[t]})</TabsCount>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          }
+          search={
+            <SearchField
+              name="q"
+              aria-label={copy.toolbar.searchLabel}
+              placeholder={copy.toolbar.searchPlaceholder}
+              value={searchState.value}
+              onChange={(event) => searchState.setValue(event.target.value)}
+              onSearch={searchState.search}
+              pending={searchState.pending}
+            />
+          }
+        />
 
         <TabsContent value={activeTab}>
           <TabContentBody>
-            <Toolbar>
-              <SearchWrap>
-                <Field label={copy.toolbar.searchLabel}>
-                  {(p) => (
-                    <SearchField
-                      {...p}
-                      name="q"
-                      placeholder={copy.toolbar.searchPlaceholder}
-                      value={searchValue}
-                      onChange={(event) => setSearchValue(event.target.value)}
-                      onSubmit={handleSearchSubmit}
-                      onClear={() => handleSearchSubmit("")}
-                    />
-                  )}
-                </Field>
-              </SearchWrap>
+            <Filters>
               <FilterWrap>
                 <Field label={copy.toolbar.typeLabel}>
                   {(p) => (
@@ -283,7 +203,7 @@ export function OpportunitiesView({ scope, basePath, tab, filters, items, counts
                   </Field>
                 </FilterWrap>
               )}
-            </Toolbar>
+            </Filters>
 
             <Table
               columns={columns}
@@ -299,6 +219,7 @@ export function OpportunitiesView({ scope, basePath, tab, filters, items, counts
                     description={copy.empty.noResults.body}
                     action={
                       <Button type="button" $variant="secondary" onClick={clearFilters}>
+                        <Icon icon={FilterX} size={16} />
                         {copy.empty.noResults.clear}
                       </Button>
                     }
@@ -325,6 +246,6 @@ export function OpportunitiesView({ scope, basePath, tab, filters, items, counts
           )}
         </SheetContent>
       </Sheet>
-    </Page>
+    </ListPage>
   );
 }

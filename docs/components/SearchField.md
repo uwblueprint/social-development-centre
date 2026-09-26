@@ -1,68 +1,57 @@
 # SearchField
 
-A single-line text entry for filtering a list, submitted explicitly — never live as you type.
+Instant search for filtering a list. Results update 300ms after the last keystroke, Enter searches right away, and × clears. There is no search button.
 
 ## Use when / Don't use when
-- Filtering a list, table or directory by typed text, where results should only change once the person asks.
-- A field submitted as part of a larger form with other fields — use `Input`; `SearchField` is only styled differently (icon, clear button), not semantically different.
+- Filtering a list, table or directory by typed text, usually in a `ListPageToolbar` beside the tabs it filters.
+- A text field submitted with other fields in a form: use `Input`.
 
 ## API
 ```tsx
 import { SearchField } from "@/components/ui/SearchField";
 ```
-- Same props as a native `<input>` (forwards `ref` and all props), rendered with `type="search"` inside its own `<form role="search">`.
-- `onSubmit?: (value: string) => void` — called with the field's current text when the person presses **Enter** or clicks the trailing search button. This is the only time the search should actually run — `SearchField` never searches live.
-- `onClear?: () => void` — called when the clear (×) button is clicked (shown only once the field has text). Defaults to calling `onSubmit("")`. The caller is responsible for also emptying its own `value` state; `SearchField` doesn't do this for you, since the field is controlled.
-- `submitLabel` / `clearLabel` — accessible names for the two trailing icon buttons. Default to "Search" and "Clear search".
-- Always wrap in `Field` for a visible label — the icons are controls, not label substitutes.
+- Same props as a native `<input>` (forwards `ref`), rendered as `type="search"` inside its own `<form role="search">`.
+- `aria-label: string` (required by the type). The field has no visible label, so this is its accessible name.
+- `onSearch: (value: string) => void` (required). Called with the field's text:
+  - 300ms after the last keystroke,
+  - immediately on **Enter** (cancelling the pending timer),
+  - with `""` when the clear (×) button is clicked.
+  Called with whatever is typed, even if unchanged; de-duplicate in the caller if a repeat search is costly (`useListSearch` does).
+- `pending?: boolean`: while `true`, the leading search icon becomes a spinner and the form is `aria-busy`. Pass `useTransition`'s pending flag.
+- `clearLabel?: string`: accessible name of the × button. Default "Clear search".
+- Controlled (`value` + `onChange`) or uncontrolled (`defaultValue`). In both modes × empties the field through a normal change event, so a controlled caller's `onChange` receives `""`.
 
 ## Example
-```tsx
-const [text, setText] = useState(query);
-
-<Field label="Search partners" hint="Matches organization name, contact name or email">
-  {(props) => (
-    <SearchField
-      {...props}
-      name="q"
-      placeholder="Search partners"
-      value={text}
-      onChange={(event) => setText(event.target.value)}
-      onSubmit={(value) => runSearch(value)}
-      onClear={() => {
-        setText("");
-        runSearch("");
-      }}
-    />
-  )}
-</Field>
-```
-Typing only updates the field's own text. The list only re-queries when `onSubmit` fires (Enter, the search button, or the clear button). If the search paginates, submitting resets the list to page 1.
-
-## Content rules
-Label names what's being searched ("Search partners"), not a generic "Search". Placeholder can repeat the label; it is never the only label.
-
-## Accessibility
-Behaves like `Input` for keyboard and screen-reader users, plus two icon buttons: the trailing search button (`aria-label`, type `submit`) and, once there's text, a clear button (`aria-label`, type `button`) before it. Pressing Enter anywhere in the field submits the same way as clicking the search button, because the field is its own `<form>`. The native browser search-clear affordance is turned off in favor of the custom, keyboard-reachable clear button.
-
-**Exception to "every control has a visible label":** a compact search box in a toolbar (e.g. above a `Table`/`List`) can skip `Field` and use `aria-label` alone — the trailing search icon plus a placeholder repeating the label make its purpose obvious at a glance, and a visible label would add width/height the toolbar doesn't have to spare. Still wrap in `Field` whenever the search field carries a hint, an error, or sits in a regular form rather than a compact toolbar.
+On a list page backed by the URL, use `useListSearch` from `@/components/patterns/ListPage`. It writes `?q=` with `router.replace`, resets to page 1, keeps the other params, and gives you `pending`:
 
 ```tsx
+const search = useListSearch(q);
+
 <SearchField
   name="q"
-  aria-label="Search members"
+  aria-label="Search by name or email"
   placeholder="Search by name or email"
-  value={text}
-  onChange={(event) => setText(event.target.value)}
-  onSubmit={(value) => runSearch(value)}
-  onClear={() => {
-    setText("");
-    runSearch("");
-  }}
+  value={search.value}
+  onChange={(event) => search.setValue(event.target.value)}
+  onSearch={search.search}
+  pending={search.pending}
 />
 ```
 
+Anything that depends on the search (the rows, the tab counts, the empty state) must be computed with the same `q` on the server.
+
+## Content rules
+- Placeholder says what you can search by ("Search by name or email"). It stays, and it is the only visible text.
+- `aria-label` usually repeats the placeholder, so screen-reader and sighted users get the same words.
+
+## Accessibility
+- No visible label is the one exception to "every control has a visible label" (AGENTS.md rule 4): the leading search icon, the placeholder and the required `aria-label` together identify it.
+- Enter searches because the field is its own `role="search"` form, which is also a landmark.
+- The × button is a real, keyboard-reachable `button` with an `aria-label`; the browser's native clear affordance is hidden.
+- The spinner is decorative; the results region announces changes if it needs to (e.g. `aria-live` on a count).
+
 ## Don't
-1. Relying on the icon or placeholder as the label with no `Field` wrapper and no `aria-label` — a decorative icon and placeholder text alone give screen-reader users nothing.
-2. Searching on every keystroke (`onChange`) — only `onSubmit` should trigger the query.
-3. Using it inside a form where "search" isn't the field's purpose — use `Input`.
+1. Wrapping it in `Field` with a visible label and hint. Use the placeholder and `aria-label`.
+2. Adding a search button or waiting for Enter only. Search runs as you type.
+3. Pushing a history entry per search. Use `router.replace`.
+4. Showing tab counts that ignore the current search.

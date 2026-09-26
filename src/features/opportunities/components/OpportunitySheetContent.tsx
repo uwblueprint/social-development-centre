@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { styled } from "next-yak";
-import { MoreHorizontal } from "lucide-react";
+import { CircleOff, Copy, ExternalLink as ExternalLinkIcon, MoreHorizontal, RotateCcw, Trash2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -126,6 +126,10 @@ const Updated = styled.p`
 
 const DangerMenuItem = styled(DropdownMenuItem)`
   color: var(--color-danger);
+
+  & > svg {
+    color: inherit;
+  }
 `;
 
 type Detail = { label: string; value: string | number | undefined };
@@ -309,6 +313,7 @@ export function OpportunitySheetContent({
             {o.link && (
               <DropdownMenuItem asChild>
                 <a href={o.link} target="_blank" rel="noopener noreferrer">
+                  <Icon icon={ExternalLinkIcon} size={16} />
                   {copy.panel.openLink}
                 </a>
               </DropdownMenuItem>
@@ -321,13 +326,20 @@ export function OpportunitySheetContent({
                 )
               }
             >
+              <Icon icon={Copy} size={16} />
               {copy.panel.duplicate}
             </DropdownMenuItem>
             {o.status === "live" && (
-              <DropdownMenuItem onSelect={() => run(() => actions.close(o.id))}>{copy.panel.close}</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => run(() => actions.close(o.id))}>
+                <Icon icon={CircleOff} size={16} />
+                {copy.panel.close}
+              </DropdownMenuItem>
             )}
             {o.status === "closed" && (
-              <DropdownMenuItem onSelect={() => run(() => actions.reopen(o.id))}>{copy.panel.reopen}</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => run(() => actions.reopen(o.id))}>
+                <Icon icon={RotateCcw} size={16} />
+                {copy.panel.reopen}
+              </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
             <DangerMenuItem
@@ -336,6 +348,7 @@ export function OpportunitySheetContent({
                 setConfirmDelete(true);
               }}
             >
+              <Icon icon={Trash2} size={16} />
               {copy.panel.delete}
             </DangerMenuItem>
           </DropdownMenuContent>

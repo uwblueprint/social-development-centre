@@ -5,7 +5,7 @@ This file is for AI coding agents and humans alike. Read it before writing any U
 ## Where things live
 
 - `src/components/ui/`: the component kit. Import from here and nowhere else.
-- `src/components/patterns/`: layouts composed from the kit, e.g. `SidebarLayout` (docs in `docs/patterns/`).
+- `src/components/patterns/`: layouts composed from the kit, e.g. `SidebarLayout` and `ListPage` (docs in `docs/patterns/`).
 - `src/app/admin/`: the admin portal. Its sidebar config lives in `src/app/admin/_components/AdminShell.tsx`; each section is a route (`/admin/opportunities`, `/admin/partners`, `/admin/community`, `/admin/insights`). Sub-areas of a section use in-page tabs, not new sidebar items.
 - `src/app/partner/`: the partner portal. Its sidebar config lives in `src/app/partner/_components/PartnerShell.tsx`.
 - `src/features/`: feature code shared by both portals, e.g. `src/features/opportunities/` (the Opportunities contract, copy and UI).
@@ -26,7 +26,7 @@ This file is for AI coding agents and humans alike. Read it before writing any U
 1. **Tokens only.** No raw hex, `rgb()`, or one-off pixel values for color, radius, spacing, type or motion. If a value is missing, add a token to `tokens.ts` with a one-line reason; don't inline it.
 2. **Kit components only.** In `src/app/**`, never render native `<button>`, `<input>`, `<select>` or `<textarea>`, and never import `radix-ui`, `cmdk` or `react-day-picker` directly. Use `Button`, `Input`, `Select`, `Textarea`, `DatePicker`, etc.
 3. **Icons** come from `lucide-react` through `<Icon icon={Name} />` (1.5 stroke). Icon-only controls need an `aria-label`.
-4. **Every form control has a visible label.** Wrap controls in `Field` (label, hint, error, required). Placeholder text is never the label.
+4. **Every form control has a visible label.** Wrap controls in `Field` (label, hint, error, required). Placeholder text is never the label. Search fields are the exception: `SearchField` uses a search icon, a placeholder and a required `aria-label`, with no visible label.
 5. **Disabled controls explain why.** `Field` and `DisabledReason` take `disabledReason`. The reason is product copy:
    - Ask the person you're working with: "Why is this disabled? Users will see the reason in a tooltip."
    - Use their words. Never invent a reason.

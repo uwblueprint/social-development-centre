@@ -53,6 +53,12 @@ const itemStyles = css`
   user-select: none;
   position: relative;
 
+  /* Leading icon: fixed width and the same var(--space-2) gap as every other item, muted so the label leads. */
+  & > svg {
+    flex-shrink: 0;
+    color: var(--color-text-muted);
+  }
+
   &[data-highlighted] {
     background: var(--color-bg-hover);
   }
@@ -111,7 +117,8 @@ const Label = styled(DropdownMenuPrimitive.Label)`
 
 const Separator = styled(DropdownMenuPrimitive.Separator)`
   height: 1px;
-  margin: var(--space-2) var(--space-1);
+  /* 2px above and below: groups stay distinct without a gap that splits the menu. */
+  margin: calc(var(--space-1) / 2) var(--space-1);
   background: var(--color-border);
 `;
 

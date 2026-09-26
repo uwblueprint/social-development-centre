@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/DropdownMenu";
 import { Icon } from "@/components/ui/Icon";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 export interface SidebarNavItem {
   href: string;
@@ -25,7 +26,15 @@ export interface SidebarNavItem {
    * The section's page must say what the number means (e.g. "3 partners awaiting review"): the badge alone doesn't.
    */
   count?: number;
+  /**
+   * One sentence on what the section is for, shown as a tooltip to the right after a short hover or
+   * keyboard focus. Never pinned on click. It replaces a page description, so keep it supplementary.
+   */
+  description?: string;
 }
+
+/** Long enough that sweeping the pointer down the nav doesn't flash every description. */
+const DESCRIPTION_DELAY_MS = 600;
 
 export interface SidebarRecentItem {
   href: string;
@@ -439,19 +448,34 @@ function SidebarContent({
       </Header>
 
       <Nav aria-label={config.navLabel}>
-        {config.items.map((item, i) => (
-          <ItemLink
-            key={item.href}
-            style={{ "--i": i } as React.CSSProperties}
-            href={item.href}
-            aria-current={isActive(pathname, item.href) ? "page" : undefined}
-            onClick={onNavigate}
-          >
-            <Icon icon={item.icon} size={18} />
-            <ItemLabel>{item.label}</ItemLabel>
-            {item.count ? <Count>{item.count}</Count> : null}
-          </ItemLink>
-        ))}
+        {config.items.map((item, i) => {
+          const link = (
+            <ItemLink
+              key={item.href}
+              style={{ "--i": i } as React.CSSProperties}
+              href={item.href}
+              aria-current={isActive(pathname, item.href) ? "page" : undefined}
+              onClick={onNavigate}
+            >
+              <Icon icon={item.icon} size={18} />
+              <ItemLabel>{item.label}</ItemLabel>
+              {item.count ? <Count>{item.count}</Count> : null}
+            </ItemLink>
+          );
+          return item.description ? (
+            <Tooltip
+              key={item.href}
+              content={item.description}
+              side="right"
+              delayDuration={DESCRIPTION_DELAY_MS}
+              pinOnClick={false}
+            >
+              {link}
+            </Tooltip>
+          ) : (
+            link
+          );
+        })}
       </Nav>
 
       {config.recent && config.recent.items.length > 0 && (

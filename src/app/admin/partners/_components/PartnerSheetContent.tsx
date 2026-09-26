@@ -105,7 +105,7 @@ const ContactsSection = styled.div`
 function statusBadge(status: PartnerOrganization["status"]) {
   if (status === "active") return null;
   if (status === "removed") return <Badge $variant="outline">Removed</Badge>;
-  return <Badge $variant="neutral">Invitation pending</Badge>;
+  return <Badge $variant="warning">Invitation pending</Badge>;
 }
 
 export function PartnerSheetContent({

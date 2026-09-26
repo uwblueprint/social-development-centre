@@ -1,9 +1,16 @@
 "use client";
 
 import * as React from "react";
-import { styled } from "next-yak";
-import { Search, X } from "lucide-react";
+import { keyframes, styled } from "next-yak";
+import { LoaderCircle, Search, X } from "lucide-react";
 import { Icon } from "./Icon";
+
+/** Wait after the last keystroke before searching. NN/g and Algolia put the sweet spot around 300ms. */
+const SEARCH_DELAY_MS = 300;
+
+const spin = keyframes`
+  to { transform: rotate(360deg); }
+`;
 
 const Form = styled.form`
   display: block;
@@ -16,11 +23,28 @@ const Wrapper = styled.span`
   width: 100%;
 `;
 
+const Leading = styled.span`
+  position: absolute;
+  top: 0;
+  left: var(--space-3);
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-text-muted);
+  pointer-events: none;
+`;
+
+const Spinner = styled.span`
+  display: inline-flex;
+  animation: ${spin} 0.8s linear infinite;
+`;
+
 const StyledInput = styled.input`
   display: block;
   width: 100%;
   height: 40px;
-  padding: 0 68px 0 var(--space-3);
+  /* Leading icon column (12 + 16 + 8) on the left, room for the clear button on the right. */
+  padding: 0 calc(var(--space-6) + var(--space-2)) 0 calc(var(--space-3) + var(--space-5));
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border-strong);
   background: var(--color-bg);
@@ -36,7 +60,7 @@ const StyledInput = styled.input`
     color: var(--color-text-muted);
   }
 
-  /* Custom clear/submit buttons replace the native affordances. */
+  /* The custom clear button replaces the native affordances. */
   &::-webkit-search-cancel-button,
   &::-webkit-search-decoration {
     display: none;
@@ -65,14 +89,13 @@ const StyledInput = styled.input`
 const Actions = styled.span`
   position: absolute;
   top: 0;
-  right: 4px;
+  right: var(--space-1);
   height: 40px;
   display: inline-flex;
   align-items: center;
-  gap: 2px;
 `;
 
-const ActionButton = styled.button`
+const ClearButton = styled.button`
   all: unset;
   display: inline-flex;
   align-items: center;
@@ -93,36 +116,79 @@ const ActionButton = styled.button`
   }
 `;
 
-export interface SearchFieldProps extends Omit<React.ComponentPropsWithoutRef<"input">, "type" | "onSubmit"> {
-  /** Called with the field's current text when the person presses Enter or clicks the search button. */
-  onSubmit?: (value: string) => void;
-  /** Called when the clear (×) button is clicked, after the field is emptied. Defaults to submitting an empty search. */
-  onClear?: () => void;
-  /** Accessible label for the trailing search button. Defaults to "Search". */
-  submitLabel?: string;
+export interface SearchFieldProps
+  extends Omit<React.ComponentPropsWithoutRef<"input">, "type" | "onSubmit" | "aria-label"> {
+  /** Names the field for screen readers. Required: a search field has no visible label, only its icon and placeholder. */
+  "aria-label": string;
+  /**
+   * Runs the search. Called with the field's text 300ms after the last keystroke, right away on Enter,
+   * and with "" when the clear (×) button is clicked.
+   */
+  onSearch: (value: string) => void;
+  /** True while results are loading: the leading search icon becomes a spinner. */
+  pending?: boolean;
   /** Accessible label for the clear button. Defaults to "Clear search". */
   clearLabel?: string;
 }
 
+/** Sets an input's value the way typing would, so React's `onChange` fires for controlled callers too. */
+function setNativeValue(input: HTMLInputElement, value: string) {
+  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+  setter?.call(input, value);
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
 /**
- * A single-line text entry for filtering a list, submitted on Enter or via
- * the trailing search button — never live as you type. Shows a clear (×)
- * button once there's text. Wrap in `Field` for a visible label.
+ * Instant search for filtering a list: searches 300ms after the last keystroke, immediately on Enter,
+ * and clears with the × button. No visible label: a leading search icon, a placeholder and a required
+ * `aria-label` (the search-field exception to "every control has a visible label").
+ * Works controlled (`value` + `onChange`) or uncontrolled (`defaultValue`).
  */
 export const SearchField = React.forwardRef<HTMLInputElement, SearchFieldProps>(function SearchField(
-  { className, style, value, onChange, onSubmit, onClear, submitLabel = "Search", clearLabel = "Clear search", ...props },
+  { className, style, value, defaultValue, onChange, onSearch, pending = false, clearLabel = "Clear search", disabled, ...props },
   ref,
 ) {
   const innerRef = React.useRef<HTMLInputElement>(null);
   React.useImperativeHandle(ref, () => innerRef.current as HTMLInputElement);
 
-  const stringValue = value == null ? "" : String(value);
-  const hasValue = !!stringValue;
+  const controlled = value !== undefined;
+  const [uncontrolledText, setUncontrolledText] = React.useState(defaultValue == null ? "" : String(defaultValue));
+  const text = controlled ? String(value ?? "") : uncontrolledText;
+
+  // Always call the latest onSearch from the timer, without restarting it when the caller re-renders.
+  const onSearchRef = React.useRef(onSearch);
+  React.useEffect(() => {
+    onSearchRef.current = onSearch;
+  }, [onSearch]);
+
+  const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelPending = React.useCallback(() => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+  }, []);
+  React.useEffect(() => cancelPending, [cancelPending]);
+
+  function searchNow(next: string) {
+    cancelPending();
+    onSearchRef.current(next);
+  }
+
+  function handleChange(event: React.ChangeEvent<HTMLInputElement>) {
+    if (!controlled) setUncontrolledText(event.target.value);
+    onChange?.(event);
+    const next = event.target.value;
+    cancelPending();
+    timer.current = setTimeout(() => {
+      timer.current = null;
+      onSearchRef.current(next);
+    }, SEARCH_DELAY_MS);
+  }
 
   function handleClear() {
-    if (onClear) onClear();
-    else onSubmit?.("");
-    innerRef.current?.focus();
+    const input = innerRef.current;
+    if (input) setNativeValue(input, "");
+    searchNow("");
+    input?.focus();
   }
 
   return (
@@ -130,23 +196,37 @@ export const SearchField = React.forwardRef<HTMLInputElement, SearchFieldProps>(
       className={className}
       style={style}
       role="search"
+      aria-busy={pending || undefined}
       onSubmit={(event) => {
         event.preventDefault();
-        onSubmit?.(stringValue);
+        searchNow(innerRef.current?.value ?? text);
       }}
     >
       <Wrapper>
-        <StyledInput ref={innerRef} type="search" value={value} onChange={onChange} {...props} />
-        <Actions>
-          {hasValue && (
-            <ActionButton type="button" aria-label={clearLabel} onClick={handleClear}>
-              <Icon icon={X} size={14} />
-            </ActionButton>
-          )}
-          <ActionButton type="submit" aria-label={submitLabel}>
+        <Leading aria-hidden="true">
+          {pending ? (
+            <Spinner>
+              <Icon icon={LoaderCircle} size={16} />
+            </Spinner>
+          ) : (
             <Icon icon={Search} size={16} />
-          </ActionButton>
-        </Actions>
+          )}
+        </Leading>
+        <StyledInput
+          ref={innerRef}
+          type="search"
+          value={controlled ? value : uncontrolledText}
+          onChange={handleChange}
+          disabled={disabled}
+          {...props}
+        />
+        {text && !disabled && (
+          <Actions>
+            <ClearButton type="button" aria-label={clearLabel} onClick={handleClear}>
+              <Icon icon={X} size={14} />
+            </ClearButton>
+          </Actions>
+        )}
       </Wrapper>
     </Form>
   );

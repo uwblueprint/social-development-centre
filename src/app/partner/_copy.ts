@@ -8,6 +8,9 @@ export const partnerCopy = {
     label: "Partner",
     opportunities: "Opportunities",
     organization: "Organization",
+    /** Shown as a delayed tooltip on the sidebar item; replaces the old page descriptions. */
+    opportunitiesDescription: "What your organization shares with the SDC community.",
+    organizationDescription: "Your organization's profile and team.",
   },
 
   account: {
@@ -17,7 +20,6 @@ export const partnerCopy = {
 
   organization: {
     title: "Organization",
-    description: "How your organization appears to the SDC community.",
     profileHeading: "Profile",
     nameLabel: "Organization name",
     websiteLabel: "Website",

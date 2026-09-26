@@ -7,11 +7,17 @@ import { SidebarLayout, type SidebarNavItem } from "@/components/patterns/Sideba
 import type { AdminSection, AdminUser } from "../_data/types";
 import { signOut } from "@/app/login/actions";
 
-const sections: { key: AdminSection; label: string; icon: SidebarNavItem["icon"] }[] = [
-  { key: "opportunities", label: "Opportunities", icon: BriefcaseBusiness },
-  { key: "partners", label: "Partners", icon: Building },
-  { key: "community", label: "Community", icon: UsersRound },
-  { key: "insights", label: "Insights", icon: ChartColumnIncreasing },
+/** `description` shows as a delayed tooltip on the sidebar item; it replaces the old page descriptions. */
+const sections: { key: AdminSection; label: string; description: string; icon: SidebarNavItem["icon"] }[] = [
+  {
+    key: "opportunities",
+    label: "Opportunities",
+    description: "Events, petitions, volunteer roles and jobs from SDC and Civic Hub partners.",
+    icon: BriefcaseBusiness,
+  },
+  { key: "partners", label: "Partners", description: "Civic Hub organizations and the people who post for them.", icon: Building },
+  { key: "community", label: "Community", description: "Everyone on SDC's email list, and who has paid access.", icon: UsersRound },
+  { key: "insights", label: "Insights", description: "Reports on what people click and join.", icon: ChartColumnIncreasing },
 ];
 
 export function AdminShell({
@@ -23,7 +29,13 @@ export function AdminShell({
   counts: Partial<Record<AdminSection, number>>;
   children: ReactNode;
 }) {
-  const items = sections.map((s) => ({ href: `/admin/${s.key}`, label: s.label, icon: s.icon, count: counts[s.key] }));
+  const items = sections.map((s) => ({
+    href: `/admin/${s.key}`,
+    label: s.label,
+    description: s.description,
+    icon: s.icon,
+    count: counts[s.key],
+  }));
   return (
     <SidebarLayout
       config={{
