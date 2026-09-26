@@ -48,7 +48,7 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    files: ["src/app/**/*.tsx"],
+    files: ["src/app/**/*.tsx", "src/features/**/*.tsx"],
     rules: {
       "no-restricted-imports": [
         "error",
