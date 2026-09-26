@@ -421,6 +421,8 @@ function ComboboxSelect({
           type="button"
           id={controlId}
           disabled={disabled}
+          // Select-only combobox (WAI-ARIA APG): the role makes aria-required valid on the trigger.
+          role="combobox"
           aria-haspopup="listbox"
           aria-invalid={ariaInvalid}
           aria-required={required}

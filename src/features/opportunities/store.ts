@@ -145,6 +145,14 @@ function seed(): Opportunity[] {
       topics: ["environment"], link: "https://greenwaygardens.org/petition",
       details: { target: "City of Kitchener", deadline: dayOffset(-15), signatureGoal: 800 },
     },
+    {
+      // Greenway was removed 20 days ago: still Live but "No longer emailed" until removal + 30 days.
+      id: "opp_17", kind: "volunteer", status: "live", organization: org.greenway, updatedBy: admin, ...stamp(45, 25),
+      title: "Garden bed builders",
+      summary: "Help build raised garden beds for the fall planting at three community gardens.",
+      topics: ["environment"], link: "https://greenwaygardens.org/volunteer",
+      details: { commitment: "ongoing", format: "in_person", location: "Victoria Park, Kitchener", timeCommitment: "2 hours, one weekend a month" },
+    },
   ];
 }
 
