@@ -4,7 +4,7 @@ import type { ActionState } from "@/lib/forms";
 import { KIND_NOUN, LIMITS, MAX_TOPICS, SDC_ORG, TOPICS } from "./catalog";
 import { effectiveStatus, hasEnded } from "./format";
 import { nextOpportunityId, opportunities } from "./store";
-import type { Actor, CustomDetail, Opportunity, OpportunityKind, OrganizationRef, TopicId } from "./types";
+import type { Actor, CustomDetail, Opportunity, OpportunityKind, OrganizationRef, SaveResult, TopicId } from "./types";
 
 /*
  * Server-side logic behind both portals' actions. Not a server action module itself:
@@ -155,7 +155,7 @@ function readDetails(kind: OpportunityKind, fd: FormData, errors: Errors, strict
   }
 }
 
-export async function saveOpportunity(actor: Actor, fd: FormData): Promise<ActionState<{ id: string }>> {
+export async function saveOpportunity(actor: Actor, fd: FormData): Promise<ActionState<SaveResult>> {
   const id = text(fd, "id");
   const existing = id ? opportunities().find((o) => o.id === id) : undefined;
   if (id && (!existing || !canEdit(actor, existing))) return fail("This opportunity no longer exists, or you can't edit it. Go back to the list.");
@@ -225,7 +225,9 @@ export async function saveOpportunity(actor: Actor, fd: FormData): Promise<Actio
   const noun = KIND_NOUN[kind];
   const message =
     nextStatus === "draft" ? "Draft saved." : !existing || existing.status === "draft" ? `Published. The ${noun} is now live.` : "Changes saved.";
-  return { status: "success", message, data: { id: record.id } };
+  const removedAt = orgs().find((o) => o.id === record.organization.id)?.removedAt;
+  const shown = effectiveStatus(record, new Date(), removedAt).status;
+  return { status: "success", message, data: { id: record.id, tab: shown === "draft" ? "drafts" : shown } };
 }
 
 function find(actor: Actor, id: string) {

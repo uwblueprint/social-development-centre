@@ -2,7 +2,7 @@
 
 import type { ActionState } from "@/lib/forms";
 import * as service from "@/features/opportunities/service";
-import type { Actor } from "@/features/opportunities/types";
+import type { Actor, SaveResult } from "@/features/opportunities/types";
 import { getCurrentPartner } from "../../_data/session";
 
 /* Partner entry points: scoped to the signed-in contact's organization. The actor always comes from the session, never from the client. */
@@ -13,7 +13,7 @@ async function actor(): Promise<Actor> {
   return { role: "partner", name: partner.name, organizationId: partner.organization.id };
 }
 
-export async function saveOpportunity(_prev: ActionState<{ id: string }>, fd: FormData) {
+export async function saveOpportunity(_prev: ActionState<SaveResult>, fd: FormData) {
   return service.saveOpportunity(await actor(), fd);
 }
 export async function closeOpportunity(id: string) {

@@ -163,6 +163,12 @@ export interface OpportunityFilters {
   q?: string;
 }
 
+export interface SaveResult {
+  id: string;
+  /** Where the listing now appears, after automatic expiry (an ended listing moved to a future date is live again). */
+  tab: OpportunityTab;
+}
+
 export type OpportunityCounts = Record<OpportunityTab, number>;
 
 /** Who is acting. The backend derives this from the session, never from the client. */
@@ -175,8 +181,8 @@ export type Actor =
  * server-side (src/app/admin/opportunities/_data/actions.ts, src/app/partner/opportunities/_data/actions.ts).
  */
 export interface OpportunityActions {
-  /** Create or update. FormData fields: see docs/backend/opportunities.md. Success returns the id in `data`. */
-  save: (prev: ActionState<{ id: string }>, fd: FormData) => Promise<ActionState<{ id: string }>>;
+  /** Create or update. FormData fields: see docs/backend/opportunities.md. Success returns the id and the list tab it now belongs in. */
+  save: (prev: ActionState<SaveResult>, fd: FormData) => Promise<ActionState<SaveResult>>;
   close: (id: string) => Promise<ActionState>;
   reopen: (id: string) => Promise<ActionState>;
   duplicate: (id: string) => Promise<ActionState<{ id: string }>>;

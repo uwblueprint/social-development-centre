@@ -11,7 +11,7 @@ import { useToast } from "@/components/ui/Toast";
 import { fieldError, type ActionState } from "@/lib/forms";
 import { KIND_NOUN } from "../../catalog";
 import { copy } from "../../copy";
-import type { Opportunity, OpportunityActions, OpportunityKind, OrganizationRef, TopicId } from "../../types";
+import type { Opportunity, OpportunityActions, OpportunityKind, OrganizationRef, SaveResult, TopicId } from "../../types";
 import { BasicsFields } from "./BasicsFields";
 import { EventFields } from "./EventFields";
 import { BackLink, GhostLink, Section } from "./FormParts";
@@ -75,7 +75,7 @@ const ButtonContent = styled.span`
   gap: 6px;
 `;
 
-const initialState: ActionState<{ id: string }> = { status: "idle" };
+const initialState: ActionState<SaveResult> = { status: "idle" };
 
 /** First focusable control inside the first element marked invalid, in document order. */
 function firstInvalidControl(form: HTMLFormElement | null): HTMLElement | null {
@@ -108,7 +108,6 @@ export function OpportunityForm({ scope, basePath, kind, opportunity, organizati
   const [state, formAction] = useActionState(save, initialState);
   const [model, setModel] = React.useState(() => initialModel(kind, opportunity));
   const formRef = React.useRef<HTMLFormElement>(null);
-  const intentRef = React.useRef("");
 
   const status = opportunity?.status ?? "draft";
   const isDraft = status === "draft";
@@ -126,9 +125,7 @@ export function OpportunityForm({ scope, basePath, kind, opportunity, organizati
   React.useEffect(() => {
     if (state.status === "success") {
       if (state.message) toast({ title: state.message });
-      const intent = intentRef.current;
-      const tab = intent === "draft" ? "drafts" : intent === "save" && status === "closed" ? "closed" : "live";
-      router.push(`${basePath}?tab=${tab}`);
+      router.push(`${basePath}?tab=${state.data?.tab ?? "live"}`);
     } else if (state.status === "error") {
       if (state.message) toast({ title: state.message });
       firstInvalidControl(formRef.current)?.focus();
@@ -138,7 +135,6 @@ export function OpportunityForm({ scope, basePath, kind, opportunity, organizati
   }, [state]);
 
   function submit(fd: FormData) {
-    intentRef.current = String(fd.get("intent") ?? "");
     fd.set("kind", kind);
     if (opportunity) fd.set("id", opportunity.id);
     fd.delete("topics");

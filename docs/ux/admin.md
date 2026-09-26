@@ -567,7 +567,7 @@ Toasts and messages returned by the server (`src/app/admin/community/_data/actio
 
 ## Opportunities
 
-Admins and partners share the same list, panel and form. The shared flows and strings are in [partner.md → Opportunities (both portals)](./partner.md#opportunities-both-portals). This section covers only what admins see that partners don't.
+Admins and partners share the same list, panel and form. The shared flows and strings are in [partner.md → Opportunities (shared by both portals)](./partner.md#opportunities-shared-by-both-portals). This section covers only what admins see that partners don't.
 
 ### Flows
 
