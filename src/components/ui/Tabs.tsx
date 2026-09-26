@@ -9,8 +9,17 @@ export const TabsList = styled(TabsPrimitive.List)`
   display: flex;
   align-items: flex-end;
   gap: var(--space-4);
-  border-bottom: 1px solid var(--color-border);
+  /* The divider is an inset shadow, not a border, so the active underline sits inside the list and
+     nothing overflows vertically. Narrow screens can still swipe sideways; the scrollbar is hidden
+     (keyboard focus scrolls the active tab into view). */
+  box-shadow: inset 0 -1px 0 var(--color-border);
   overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 `;
 
 export const TabsTrigger = styled(TabsPrimitive.Trigger)`
@@ -19,7 +28,6 @@ export const TabsTrigger = styled(TabsPrimitive.Trigger)`
   align-items: center;
   flex-shrink: 0;
   padding: var(--space-3) var(--space-1) calc(var(--space-3) - 2px);
-  margin-bottom: -1px;
   border-bottom: 2px solid transparent;
   font-size: var(--text-sm);
   font-weight: var(--weight-regular);
