@@ -2,7 +2,7 @@ import { revalidatePath } from "next/cache";
 import { orgs, statusOf } from "@/app/admin/partners/_data/store";
 import type { ActionState } from "@/lib/forms";
 import { KIND_NOUN, LIMITS, MAX_TOPICS, SDC_ORG, TOPICS } from "./catalog";
-import { hasEnded } from "./format";
+import { effectiveStatus, hasEnded } from "./format";
 import { nextOpportunityId, opportunities } from "./store";
 import type { Actor, CustomDetail, Opportunity, OpportunityKind, OrganizationRef, TopicId } from "./types";
 
@@ -248,6 +248,10 @@ export async function reopenOpportunity(actor: Actor, id: string): Promise<Actio
   const o = find(actor, id);
   if (!o) return fail("This opportunity no longer exists.");
   if (hasEnded(o)) return fail(`This ${KIND_NOUN[o.kind]} has already ended. Edit its date to reopen it.`);
+  const removedAt = orgs().find((x) => x.id === o.organization.id)?.removedAt;
+  if (effectiveStatus({ ...o, status: "live" }, new Date(), removedAt).closedReason === "partner_removed") {
+    return fail("This partner was removed. Reinvite the partner before reopening its opportunities.");
+  }
   o.status = "live";
   o.closedReason = undefined;
   o.updatedAt = new Date().toISOString();
@@ -283,4 +287,21 @@ export async function deleteOpportunity(actor: Actor, id: string): Promise<Actio
   list.splice(list.indexOf(o), 1);
   revalidate();
   return { status: "success", message: `Deleted “${o.title}”.` };
+}
+
+/**
+ * Called when a removed partner is reinvited, before its removal is cleared: listings already past the
+ * removal cutoff are stored as closed (`partner_removed`), so reinviting doesn't republish them; each needs
+ * review first (partners decision 6). Listings still inside the cutoff simply become emailed again.
+ */
+export function closeListingsPastRemovalCutoff(organizationId: string, removedAt: string) {
+  const now = new Date();
+  for (const o of opportunities()) {
+    if (o.organization.id !== organizationId) continue;
+    if (effectiveStatus(o, now, removedAt).closedReason === "partner_removed") {
+      o.status = "closed";
+      o.closedReason = "partner_removed";
+    }
+  }
+  revalidate();
 }

@@ -28,7 +28,7 @@ Decisions and their rationale: [docs/decisions/opportunities.md](../decisions/op
 | `organization_id` | FK → organizations, or `sdc` | SDC posts as itself (`SDC_ORG`). Either add SDC as an organizations row or treat `sdc` as a reserved ID. The UI needs `{ id, name }`, with the **current** name. |
 | `details` | JSON (per kind, below) | Drafts may be partial. Live and closed listings are complete. |
 | `status` | `draft` \| `live` \| `closed` | Stored status. See [Automatic expiry](#automatic-expiry). |
-| `closed_reason` | `ended` \| `closed` \| null | `ended`: its date passed. `closed`: a person closed it. Null unless closed. |
+| `closed_reason` | `ended` \| `closed` \| `partner_removed` \| null | `ended`: its date passed. `closed`: a person closed it. `partner_removed`: its organization was removed and the cutoff passed (see [Removed partners](#removed-partners)). Null unless closed. |
 | `created_at`, `updated_at` | timestamptz | |
 | `updated_by` | `{ name, role: admin \| partner }` | Store the user ID and derive the name, so a renamed person shows their current name. The panel shows "Updated {when} by {who}". |
 | `published_at` | timestamptz, nullable | Set the first time a listing goes live. Kept after it's closed. Cleared on duplicate. |
@@ -80,8 +80,9 @@ The panel only needs the latest `updated_by`. The user research asks to keep his
 | `listOpportunities(actor, filters)` | `Opportunity[]` | Scoped to the actor. Apply [effective status](#automatic-expiry) before choosing the tab. `filters.tab`: `live`, `drafts` or `closed` (closed includes ended). Optional filters: `kind`, `organizationId` (admins only), and `q`, a case-insensitive substring of the title **or** the organization name. **Sort:** Live by key date, soonest first and undated last, then most recently updated. Drafts and Closed by most recently updated. |
 | `getOpportunityCounts(actor, filters)` | `{ live, drafts, closed }` | The same scope and filters as the list, without the tab. Used for the tab counts. |
 | `getOpportunity(actor, id)` | `Opportunity \| null` | `null` if missing **or** not visible to the actor. Returned with effective status. |
-| `listPublisherOptions()` | `OrganizationRef[]` | Admin only. SDC first, then current (not removed) partners A–Z. Feeds the form's **Organization** picker and the list's **Organization** filter. |
-| `countLiveOpportunities(organizationId)` | `number` | Effective status `live` for one organization. Replaces Partners' stored `opportunityCount` in the Organizations table and in "View opportunities ({count})". |
+| `listPublisherOptions()` | `OrganizationRef[]` | Admin only. SDC first, then current (not removed) partners A–Z. Feeds the form's **Organization** picker. |
+| `listOrganizationFilterOptions()` | `OrganizationFilterOption[]` | Admin only. `listPublisherOptions()` plus removed partners that have listings (`removed: true`). Feeds the list's **Organization** filter. |
+| `countLiveOpportunities(organizationId)` | `number` | Effective status `live` for one organization (a removed partner's listings count until their cutoff). Replaces Partners' stored `opportunityCount` in the Organizations table and in "View opportunities ({count})". |
 
 Paging isn't built. Volumes are small (about 50 partners). Add paging when a tab regularly passes about 200 rows.
 
@@ -135,13 +136,15 @@ Implement this as a scheduled job (at least hourly, since events end at their st
 
 **Known edge in the dev service:** saving (`intent=save`) a listing that ended but is still stored as `live` writes `closed_reason = closed`, so it would show **Closed** instead of **Ended**. If you store expiry with a job, this can't happen. If you compute it at query time, keep `ended` when the effective reason is `ended`.
 
-## Removed partners (open question)
-Partners decision 6 says a removed organization's listings stop being recommended and emailed **at once**, then each expires at the earlier of its own end date or **removal + 1 month**. The Opportunities code doesn't implement this yet:
-- `effectiveStatus` doesn't know about removal, so a removed partner's listings stay **Live** in the admin list until their own date.
-- `listPublisherOptions` leaves out removed partners, so admins **can't filter** to their listings and can't post as them. Posting as them is intended; filtering to them is a gap.
-- Partners can't see anything after removal, because `getCurrentPartner` returns `null`.
-
-**Open question for SDC:** when a partner is removed, should their live listings be **closed at once** (simplest, and matches "stop emailing now"), or follow the one-month cutoff? Until SDC answers, implement partners decision 6: exclude them from emails and recommendations from `removedAt`, and treat `removedAt + 1 month` as an extra key date in expiry. Reinviting doesn't republish them.
+## Removed partners
+Decided by owner, 26 Sep 2026 ([opportunities decision 13](../decisions/opportunities.md), [partners decision 6](../decisions/partners.md)). Implemented at query time in `format.ts` (`effectiveStatus(o, now, partnerRemovedAt)`), with `queries.ts` passing the organization's `removedAt`:
+- **Send exclusion, from `removedAt`:** leave every listing of a removed organization out of all new emails and recommendations at once. The email and recommendation queries must check the organization's `removed_at`, not only the listing's status (the listing still reads as live).
+- **Visibility cutoff:** people who already got a listing can still see it until **the earlier of its own end or `removedAt + 30 days`** (`REMOVED_PARTNER_VISIBLE_DAYS`). Undated listings use `removedAt + 30 days`.
+- **Before the cutoff** the listing stays on **Live** and the read model adds two derived fields (never stored): `emailsStopped: true` and `visibleUntil` (ISO timestamp). The table and panel show a **No longer emailed** badge, and the panel explains "The partner was removed. People who already got it can see it until {date}."
+- **After the cutoff** it reads as `closed` with `closed_reason = partner_removed` (badge **Partner removed**), unless its own date passed first, in which case it's `ended`. If you store expiry with a job, write the same reason.
+- **Reinviting** the partner doesn't republish anything: `closeListingsPastRemovalCutoff` stores `partner_removed` listings as closed before `removedAt` is cleared. Listings still inside the cutoff simply become emailed again. `reopenOpportunity` refuses a listing past its cutoff while the partner is removed: `This partner was removed. Reinvite the partner before reopening its opportunities.`
+- **Admin Organization filter:** `listOrganizationFilterOptions()` returns SDC, current partners, then removed partners that still have listings (`removed: true`, shown as "{name} (removed)"). `listPublisherOptions()` still leaves removed partners out, so nobody can post as them.
+- Partners of a removed organization can't sign in (`getCurrentPartner` returns `null`), so only admins see these states.
 
 ## Revalidation
 After any successful write, revalidate:
@@ -152,15 +155,15 @@ After any successful write, revalidate:
 If the form's edit pages or the partner organization page render cached data, add `/admin/opportunities/[id]/edit` and `/partner/opportunities/[id]/edit`.
 
 ## Partner organization profile
-The partner **Organization** page edits the organization's name, website and short description, and lists the team read-only (decisions 8 and 9). The requirements are in [backend/partners.md](./partners.md) under `updateOrganization`:
+The partner **Organization** page edits the organization's name, website and short description, and manages the team: partners invite and remove colleagues (opportunities decision 8, partners decision 10). The requirements are in [backend/partners.md](./partners.md) under `updateOrganization`:
 - `updateMyOrganization` (`src/app/partner/organization/_data/actions.ts`) takes FormData `name`, `website` and `description`. It takes the organization from `getCurrentPartner()`, never from the client, and refuses removed organizations.
 - The validation is shared with the admin action in `src/app/admin/partners/_data/profile.ts`.
 - A name change must show up everywhere at once: listings, the partner sidebar and Partners. Store organizations by ID only; never copy the name onto opportunity rows. The dev store copies it (`OrganizationRef` on each record), so renames don't reach existing listings in development.
-- Team: the organization's current contacts (name, email, and whether they're pending). Read-only.
+- Team: the organization's current contacts (name, email, and whether they're pending). Partners invite and remove colleagues themselves; see [backend/partners.md](./partners.md#partners-managing-their-own-team).
 
 ## Also needed
 - **The Partners panel link.** "View opportunities" links to `/admin/opportunities?org=<organizationId>`. The list reads `org` (plus `tab`, `q`, `kind`) in `components/listParams.ts` and passes it as `filters.organizationId`; partners' `org` is ignored.
-- **Emails and the feed** (not built) must read only effective-`live` listings from current partners.
+- **Emails and the feed** (not built) must read only effective-`live` listings **without** `emailsStopped`, that is, from current partners.
 
 ## Delete when done
 - `src/features/opportunities/store.ts` (the seed data and in-memory store).

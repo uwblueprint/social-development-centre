@@ -27,9 +27,21 @@ A dev-only in-memory store (`_data/store.ts`) makes the UI work end to end. Repl
 | `updateOrganization` | Fields `name`, `website`, `description`; only fields present in the FormData change (the panel saves the name and the profile separately). Name required and unique among organizations; website empty or an `https://` URL; description up to 280 characters. Works for removed partners too. Partners edit the same fields for their own organization through `updateMyOrganization` (`src/app/partner/organization/_data/actions.ts`), which takes the organization from the session, never from the client. Rules shared in `_data/profile.ts`. |
 | `removeContact` | Active contacts only (a person left the organization). Revoke that person's access now; keep the record for history (`removedAt`), hide it from lists, and free the email for other organizations. Refuse if they're the organization's only current contact. |
 | `removePartner` | Organization-level. Effects below. |
-| `reinvitePartner` | Removed only. Uses the saved (optionally edited) contacts, sends each a fresh invitation, and returns the organization to the current list as Pending. Does not republish expired opportunities. |
+| `reinvitePartner` | Removed only. Uses the saved (optionally edited) contacts, sends each a fresh invitation, and returns the organization to the current list as Pending. Does not republish expired opportunities: listings past the removal cutoff are stored as closed (`partner_removed`) first (`closeListingsPastRemovalCutoff` in `src/features/opportunities/service.ts`). |
 
 Every action must verify the caller is an SDC admin.
+
+### Partners managing their own team
+Decided by owner, 26 Sep 2026 ([decisions/partners.md](../decisions/partners.md) decision 10). The partner portal's **Organization → Team** calls these in `src/app/partner/organization/_data/actions.ts`. Each re-checks `getCurrentPartner()` and only touches contacts of **that** organization; a contact ID from another organization acts as if it doesn't exist. The rules and messages are shared with the admin actions in `src/app/admin/partners/_data/contacts.ts` (email validation, duplicate check among current contacts, 7-day invitation, send-failure handling).
+
+| Action | Same rules as |
+|---|---|
+| `inviteColleague` (FormData `name`, `email`) | `invitePartner`, organization fixed to the caller's |
+| `resendColleagueInvitation(contactId)` | `resendInvitation` |
+| `cancelColleagueInvitation(contactId)` | `cancelInvitation` |
+| `removeColleague(contactId)` | `removeContact`, and it refuses the caller's own contact (the UI hides that option) |
+
+`PartnerUser` now carries `contactId` so the UI can tell which row is the signed-in person.
 
 ## Invitation acceptance
 - Link valid for 7 days (auth design default), single use.
@@ -37,7 +49,7 @@ Every action must verify the caller is an SDC admin.
 
 ## Removing a partner
 - Immediately: revoke portal access and sessions for all contacts; stop recommending all of the organization's opportunities; exclude them from all future automated emails.
-- Each existing dated opportunity expires at the earlier of its own end date or `removedAt + 1 month` (already-ended ones stay expired); undated ones expire at `removedAt + 1 month`. Expired listings disappear from every SDC surface. Needs a scheduled job or expiry computed at read time.
+- Each existing opportunity stays visible to people who already received it until the earlier of its own end or `removedAt + 30 days`, then closes with `closed_reason = partner_removed` (undated ones close at `removedAt + 30 days`; already-ended ones stay ended). See [opportunities.md](./opportunities.md#removed-partners). Expired listings disappear from every SDC surface. Needs a scheduled job or expiry computed at read time.
 - Keep the organization, contacts and all opportunity records for history.
 - Already-sent emails can't be recalled, and external registration links may keep working. SDC-controlled listing and recommendation surfaces must honour expiry. Links in old emails to an expired SDC listing show a "no longer available" page.
 

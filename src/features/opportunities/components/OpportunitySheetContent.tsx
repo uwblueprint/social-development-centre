@@ -38,7 +38,7 @@ import {
   WORKPLACE_LABEL,
 } from "../catalog";
 import { copy } from "../copy";
-import { formatDate, formatTime } from "../format";
+import { formatDate, formatDay, formatTime } from "../format";
 import type { Opportunity, OpportunityActions } from "../types";
 import { KindIcon } from "./KindIcon";
 import { formatUpdated, statusLabel } from "./opportunityColumns";
@@ -108,6 +108,14 @@ const ExternalLink = styled.a`
     box-shadow: var(--focus-ring);
     border-radius: var(--radius-sm);
   }
+`;
+
+/* One line under the header: why a removed partner's listing is no longer emailed, and until when it shows. */
+const RemovedNote = styled.p`
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-body);
+  color: var(--color-text-muted);
 `;
 
 const Updated = styled.p`
@@ -231,6 +239,7 @@ export function OpportunitySheetContent({
         <Title>{o.title}</Title>
         <MetaRow>
           <Badge $variant={statusVariant(o)}>{statusLabel(o)}</Badge>
+          {o.emailsStopped && <Badge $variant="outline">{copy.removedPartner.badge}</Badge>}
           <KindLine>
             <KindIcon kind={o.kind} size={14} />
             {KIND_LABEL[o.kind]}
@@ -240,6 +249,9 @@ export function OpportunitySheetContent({
 
       <SheetBody aria-busy={pending || undefined}>
         <Body>
+          {o.emailsStopped && o.visibleUntil && (
+            <RemovedNote>{copy.removedPartner.explanation(formatDay(o.visibleUntil))}</RemovedNote>
+          )}
           <DetailsList>
             <DetailRow>
               <DetailLabel>{copy.form.summary.label}</DetailLabel>

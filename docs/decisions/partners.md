@@ -33,14 +33,15 @@ Each entry: the decision, which page it's on, what it affects, and when someone 
 - **When encountered:** Right after inviting a new organization, until its first contact accepts.
 
 ## 6. Opportunity expiry after a partner is removed
-- **Decision:** Removal doesn't delete opportunities; it sets a cutoff one month after removal.
-  - Dated opportunity: expires at its own end date or the cutoff, **whichever comes first**. One that already ended stays expired.
-  - Undated opportunity: expires at the cutoff.
-  - Recommendations and new automated emails stop including them immediately on removal.
-  - Reinviting the partner doesn't republish expired opportunities; each needs review first.
-- **Page:** Admin → Partners → side panel → Remove access (confirmation explains this); Admin → Opportunities (listings disappear at expiry); public listing pages.
+- **Status:** Decided by owner, 26 Sep 2026. Replaces the earlier assumption.
+- **Decision:** Removal doesn't delete opportunities.
+  - **Immediately:** the organization's opportunities stop being emailed and recommended.
+  - **People who already received one** can still see it until its own end or **one month (30 days) after removal, whichever comes first**. Undated ones close one month after removal. One that already ended stays ended.
+  - Until then it stays on Admin → Opportunities → **Live** with a **No longer emailed** badge; after that it moves to **Closed** marked **Partner removed**.
+  - Reinviting the partner doesn't republish listings that already closed this way; each needs review first.
+- **Page:** Admin → Partners → side panel → Remove access (confirmation explains this); Admin → Opportunities (badges, panel note, "{name} (removed)" in the **Organization** filter); public listing pages.
 - **Affects:** Opportunity visibility, recommendations, automated emails, the partner's opportunity count.
-- **When encountered:** When an admin removes a partner, and over the following month as listings expire.
+- **When encountered:** When an admin removes a partner, and over the following month as listings close.
 
 ## 7. Links to expired listings show "no longer available"
 - **Decision:** An SDC link to an expired listing (e.g. from an email sent before removal) opens a "This opportunity is no longer available" page instead of the listing. External registration links are the partner's and may keep working.
@@ -62,3 +63,14 @@ Each entry: the decision, which page it's on, what it affects, and when someone 
 - **Page:** Admin → Partners → side panel (contact menu; Remove access).
 - **Affects:** Portal access for one person or for everyone at the organization; the Removed tab (organizations only).
 - **When encountered:** When a partner contact leaves, or a partnership ends.
+
+## 10. Partners manage their own team
+- **Status:** Decided by owner, 26 Sep 2026. Replaces the assumption that only SDC invites and removes partner contacts.
+- **Decision:** Partners can invite and remove colleagues in their own organization; SDC can still do everything from Partners. On Partner → **Organization** → **Team**:
+  - **Invite colleague** opens a dialog with **Name** and **Email** and sends an invitation (7 days, same rules as SDC's invitations: an email that's already a current partner contact is refused, and a failed send can be retried).
+  - Each person's ⋯ menu offers **Resend invitation** and **Cancel invitation** while they're pending, and **Remove from organization** once they're active (with a confirmation).
+  - Nobody can remove themselves: the option isn't shown on your own row, which is marked "(you)". Ask a colleague or SDC.
+  - The last remaining contact can't be removed (decision 9); in practice a partner can never be the last, since they're signed in.
+- **Page:** Partner → Organization → Team.
+- **Affects:** Portal access for partner staff, SDC's admin workload, the Partners contact lists (same records).
+- **When encountered:** A new colleague needs access, or someone leaves the organization.

@@ -5,7 +5,7 @@
   - Real examples: Willow River Centre, Adventure4Change, Waterloo Region Community Garden Network, KW Community Coop Kitchen, Women of Dignity International.
 - **Often volunteer-run with little tech capacity.** They host on Eventbrite, Luma, Zoom, Google Forms or paper.
 - **One organization is not one person.** Several people may post for the same group, using personal work emails or a shared inbox. People leave, and organizations get renamed or dissolve.
-- **They get access only when an SDC admin invites them.** There is no public signup. Magic-link sign-in is the working assumption.
+- **They get access when SDC or a colleague at their organization invites them.** There is no public signup. Magic-link sign-in is the working assumption.
 
 ## What they post
 - Events: film screenings with a panel, community meetings, workshops.
@@ -33,4 +33,4 @@
 ## Open questions
 - Which types will partners actually publish, and what minimum fields can they supply every time? To be answered at the 29 September session.
 - Who keeps the logo, contact details and categories current? Avoid a new maintenance chore if SDC already holds the data.
-- Can partners invite their own colleagues? **Assumption:** no. Only SDC invites people (see [decisions/partners.md](../decisions/partners.md)).
+- ~~Can partners invite their own colleagues?~~ **Decided by owner, 26 Sep 2026:** yes. Partners invite and remove colleagues in their own organization (see [decisions/partners.md](../decisions/partners.md) decision 10).

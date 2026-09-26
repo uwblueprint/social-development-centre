@@ -1,6 +1,6 @@
 # Opportunities: decision log
 
-We built Opportunities while SDC wasn't available to answer questions, so every entry below is an **assumption that SDC hasn't confirmed yet**. Each one is cheap to reverse. The questions and the reasoning behind them are in [plan/opportunities-and-partner-portal.md](../plan/opportunities-and-partner-portal.md). Most of them go to the 29 September discovery session.
+We built Opportunities while SDC wasn't available to answer questions, so most entries below are **assumptions that SDC hasn't confirmed yet**. Entries marked "Decided by owner" are confirmed. Each one is cheap to reverse. The questions and the reasoning behind them are in [plan/opportunities-and-partner-portal.md](../plan/opportunities-and-partner-portal.md). Most of them go to the 29 September discovery session.
 
 Each entry gives the decision, which page it's on, what it affects, when someone runs into it, and the client answer that would change it.
 
@@ -71,13 +71,12 @@ Each entry gives the decision, which page it's on, what it affects, when someone
 - **When encountered:** A partner's second run of the same event.
 - **Revisit when:** SDC or partners say they post the same event many times a month, and duplicating becomes a chore.
 
-## 8. Partners can't invite or remove colleagues
-- **Status:** Assumption — not yet confirmed with SDC.
-- **Decision:** Only SDC invites and removes partner contacts (as in [partners decision 4](./partners.md)). The partner portal shows the **Team** read-only.
-- **Page:** Partner → **Organization**.
+## 8. Partners invite and remove their own colleagues
+- **Status:** Decided by owner, 26 Sep 2026. Replaces the earlier assumption that only SDC manages partner contacts.
+- **Decision:** Partners manage their own **Team**: **Invite colleague** (name and email), and from each person's ⋯ menu **Resend invitation** or **Cancel invitation** (pending) and **Remove from organization** (active, after a confirmation). Nobody can remove themselves; that option isn't shown on your own row. SDC can still do all of this from Partners. Details in [partners decision 10](./partners.md).
+- **Page:** Partner → **Organization** → **Team**.
 - **Affects:** How much admin work SDC has when partner staff change, and the partner's control over their own team.
-- **When encountered:** A partner contact leaves or a new colleague needs access.
-- **Revisit when:** SDC finds invite requests are a burden and trusts partners to manage their own team.
+- **When encountered:** A new colleague needs access, or someone leaves the organization.
 
 ## 9. Partners can edit their organization's details
 - **Status:** Assumption — not yet confirmed with SDC.
@@ -120,3 +119,15 @@ Each entry gives the decision, which page it's on, what it affects, when someone
 - **Affects:** How long posting takes, what emails can show, and how the future feed can filter.
 - **When encountered:** Every new listing.
 - **Revisit when:** SDC confirms each type's fields at the 29 September session, especially whether events need capacity or an age range, and whether jobs must include pay.
+
+## 13. A removed partner's listings stop being emailed at once, then close
+- **Status:** Decided by owner, 26 Sep 2026. Replaces the open question in [backend/opportunities.md](../backend/opportunities.md#removed-partners) and the assumption in partners decision 6.
+- **Decision:**
+  - When SDC removes a partner, its listings stop going out in emails and recommendations **immediately**.
+  - People who already received a listing can still see it until **its own end or one month after removal, whichever comes first**. Then it closes and shows **Partner removed** on the **Closed** tab.
+  - Until then it stays on **Live** with a **No longer emailed** badge. The side panel says "The partner was removed. People who already got it can see it until {date}."
+  - Admins can still find these listings: the **Organization** filter lists removed partners as "{name} (removed)".
+  - Reinviting the partner doesn't reopen listings that already closed this way.
+- **Page:** Admin → Opportunities (**Live** and **Closed** tabs, side panel, **Organization** filter).
+- **Affects:** Emails, recommendations, the Live and Closed tabs, the partner's live count on Partners.
+- **When encountered:** After an admin removes a partner that has live listings, and over the following month.

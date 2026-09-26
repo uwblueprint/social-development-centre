@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { closeListingsPastRemovalCutoff } from "@/features/opportunities/service";
 import type { ActionState } from "@/lib/forms";
 import {
   addInvitedContact,
@@ -152,6 +153,7 @@ export async function reinvitePartner(orgId: string): Promise<ActionState> {
     c.invitation = { ...newInvitation(), sendError };
     if (sendError) errors.push(c.email);
   }
+  if (org.removedAt) closeListingsPastRemovalCutoff(org.id, org.removedAt);
   org.removedAt = undefined;
   revalidatePath("/admin/partners");
   return errors.length
