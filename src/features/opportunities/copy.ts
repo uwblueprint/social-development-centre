@@ -136,10 +136,6 @@ export const copy = {
       addDetail: "Add detail",
       removeDetail: (n: number) => `Remove detail ${n}`,
     },
-    unsavedTitle: "Leave without saving?",
-    unsavedBody: "Your changes to this opportunity will be lost.",
-    unsavedConfirm: "Leave",
-    unsavedCancel: "Keep editing",
   },
   notFound: {
     title: "Opportunity not found",
