@@ -45,6 +45,13 @@ export interface PartnerPerson extends PartnerContact {
   organization: Pick<PartnerOrganization, "id" | "name" | "status">;
 }
 
+/** A contact who hasn't accepted yet, as listed on the Invitations tab. */
+export interface PendingInvitation extends PartnerPerson {
+  invitation: Invitation;
+  /** True once `invitation.expiresAt` has passed and the link no longer works. */
+  expired: boolean;
+}
+
 export interface OrganizationOption {
   id: string;
   name: string;

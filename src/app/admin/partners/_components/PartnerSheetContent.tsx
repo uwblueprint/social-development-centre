@@ -4,7 +4,7 @@ import * as React from "react";
 import { useActionState } from "react";
 import Link from "next/link";
 import { styled } from "next-yak";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Ban, Save, Send, UserPlus } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,6 +25,7 @@ import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Textarea } from "@/components/ui/Textarea";
 import { useToast } from "@/components/ui/Toast";
 import { fieldError, idleState } from "@/lib/forms";
+import { partnersCopy as copy } from "../_copy";
 import { reinvitePartner, removePartner, updateOrganization } from "../_data/actions";
 import { ORGANIZATION_DESCRIPTION_MAX, type PartnerOrganization } from "../_data/types";
 import { formatDate } from "../_lib/format";
@@ -105,7 +106,7 @@ const ContactsSection = styled.div`
 function statusBadge(status: PartnerOrganization["status"]) {
   if (status === "active") return null;
   if (status === "removed") return <Badge $variant="outline">Removed</Badge>;
-  return <Badge $variant="warning">Invitation pending</Badge>;
+  return <Badge $variant="warning">{copy.badges.invitationPending}</Badge>;
 }
 
 export function PartnerSheetContent({
@@ -154,6 +155,7 @@ export function PartnerSheetContent({
             </Field>
           </NameField>
           <SubmitButton $variant="secondary" $size="sm">
+            <Icon icon={Save} size={16} />
             Save
           </SubmitButton>
         </NameForm>
@@ -202,6 +204,7 @@ export function PartnerSheetContent({
                 )}
               </Field>
               <SubmitButton $variant="secondary" $size="sm">
+                <Icon icon={Save} size={16} />
                 Save profile
               </SubmitButton>
             </ProfileForm>
@@ -222,6 +225,7 @@ export function PartnerSheetContent({
           </div>
           {org.status !== "removed" && (
             <Button type="button" $variant="secondary" $size="sm" onClick={onAddPerson} style={{ alignSelf: "flex-start" }}>
+              <Icon icon={UserPlus} size={16} />
               Add person
             </Button>
           )}
@@ -231,10 +235,12 @@ export function PartnerSheetContent({
       <SheetFooter>
         {org.status === "removed" ? (
           <Button type="button" $variant="secondary" onClick={() => setConfirm("reinvite")}>
+            <Icon icon={Send} size={16} />
             Reinvite
           </Button>
         ) : (
           <Button type="button" $variant="danger" onClick={() => setConfirm("remove")}>
+            <Icon icon={Ban} size={16} />
             Remove access
           </Button>
         )}

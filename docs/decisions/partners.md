@@ -16,19 +16,19 @@ Each entry: the decision, which page it's on, what it affects, and when someone 
 
 ## 3. Details open in a side panel
 - **Decision:** Clicking a partner or person row opens a right-hand panel over the list (drawer on mobile) instead of a separate page.
-- **Page:** Admin → Partners (all three tabs).
+- **Page:** Admin → Partners (every tab).
 - **Affects:** Where admins edit details, manage contacts and invitations, remove or reinvite a partner.
 - **When encountered:** Any time an admin opens a partner.
 
 ## 4. Organizations have several contacts; admins invite a person
-- **Decision:** A partner organization has one or more contacts (typically 4–5). "Invite partner" invites a *person* (name, email) and attaches them to an organization chosen from a searchable dropdown; typing a name that doesn't exist offers `Create "<name>"`. The Partners page has Organizations, People and Removed tabs.
+- **Decision:** A partner organization has one or more contacts (typically 4–5). "Invite partner" invites a *person* (name, email) and attaches them to an organization chosen from a searchable dropdown; typing a name that doesn't exist offers `Create "<name>"`. The Partners page has Organizations, People, Invitations and Removed tabs (decision 11).
 - **Page:** Admin → Partners → Invite partner dialog; People tab; side panel → Add person.
 - **Affects:** Data model (organization ↔ contacts), invitation flow, search (matches organization, contact name or email).
 - **When encountered:** Every new invitation, and when an admin looks for a person rather than an organization.
 
 ## 5. An organization is Pending until any contact accepts
 - **Decision:** The organization shows the Pending badge until at least one of its contacts accepts. After that it's active (no badge), even if other contacts are still pending; those show Pending on their own rows.
-- **Page:** Admin → Partners → Organizations tab and side panel; People tab.
+- **Page:** Admin → Partners → Organizations tab and side panel; Invitations tab.
 - **Affects:** Pending badge, when the partner can start managing opportunities.
 - **When encountered:** Right after inviting a new organization, until its first contact accepts.
 
@@ -74,3 +74,16 @@ Each entry: the decision, which page it's on, what it affects, and when someone 
 - **Page:** Partner → Organization → Team.
 - **Affects:** Portal access for partner staff, SDC's admin workload, the Partners contact lists (same records).
 - **When encountered:** A new colleague needs access, or someone leaves the organization.
+
+## 11. Pending invitations have their own tab
+- **Status:** Decided by owner, 26 Sep 2026. Replaces the Invitation column on People.
+- **Decision:** The Partners tabs are **Organizations · People · Invitations · Removed**, each with a count that follows the search.
+  - **Invitations** lists every pending invitation at current partners, including people at brand-new organizations: **Name** (with email), **Organization**, **Sent**, **Expires**. Soonest to expire first.
+  - A problem shows as a warning badge next to the name: **Not delivered** (the email failed to send) or **Expired** (the link no longer works). Not delivered wins when both apply.
+  - Each row's ⋯ menu offers **Resend invitation** and **Cancel invitation** (with a confirmation; decision 1). Clicking the row opens the partner panel, which still lists pending contacts with the same actions.
+  - **People** lists active contacts only, with no Invitation column. **Organizations** has no invitation column; its **Invitation pending** badge shows only while nobody at the organization has accepted (decision 5).
+  - A cell with nothing to show stays empty (no "—").
+- **Why:** Invitations are a work queue: admins chase the expired and undelivered ones, then they're gone. Keeping them apart keeps People and Organizations clean, and an Invitation column that was blank in most People rows didn't earn its space.
+- **Page:** Admin → Partners → Invitations tab; People and Organizations tabs.
+- **Affects:** Where pending contacts are listed, tab counts, search results per tab.
+- **When encountered:** After inviting someone, while waiting for them to accept, and when an invitation bounces or expires.

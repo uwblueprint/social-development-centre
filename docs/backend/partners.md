@@ -15,7 +15,10 @@ A dev-only in-memory store (`_data/store.ts`) makes the UI work end to end. Repl
 ## Data the UI needs
 - Organization: `id`, `name`, `website?` (`https://` only), `description?` (up to 280 characters), `status`, `contacts[]`, `opportunityCount` (live opportunities: published and not ended or closed; derived from Opportunities), `createdAt`, `removedAt?`.
 - Contact: `id`, `name`, `email`, `status`, `invitation?` (`sentAt`, `expiresAt`, `sendError?`), `removedAt?` (removed contacts are kept but not listed).
-- Lists: current organizations; removed organizations; all people at current organizations. All searchable by organization name, contact name or email (server-side once lists grow).
+- Lists (all in `_data/queries.ts`, all searchable by organization name, contact name or email; server-side once lists grow, and each tab count uses the same `q`):
+  - `listPartners("current" | "removed", q)`: organizations.
+  - `listPartnerPeople(q)`: **active** contacts at current organizations (People tab).
+  - `listPendingInvitations(q)`: **pending** contacts at current organizations, including organizations nobody has joined yet (Invitations tab). Returns `PendingInvitation` (a person plus a required `invitation` and `expired`, true once `expiresAt` has passed; compute it at read time). Sorted by `expiresAt` ascending, so expired ones come first. An active contact with an outstanding email-change invitation stays on People, not here.
 
 ## Actions
 | Action | Rules |

@@ -1,4 +1,4 @@
-import type { OrganizationOption, PartnerOrganization, PartnerPerson } from "./types";
+import type { OrganizationOption, PartnerOrganization, PartnerPerson, PendingInvitation } from "./types";
 import { currentContacts, orgs, statusOf, toPublic } from "./store";
 
 /** Backend: replace these with real queries; keep the signatures. */
@@ -14,14 +14,43 @@ export async function listPartners(view: "current" | "removed", q?: string): Pro
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
+/** Active contacts at current organizations (People tab). Pending contacts are listed by listPendingInvitations. */
 export async function listPartnerPeople(q?: string): Promise<PartnerPerson[]> {
   return orgs()
     .filter((o) => statusOf(o) !== "removed")
     .flatMap((o) =>
-      currentContacts(o).map((c) => ({ ...c, organization: { id: o.id, name: o.name, status: statusOf(o) } })),
+      currentContacts(o)
+        .filter((c) => c.status === "active")
+        .map((c) => ({ ...c, organization: { id: o.id, name: o.name, status: statusOf(o) } })),
     )
     .filter((p) => matches(q, p.name, p.email, p.organization.name))
     .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
+ * Every pending invitation at current organizations (Invitations tab), including contacts at
+ * organizations nobody has joined yet. Soonest to expire first, so expired ones lead.
+ */
+export async function listPendingInvitations(q?: string): Promise<PendingInvitation[]> {
+  const now = Date.now();
+  return orgs()
+    .filter((o) => statusOf(o) !== "removed")
+    .flatMap((o) =>
+      currentContacts(o).flatMap((c) =>
+        c.status === "pending" && c.invitation
+          ? [
+              {
+                ...c,
+                invitation: c.invitation,
+                expired: new Date(c.invitation.expiresAt).getTime() < now,
+                organization: { id: o.id, name: o.name, status: statusOf(o) },
+              },
+            ]
+          : [],
+      ),
+    )
+    .filter((p) => matches(q, p.name, p.email, p.organization.name))
+    .sort((a, b) => a.invitation.expiresAt.localeCompare(b.invitation.expiresAt) || a.name.localeCompare(b.name));
 }
 
 export async function getPartner(id: string): Promise<PartnerOrganization | null> {

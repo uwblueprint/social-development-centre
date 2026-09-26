@@ -15,9 +15,9 @@ export function initialsOf(name: string): string {
   );
 }
 
-/** First 2 names joined, then "+N" for the rest, e.g. "Amara Okafor, Luis Romero +1". */
+/** First 2 names joined, then "+N" for the rest, e.g. "Amara Okafor, Luis Romero +1". Empty when there are none. */
 export function summarizeNames(names: string[]): string {
-  if (names.length === 0) return "No contacts";
+  if (names.length === 0) return "";
   const shown = names.slice(0, 2).join(", ");
   const rest = names.length - 2;
   return rest > 0 ? `${shown} +${rest}` : shown;

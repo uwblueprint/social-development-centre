@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Archive, Building2, Search as SearchIcon, UserPlus, UserRound } from "lucide-react";
+import { Archive, Building2, MailCheck, Search as SearchIcon, UserPlus, UserRound } from "lucide-react";
 import { ListPage, ListPageHeader, ListPageToolbar, useListParams, useListSearch } from "@/components/patterns/ListPage";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -11,17 +11,16 @@ import { Sheet, SheetContent } from "@/components/ui/Sheet";
 import { Table } from "@/components/ui/Table";
 import { Tabs, TabsContent, TabsCount, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { AppToastProvider } from "@/components/ui/Toast";
-import type { OrganizationOption, PartnerOrganization, PartnerPerson } from "../_data/types";
+import { partnersCopy as copy } from "../_copy";
+import type { OrganizationOption, PartnerOrganization, PartnerPerson, PendingInvitation } from "../_data/types";
 import { InviteDialog } from "./InviteDialog";
-import { organizationColumns, personColumns, removedColumns } from "./PartnerRows";
+import { invitationColumns, organizationColumns, personColumns, removedColumns } from "./PartnerRows";
 import { PartnerSheetContent } from "./PartnerSheetContent";
 
-export type PartnersTab = "organizations" | "people" | "removed";
-
-const SEARCH_LABEL = "Search by name or email";
+export type PartnersTab = "organizations" | "people" | "invitations" | "removed";
 
 function normalizeTab(value: string): PartnersTab {
-  return value === "people" || value === "removed" ? value : "organizations";
+  return value === "people" || value === "invitations" || value === "removed" ? value : "organizations";
 }
 
 export function PartnersView({
@@ -30,6 +29,7 @@ export function PartnersView({
   organizations,
   removedOrganizations,
   people,
+  invitations,
   organizationOptions,
 }: {
   tab: PartnersTab;
@@ -37,6 +37,7 @@ export function PartnersView({
   organizations: PartnerOrganization[];
   removedOrganizations: PartnerOrganization[];
   people: PartnerPerson[];
+  invitations: PendingInvitation[];
   organizationOptions: OrganizationOption[];
 }) {
   const { setParams } = useListParams();
@@ -69,6 +70,10 @@ export function PartnersView({
     setInviteOpen(true);
   }
 
+  const noMatches = (
+    <EmptyState icon={SearchIcon} title={copy.search.noMatchesTitle(q)} description={copy.search.noMatchesDescription} />
+  );
+
   const selectedOrg =
     organizations.find((o) => o.id === panel?.orgId) ??
     removedOrganizations.find((o) => o.id === panel?.orgId);
@@ -89,26 +94,30 @@ export function PartnersView({
         <Tabs value={activeTab} onValueChange={handleTabChange}>
           <ListPageToolbar
             tabs={
-              <TabsList aria-label="Partner views">
+              <TabsList aria-label={copy.tabs.ariaLabel}>
                 <TabsTrigger value="organizations">
-                  Organizations
-                  <TabsCount>({organizations.length})</TabsCount>
+                  {copy.tabs.organizations}
+                  <TabsCount>{copy.tabs.count(organizations.length)}</TabsCount>
                 </TabsTrigger>
                 <TabsTrigger value="people">
-                  People
-                  <TabsCount>({people.length})</TabsCount>
+                  {copy.tabs.people}
+                  <TabsCount>{copy.tabs.count(people.length)}</TabsCount>
+                </TabsTrigger>
+                <TabsTrigger value="invitations">
+                  {copy.tabs.invitations}
+                  <TabsCount>{copy.tabs.count(invitations.length)}</TabsCount>
                 </TabsTrigger>
                 <TabsTrigger value="removed">
-                  Removed
-                  <TabsCount>({removedOrganizations.length})</TabsCount>
+                  {copy.tabs.removed}
+                  <TabsCount>{copy.tabs.count(removedOrganizations.length)}</TabsCount>
                 </TabsTrigger>
               </TabsList>
             }
             search={
               <SearchField
                 name="q"
-                aria-label={SEARCH_LABEL}
-                placeholder={SEARCH_LABEL}
+                aria-label={copy.search.placeholder}
+                placeholder={copy.search.placeholder}
                 value={searchState.value}
                 onChange={(event) => searchState.setValue(event.target.value)}
                 onSearch={searchState.search}
@@ -126,11 +135,7 @@ export function PartnersView({
               aria-label="Organizations"
               empty={
                 q ? (
-                  <EmptyState
-                    icon={SearchIcon}
-                    title={`No matches for "${q}"`}
-                    description="Try a different organization name, contact name or email."
-                  />
+                  noMatches
                 ) : (
                   <EmptyState
                     icon={Building2}
@@ -157,16 +162,41 @@ export function PartnersView({
               aria-label="People"
               empty={
                 q ? (
-                  <EmptyState
-                    icon={SearchIcon}
-                    title={`No matches for "${q}"`}
-                    description="Try a different name, email or organization."
-                  />
+                  noMatches
                 ) : (
                   <EmptyState
                     icon={UserRound}
                     title="No people yet"
                     description="Invite a partner to add their first contact."
+                    action={
+                      <Button type="button" onClick={() => openInvite()}>
+                        <Icon icon={UserPlus} size={16} />
+                        Invite partner
+                      </Button>
+                    }
+                  />
+                )
+              }
+            />
+          </TabsContent>
+
+          <TabsContent value="invitations">
+            <Table
+              columns={invitationColumns}
+              rows={invitations}
+              getRowId={(invitation) => invitation.id}
+              onRowClick={(invitation) =>
+                setPanel({ orgId: invitation.organization.id, highlightContactId: invitation.id })
+              }
+              aria-label={copy.tabs.invitations}
+              empty={
+                q ? (
+                  noMatches
+                ) : (
+                  <EmptyState
+                    icon={MailCheck}
+                    title={copy.empty.invitationsTitle}
+                    description={copy.empty.invitationsDescription}
                     action={
                       <Button type="button" onClick={() => openInvite()}>
                         <Icon icon={UserPlus} size={16} />
@@ -188,11 +218,7 @@ export function PartnersView({
               aria-label="Removed partners"
               empty={
                 q ? (
-                  <EmptyState
-                    icon={SearchIcon}
-                    title={`No matches for "${q}"`}
-                    description="Try a different organization name, contact name or email."
-                  />
+                  noMatches
                 ) : (
                   <EmptyState icon={Archive} title="No removed partners" description="Partners whose access you remove appear here." />
                 )

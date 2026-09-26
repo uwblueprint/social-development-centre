@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useActionState } from "react";
 import { styled } from "next-yak";
-import { CircleAlert, MoreVertical } from "lucide-react";
+import { CircleAlert, MailX, MoreVertical, Pencil, RotateCw, Save, Send, UserMinus, X } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
@@ -28,6 +28,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/AlertDialog";
 import { fieldError, idleState } from "@/lib/forms";
+import { partnersCopy as copy } from "../_copy";
 import { cancelInvitation, removeContact, resendInvitation, updateContact } from "../_data/actions";
 import type { PartnerContact } from "../_data/types";
 import { formatDate } from "../_lib/format";
@@ -111,7 +112,7 @@ export function ContactRow({
 
   async function handleResend() {
     const result = await resendInvitation(contact.id);
-    toast({ title: result.message ?? "Invitation resent." });
+    toast({ title: result.message ?? copy.invitationMenu.resentFallback });
   }
 
   async function handleConfirm(kind: Confirm) {
@@ -130,9 +131,13 @@ export function ContactRow({
         </Field>
         <EditActions>
           <Button type="button" $variant="secondary" $size="sm" onClick={() => setEditing(false)}>
+            <Icon icon={X} size={16} />
             Cancel
           </Button>
-          <SubmitButton $size="sm">Save</SubmitButton>
+          <SubmitButton $size="sm">
+            <Icon icon={Save} size={16} />
+            Save
+          </SubmitButton>
         </EditActions>
       </EditForm>
     );
@@ -149,6 +154,7 @@ export function ContactRow({
         setConfirm("remove");
       }}
     >
+      <Icon icon={UserMinus} size={16} />
       Remove from organization
       {onlyContact && (
         <VisuallyHidden>
@@ -164,7 +170,7 @@ export function ContactRow({
       <Info>
         <NameLine>
           {contact.name}
-          {contact.status === "pending" && <Badge $variant="warning">Invitation pending</Badge>}
+          {contact.status === "pending" && <Badge $variant="warning">{copy.badges.invitationPending}</Badge>}
         </NameLine>
         <Email>{contact.email}</Email>
         {contact.status === "pending" &&
@@ -174,6 +180,7 @@ export function ContactRow({
               <Icon icon={CircleAlert} size={13} />
               <span>{contact.invitation.sendError}</span>
               <Button type="button" $variant="ghost" $size="sm" onClick={handleResend}>
+                <Icon icon={RotateCw} size={16} />
                 Retry
               </Button>
             </ErrorLine>
@@ -189,9 +196,15 @@ export function ContactRow({
           </MenuTrigger>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={() => setEditing(true)}>Edit</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => setEditing(true)}>
+            <Icon icon={Pencil} size={16} />
+            Edit
+          </DropdownMenuItem>
           {contact.status === "pending" && (
-            <DropdownMenuItem onSelect={handleResend}>Resend invitation</DropdownMenuItem>
+            <DropdownMenuItem onSelect={handleResend}>
+              <Icon icon={Send} size={16} />
+              {copy.invitationMenu.resend}
+            </DropdownMenuItem>
           )}
           {contact.status === "pending" ? (
             <DropdownMenuItem
@@ -200,7 +213,8 @@ export function ContactRow({
                 setConfirm("cancel");
               }}
             >
-              Cancel invitation
+              <Icon icon={MailX} size={16} />
+              {copy.invitationMenu.cancel}
             </DropdownMenuItem>
           ) : onlyContact ? (
             <Tooltip content="This is the organization's only contact. Remove the organization's access instead.">
@@ -215,17 +229,17 @@ export function ContactRow({
       <AlertDialog open={confirm !== null} onOpenChange={(open) => !open && setConfirm(null)}>
         <AlertDialogContent>
           <AlertDialogTitle>
-            {shownConfirm === "cancel" ? "Cancel this invitation?" : `Remove ${contact.name} from ${organizationName}?`}
+            {shownConfirm === "cancel" ? copy.cancelInvitationConfirm.title : `Remove ${contact.name} from ${organizationName}?`}
           </AlertDialogTitle>
           <AlertDialogDescription>
             {shownConfirm === "cancel"
-              ? `${contact.name} won't be able to use the invitation link already sent.`
+              ? copy.cancelInvitationConfirm.body(contact.name)
               : `${contact.name} loses access to the partner portal now. Their record is kept for history, and their email can be invited under another organization.`}
           </AlertDialogDescription>
           <AlertDialogActions>
             <AlertDialogCancel asChild>
               <Button type="button" $variant="secondary">
-                {shownConfirm === "cancel" ? "Keep invitation" : "Keep access"}
+                {shownConfirm === "cancel" ? copy.cancelInvitationConfirm.keep : "Keep access"}
               </Button>
             </AlertDialogCancel>
             <AlertDialogAction asChild>
@@ -234,7 +248,7 @@ export function ContactRow({
                 $variant="danger"
                 onClick={() => confirm && void handleConfirm(confirm)}
               >
-                {shownConfirm === "cancel" ? "Yes, cancel invitation" : "Yes, remove"}
+                {shownConfirm === "cancel" ? copy.cancelInvitationConfirm.confirm : "Yes, remove"}
               </Button>
             </AlertDialogAction>
           </AlertDialogActions>
