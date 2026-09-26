@@ -26,6 +26,9 @@ export interface TableProps<T> {
 }
 
 const Wrapper = styled.div`
+  /* Contains absolutely positioned cell content (e.g. visually hidden text) so it scrolls with the
+     table instead of widening the page at 360px. */
+  position: relative;
   width: 100%;
   overflow-x: auto;
 `;

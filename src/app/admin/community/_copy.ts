@@ -10,8 +10,6 @@
 export const communityCopy = {
   page: {
     title: "Community",
-    description: "View general and paying members, add people and manage their access.",
-    searchPlaceholder: "Search by name or email",
   },
 
   tabs: {
@@ -25,7 +23,6 @@ export const communityCopy = {
   },
 
   toolbar: {
-    searchAriaLabel: "Search members",
     searchPlaceholder: "Search by name or email",
     export: "Export members",
     addMembers: "Add members",

@@ -13,6 +13,7 @@ import { Sheet, SheetContent } from "@/components/ui/Sheet";
 import { Table } from "@/components/ui/Table";
 import { Tabs, TabsContent, TabsCount, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { AppToastProvider } from "@/components/ui/Toast";
+import { Tooltip } from "@/components/ui/Tooltip";
 import type { CommunityCounts, Member, MemberPage, MemberTier } from "../_data/types";
 import { communityCopy as copy } from "../_copy";
 import { AddMembersDialog } from "./AddMembersDialog";
@@ -20,8 +21,6 @@ import { ExportDialog } from "./ExportDialog";
 import { memberColumns } from "./MemberRows";
 import { MemberSheetContent } from "./MemberSheetContent";
 
-// TODO(Community agent): set _copy.ts toolbar.searchAriaLabel to this string, use it here, and delete page.description.
-const SEARCH_LABEL = "Search by name or email";
 
 const TabContentBody = styled.div`
   display: flex;
@@ -110,10 +109,12 @@ export function CommunityView({
           <ListPageToolbar
             tabs={
               <TabsList aria-label={copy.tabs.ariaLabel}>
-                <TabsTrigger value="general">
-                  {copy.tabs.general}
-                  <TabsCount>{copy.tabs.generalCount(counts.general)}</TabsCount>
-                </TabsTrigger>
+                <Tooltip content={copy.tabs.generalTabTooltip} delayDuration={600} pinOnClick={false}>
+                  <TabsTrigger value="general">
+                    {copy.tabs.general}
+                    <TabsCount>{copy.tabs.generalCount(counts.general)}</TabsCount>
+                  </TabsTrigger>
+                </Tooltip>
                 <TabsTrigger value="paying">
                   {copy.tabs.paying}
                   <TabsCount>{copy.tabs.payingCount(counts.paying)}</TabsCount>
@@ -123,8 +124,8 @@ export function CommunityView({
             search={
               <SearchField
                 name="q"
-                aria-label={SEARCH_LABEL}
-                placeholder={SEARCH_LABEL}
+                aria-label={copy.toolbar.searchPlaceholder}
+                placeholder={copy.toolbar.searchPlaceholder}
                 value={searchState.value}
                 onChange={(event) => searchState.setValue(event.target.value)}
                 onSearch={searchState.search}
