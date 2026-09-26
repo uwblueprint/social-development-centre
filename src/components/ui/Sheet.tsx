@@ -151,7 +151,7 @@ export function SheetContent({
         {...props}
       >
         {children}
-        <CloseButton aria-label="Close">
+        <CloseButton aria-label="Close panel">
           <Icon icon={X} size={16} />
         </CloseButton>
       </Content>

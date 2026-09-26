@@ -2,7 +2,7 @@ import { revalidatePath } from "next/cache";
 import { orgs, statusOf } from "@/app/admin/partners/_data/store";
 import type { ActionState } from "@/lib/forms";
 import { KIND_NOUN, LIMITS, MAX_TOPICS, SDC_ORG, TOPICS } from "./catalog";
-import { effectiveStatus, hasEnded } from "./format";
+import { hasEnded } from "./format";
 import { nextOpportunityId, opportunities } from "./store";
 import type { Actor, CustomDetail, Opportunity, OpportunityKind, OrganizationRef, TopicId } from "./types";
 
@@ -40,7 +40,7 @@ const num = (fd: FormData, key: string) => {
 function isHttpsUrl(value: string) {
   try {
     const u = new URL(value);
-    return u.protocol === "https:" || u.protocol === "http:";
+    return u.protocol === "https:";
   } catch {
     return false;
   }
@@ -164,8 +164,8 @@ export async function saveOpportunity(actor: Actor, fd: FormData): Promise<Actio
   if (!KINDS.has(kind)) return fail("Choose a type of opportunity.");
 
   const intent = text(fd, "intent") || "publish";
-  const current = existing ? effectiveStatus(existing).status : "draft";
-  const nextStatus = intent === "draft" ? "draft" : intent === "save" ? current : "live";
+  // "save" keeps the stored status. An ended listing is stored as live, so moving its date forward revives it.
+  const nextStatus = intent === "draft" ? "draft" : intent === "save" ? (existing?.status ?? "draft") : "live";
   const strict = nextStatus !== "draft";
 
   const organization = resolveOrganization(actor, fd);
@@ -210,7 +210,7 @@ export async function saveOpportunity(actor: Actor, fd: FormData): Promise<Actio
     publishedAt: nextStatus === "live" ? (existing?.publishedAt ?? now) : existing?.publishedAt,
   } as Opportunity;
 
-  if (nextStatus === "live" && hasEnded(record)) {
+  if (intent === "publish" && hasEnded(record)) {
     const field = kind === "event" ? "date" : kind === "volunteer" || kind === "job" ? "applyBy" : "deadline";
     return fail("Fix the highlighted fields to publish.", {
       [field]: kind === "event" ? "This date and time has passed. Choose a future date." : "This date has passed. Choose a future date or clear it.",

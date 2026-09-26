@@ -14,17 +14,18 @@ The user was unavailable. Each assumption is recorded in [decisions/opportunitie
 
 | # | Question | Assumption built |
 |---|---|---|
-| 1 | What is "opportunities (custom thing)"? | A fifth type called **Other**. It has a required call to action (e.g. "Take the survey"), an optional deadline, and up to 5 custom label/value details. It covers programs, surveys and calls for input that don't fit the other four. |
-| 2 | Does SDC review partner listings before they go live? | **No review step.** Notion marks review as P2/TBD. Partners publish directly, and admins can edit, close or delete anything. |
+| 1 | What is "opportunities (custom thing)"? | **Owner confirmed (26 Sep).** A fifth type called **Other**. It has a required call to action (e.g. "Take the survey"), an optional deadline, and up to 5 custom label/value details. It covers programs, surveys and calls for input that don't fit the other four. |
+| 2 | Does SDC review partner listings before they go live? | **Owner confirmed (26 Sep): no review step.** Notion marks review as P2/TBD. Partners publish directly, and admins can edit, close or delete anything. |
 | 3 | Who tags topics? | **Whoever posts.** At least 1 and at most 3 topics are required to publish. The topic list is a placeholder until the 29 September taxonomy session. |
 | 4 | When does a listing leave the feed? | **Events** end at their start time (Notion, 24 September). **Other types** end the day after their deadline; with no deadline they stay live until someone closes them. |
-| 5 | Drafts? | **Yes.** "Save as draft" needs only a title, and drafts are invisible to members. Publishing validates everything. |
+| 5 | Drafts? | **Yes.** "Save as draft" needs only a title (anything else filled in must still be valid), and drafts are invisible to members. Publishing validates everything. |
 | 6 | Delete vs close? | **Close** takes a listing out of emails and the feed but keeps it (for the record and follow-ups). **Delete** is permanent, for mistakes, and asks for confirmation. Closed listings can be reopened. |
 | 7 | Recurring events? | **Out of scope.** "Duplicate" copies a listing into a new draft instead. |
-| 8 | Can partners invite colleagues or remove people? | **No.** Only SDC invites (existing Partners decision). The partner portal shows the team read-only. |
+| 8 | Can partners invite colleagues or remove people? | **Owner decided (26 Sep): yes**, within their own organization. SDC can still manage everyone. |
 | 9 | Can partners rename their organization? | **Yes.** They can edit their name, website and short description. Admins can edit the same fields from Partners. |
 | 10 | Images or logos? | **Out of scope.** Emails are text-first and there's no upload backend yet. |
 | 11 | Eventbrite prefill from a pasted link? | **Out of scope** (still a spike). The form keeps the link field first-class so prefill can slot in later. |
+| 13 | What happens to a removed partner's listings? | **Owner decided (26 Sep):** stop emailing them at once; people who already got them can see them until the listing ends or one month after removal, whichever is sooner. |
 | 12 | Which fields does each type need? | The minimum set below, following Notion's rule "store only what the feed and email need". |
 
 ## Opportunity model
@@ -32,7 +33,7 @@ The user was unavailable. Each assumption is recorded in [decisions/opportunitie
 - **Title:** up to 100 characters.
 - **Short description:** up to 280 characters, written for email.
 - **Topics:** 1–3.
-- **Link:** `https://`.
+- **Link:** must start with `https://`.
 - **Organization:** for admins, this is a picker. For partners, it's always their own organization.
 
 | Kind | Required to publish | Optional |

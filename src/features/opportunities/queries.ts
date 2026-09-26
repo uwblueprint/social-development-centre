@@ -12,9 +12,11 @@ import type { Actor, Opportunity, OpportunityCounts, OpportunityFilters, Opportu
 
 const TAB_OF = { draft: "drafts", live: "live", closed: "closed" } as const;
 
+/** Adds automatic expiry and the organization's current name (organizations can be renamed). */
 function withEffectiveStatus(o: Opportunity): Opportunity {
   const { status, closedReason } = effectiveStatus(o);
-  return { ...o, status, closedReason };
+  const org = orgs().find((x) => x.id === o.organization.id);
+  return { ...o, status, closedReason, organization: org ? { id: org.id, name: org.name } : o.organization };
 }
 
 function visibleTo(actor: Actor) {
