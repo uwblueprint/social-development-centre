@@ -13,7 +13,7 @@ A dev-only in-memory store (`_data/store.ts`) makes the UI work end to end. Repl
 - Organization status (derived): `removed` if access was removed; otherwise `active` once any contact has accepted, else `pending`. Only Pending is labelled in the UI.
 
 ## Data the UI needs
-- Organization: `id`, `name`, `status`, `contacts[]`, `opportunityCount` (current, non-expired), `createdAt`, `removedAt?`.
+- Organization: `id`, `name`, `website?` (`https://` only), `description?` (up to 280 characters), `status`, `contacts[]`, `opportunityCount` (live opportunities: published and not ended or closed; derived from Opportunities), `createdAt`, `removedAt?`.
 - Contact: `id`, `name`, `email`, `status`, `invitation?` (`sentAt`, `expiresAt`, `sendError?`), `removedAt?` (removed contacts are kept but not listed).
 - Lists: current organizations; removed organizations; all people at current organizations. All searchable by organization name, contact name or email (server-side once lists grow).
 
@@ -24,7 +24,7 @@ A dev-only in-memory store (`_data/store.ts`) makes the UI work end to end. Repl
 | `resendInvitation` | New link (7-day expiry, single use); previous link stops working. |
 | `cancelInvitation` | Pending contacts only. **Deletes** the contact. Deletes the organization too if no contacts remain and it was never active. |
 | `updateContact` | Fields `name`, `email`. Changing the email sends a fresh invitation and invalidates the old one. **An active contact stays active** until the new address accepts, then sign-in moves to the new address. |
-| `updateOrganization` | Field `name`; unique among organizations. Works for removed partners too. |
+| `updateOrganization` | Fields `name`, `website`, `description`; only fields present in the FormData change (the panel saves the name and the profile separately). Name required and unique among organizations; website empty or an `https://` URL; description up to 280 characters. Works for removed partners too. Partners edit the same fields for their own organization through `updateMyOrganization` (`src/app/partner/organization/_data/actions.ts`), which takes the organization from the session, never from the client. Rules shared in `_data/profile.ts`. |
 | `removeContact` | Active contacts only (a person left the organization). Revoke that person's access now; keep the record for history (`removedAt`), hide it from lists, and free the email for other organizations. Refuse if they're the organization's only current contact. |
 | `removePartner` | Organization-level. Effects below. |
 | `reinvitePartner` | Removed only. Uses the saved (optionally edited) contacts, sends each a fresh invitation, and returns the organization to the current list as Pending. Does not republish expired opportunities. |
@@ -42,7 +42,7 @@ Every action must verify the caller is an SDC admin.
 - Already-sent emails can't be recalled, and external registration links may keep working. SDC-controlled listing and recommendation surfaces must honour expiry. Links in old emails to an expired SDC listing show a "no longer available" page.
 
 ## Also needed
-- Opportunities list filter by partner: `/admin/opportunities?partner=<organizationId>`, used by "View opportunities".
+- Opportunities list filter by partner: `/admin/opportunities?org=<organizationId>`, used by "View opportunities".
 - Audit trail: who invited, cancelled, removed or reinvited, and when.
 - A person belongs to one organization at a time. Moving = `removeContact` at the old organization, then `invitePartner` at the new one (no dedicated move). Organizations and people can be renamed and emails change; key everything on stable IDs.
 

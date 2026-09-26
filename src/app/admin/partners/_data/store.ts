@@ -1,3 +1,4 @@
+import { countLiveOpportunities } from "@/features/opportunities/queries";
 import type { Invitation, PartnerContact, PartnerOrganization, PartnerStatus } from "./types";
 
 /*
@@ -5,7 +6,7 @@ import type { Invitation, PartnerContact, PartnerOrganization, PartnerStatus } f
  * Resets on server restart. Backend: replace queries.ts and actions.ts; delete this file.
  */
 
-interface StoredOrg extends Omit<PartnerOrganization, "status"> {
+interface StoredOrg extends Omit<PartnerOrganization, "status" | "opportunityCount"> {
   everActive: boolean;
 }
 
@@ -26,26 +27,26 @@ const contact = (id: string, name: string, email: string, status: PartnerContact
 
 function seed(): StoredOrg[] {
   return [
-    { id: "org_1", name: "Northside Food Bank", opportunityCount: 6, createdAt: iso(-120), everActive: true, contacts: [
+    { id: "org_1", name: "Northside Food Bank", website: "https://northsidefood.org", description: "Free groceries and hot meals for Northside families, run by neighbours and volunteers since 1998.", createdAt: iso(-120), everActive: true, contacts: [
       contact("c_1", "Amara Okafor", "amara@northsidefood.org", "active"),
       contact("c_2", "Luis Romero", "luis@northsidefood.org", "active"),
     ] },
-    { id: "org_2", name: "Riverbend Youth Collective", opportunityCount: 3, createdAt: iso(-60), everActive: true, contacts: [
+    { id: "org_2", name: "Riverbend Youth Collective", website: "https://riverbendyouth.ca", createdAt: iso(-60), everActive: true, contacts: [
       contact("c_3", "Priya Nair", "priya@riverbendyouth.ca", "active"),
       contact("c_4", "Sam Chen", "sam@riverbendyouth.ca", "pending", { sentAt: iso(-2), expiresAt: iso(5) }),
     ] },
-    { id: "org_3", name: "Maple Literacy Project", opportunityCount: 0, createdAt: iso(-3), everActive: false, contacts: [
+    { id: "org_3", name: "Maple Literacy Project", createdAt: iso(-3), everActive: false, contacts: [
       contact("c_5", "Hannah Lee", "hannah@mapleliteracy.org", "pending", { sentAt: iso(-3), expiresAt: iso(4) }),
     ] },
-    { id: "org_4", name: "Eastside Newcomer Services", opportunityCount: 11, createdAt: iso(-300), everActive: true, contacts: [
+    { id: "org_4", name: "Eastside Newcomer Services", website: "https://eastsidenewcomers.ca", description: "Settlement support, language circles and job help for newcomers to the region.", createdAt: iso(-300), everActive: true, contacts: [
       contact("c_6", "Omar Haddad", "omar@eastsidenewcomers.ca", "active"),
       contact("c_7", "Julia Novak", "julia@eastsidenewcomers.ca", "active"),
       contact("c_8", "Tom Becker", "tom@eastsidenewcomers.ca", "active"),
     ] },
-    { id: "org_5", name: "Harbour Seniors Network", opportunityCount: 0, createdAt: iso(-10), everActive: false, contacts: [
+    { id: "org_5", name: "Harbour Seniors Network", createdAt: iso(-10), everActive: false, contacts: [
       contact("c_9", "Grace Wu", "grace@harbourseniors", "pending", { sentAt: iso(-10), expiresAt: iso(-3), sendError: "The email address was rejected by the recipient's server." }),
     ] },
-    { id: "org_6", name: "Greenway Community Gardens", opportunityCount: 2, createdAt: iso(-400), removedAt: iso(-20), everActive: true, contacts: [
+    { id: "org_6", name: "Greenway Community Gardens", createdAt: iso(-400), removedAt: iso(-20), everActive: true, contacts: [
       contact("c_10", "Ben Adeyemi", "ben@greenwaygardens.org", "active"),
     ] },
   ];
@@ -65,8 +66,10 @@ export function toPublic(org: StoredOrg): PartnerOrganization {
   return {
     id: org.id,
     name: org.name,
+    website: org.website,
+    description: org.description,
     contacts: currentContacts(org),
-    opportunityCount: org.opportunityCount,
+    opportunityCount: countLiveOpportunities(org.id),
     createdAt: org.createdAt,
     removedAt: org.removedAt,
     status: statusOf(org),

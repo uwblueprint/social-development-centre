@@ -7,7 +7,12 @@ This file is for AI coding agents and humans alike. Read it before writing any U
 - `src/components/ui/`: the component kit. Import from here and nowhere else.
 - `src/components/patterns/`: layouts composed from the kit, e.g. `SidebarLayout` (docs in `docs/patterns/`).
 - `src/app/admin/`: the admin portal. Its sidebar config lives in `src/app/admin/_components/AdminShell.tsx`; each section is a route (`/admin/opportunities`, `/admin/partners`, `/admin/community`, `/admin/insights`). Sub-areas of a section use in-page tabs, not new sidebar items.
+- `src/app/partner/`: the partner portal. Its sidebar config lives in `src/app/partner/_components/PartnerShell.tsx`.
+- `src/features/`: feature code shared by both portals, e.g. `src/features/opportunities/` (the Opportunities contract, copy and UI).
 - `src/components/ui/tokens.ts`: every color, space, radius, type size, line height, shadow and duration.
+- `docs/product/`: product context condensed from Notion. Read it first.
+- `docs/users/`: one file per user type. Read the file for a user before designing for them.
+- `docs/plan/`: build plans, with the questions asked upfront and the assumptions taken.
 - `docs/components/<Component>.md`: when to use each component, when not to, content rules and accessibility notes. Read the doc before using a component for the first time.
 - `docs/design/principles.md`: the design rules behind the kit. `docs/design/research.md`: the evidence (Linear, Ramp, NN/g).
 - `docs/backend/`: how the backend connects (data seams, server actions returning `ActionState`, `SubmitButton`) and per-feature backend requirements. `/components/form-contract` shows exactly what a form submits.

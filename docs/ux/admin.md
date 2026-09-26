@@ -38,6 +38,44 @@ The single source for admin portal flows and UX copy. Edit the **Current text** 
 | shell.account.myAccount | Account menu item | `My account` |
 | shell.account.signOut | Account menu item | `Sign out` |
 
+## Opportunities
+
+Admins and partners share the same list, panel and form. The shared flows and every shared string are in [partner.md → Opportunities](./partner.md#opportunities-both-portals). This section covers only what admins see that partners don't.
+
+### Flows
+
+#### Filter by organization
+1. On Opportunities, open the Organization filter in the toolbar.
+2. Choose Social Development Centre or a partner. The list, the tab counts and search all narrow to that organization.
+3. Choose All organizations to clear it. Clear filters on the No matches state clears it too.
+- The list shows SDC first, then current partners A–Z. Removed partners aren't listed.
+
+#### Open a partner's opportunities from Partners
+1. On Partners, open a partner and select View opportunities.
+2. Opportunities opens with the Organization filter set to that partner.
+
+#### Post as SDC or on behalf of a partner
+1. In the new or edit form, the Basics section starts with Organization. It defaults to Social Development Centre.
+2. Choose the partner to post for. The listing then appears in that partner's portal, and they can edit it.
+- Only admins see this field. A partner's listings always belong to their own organization.
+- Do not show a confirmation when posting for a partner.
+
+### Copy
+
+| Element | Current text | Notes |
+|---|---|---|
+| Page description | Events, petitions, volunteer roles and jobs from SDC and Civic Hub partners. | Leaves out Other. Review after the 29 September types session. |
+| Organization filter label | Organization | Keep. |
+| Organization filter, no filter | All organizations | Keep. |
+| Table column header | Organization | Keep. Admin only. |
+| Form field label | Organization | Keep. |
+| Form field hint | Post as SDC, or on behalf of a partner. | Keep. |
+| Form field placeholder | Choose one | Keep. Shared with the Employment type picker. |
+| First option in the Organization filter and picker | Social Development Centre | Keep. SDC's own name, from catalog.ts. |
+| Field error, no organization | Choose an organization. | Keep. Also shown if the chosen partner was removed while the form was open. |
+| Panel detail label | Posted by | Keep. Shared. On the admin side it shows whether SDC or a partner posted it. |
+| Partners panel link | View opportunities ({count} live) | Keep. Opens this list filtered to the partner. The Partners table below still lists the older text. |
+
 ## Partners
 
 ### Flows

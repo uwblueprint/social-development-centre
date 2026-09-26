@@ -25,4 +25,5 @@ Without Supabase credentials, `next dev` skips the sign-in redirect (`src/lib/su
 
 ## Feature requirements
 - [Partners](./partners.md)
+- [Opportunities](./opportunities.md) (both portals, plus the partner session)
 - [Community](./community.md)

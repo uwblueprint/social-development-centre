@@ -68,6 +68,8 @@ export const copy = {
     saveChanges: "Save changes",
     saveDraft: "Save as draft",
     cancel: "Cancel",
+    /** Placeholder for pickers with nothing chosen yet (organization, employment type). */
+    choose: "Choose one",
     sections: {
       basics: "Basics",
       event: "Date and place",

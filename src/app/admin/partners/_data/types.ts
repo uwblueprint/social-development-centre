@@ -1,5 +1,8 @@
 /** Contract between the Partners UI and the backend. See docs/backend/partners.md. */
 
+/** Longest organization description, in characters. */
+export const ORGANIZATION_DESCRIPTION_MAX = 280;
+
 export type ContactStatus = "pending" | "active";
 
 /** Derived: removed if the organization's access was removed; pending until any contact accepts. */
@@ -26,9 +29,13 @@ export interface PartnerContact {
 export interface PartnerOrganization {
   id: string;
   name: string;
+  /** The organization's own site, https:// only. */
+  website?: string;
+  /** Short public description, up to ORGANIZATION_DESCRIPTION_MAX characters. */
+  description?: string;
   status: PartnerStatus;
   contacts: PartnerContact[];
-  /** Current (non-expired) opportunities. */
+  /** Live (published, not ended or closed) opportunities; derived from Opportunities. */
   opportunityCount: number;
   createdAt: string;
   removedAt?: string;

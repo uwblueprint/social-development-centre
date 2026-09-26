@@ -11,5 +11,10 @@ How to get things done in the Social Development Centre product, organized by ta
 
 ## Admin portal (SDC admins)
 - [Getting around the admin portal](./admin-getting-around.md)
+- [Opportunities](./admin-opportunities.md)
 - [Partners](./admin-partners.md)
 - [Community](./admin-community.md)
+
+## Partner portal (Civic Hub partners)
+- [Getting started with the partner portal](./partner-getting-started.md)
+- [Opportunities](./partner-opportunities.md)

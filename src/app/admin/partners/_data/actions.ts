@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import type { ActionState } from "@/lib/forms";
+import { applyOrganizationProfile, profileFieldsError, readOrganizationProfile } from "./profile";
 import { currentContacts, newInvitation, nextId, orgs, statusOf } from "./store";
 
 /*
@@ -63,7 +64,7 @@ export async function invitePartner(_prev: ActionState, fd: FormData): Promise<A
 
   let org = orgs().find((o) => o.id === organizationId);
   if (!org) {
-    org = { id: nextId("org"), name: organizationName, contacts: [], opportunityCount: 0, createdAt: new Date().toISOString(), everActive: false };
+    org = { id: nextId("org"), name: organizationName, contacts: [], createdAt: new Date().toISOString(), everActive: false };
     orgs().push(org);
   }
   const sendError = await sendInvitationEmail(email);
@@ -141,16 +142,17 @@ export async function updateContact(contactId: string, _prev: ActionState, fd: F
   return done("Changes saved.");
 }
 
-/** Field: name. */
+/**
+ * Fields: name, website, description (see _data/profile.ts for the rules, shared with the partner portal).
+ * Only fields present in the FormData change, so the panel can save the name and the profile separately.
+ */
 export async function updateOrganization(orgId: string, _prev: ActionState, fd: FormData): Promise<ActionState> {
   const org = orgs().find((o) => o.id === orgId);
   if (!org) return fail("This organization no longer exists.");
-  const name = text(fd, "name");
-  if (!name) return fail("Check the highlighted field.", { name: "Enter the organization's name." });
-  if (orgs().some((o) => o !== org && o.name.toLowerCase() === name.toLowerCase())) {
-    return fail("Check the highlighted field.", { name: "Another organization already has this name." });
-  }
-  org.name = name;
+  const result = readOrganizationProfile(org, fd);
+  if (result.fieldErrors) return profileFieldsError(result.fieldErrors);
+  applyOrganizationProfile(org, result.changes);
+  revalidatePath("/partner", "layout");
   return done("Changes saved.");
 }
 

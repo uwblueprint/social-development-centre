@@ -3,9 +3,9 @@ import { redirect } from "next/navigation";
 import { OpportunitiesView } from "@/features/opportunities/components/OpportunitiesView";
 import { copy } from "@/features/opportunities/copy";
 import { parseListParams } from "@/features/opportunities/components/listParams";
-import { getOpportunityCounts, listOpportunities, listPublisherOptions } from "@/features/opportunities/queries";
+import { getOpportunityCounts, listOpportunities } from "@/features/opportunities/queries";
 import type { Actor } from "@/features/opportunities/types";
-import { getCurrentAdmin } from "../_data/session";
+import { getCurrentPartner } from "../_data/session";
 import {
   closeOpportunity,
   deleteOpportunity,
@@ -16,27 +16,23 @@ import {
 
 export const metadata: Metadata = { title: copy.page.title };
 
-export default async function Page({ searchParams }: PageProps<"/admin/opportunities">) {
-  const admin = await getCurrentAdmin();
-  if (!admin) redirect("/login");
-  const actor: Actor = { role: "admin", name: admin.name };
+export default async function Page({ searchParams }: PageProps<"/partner/opportunities">) {
+  const partner = await getCurrentPartner();
+  if (!partner) redirect("/login");
+  const actor: Actor = { role: "partner", name: partner.name, organizationId: partner.organization.id };
 
-  const { tab, filters } = parseListParams(await searchParams);
-  const [items, counts, organizations] = await Promise.all([
-    listOpportunities(actor, { tab, ...filters }),
-    getOpportunityCounts(actor, filters),
-    listPublisherOptions(),
-  ]);
+  // Partners only ever see their own organization; an org param is ignored.
+  const { tab, filters } = parseListParams(await searchParams, { allowOrganization: false });
+  const [items, counts] = await Promise.all([listOpportunities(actor, { tab, ...filters }), getOpportunityCounts(actor, filters)]);
 
   return (
     <OpportunitiesView
-      scope="admin"
-      basePath="/admin/opportunities"
+      scope="partner"
+      basePath="/partner/opportunities"
       tab={tab}
       filters={filters}
       items={items}
       counts={counts}
-      organizations={organizations}
       actions={{
         save: saveOpportunity,
         close: closeOpportunity,

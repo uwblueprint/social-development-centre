@@ -22,10 +22,11 @@ import { Input } from "@/components/ui/Input";
 import { List } from "@/components/ui/ListRow";
 import { SheetBody, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/Sheet";
 import { SubmitButton } from "@/components/ui/SubmitButton";
+import { Textarea } from "@/components/ui/Textarea";
 import { useToast } from "@/components/ui/Toast";
 import { fieldError, idleState } from "@/lib/forms";
 import { reinvitePartner, removePartner, updateOrganization } from "../_data/actions";
-import type { PartnerOrganization } from "../_data/types";
+import { ORGANIZATION_DESCRIPTION_MAX, type PartnerOrganization } from "../_data/types";
 import { formatDate } from "../_lib/format";
 import { ContactRow } from "./ContactRow";
 
@@ -88,6 +89,13 @@ const SectionTitle = styled.h3`
   letter-spacing: 0.04em;
 `;
 
+const ProfileForm = styled.form`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-4);
+`;
+
 const ContactsSection = styled.div`
   display: flex;
   flex-direction: column;
@@ -111,12 +119,22 @@ export function PartnerSheetContent({
 }) {
   const { toast } = useToast();
   const [orgState, orgAction] = useActionState(updateOrganization.bind(null, org.id), idleState);
+  // Same action; this form sends only website and description, so the name is left as is.
+  const [profileState, profileAction] = useActionState(updateOrganization.bind(null, org.id), idleState);
+  // Controlled so a failed save keeps what was typed (React resets uncontrolled forms after an action).
+  const [website, setWebsite] = React.useState(org.website ?? "");
+  const [description, setDescription] = React.useState(org.description ?? "");
   const [confirm, setConfirm] = React.useState<"remove" | "reinvite" | null>(null);
 
   React.useEffect(() => {
     if (orgState.status === "success" && orgState.message) toast({ title: orgState.message });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orgState]);
+
+  React.useEffect(() => {
+    if (profileState.status === "success" && profileState.message) toast({ title: profileState.message });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileState]);
 
   async function handleConfirm() {
     const result = confirm === "remove" ? await removePartner(org.id) : await reinvitePartner(org.id);
@@ -143,14 +161,51 @@ export function PartnerSheetContent({
           {statusBadge(org.status)}
           {org.status === "removed" && org.removedAt && <span>Removed {formatDate(org.removedAt)}</span>}
         </MetaRow>
-        <OppsLink href={`/admin/opportunities?partner=${org.id}`}>
-          View opportunities ({org.opportunityCount})
+        <OppsLink href={`/admin/opportunities?org=${org.id}`}>
+          View opportunities ({org.opportunityCount} live)
           <Icon icon={ArrowRight} size={14} />
         </OppsLink>
       </SheetHeader>
 
       <SheetBody>
         <ContactsSection>
+          <div>
+            <SectionTitle id="profile-heading">Profile</SectionTitle>
+            <ProfileForm action={profileAction} aria-labelledby="profile-heading" noValidate>
+              <Field label="Website" hint="Starts with https://" error={fieldError(profileState, "website")}>
+                {(p) => (
+                  <Input
+                    {...p}
+                    name="website"
+                    type="url"
+                    inputMode="url"
+                    placeholder="https://example.org"
+                    value={website}
+                    onChange={(e) => setWebsite(e.target.value)}
+                  />
+                )}
+              </Field>
+              <Field
+                label="Short description"
+                hint="Up to 280 characters. Partners can edit this too."
+                error={fieldError(profileState, "description")}
+              >
+                {(p) => (
+                  <Textarea
+                    {...p}
+                    name="description"
+                    rows={3}
+                    maxLength={ORGANIZATION_DESCRIPTION_MAX}
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                  />
+                )}
+              </Field>
+              <SubmitButton $variant="secondary" $size="sm">
+                Save profile
+              </SubmitButton>
+            </ProfileForm>
+          </div>
           <div>
             <SectionTitle>Contacts</SectionTitle>
             <List>
