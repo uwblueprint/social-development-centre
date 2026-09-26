@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { BriefcaseBusiness, Building, ChartColumnIncreasing, UsersRound } from "lucide-react";
+import { AppToastProvider } from "@/components/ui/Toast";
 import { SidebarLayout, type SidebarNavItem } from "@/components/patterns/Sidebar";
 import type { AdminSection, AdminUser } from "../_data/types";
 import { signOut } from "@/app/login/actions";
@@ -34,7 +35,8 @@ export function AdminShell({
         onSignOut: () => void signOut(),
       }}
     >
-      {children}
+      {/* One provider for the whole portal so a toast survives navigating from a form back to its list. */}
+      <AppToastProvider>{children}</AppToastProvider>
     </SidebarLayout>
   );
 }
