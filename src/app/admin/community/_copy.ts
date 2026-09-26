@@ -1,7 +1,7 @@
 /**
  * Every user-facing string for the Community admin page. Components import
  * from here instead of writing copy inline. The owner edits copy here; it's
- * applied back to the product from this file. IDs in docs/ux/admin.md's
+ * applied back to the product from this file. IDs in docs/ux/portal.md's
  * Community copy table match this object's key paths.
  *
  * Server-returned strings (`ActionState.message`, from `_data/actions.ts`)

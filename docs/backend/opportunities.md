@@ -87,7 +87,7 @@ The panel only needs the latest `updated_by`. The user research asks to keep his
 Paging isn't built. Volumes are small (about 50 partners). Add paging when a tab regularly passes about 200 rows.
 
 ## Writes (`service.ts`)
-Each function takes `(actor, …)` and returns `ActionState` from `src/lib/forms.ts`. **Keep the messages exactly as written.** The UI shows them as toasts and field errors, and they're listed in [docs/ux/partner.md](../ux/partner.md#opportunities-copy).
+Each function takes `(actor, …)` and returns `ActionState` from `src/lib/forms.ts`. **Keep the messages exactly as written.** The UI shows them as toasts and field errors, and they're listed in [docs/ux/portal.md](../ux/partner.md#opportunities-copy).
 
 | Function | Behaviour | Success message |
 |---|---|---|
@@ -122,7 +122,7 @@ All values are strings. Fields marked "multiple" repeat the key.
 - **The form-level message** is `Fix the highlighted fields to publish.` (strict) or `Fix the highlighted fields to save.` (draft).
 - **Links:** the hint and error say `https://`, but the dev service also accepts `http://`. Pick one; requiring `https://` matches the copy.
 - **You can't make a listing live with a date that has passed.** The error goes on `date` (events), `applyBy` (volunteer role, job) or `deadline` (petition, other).
-- The full list of messages is in [docs/ux/partner.md](../ux/partner.md#validation-messages).
+- The full list of messages is in [docs/ux/portal.md](../ux/partner.md#validation-messages).
 
 ## Automatic expiry
 Rule (`format.ts`, `hasEnded` and `effectiveStatus`):
