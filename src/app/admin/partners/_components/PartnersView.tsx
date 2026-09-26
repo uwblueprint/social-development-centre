@@ -89,7 +89,6 @@ export function PartnersView({
 
   const [activeTab, setActiveTab] = React.useState<PartnersTab>(tab);
   const [searchValue, setSearchValue] = React.useState(q);
-  const debounceRef = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // Keeps local UI state in step with the URL (e.g. browser back/forward)
   // without an effect: derived at render time from the server-provided props.
@@ -125,10 +124,14 @@ export function PartnersView({
     syncUrl({ tab: next });
   }
 
-  function handleSearchChange(value: string) {
+  function handleSearchSubmit(value: string) {
     setSearchValue(value);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => syncUrl({ q: value }), 300);
+    syncUrl({ q: value });
+  }
+
+  function handleSearchClear() {
+    setSearchValue("");
+    syncUrl({ q: "" });
   }
 
   function openInvite(preset?: { id: string; name: string }) {
@@ -162,7 +165,9 @@ export function PartnersView({
                 name="q"
                 placeholder="Search partners"
                 value={searchValue}
-                onChange={(event) => handleSearchChange(event.target.value)}
+                onChange={(event) => setSearchValue(event.target.value)}
+                onSubmit={handleSearchSubmit}
+                onClear={handleSearchClear}
               />
             )}
           </Field>

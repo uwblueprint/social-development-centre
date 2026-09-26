@@ -1,4 +1,6 @@
-# Admin UX: Shell and Partners
+# Admin UX: flows and copy
+
+The single source for admin portal flows and UX copy. Edit the **Current text** column; edits are applied back to code (Community's strings live in `src/app/admin/community/_copy.ts`, keyed by the IDs below).
 
 ## Shell
 
@@ -86,6 +88,8 @@
 | partners.search.label | Search field label | `Search partners` |
 | partners.search.hint | Search field hint | `Matches organization name, contact name or email` |
 | partners.search.placeholder | Search field placeholder | `Search partners` |
+| partners.search.submit | Search button (icon, accessible name) | `Search` |
+| partners.search.clear | Clear button (icon, accessible name) | `Clear search` |
 | partners.tabs.organizations | Tab | `Organizations` |
 | partners.tabs.people | Tab | `People` |
 | partners.tabs.removed | Tab | `Removed` |
@@ -205,3 +209,162 @@
 | partners.removeContact.dialog.body | Confirm dialog body | `{name} loses access to the partner portal now. Their record is kept for history, and their email can be invited under another organization.` |
 | partners.removeContact.dialog.cancel | Confirm dialog button | `Keep access` |
 | partners.removeContact.dialog.confirm | Confirm dialog button | `Yes, remove` |
+
+## Community
+
+### Flows
+
+**Find someone**
+1. Go to Community. Choose a tab: General members or Paying members.
+2. Type in the search field, then press Enter or click its search button to run the search — it never searches live. Click the field's × to clear it and return to the unfiltered list; either submitting or clearing resets to page 1.
+3. Click a row to open their panel.
+
+**Add members**
+1. Click "Add members". Paste one or more email addresses.
+2. Click "Continue" to check them: new members, upgrades (Paying tab), already-members, unsubscribed and invalid addresses are each shown as their own line, with a duplicates count if any were removed.
+3. Click "Add N members" to confirm and send the matching welcome/upgrade emails, or "Back" to change the list.
+
+**Copy someone's email**
+1. In the table, hover (or tab to) a row's Email cell and click the copy icon that appears — this doesn't open the row.
+2. Or open the panel and click the copy icon next to the email in the header, or choose "Copy email" from either the row's or the panel's `⋯` menu.
+
+**Convert to paying member**
+1. From a general member's row `⋯` menu, choose "Convert to paying member" — or open their panel and click the same button in the header.
+2. This runs immediately (no confirmation); they move to Paying members and get the upgrade email.
+
+**Remove paying access**
+1. From a paying member's row `⋯` menu, choose "Remove paying access" — or open their panel and click the same button in the header.
+2. Confirm in the dialog. Their paid benefits end now; they stay a general member and get a notice email.
+
+**Unsubscribe**
+1. From a row's `⋯` menu, choose "Unsubscribe" — or open the panel, open its `⋯` menu, and choose "Unsubscribe".
+2. Confirm in the dialog. All emails to them stop; a paying member also loses paid access. The row shows their name dimmed with a mail-off icon.
+
+**Restore email eligibility (disabled)**
+1. On an unsubscribed person's panel, open the `⋯` menu — "Restore email eligibility" is shown disabled, with a tooltip explaining why (SDC's consent rules aren't confirmed yet).
+
+**Edit details**
+1. Open a row, then choose "Edit details" from the panel's `⋯` menu (this also switches to the Details tab if needed).
+2. Change Name or Email, click "Save", or "Cancel" to discard. A conflicting email shows a field error and saves nothing.
+
+**View someone's email history**
+1. Open a row's panel and click the "Emails (N)" tab.
+2. Emails list newest first as an accordion: subject, kind, date, and a "Bounced" badge if delivery bounced. Click one to expand and see the full message in a sandboxed preview.
+3. Use "Expand all" / "Collapse all" above the list to open or close every email at once.
+
+**Export**
+1. Click "Export". Choose who to include and whether to include unsubscribed members.
+2. Check the shown count, then click "Download CSV".
+
+### Copy
+
+IDs are dot-paths into `src/app/admin/community/_copy.ts`'s `communityCopy` object. `{placeholder}` marks a value the function fills in at render time (a count, a name, a filename). Toasts and messages returned by server actions (`_data/actions.ts`) are a separate, fixed backend contract and aren't listed here.
+
+| ID | Where | Current text |
+|---|---|---|
+| page.title | Page heading | `Community` |
+| page.description | Page subheading | `View subscribers and paying members, add people and manage their access.` |
+| tabs.ariaLabel | Tab list, aria-label | `Community views` |
+| tabs.general | Tab label | `General members` |
+| tabs.paying | Tab label | `Paying members` |
+| tabs.generalCount | Tab count suffix | `({general} · {unsubscribed} unsubscribed)` |
+| tabs.payingCount | Tab count suffix | `({paying})` |
+| toolbar.searchAriaLabel | Search field, aria-label | `Search members` |
+| toolbar.searchPlaceholder | Search field placeholder | `Search by name or email` |
+| toolbar.export | Toolbar button | `Export` |
+| toolbar.addMembers | Toolbar button; also the empty state's action | `Add members` |
+| table.headerName | Column header | `Name` |
+| table.headerEmail | Column header | `Email` |
+| table.headerLastEmail | Column header | `Last email` |
+| table.headerAdded | Column header | `Added` |
+| table.headerActions | Column header, visually hidden | `Actions` |
+| table.noName | Name cell, no name on file | `No name` |
+| table.noLastEmail | Last email cell, never emailed | `—` |
+| table.copyEmailLabel | Email cell's copy button, aria-label | `Copy email` |
+| table.unsubscribedLabel | Unsubscribed icon's tooltip and visually-hidden text | `Unsubscribed` |
+| table.rowActionsLabel | Row `⋯` trigger, aria-label | `Actions for {name}` |
+| rowMenu.copyEmail | Row `⋯` menu item | `Copy email` |
+| rowMenu.convert | Row `⋯` menu item (general, subscribed) | `Convert to paying member` |
+| rowMenu.remove | Row `⋯` menu item (paying) | `Remove paying access` |
+| rowMenu.unsubscribe | Row `⋯` menu item, danger | `Unsubscribe` |
+| empty.searchTitle | Empty state title, search with no matches | `No matches for "{q}"` |
+| empty.searchDescription | Empty state description | `Try a different name or email.` |
+| empty.payingTitle | Empty state title, Paying tab | `No paying members yet` |
+| empty.payingDescription | Empty state description | `Convert a general member to paying from their record, or add paying members here.` |
+| empty.generalTitle | Empty state title, General tab | `No members yet` |
+| empty.generalDescription | Empty state description | `People who join or subscribe appear here.` |
+| addDialog.titlePaying | Add members dialog title, Paying tab | `Add paying members` |
+| addDialog.titleGeneral | Add members dialog title, General tab | `Add general members` |
+| addDialog.emailsLabel | Field label | `Email addresses` |
+| addDialog.emailsHint | Field hint | `Separate with commas or new lines` |
+| addDialog.emailsPlaceholder | Field placeholder | `ada@example.org, grace@example.org` |
+| addDialog.cancel | Dialog button | `Cancel` |
+| addDialog.continue | Dialog button, submits the check | `Continue` |
+| addDialog.back | Dialog button, returns to paste step | `Back` |
+| addDialog.adding | Confirm button, pending state | `Adding…` |
+| addDialog.addCount | Confirm button | `Add {n} member(s)` |
+| addDialog.summary | Preview step summary line | `{n} new member(s) will be added and get a welcome email.` |
+| addDialog.skipped | Preview step, expandable issue line | `{n} already member(s), skipped` |
+| addDialog.unsubscribedIssue | Preview step, expandable issue line | `{n} unsubscribed, not added` |
+| addDialog.invalid | Preview step, expandable issue line | `{n} invalid` |
+| addDialog.duplicates | Preview step note | `{n} duplicates removed` |
+| addDialog.toggleAddresses | Issue line's expand toggle, aria-label | `{label}. Show/Hide addresses` |
+| addDialog.addedFallback | Toast fallback if the server sends no message | `Members added.` |
+| addDialog.notAddedFallback | Toast fallback if the server sends no message | `The members weren't added.` |
+| exportDialog.title | Dialog title | `Export members` |
+| exportDialog.description | Dialog body text | `Download a CSV of member names and emails.` |
+| exportDialog.whoLabel | Field label | `Who to export` |
+| exportDialog.scopeGeneral | Scope option | `General members` |
+| exportDialog.scopePaying | Scope option | `Paying members` |
+| exportDialog.scopeEveryone | Scope option | `Everyone` |
+| exportDialog.includeUnsubscribed | Checkbox label | `Include unsubscribed members` |
+| exportDialog.counting | Count line, loading state | `Counting…` |
+| exportDialog.countLine | Count line | `{n} person/people will be exported` |
+| exportDialog.cancel | Dialog button | `Cancel` |
+| exportDialog.download | Dialog button | `Download CSV` |
+| exportDialog.preparing | Download button, pending state | `Preparing…` |
+| exportDialog.downloadedToast | Toast on success | `Downloaded {filename}.` |
+| exportDialog.errorToast | Toast on failure | `The export couldn't be created. Try again.` |
+| panel.categoryGeneral | Panel header / Details tab category value | `General member` |
+| panel.categoryPaying | Panel header / Details tab category value | `Paying member` |
+| panel.categoryUnsubscribed | Panel header / Details tab category value | `Unsubscribed` |
+| panel.copyEmailLabel | Panel header's copy button, aria-label | `Copy email` |
+| panel.convertButton | Panel header primary button (general, subscribed) | `Convert to paying member` |
+| panel.removeButton | Panel header primary button (paying) | `Remove paying access` |
+| panel.tabsAriaLabel | Details/Emails tab list, aria-label | `{name} details` |
+| panel.menuLabel | Panel `⋯` trigger, aria-label | `Actions for {name}` |
+| panel.menuEdit | Panel `⋯` menu item | `Edit details` |
+| panel.menuCopyEmail | Panel `⋯` menu item | `Copy email` |
+| panel.menuUnsubscribe | Panel `⋯` menu item, danger | `Unsubscribe` |
+| panel.menuRestore | Panel `⋯` menu item, disabled (unsubscribed) | `Restore email eligibility` |
+| panel.restoreReason | Disabled reason tooltip for the above | `Turned off until SDC confirms its consent rules for resubscribing people.` |
+| panel.tabDetails | Tab label | `Details` |
+| panel.tabEmailsLoading | Tab label while the count is still loading | `Emails` |
+| panel.tabEmails | Tab label once loaded | `Emails ({n})` |
+| details.email | Details tab, read-only row label | `Email` |
+| details.category | Details tab, read-only row label | `Category` |
+| details.dateAdded | Details tab, read-only row label | `Date added` |
+| editForm.ariaLabel | Edit form, aria-label | `Edit member` |
+| editForm.nameLabel | Field label | `Name` |
+| editForm.emailLabel | Field label | `Email` |
+| editForm.cancel | Form button | `Cancel` |
+| editForm.save | Form button | `Save` |
+| confirm.revokeTitle | Confirm dialog title | `Remove paying access for {name}?` |
+| confirm.revokeBody | Confirm dialog body | `Their paid benefits end now. They'll keep getting general emails, and we'll send them a notice.` |
+| confirm.revokeCancel | Confirm dialog cancel button | `Keep paying access` |
+| confirm.revokeConfirm | Confirm dialog confirm button | `Yes, remove paying access` |
+| confirm.unsubscribeTitle | Confirm dialog title | `Unsubscribe {name}?` |
+| confirm.unsubscribeBodyPaying | Confirm dialog body (paying member) | `This stops all emails to them and removes their paying access, now. Their record is kept, marked Unsubscribed.` |
+| confirm.unsubscribeBodyGeneral | Confirm dialog body (general member) | `This stops all emails to them now. Their record is kept, marked Unsubscribed.` |
+| confirm.unsubscribeCancel | Confirm dialog cancel button | `Keep subscribed` |
+| confirm.unsubscribeConfirm | Confirm dialog confirm button | `Yes, unsubscribe` |
+| emailsTab.expandAll | Toggle button above the email list | `Expand all` |
+| emailsTab.collapseAll | Toggle button above the email list | `Collapse all` |
+| emailsTab.bouncedBadge | Badge on a bounced email | `Bounced` |
+| emailsTab.empty | Empty state, no emails sent | `No emails sent yet.` |
+| emailsTab.loading | Loading state | `Loading emails…` |
+| emailsTab.loadError | Error state | `Couldn't load this person's emails. Try again.` |
+| emailsTab.previewTitle | Sandboxed preview iframe, title attribute | `Email preview: {subject}` |
+| emailsTab.kindLabel | Email kind label shown per row | `Welcome` / `Paying welcome` / `Upgrade` / `Revoked` / `Opportunities` |
+| toast.emailCopied | Toast after any "Copy email" action | `Email copied` |
+| toast.done | Toast fallback if a server action sends no message | `Done.` |

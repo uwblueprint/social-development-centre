@@ -6,14 +6,7 @@ import { styled } from "next-yak";
 import { ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/Collapsible";
-import {
-  Dialog,
-  DialogActions,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "@/components/ui/Dialog";
+import { Dialog, DialogActions, DialogClose, DialogContent, DialogTitle } from "@/components/ui/Dialog";
 import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
 import { SubmitButton } from "@/components/ui/SubmitButton";
@@ -22,6 +15,7 @@ import { useToast } from "@/components/ui/Toast";
 import { fieldError, idleState, type ActionState } from "@/lib/forms";
 import { confirmImport, previewImport } from "../_data/actions";
 import type { ImportPreview, MemberTier } from "../_data/types";
+import { communityCopy as copy } from "../_copy";
 
 const idlePreviewState: ActionState<ImportPreview> = { status: "idle" };
 
@@ -100,7 +94,7 @@ function IssueLine({ label, addresses }: { label: string; addresses: string[] })
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
       <CollapsibleTrigger asChild>
-        <IssueTrigger type="button" aria-label={`${label}. ${open ? "Hide" : "Show"} addresses`}>
+        <IssueTrigger type="button" aria-label={copy.addDialog.toggleAddresses(label, open)}>
           <IssueChevron aria-hidden="true" $open={open}>
             <Icon icon={ChevronRight} size={12} />
           </IssueChevron>
@@ -146,10 +140,10 @@ export function AddMembersDialog({
   React.useEffect(() => {
     if (confirmState.status === "success") {
       onOpenChange(false);
-      toast({ title: confirmState.message ?? "Members added." });
+      toast({ title: confirmState.message ?? copy.addDialog.addedFallback });
     } else if (confirmState.status === "error") {
       onOpenChange(false);
-      toast({ title: confirmState.message ?? "The members weren't added." });
+      toast({ title: confirmState.message ?? copy.addDialog.notAddedFallback });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [confirmState]);
@@ -166,16 +160,13 @@ export function AddMembersDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
-        <DialogTitle>{tab === "paying" ? "Add paying members" : "Add general members"}</DialogTitle>
-        <DialogDescription>
-          Paste the email addresses to add. We check them before anything is saved or sent.
-        </DialogDescription>
+        <DialogTitle>{tab === "paying" ? copy.addDialog.titlePaying : copy.addDialog.titleGeneral}</DialogTitle>
 
         {step === "input" || !preview ? (
           <Form action={previewAction}>
             <Field
-              label="Email addresses"
-              hint="Separate with commas or new lines"
+              label={copy.addDialog.emailsLabel}
+              hint={copy.addDialog.emailsHint}
               error={fieldError(previewState, "emails")}
               required
             >
@@ -185,7 +176,7 @@ export function AddMembersDialog({
                   name="emails"
                   value={emailsText}
                   onChange={(event) => setEmailsText(event.target.value)}
-                  placeholder="ada@example.org, grace@example.org"
+                  placeholder={copy.addDialog.emailsPlaceholder}
                   rows={6}
                 />
               )}
@@ -193,46 +184,34 @@ export function AddMembersDialog({
             <DialogActions>
               <DialogClose asChild>
                 <Button type="button" $variant="secondary">
-                  Cancel
+                  {copy.addDialog.cancel}
                 </Button>
               </DialogClose>
-              <SubmitButton>Continue</SubmitButton>
+              <SubmitButton>{copy.addDialog.continue}</SubmitButton>
             </DialogActions>
           </Form>
         ) : (
           <Step>
             {previewState.status === "error" && <ErrorNote>{previewState.message}</ErrorNote>}
 
-            {addCount > 0 && (
-              <Summary>
-                {addCount} new {addCount === 1 ? "member" : "members"} will be added and get a welcome email.
-              </Summary>
-            )}
+            {addCount > 0 && <Summary>{copy.addDialog.summary(addCount)}</Summary>}
 
             <IssueList>
               {preview.toSkip.length > 0 && (
-                <IssueLine
-                  label={`${preview.toSkip.length} already ${preview.toSkip.length === 1 ? "member" : "members"}, skipped`}
-                  addresses={preview.toSkip.map((s) => s.email)}
-                />
+                <IssueLine label={copy.addDialog.skipped(preview.toSkip.length)} addresses={preview.toSkip.map((s) => s.email)} />
               )}
               {preview.unsubscribed.length > 0 && (
-                <IssueLine
-                  label={`${preview.unsubscribed.length} unsubscribed, not added`}
-                  addresses={preview.unsubscribed}
-                />
+                <IssueLine label={copy.addDialog.unsubscribedIssue(preview.unsubscribed.length)} addresses={preview.unsubscribed} />
               )}
               {preview.invalid.length > 0 && (
-                <IssueLine label={`${preview.invalid.length} invalid`} addresses={preview.invalid} />
+                <IssueLine label={copy.addDialog.invalid(preview.invalid.length)} addresses={preview.invalid} />
               )}
-              {preview.duplicatesRemoved > 0 && (
-                <DuplicatesNote>{preview.duplicatesRemoved} duplicates removed</DuplicatesNote>
-              )}
+              {preview.duplicatesRemoved > 0 && <DuplicatesNote>{copy.addDialog.duplicates(preview.duplicatesRemoved)}</DuplicatesNote>}
             </IssueList>
 
             <DialogActions>
               <Button type="button" $variant="secondary" onClick={() => setStep("input")} disabled={confirmPending}>
-                Back
+                {copy.addDialog.back}
               </Button>
               <Button
                 type="button"
@@ -240,7 +219,7 @@ export function AddMembersDialog({
                 disabled={confirmPending || addCount === 0}
                 aria-busy={confirmPending || undefined}
               >
-                {confirmPending ? "Adding…" : `Add ${addCount} ${addCount === 1 ? "member" : "members"}`}
+                {confirmPending ? copy.addDialog.adding : copy.addDialog.addCount(addCount)}
               </Button>
             </DialogActions>
           </Step>

@@ -17,11 +17,12 @@ import { Select } from "@/components/ui/Select";
 import { useToast } from "@/components/ui/Toast";
 import { countExport, exportMembers } from "../_data/actions";
 import type { ExportScope, MemberTier } from "../_data/types";
+import { communityCopy as copy } from "../_copy";
 
 const SCOPE_OPTIONS: { value: ExportScope; label: string }[] = [
-  { value: "general", label: "General members" },
-  { value: "paying", label: "Paying members" },
-  { value: "all", label: "Everyone" },
+  { value: "general", label: copy.exportDialog.scopeGeneral },
+  { value: "paying", label: copy.exportDialog.scopePaying },
+  { value: "all", label: copy.exportDialog.scopeEveryone },
 ];
 
 const Body = styled.div`
@@ -75,9 +76,9 @@ export function ExportDialog({
       link.remove();
       URL.revokeObjectURL(url);
       onOpenChange(false);
-      toast({ title: `Downloaded ${filename}.` });
+      toast({ title: copy.exportDialog.downloadedToast(filename) });
     } catch {
-      toast({ title: "The export couldn't be created. Try again." });
+      toast({ title: copy.exportDialog.errorToast });
     } finally {
       setDownloading(false);
     }
@@ -86,10 +87,10 @@ export function ExportDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
-        <DialogTitle>Export members</DialogTitle>
-        <DialogDescription>Download a CSV of member names and emails.</DialogDescription>
+        <DialogTitle>{copy.exportDialog.title}</DialogTitle>
+        <DialogDescription>{copy.exportDialog.description}</DialogDescription>
         <Body>
-          <Field label="Who to export">
+          <Field label={copy.exportDialog.whoLabel}>
             {(p) => (
               <Select
                 {...p}
@@ -100,22 +101,20 @@ export function ExportDialog({
             )}
           </Field>
           <Checkbox
-            label="Include unsubscribed members"
+            label={copy.exportDialog.includeUnsubscribed}
             checked={includeUnsubscribed}
             onCheckedChange={(value) => setIncludeUnsubscribed(value === true)}
           />
-          <CountLine>
-            {count === null ? "Counting…" : `${count} ${count === 1 ? "person" : "people"} will be exported`}
-          </CountLine>
+          <CountLine>{count === null ? copy.exportDialog.counting : copy.exportDialog.countLine(count)}</CountLine>
         </Body>
         <DialogActions>
           <DialogClose asChild>
             <Button type="button" $variant="secondary">
-              Cancel
+              {copy.exportDialog.cancel}
             </Button>
           </DialogClose>
           <Button type="button" onClick={() => void handleDownload()} disabled={downloading || count === 0}>
-            {downloading ? "Preparing…" : "Download CSV"}
+            {downloading ? copy.exportDialog.preparing : copy.exportDialog.download}
           </Button>
         </DialogActions>
       </DialogContent>

@@ -66,7 +66,8 @@ export function emailsFor(m: Member): SentEmail[] {
       html: html("Your membership is active", '<p>Your account now includes paid membership.</p><p><a href="#">Access the member platform</a></p>'),
     });
   }
-  for (let t = added + 7 * DAY, i = 0; t < end && i < 12; t += 7 * DAY, i++) {
+  const first = Math.max(added + 7 * DAY, end - 12 * 7 * DAY);
+  for (let t = first, i = 0; t < end; t += 7 * DAY, i++) {
     const d = new Date(t);
     out.push({
       id: `${m.id}_o${i}`,

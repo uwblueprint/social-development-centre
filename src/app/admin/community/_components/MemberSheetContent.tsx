@@ -3,17 +3,8 @@
 import * as React from "react";
 import { useActionState } from "react";
 import { styled } from "next-yak";
-import { MoreVertical } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogActions,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogTitle,
-} from "@/components/ui/AlertDialog";
-import { Badge } from "@/components/ui/Badge";
+import { MoreVertical, UserMinus, UserPlus } from "lucide-react";
+import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import {
   DropdownMenu,
@@ -25,29 +16,37 @@ import {
 import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
 import { Input } from "@/components/ui/Input";
-import { SheetBody, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/Sheet";
+import { SheetBody, SheetHeader, SheetTitle } from "@/components/ui/Sheet";
 import { SubmitButton } from "@/components/ui/SubmitButton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { useToast } from "@/components/ui/Toast";
 import { fieldError, idleState } from "@/lib/forms";
-import { grantPaidAccess, revokePaidAccess, unsubscribeMember, updateMember } from "../_data/actions";
-import type { Member } from "../_data/types";
-import { formatDate } from "../_lib/format";
+import { updateMember } from "../_data/actions";
+import type { Member, SentEmail } from "../_data/types";
+import { communityCopy as copy } from "../_copy";
+import { formatDate, initialsFor } from "../_lib/format";
+import { getMemberEmails } from "../_lib/emailHistoryAction";
+import { CopyEmailButton } from "./CopyEmailButton";
+import { MemberConfirmDialog } from "./MemberConfirmDialog";
+import { MemberEmailsTab } from "./MemberEmailsTab";
+import { useMemberActions } from "./useMemberActions";
 
 const TitleRow = styled.div`
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-2);
+  gap: var(--space-3);
   /* Clears the Sheet's built-in top-right close (×) button. */
   padding-right: var(--space-6);
 `;
 
 const TitleBlock = styled.div`
   min-width: 0;
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 2px;
+  padding-top: 2px;
 `;
 
 // The Sheet's own SheetTitle reserves space for the built-in close (×)
@@ -59,16 +58,25 @@ const Title = styled(SheetTitle)`
 
 const EmailLine = styled.p`
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
   font-size: var(--text-sm);
   color: var(--color-text-muted);
   overflow-wrap: anywhere;
 `;
 
-const BadgeRow = styled.div`
+const CategoryLine = styled.p`
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+`;
+
+const HeaderActions = styled.div`
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  flex-wrap: wrap;
+  margin-top: var(--space-3);
 `;
 
 const MenuTrigger = styled(Button)`
@@ -115,18 +123,34 @@ const DetailValue = styled.dd`
   overflow-wrap: anywhere;
 `;
 
-type Confirm = "revoke" | "unsubscribe";
+const TabBody = styled.div`
+  padding-top: var(--space-4);
+`;
 
 export function MemberSheetContent({ member, onClose }: { member: Member; onClose: () => void }) {
   const { toast } = useToast();
   const [editing, setEditing] = React.useState(false);
+  const [activeTab, setActiveTab] = React.useState<"details" | "emails">("details");
   const [editState, editAction] = useActionState(updateMember.bind(null, member.id), idleState);
-  const [confirm, setConfirm] = React.useState<Confirm | null>(null);
 
-  // Keeps the alert dialog's copy stable while it plays its close animation
-  // (by then `confirm` is already null); updated during render, not an effect.
-  const [shownConfirm, setShownConfirm] = React.useState<Confirm>("unsubscribe");
-  if (confirm && confirm !== shownConfirm) setShownConfirm(confirm);
+  const { copyEmail, convert, confirm, setConfirm, shownConfirm, runConfirm } = useMemberActions(member, onClose);
+
+  const [emails, setEmails] = React.useState<SentEmail[] | null>(null);
+  const [emailsError, setEmailsError] = React.useState(false);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    getMemberEmails(member.id)
+      .then((result) => {
+        if (!cancelled) setEmails(result);
+      })
+      .catch(() => {
+        if (!cancelled) setEmailsError(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [member.id]);
 
   // Exits edit mode once a save resolves without field errors; derived at
   // render time from the action state instead of mirrored in an effect.
@@ -143,38 +167,62 @@ export function MemberSheetContent({ member, onClose }: { member: Member; onClos
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editState]);
 
-  async function handleGrant() {
-    const result = await grantPaidAccess(member.id);
-    toast({ title: result.message ?? "Done." });
-    onClose();
-  }
-
-  async function handleConfirm(kind: Confirm) {
-    const result = kind === "revoke" ? await revokePaidAccess(member.id) : await unsubscribeMember(member.id);
-    toast({ title: result.message ?? "Done." });
-    onClose();
-  }
-
   const displayName = member.name ?? member.email;
-  const category = member.tier === "paying" ? "Paying member" : "General member";
-  const restoreReason = "Turned off until SDC confirms its consent rules for resubscribing people.";
+  const category = !member.subscribed
+    ? copy.panel.categoryUnsubscribed
+    : member.tier === "paying"
+      ? copy.panel.categoryPaying
+      : copy.panel.categoryGeneral;
+
+  const canConvertOrRemove = member.subscribed;
 
   return (
     <>
       <SheetHeader>
         <TitleRow>
+          <Avatar initials={initialsFor(member.name, member.email)} />
           <TitleBlock>
             <Title>{displayName}</Title>
-            {member.name && <EmailLine>{member.email}</EmailLine>}
+            {member.name && (
+              <EmailLine>
+                {member.email}
+                <CopyEmailButton email={member.email} />
+              </EmailLine>
+            )}
+            <CategoryLine>{category}</CategoryLine>
           </TitleBlock>
+        </TitleRow>
+
+        <HeaderActions>
+          {canConvertOrRemove &&
+            (member.tier === "general" ? (
+              <Button type="button" onClick={() => void convert()}>
+                <Icon icon={UserPlus} size={16} />
+                {copy.panel.convertButton}
+              </Button>
+            ) : (
+              <Button type="button" onClick={() => setConfirm("revoke")}>
+                <Icon icon={UserMinus} size={16} />
+                {copy.panel.removeButton}
+              </Button>
+            ))}
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <MenuTrigger type="button" $variant="ghost" $size="sm" aria-label={`Actions for ${displayName}`}>
+              <MenuTrigger type="button" $variant="ghost" $size="sm" aria-label={copy.panel.menuLabel(displayName)}>
                 <Icon icon={MoreVertical} size={16} />
               </MenuTrigger>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={() => setEditing(true)}>Edit details</DropdownMenuItem>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem
+                onSelect={() => {
+                  setActiveTab("details");
+                  setEditing(true);
+                }}
+              >
+                {copy.panel.menuEdit}
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={copyEmail}>{copy.panel.menuCopyEmail}</DropdownMenuItem>
               <DropdownMenuSeparator />
               {member.subscribed ? (
                 <DangerMenuItem
@@ -183,98 +231,78 @@ export function MemberSheetContent({ member, onClose }: { member: Member; onClos
                     setConfirm("unsubscribe");
                   }}
                 >
-                  Unsubscribe
+                  {copy.panel.menuUnsubscribe}
                 </DangerMenuItem>
               ) : (
-                <Tooltip content={restoreReason}>
-                  <DropdownMenuItem disabled>Restore email eligibility</DropdownMenuItem>
+                <Tooltip content={copy.panel.restoreReason}>
+                  <DropdownMenuItem disabled>{copy.panel.menuRestore}</DropdownMenuItem>
                 </Tooltip>
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-        </TitleRow>
-        {(member.tier === "paying" || !member.subscribed) && (
-          <BadgeRow>
-            {member.tier === "paying" && <Badge $variant="primary">Paying member</Badge>}
-            {!member.subscribed && <Badge $variant="outline">Unsubscribed</Badge>}
-          </BadgeRow>
-        )}
+        </HeaderActions>
       </SheetHeader>
 
       <SheetBody>
-        {editing ? (
-          <EditForm action={editAction} aria-label="Edit member">
-            <Field label="Name" error={fieldError(editState, "name")}>
-              {(p) => <Input {...p} name="name" defaultValue={member.name ?? ""} autoComplete="name" />}
-            </Field>
-            <Field label="Email" error={fieldError(editState, "email")} required>
-              {(p) => <Input {...p} name="email" type="email" defaultValue={member.email} autoComplete="email" />}
-            </Field>
-            <FormActions>
-              <Button type="button" $variant="secondary" $size="sm" onClick={() => setEditing(false)}>
-                Cancel
-              </Button>
-              <SubmitButton $size="sm">Save</SubmitButton>
-            </FormActions>
-          </EditForm>
-        ) : (
-          <DetailsList>
-            <DetailRow>
-              <DetailLabel>Email</DetailLabel>
-              <DetailValue>{member.email}</DetailValue>
-            </DetailRow>
-            <DetailRow>
-              <DetailLabel>Category</DetailLabel>
-              <DetailValue>{category}</DetailValue>
-            </DetailRow>
-            <DetailRow>
-              <DetailLabel>Date added</DetailLabel>
-              <DetailValue>{formatDate(member.addedAt)}</DetailValue>
-            </DetailRow>
-          </DetailsList>
-        )}
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value === "emails" ? "emails" : "details")}>
+          <TabsList aria-label={copy.panel.tabsAriaLabel(displayName)}>
+            <TabsTrigger value="details">{copy.panel.tabDetails}</TabsTrigger>
+            <TabsTrigger value="emails">
+              {emails === null ? copy.panel.tabEmailsLoading : copy.panel.tabEmails(emails.length)}
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="details">
+            <TabBody>
+              {editing ? (
+                <EditForm action={editAction} aria-label={copy.editForm.ariaLabel}>
+                  <Field label={copy.editForm.nameLabel} error={fieldError(editState, "name")}>
+                    {(p) => <Input {...p} name="name" defaultValue={member.name ?? ""} autoComplete="name" />}
+                  </Field>
+                  <Field label={copy.editForm.emailLabel} error={fieldError(editState, "email")} required>
+                    {(p) => <Input {...p} name="email" type="email" defaultValue={member.email} autoComplete="email" />}
+                  </Field>
+                  <FormActions>
+                    <Button type="button" $variant="secondary" $size="sm" onClick={() => setEditing(false)}>
+                      {copy.editForm.cancel}
+                    </Button>
+                    <SubmitButton $size="sm">{copy.editForm.save}</SubmitButton>
+                  </FormActions>
+                </EditForm>
+              ) : (
+                <DetailsList>
+                  <DetailRow>
+                    <DetailLabel>{copy.details.email}</DetailLabel>
+                    <DetailValue>{member.email}</DetailValue>
+                  </DetailRow>
+                  <DetailRow>
+                    <DetailLabel>{copy.details.category}</DetailLabel>
+                    <DetailValue>{category}</DetailValue>
+                  </DetailRow>
+                  <DetailRow>
+                    <DetailLabel>{copy.details.dateAdded}</DetailLabel>
+                    <DetailValue>{formatDate(member.addedAt)}</DetailValue>
+                  </DetailRow>
+                </DetailsList>
+              )}
+            </TabBody>
+          </TabsContent>
+
+          <TabsContent value="emails">
+            <TabBody>
+              <MemberEmailsTab emails={emails} loading={emails === null && !emailsError} error={emailsError} />
+            </TabBody>
+          </TabsContent>
+        </Tabs>
       </SheetBody>
 
-      {!editing && member.subscribed && (
-        <SheetFooter>
-          {member.tier === "general" ? (
-            <Button type="button" onClick={() => void handleGrant()}>
-              Give paying access
-            </Button>
-          ) : (
-            <Button type="button" onClick={() => setConfirm("revoke")}>
-              Remove paying access
-            </Button>
-          )}
-        </SheetFooter>
-      )}
-
-      <AlertDialog open={confirm !== null} onOpenChange={(open) => !open && setConfirm(null)}>
-        <AlertDialogContent>
-          <AlertDialogTitle>
-            {shownConfirm === "revoke" ? `Remove paying access for ${displayName}?` : `Unsubscribe ${displayName}?`}
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            {shownConfirm === "revoke"
-              ? "Their paid benefits end now. They'll keep getting general emails, and we'll send them a notice."
-              : member.tier === "paying"
-                ? "This stops all emails to them and removes their paying access, now. Their record is kept, marked Unsubscribed."
-                : "This stops all emails to them now. Their record is kept, marked Unsubscribed."}
-          </AlertDialogDescription>
-          <AlertDialogActions>
-            <AlertDialogCancel asChild>
-              <Button type="button" $variant="secondary">
-                {shownConfirm === "revoke" ? "Keep paying access" : "Keep subscribed"}
-              </Button>
-            </AlertDialogCancel>
-            <AlertDialogAction asChild>
-              <Button type="button" $variant="danger" onClick={() => confirm && void handleConfirm(confirm)}>
-                {shownConfirm === "revoke" ? "Yes, remove paying access" : "Yes, unsubscribe"}
-              </Button>
-            </AlertDialogAction>
-          </AlertDialogActions>
-        </AlertDialogContent>
-      </AlertDialog>
+      <MemberConfirmDialog
+        member={member}
+        confirm={confirm}
+        shownConfirm={shownConfirm}
+        onOpenChange={(open) => !open && setConfirm(null)}
+        onConfirm={(kind) => void runConfirm(kind)}
+      />
     </>
   );
 }

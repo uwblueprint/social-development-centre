@@ -13,6 +13,7 @@ import { Table } from "@/components/ui/Table";
 import { Tabs, TabsContent, TabsCount, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { AppToastProvider } from "@/components/ui/Toast";
 import type { CommunityCounts, Member, MemberPage, MemberTier } from "../_data/types";
+import { communityCopy as copy } from "../_copy";
 import { AddMembersDialog } from "./AddMembersDialog";
 import { ExportDialog } from "./ExportDialog";
 import { memberColumns } from "./MemberRows";
@@ -99,7 +100,6 @@ export function CommunityView({
 
   const [activeTab, setActiveTab] = React.useState<MemberTier>(tab);
   const [searchValue, setSearchValue] = React.useState(q);
-  const debounceRef = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   // Keeps local UI state in step with the URL (e.g. browser back/forward)
   // without an effect: derived at render time from the server-provided props.
@@ -138,10 +138,14 @@ export function CommunityView({
     syncUrl({ tab: next, page: 1 });
   }
 
-  function handleSearchChange(value: string) {
+  function handleSearchSubmit(value: string) {
     setSearchValue(value);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => syncUrl({ q: value, page: 1 }), 300);
+    syncUrl({ q: value, page: 1 });
+  }
+
+  function handleSearchClear() {
+    setSearchValue("");
+    syncUrl({ q: "", page: 1 });
   }
 
   function handlePageChange(page: number) {
@@ -164,21 +168,19 @@ export function CommunityView({
     <AppToastProvider>
       <Page>
         <HeaderText>
-          <Title>Community</Title>
-          <Description>View subscribers and paying members, add people and manage their access.</Description>
+          <Title>{copy.page.title}</Title>
+          <Description>{copy.page.description}</Description>
         </HeaderText>
 
         <Tabs value={activeTab} onValueChange={handleTabChange}>
-          <TabsList aria-label="Community views">
+          <TabsList aria-label={copy.tabs.ariaLabel}>
             <TabsTrigger value="general">
-              General members
-              <TabsCount>
-                ({counts.general} · {counts.unsubscribed} unsubscribed)
-              </TabsCount>
+              {copy.tabs.general}
+              <TabsCount>{copy.tabs.generalCount(counts.general, counts.unsubscribed)}</TabsCount>
             </TabsTrigger>
             <TabsTrigger value="paying">
-              Paying members
-              <TabsCount>({counts.paying})</TabsCount>
+              {copy.tabs.paying}
+              <TabsCount>{copy.tabs.payingCount(counts.paying)}</TabsCount>
             </TabsTrigger>
           </TabsList>
 
@@ -188,18 +190,20 @@ export function CommunityView({
                 <SearchWrap>
                   <SearchField
                     name="q"
-                    aria-label="Search members"
-                    placeholder="Search by name or email"
+                    aria-label={copy.toolbar.searchAriaLabel}
+                    placeholder={copy.toolbar.searchPlaceholder}
                     value={searchValue}
-                    onChange={(event) => handleSearchChange(event.target.value)}
+                    onChange={(event) => setSearchValue(event.target.value)}
+                    onSubmit={handleSearchSubmit}
+                    onClear={handleSearchClear}
                   />
                 </SearchWrap>
                 <ToolbarActions>
                   <Button type="button" $variant="ghost" onClick={openExport}>
-                    Export
+                    {copy.toolbar.export}
                   </Button>
                   <Button type="button" $variant="secondary" onClick={openAdd}>
-                    Add members
+                    {copy.toolbar.addMembers}
                   </Button>
                 </ToolbarActions>
               </Toolbar>
@@ -209,26 +213,18 @@ export function CommunityView({
                 rows={memberPage.rows}
                 getRowId={(m) => m.id}
                 onRowClick={(m) => setSelectedId(m.id)}
-                aria-label={activeTab === "paying" ? "Paying members" : "General members"}
+                aria-label={activeTab === "paying" ? copy.tabs.paying : copy.tabs.general}
                 empty={
                   q ? (
-                    <EmptyState
-                      icon={SearchIcon}
-                      title={`No matches for "${q}"`}
-                      description="Try a different name or email."
-                    />
+                    <EmptyState icon={SearchIcon} title={copy.empty.searchTitle(q)} description={copy.empty.searchDescription} />
                   ) : (
                     <EmptyState
                       icon={UsersRound}
-                      title={activeTab === "paying" ? "No paying members yet" : "No members yet"}
-                      description={
-                        activeTab === "paying"
-                          ? "Give a general member paying access from their record, or add paying members here."
-                          : "People who join or subscribe appear here."
-                      }
+                      title={activeTab === "paying" ? copy.empty.payingTitle : copy.empty.generalTitle}
+                      description={activeTab === "paying" ? copy.empty.payingDescription : copy.empty.generalDescription}
                       action={
                         <Button type="button" onClick={openAdd}>
-                          Add members
+                          {copy.toolbar.addMembers}
                         </Button>
                       }
                     />

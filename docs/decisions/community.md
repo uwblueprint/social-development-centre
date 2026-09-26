@@ -48,3 +48,15 @@ Assumptions made while building the UI from the Community PRD. Each can be revis
 - **Decision:** People can exist with only an email; the list shows "No name" and admins can add a name later in the person panel.
 - **Page:** Admin → Community (list and person panel).
 - **When encountered:** After pasting bare addresses.
+
+## 9. Unsubscribed status is inline, not a column
+- **Decision:** Dropped the dedicated Status column. Unsubscribed is now shown as dimmed name text plus a small mail-off icon (tooltip "Unsubscribed", with visually hidden text for screen readers), freeing a column for Last email.
+- **Page:** Admin → Community → table.
+- **Affects:** Table density; the "Give paying access"/"Remove paying access" action is renamed "Convert to paying member"/"Remove paying access" everywhere, including the row's own **⋯** menu.
+- **When encountered:** Scanning the table for who's unsubscribed.
+
+## 10. Row actions and email history live at two altitudes
+- **Decision:** Every row has its own **⋯** menu (copy email, convert/remove, unsubscribe) so common actions don't require opening the panel. The panel itself gains an **Emails** tab (count in the tab label) that lists every email sent to that person, newest first, expandable to the rendered message in a sandboxed frame.
+- **Page:** Admin → Community → table row menu; Admin → Community → person panel → Emails tab.
+- **Affects:** Search is submit-only (Enter or the search button) to keep the busier table calm while typing; the sent-email frame's `sandbox=""` means its height is a generous fixed size with its own scrollbar rather than exactly fit to content.
+- **When encountered:** Checking whether someone actually got an email, or bulk-managing access from the list instead of one profile at a time.
