@@ -1,5 +1,7 @@
 import { styled } from "next-yak";
 import { signIn } from "./actions";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 
 const Main = styled.main`
   display: grid;
@@ -23,8 +25,8 @@ export default async function LoginPage({
   return (
     <Main>
       <Form action={signIn}>
-        <input type="email" name="email" placeholder="Email" required />
-        <button type="submit">Send sign-in link</button>
+        <Input type="email" name="email" placeholder="Email" aria-label="Email" required />
+        <Button type="submit">Send sign-in link</Button>
         {sent && <p>Check your email for a sign-in link.</p>}
         {error && <p>{error}</p>}
       </Form>
