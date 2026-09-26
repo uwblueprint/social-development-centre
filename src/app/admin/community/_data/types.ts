@@ -12,6 +12,20 @@ export interface Member {
   subscribed: boolean;
   addedAt: string;
   unsubscribedAt?: string;
+  /** Most recent email sent to this person, for the table. */
+  lastEmail?: { subject: string; sentAt: string };
+}
+
+export type EmailKind = "general-welcome" | "paying-welcome" | "upgrade" | "revoked" | "opportunities";
+
+/** One email this person was sent, newest first. `html` is the rendered message as delivered. */
+export interface SentEmail {
+  id: string;
+  kind: EmailKind;
+  subject: string;
+  sentAt: string;
+  status: "delivered" | "bounced";
+  html: string;
 }
 
 export interface MemberPage {

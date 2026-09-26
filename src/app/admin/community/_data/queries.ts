@@ -1,5 +1,5 @@
-import type { CommunityCounts, Member, MemberPage, MemberTier } from "./types";
-import { members } from "./store";
+import type { CommunityCounts, Member, MemberPage, MemberTier, SentEmail } from "./types";
+import { emailsFor, members } from "./store";
 
 /** Backend: replace these with real queries; keep the signatures. */
 
@@ -19,7 +19,11 @@ export async function listMembers(tier: MemberTier, q = "", page = 1): Promise<M
     .sort((a, b) => Number(b.subscribed) - Number(a.subscribed) || label(a).localeCompare(label(b)));
   const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
   const current = Math.min(Math.max(1, page), pageCount);
-  return { rows: rows.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE), total: rows.length, page: current, pageCount };
+  const slice = rows.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE).map((m) => {
+    const [latest] = emailsFor(m);
+    return latest ? { ...m, lastEmail: { subject: latest.subject, sentAt: latest.sentAt } } : m;
+  });
+  return { rows: slice, total: rows.length, page: current, pageCount };
 }
 
 export async function getCommunityCounts(): Promise<CommunityCounts> {
@@ -33,4 +37,10 @@ export async function getCommunityCounts(): Promise<CommunityCounts> {
 
 export async function getMember(id: string): Promise<Member | null> {
   return members().find((m) => m.id === id) ?? null;
+}
+
+/** Emails sent to one person, newest first. Backend: read from the email provider's send log. */
+export async function listMemberEmails(id: string): Promise<SentEmail[]> {
+  const m = members().find((x) => x.id === id);
+  return m ? emailsFor(m) : [];
 }

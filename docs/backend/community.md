@@ -11,6 +11,10 @@ UI contract: `src/app/admin/community/_data/{types,queries,actions}.ts`. `store.
 - `listMembers(tier, q, page)`: 50 per page. General: subscribed general first, then all unsubscribed. Paying: subscribed paying. Search by name or email, server-side.
 - `getCommunityCounts()`: subscribed general, subscribed paying, unsubscribed.
 
+## Email history
+- `listMemberEmails(id)`: every email sent to the person, newest first: `kind`, `subject`, `sentAt`, delivery `status`, and the rendered `html` as delivered (from the email provider's send log). The UI renders `html` in a sandboxed frame.
+- `listMembers` rows include `lastEmail` (`subject`, `sentAt`).
+
 ## Actions (all return `ActionState`; all require an SDC admin)
 | Action | Rules | Email |
 |---|---|---|
