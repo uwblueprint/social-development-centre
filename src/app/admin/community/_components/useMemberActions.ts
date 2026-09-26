@@ -28,7 +28,7 @@ export function useMemberActions(member: Member, onDone?: () => void) {
   function copyEmail() {
     void navigator.clipboard.writeText(member.email).then(
       () => toast({ title: copy.toast.emailCopied }),
-      () => toast({ title: copy.toast.emailCopied }),
+      () => toast({ title: copy.copyButton.failed }),
     );
   }
 

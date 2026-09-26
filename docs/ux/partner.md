@@ -2,7 +2,7 @@
 
 How the partner portal works and what it says, including the Opportunities screens both portals share.
 
-Edit the **Current text** column to update product copy. Strings live in `src/app/partner/_copy.ts` (shell nav, My account, Organization and Team), `src/components/patterns/Sidebar.tsx` (menu buttons and account menu, shared with the admin portal), `src/features/opportunities/copy.ts` (Opportunities screens), `src/features/opportunities/catalog.ts` (type names, topics and options), `src/features/opportunities/format.ts` (Date column), `src/features/opportunities/service.ts` (Opportunities validation messages and toasts), `src/app/admin/partners/_data/profile.ts` and `src/app/admin/partners/_data/contacts.ts` (Organization and Team messages, shared with admin Partners) and `src/app/partner/organization/_data/actions.ts` (partner-only Organization and Team messages).
+Edit the **Current text** column to update product copy. Strings live in `src/app/partner/_copy.ts` (shell nav and sidebar tooltips, My account, Organization and Team), `src/components/patterns/Sidebar.tsx` (menu buttons and account menu, shared with the admin portal), `src/features/opportunities/copy.ts` (Opportunities screens), `src/features/opportunities/catalog.ts` (type names, topics and options), `src/features/opportunities/format.ts` (Date column), `src/features/opportunities/service.ts` (Opportunities validation messages and toasts), `src/app/admin/partners/_data/profile.ts` and `src/app/admin/partners/_data/contacts.ts` (Organization and Team messages, shared with admin Partners) and `src/app/partner/organization/_data/actions.ts` (partner-only Organization and Team messages).
 
 Messages in `service.ts`, `profile.ts`, `contacts.ts` and `actions.ts` are also the backend contract ([backend/opportunities.md](../backend/opportunities.md)), so tell the backend owner when they change. `{name}` parts are filled in on screen. Admin-only Opportunities strings are in [admin.md](./admin.md). The product rules behind these flows are in [decisions/opportunities.md](../decisions/opportunities.md) and [decisions/partners.md](../decisions/partners.md).
 
@@ -18,7 +18,10 @@ Messages in `service.ts`, `profile.ts`, `contacts.ts` and `actions.ts` are also 
 #### Navigate sections (desktop, 768px and wider)
 1. The sidebar is always visible on the left. It shows the organization's name at the top, then **Opportunities** and **Organization**.
 2. Select a section to open it. The selected row is highlighted and the page loads on the right.
+3. Hover over or tab to a section and wait a moment. A tooltip to the right says what the section is for.
 - Do not add sidebar items for sub-areas. Use tabs inside the page.
+- Wait 600ms before showing a section's tooltip, on hover and on keyboard focus. Do not pin it on click. A click opens the section and closes the tooltip.
+- Pages have no description under the heading. The sidebar tooltip replaces it.
 - Accessibility:
   - Nav landmark: `aria-label="Partner"`
   - Selected row: `aria-current="page"`
@@ -64,6 +67,8 @@ Messages in `service.ts`, `profile.ts`, `contacts.ts` and `actions.ts` are also 
 | Nav landmark | Partner | Accessible label only |
 | Sidebar item | Opportunities | Keep. Same word as the admin portal. |
 | Sidebar item | Organization | Keep. |
+| Sidebar tooltip, Opportunities | What your organization shares with the SDC community. | New, needs approval. Was the Opportunities page description. |
+| Sidebar tooltip, Organization | Your organization's profile and team. | New, needs approval. |
 | Mobile menu button | Open menu | Accessible label only. Shared with the admin portal. |
 | Mobile drawer close button | Close menu | Accessible label only. Shared with the admin portal. |
 | Account menu button | Account menu for {name} | Accessible label only. Shared with the admin portal. |
@@ -82,11 +87,13 @@ The same list, panel and form serve `/admin/opportunities` and `/partner/opportu
 1. Select **Opportunities** in the sidebar. The **Live** tab opens.
 2. Select a tab: **Live**, **Drafts** or **Closed**. Each tab shows its count, for example "Live (4)".
 3. To narrow the list:
-   - Type in **Search opportunities**, then press Enter or select the search button. It matches the title or the organization's name.
+   - Type in the search field to the right of the tabs. Results update 300ms after the last keystroke. Press Enter to search straight away. It matches the title or the organization's name.
+   - While results load, a spinner replaces the search icon.
    - Select the clear button to clear the search.
-   - Choose a type from **Type**.
+   - Choose a type from **Type**, above the table.
 4. Select a row to open the side panel.
-- Do not search while the person types.
+- The search field has no visible label, only the search icon and the placeholder. Do not add a search button.
+- Searching doesn't add browser history entries. If an older search returns after a newer one, ignore it.
 - Tab counts follow the search and the Type filter.
 - Sort Live by soonest date, with undated listings last. Sort Drafts and Closed by most recently updated.
 - Do not show a status column. The tab is the status.
@@ -97,7 +104,7 @@ The same list, panel and form serve `/admin/opportunities` and `/partner/opportu
 - Accessibility:
   - Tab list: `aria-label="Opportunities"`
   - Table: `aria-label="{tab}"`, for example `aria-label="Live"`
-  - Search button: `aria-label="Search"`
+  - Search: a `role="search"` landmark; the field has `aria-label="Search opportunities"`
   - Clear button: `aria-label="Clear search"`
   - Loading page: `aria-busy="true"`
   - The type icon is decorative and always sits next to the type name.
@@ -111,6 +118,7 @@ The same list, panel and form serve `/admin/opportunities` and `/partner/opportu
    - "Updated {when} by {who}".
 3. Select **Edit** to open the form, or **More actions** for everything else.
 - **Edit** is the panel's one primary action.
+- Every item in the **More actions** menu has an icon. **Delete** sits below a separator.
 - Show the status as text, never color alone.
 - For a removed partner's live listing, show **No longer emailed** and the note saying until when people can still see it.
 - Accessibility:
@@ -118,7 +126,7 @@ The same list, panel and form serve `/admin/opportunities` and `/partner/opportu
   - Panel close button: `aria-label="Close panel"`
 
 #### Create an opportunity
-1. Select **New opportunity**, then choose a type: **Event**, **Petition**, **Volunteer role**, **Job** or **Other**.
+1. Select **New opportunity** at the top right, then choose a type: **Event**, **Petition**, **Volunteer role**, **Job** or **Other**. Each type shows its icon.
 2. The form opens as a full page titled "New {type}", with a **Basics** section and the type's own section.
 3. Fill in the fields and select **Publish**.
    - On success, show the toast "Published. The {type} is now live." and open the Live tab.
@@ -197,8 +205,7 @@ The same list, panel and form serve `/admin/opportunities` and `/partner/opportu
 | Element | Current text | Notes |
 |---|---|---|
 | Page heading | Opportunities | Keep. |
-| Page description, partner portal | What your organization shares with the SDC community. | Keep. The admin description is in admin.md. |
-| New button | New opportunity | Keep. |
+| New button | New opportunity | Keep. Opens the type menu. |
 | New menu heading | Choose a type | Keep. |
 | New menu item | Event | Keep. From catalog.ts. |
 | New menu item | Petition | Keep. |
@@ -214,11 +221,10 @@ The same list, panel and form serve `/admin/opportunities` and `/partner/opportu
 
 | Element | Current text | Notes |
 |---|---|---|
-| Search field label | Search opportunities | Keep. |
+| Search field | Search opportunities | Accessible label only. There's no visible label. |
 | Search field placeholder | Search by title or organization | Review: partners only see their own organization, so "Search by title" fits the partner portal. |
-| Search button | Search | Accessible label only. Kit default. |
 | Clear search button | Clear search | Accessible label only. Kit default. |
-| Type filter label | Type | Keep. |
+| Type filter label | Type | Keep. Above the table. |
 | Type filter, no filter | All types | Keep. |
 
 #### Table
@@ -292,10 +298,10 @@ A removed partner can't sign in, so in practice only admins see these.
 
 | Element | Current text | Notes |
 |---|---|---|
-| Live row badge and panel badge | No longer emailed | Owner question: Partners says these listings "expire". Pick one word for this state and use it in both places. |
+| Live row badge and panel badge | No longer emailed | New, needs approval. Owner question: Partners says these listings "expire". Pick one word for this state and use it in both places. |
 | Panel note | The partner was removed. People who already got it can see it until {date}. | Keep. |
-| Closed row badge and panel status | Partner removed | See the No longer emailed note. |
-| Organization filter option | {name} (removed) | Keep. Admin only. |
+| Closed row badge and panel status | Partner removed | New, needs approval. See the No longer emailed note. |
+| Organization filter option | {name} (removed) | New, needs approval. Admin only. |
 
 #### Delete confirmation
 
@@ -534,6 +540,7 @@ Rules: [decisions/opportunities.md](../decisions/opportunities.md) entries 8 and
    - Mark the signed-in person's own row "(you)".
    - Mark anyone who hasn't accepted yet **Invitation pending**, with "Expires {date}" under their email.
    - If their invitation email failed, show the error with **Retry** instead of the expiry date.
+- Every item in a row menu has an icon.
 - Accessibility:
   - The team is a list (`role="list"`) labelled by the Team heading.
   - Row menu button: `aria-label="Actions for {name}"`
@@ -576,7 +583,6 @@ Rules: [decisions/opportunities.md](../decisions/opportunities.md) entries 8 and
 | Element | Current text | Notes |
 |---|---|---|
 | Page heading | Organization | Keep. Matches the sidebar item. |
-| Page description | How your organization appears to the SDC community. | Keep. |
 | Section heading | Profile | Keep. |
 | Organization name field label | Organization name | Keep. Same label as admin Partners. |
 | Website field label | Website | Keep. |
@@ -600,10 +606,10 @@ Rules: [decisions/opportunities.md](../decisions/opportunities.md) entries 8 and
 | Element | Current text | Notes |
 |---|---|---|
 | Section heading | Team | Keep. Admin Partners calls the same people "People" and "Contacts". |
-| Invite button | Invite colleague | Keep. |
-| Own row marker | (you) | Keep. |
+| Invite button | Invite colleague | New, needs approval. |
+| Own row marker | (you) | New, needs approval. |
 | Pending badge | Invitation pending | Keep. Admin Partners now uses the same words. |
-| Invitation expiry | Expires {date} | Review: an expired invitation still shows a past date here. |
+| Invitation expiry | Expires {date} | New, needs approval. Review: an expired invitation still shows a past date here. |
 | Send error line | {send error} | Keep. Text comes from the email service. |
 | Retry button | Retry | Keep. |
 | Row menu button | Actions for {name} | Accessible label only |
@@ -615,7 +621,7 @@ Rules: [decisions/opportunities.md](../decisions/opportunities.md) entries 8 and
 
 | Element | Current text | Notes |
 |---|---|---|
-| Dialog title | Invite colleague | Keep. |
+| Dialog title | Invite colleague | New, needs approval. |
 | Dialog description | We'll email them a link to join your organization's portal. The link works for 7 days. | Keep. |
 | Name field label | Name | Keep. |
 | Email field label | Email | Keep. |

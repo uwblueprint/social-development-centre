@@ -99,11 +99,14 @@ export function ExportDialog({
               />
             )}
           </Field>
-          <Checkbox
-            label={copy.exportDialog.includeUnsubscribed}
-            checked={includeUnsubscribed}
-            onCheckedChange={(value) => setIncludeUnsubscribed(value === true)}
-          />
+          {/* Unsubscribing ends paid access, so the option only applies to general members. */}
+          {scope === "general" && (
+            <Checkbox
+              label={copy.exportDialog.includeUnsubscribed}
+              checked={includeUnsubscribed}
+              onCheckedChange={(value) => setIncludeUnsubscribed(value === true)}
+            />
+          )}
           <CountLine>{count === null ? copy.exportDialog.counting : copy.exportDialog.countLine(count)}</CountLine>
         </Body>
         <DialogActions>

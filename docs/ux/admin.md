@@ -2,7 +2,9 @@
 
 The single source for admin portal flows and UX copy.
 
-Edit the **Current text** column to update product copy. Community strings live in `src/app/admin/community/_copy.ts`, keyed by the IDs below.
+Edit the **Current text** column to update product copy. Sidebar strings live in `src/app/admin/_components/AdminShell.tsx`. Community strings live in `src/app/admin/community/_copy.ts`. Partners toolbar, tab, table, badge and invitation strings live in `src/app/admin/partners/_copy.ts`; the rest of Partners is still in `src/app/admin/partners/_components/`.
+
+List pages (Partners, Community and Opportunities) share one layout: a compact header with the page heading on the left and its buttons on the right, then one row with the tabs on the left and search on the right. There is no page description. What each section is for is in its sidebar tooltip.
 
 ## Shell
 
@@ -17,8 +19,11 @@ Edit the **Current text** column to update product copy. Community strings live 
    - Insights
 2. Select a section to open that page.
 3. The selected section is visually highlighted and uses `aria-current="page"`.
-4. If a section has items that need attention, show the number in a badge beside the section name.
-5. The page itself should explain what the number refers to. Do not rely on the badge alone.
+4. Hover over or tab to a section and wait a moment. A tooltip to the right says what the section is for.
+5. If a section has items that need attention, show the number in a badge beside the section name.
+6. The page itself should explain what the number refers to. Do not rely on the badge alone.
+
+Wait 600ms before showing a section's tooltip, on hover and on keyboard focus, so moving down the sidebar doesn't flash every one. Do not pin the tooltip on click. A click opens the section and closes the tooltip.
 
 #### Navigate sections (mobile, <768px)
 
@@ -62,6 +67,10 @@ Accessibility:
 | Navigation | Partners | Keep |
 | Navigation | Community | Keep |
 | Navigation | Insights | Keep |
+| Sidebar tooltip, Opportunities | Events, petitions, volunteer roles and jobs from SDC and Civic Hub partners. | New, needs approval. Was the Opportunities page description. Review: leaves out Other. Revisit after the 29 September types session |
+| Sidebar tooltip, Partners | Civic Hub organizations and the people who post for them. | New, needs approval |
+| Sidebar tooltip, Community | Everyone on SDC's email list, and who has paid access. | New, needs approval |
+| Sidebar tooltip, Insights | Reports on what people click and join. | New, needs approval |
 | Section badge | {count} | Number only. The section's page says what it counts |
 | Mobile menu button | Open menu | Accessible label only |
 | Drawer close button | Close menu | Accessible label only |
@@ -77,21 +86,44 @@ Accessibility:
 
 1. Go to **Partners**.
 2. Select a tab. Each shows its count in brackets:
-   - Organizations
-   - People
-   - Removed
-3. Type in the search field, then press Enter or select the search button. Search matches organization name, contact name or email.
-4. Select the clear button to clear the search and show the full list.
-5. Select a row to open its details in the side panel.
-   - On the People tab, the panel opens on the person's organization with that person highlighted under Contacts.
+   - Organizations: current partners
+   - People: active contacts at current partners
+   - Invitations: people who haven't accepted yet
+   - Removed: past partners
+3. Type in the search field. Results update 300ms after the last keystroke. Press Enter to search straight away. Search matches organization name, contact name or email, and every tab count shows how many match.
+4. While results load, a spinner replaces the search icon.
+5. Select the clear button to clear the search and show the full list.
+6. Select a row to open its details in the side panel.
+   - On the People and Invitations tabs, the panel opens on the person's organization with that person highlighted under Contacts.
 
-Do not search as the user types. Search runs only when submitted.
+On Organizations, show **Invitation pending** beside the name until anyone at the organization accepts. Leave a cell empty when there's nothing to show. Do not show a dash.
+
+The search field has no visible label, only the search icon and the placeholder. Do not add a search button. Searching keeps the current tab and doesn't add browser history entries. If an older search returns after a newer one, ignore it.
 
 Accessibility:
 - Tab list: `aria-label="Partner views"`
-- Tables: `aria-label="Organizations"`, `aria-label="People"`, `aria-label="Removed partners"`
-- Search button: `aria-label="Search"`
+- Tables: `aria-label="Organizations"`, `aria-label="People"`, `aria-label="Invitations"`, `aria-label="Removed partners"`
+- Search: a `role="search"` landmark; the field has `aria-label="Search by name or email"`
 - Clear button: `aria-label="Clear search"`
+
+#### Follow up on invitations
+
+1. Select the **Invitations** tab. It lists every pending invitation at current partners, including people at organizations nobody has joined yet. The ones that expire soonest are first.
+2. Each row shows the name with the email under it, then **Organization**, **Sent** and **Expires**.
+3. Check for a badge beside the name:
+   - **Not delivered**: the invitation email couldn't be sent.
+   - **Expired**: the link no longer works.
+4. Select the row's actions menu, then do one of these:
+   - Select **Resend invitation**. A new link is sent and the previous one stops working. A toast confirms it.
+   - Select **Cancel invitation**, then **Yes, cancel invitation** to confirm, or **Keep invitation** to go back.
+5. Select the row itself to open the partner's panel with that person highlighted under Contacts.
+
+If both badges apply, show **Not delivered** only. The person never got a link to expire.
+
+Accessibility:
+- Row actions menu: `aria-label="Actions for {name}"`
+- The actions column header is visually hidden text: "Actions".
+- Badges are text, never color alone.
 
 #### Invite a partner with a new organization
 
@@ -99,8 +131,8 @@ Accessibility:
 2. Enter **Name** and **Email**.
 3. In **Organization**, type a name that doesn't match an existing organization and select **Create "{name}"**.
 4. Select **Send invitation**.
-5. If the invitation is sent, the dialog closes and a toast confirms it.
-6. If the email can't be delivered, the person is still added. The dialog closes, a toast explains, and their contact row shows the error with **Retry**.
+5. If the invitation is sent, the dialog closes and a toast confirms it. The person is listed on **Invitations** until they accept, then on **People**.
+6. If the email can't be delivered, the person is still added. The dialog closes and a toast explains. They're listed on **Invitations** with **Not delivered**, and their contact row in the panel shows the error with **Retry**.
 
 Do not allow a new organization with the same name as an existing one. Show a field error and ask the admin to choose it from the list.
 
@@ -121,9 +153,11 @@ Do not allow a new organization with the same name as an existing one. Show a fi
 3. Select **Resend invitation**. The previous link stops working.
 4. If the last send failed, select **Retry** on their row instead.
 
+You can also resend from the row's actions menu on the **Invitations** tab.
+
 #### Cancel an invitation
 
-1. Open the actions menu on a pending contact.
+1. Open the actions menu on a pending contact in the partner's panel, or on their row on the **Invitations** tab.
 2. Select **Cancel invitation**.
 3. Select **Yes, cancel invitation** to confirm, or **Keep invitation** to go back.
 4. The person is deleted. If nobody is left and the organization was never active, the organization is deleted too.
@@ -177,7 +211,7 @@ If they're the organization's only contact, **Remove from organization** is disa
 1. On the **Removed** tab, open the partner.
 2. Update their details if needed.
 3. Select **Reinvite**, then **Yes, reinvite**.
-4. Every saved contact gets a new invitation. The partner returns to **Organizations**, marked **Invitation pending**.
+4. Every saved contact gets a new invitation and is listed on **Invitations**. The partner returns to **Organizations**, marked **Invitation pending**.
 
 Opportunities that already closed stay closed. Reinviting fails if the partner has no contacts, or if a contact's email is already used at another current partner.
 
@@ -193,18 +227,17 @@ Accessibility:
 | Element | Current text | Notes |
 |---|---|---|
 | Page heading | Partners | Keep |
-| Page description | Invite organizations, manage their contacts, and control their access to opportunities. | Keep |
 | Header button | Invite partner | Keep |
-| Search field label | Search partners | Keep |
-| Search field hint | Matches organization name, contact name or email | Keep |
-| Search field placeholder | Search partners | Review: repeats the label |
-| Search button | Search | Accessible label only |
+| Search field placeholder | Search by name or email | Keep. Also the field's accessible label. There's no visible label |
 | Clear search button | Clear search | Accessible label only |
 | Tab list | Partner views | Accessible label only |
 | Tab | Organizations | Keep |
 | Tab | People | Owner question: rename to Contacts? The panel section and column say Contacts, and the button says Add person |
+| Tab | Invitations | New, needs approval |
 | Tab | Removed | Keep |
-| Tab count | ({count}) | Keep |
+| Tab count | ({count}) | Keep. Follows the search |
+| Empty state, search title, every tab | No matches for "{q}" | Keep |
+| Empty state, search description, every tab | Try a different organization name, contact name or email. | Keep |
 | Organizations table | Organizations | Accessible label only |
 | Organizations column header | Organization | Keep |
 | Organizations column header | Contacts | Keep |
@@ -212,12 +245,8 @@ Accessibility:
 | Organizations column header | Opportunities | Keep |
 | Opportunities cell, one | 1 opportunity | Keep |
 | Opportunities cell, many | {count} opportunities | Keep |
-| Contacts cell, nobody left | No contacts | Keep |
-| Empty cell | — | Keep |
 | Status badge, organization and person | Invitation pending | Keep. Review: decisions/partners.md #2 and #5 still say Pending |
 | Status badge, panel | Removed | Keep |
-| Organizations empty, search title | No matches for "{q}" | Keep |
-| Organizations empty, search description | Try a different organization name, contact name or email. | Keep |
 | Organizations empty, no partners title | No partners yet | Keep |
 | Organizations empty, no partners description | Invite an organization to give them access to their opportunities. | Keep |
 | Organizations empty, action | Invite partner | Keep |
@@ -225,20 +254,27 @@ Accessibility:
 | People column header | Name | Keep |
 | People column header | Email | Keep |
 | People column header | Organization | Keep |
-| People column header | Invitation | Keep |
-| Invitation cell, send failed | Invitation not sent | Keep |
-| Invitation cell, pending | Expires {date} | Keep |
-| People empty, search title | No matches for "{q}" | Keep |
-| People empty, search description | Try a different name, email or organization. | Keep |
 | People empty, no people title | No people yet | Keep |
 | People empty, no people description | Invite a partner to add their first contact. | Keep |
 | People empty, action | Invite partner | Keep |
+| Invitations table | Invitations | Accessible label only |
+| Invitations column header | Name | Keep. The email shows under the name |
+| Invitations column header | Organization | Keep |
+| Invitations column header | Sent | New, needs approval |
+| Invitations column header | Expires | New, needs approval |
+| Invitations column header, visually hidden | Actions | Accessible label only |
+| Invitation badge, email failed | Not delivered | New, needs approval. Shown instead of Expired when both apply |
+| Invitation badge, link expired | Expired | New, needs approval |
+| Invitation row actions menu | Actions for {name} | Accessible label only |
+| Invitation menu item | Resend invitation | Keep |
+| Invitation menu item | Cancel invitation | Keep |
+| Invitations empty, none title | No pending invitations | New, needs approval |
+| Invitations empty, none description | People you invite appear here until they accept. | New, needs approval |
+| Invitations empty, action | Invite partner | Keep |
 | Removed table | Removed partners | Accessible label only |
 | Removed column header | Organization | Keep |
 | Removed column header | Contacts | Keep |
 | Removed column header | Removed | Keep |
-| Removed empty, search title | No matches for "{q}" | Keep |
-| Removed empty, search description | Try a different organization name, contact name or email. | Keep |
 | Removed empty, none title | No removed partners | Keep |
 | Removed empty, none description | Partners whose access you remove appear here. | Keep |
 | Invite dialog title | Invite partner | Keep |
@@ -345,15 +381,24 @@ Accessibility:
 #### Find someone
 
 1. Go to **Community**.
-2. Select a tab:
-   - General members
+2. Select a tab. Each shows its count in brackets:
+   - General members: everyone subscribed, paying members included
    - Paying members
-3. Type in the search field, then press Enter or select the search button.
-4. Select the clear button to clear the search and show the full list.
-5. Submitting or clearing a search returns to page 1.
-6. Select a row to open that person's panel.
+3. To see what General members counts, hover over or tab to it and wait a moment. A tooltip explains it.
+4. Type in the search field. Results update 300ms after the last keystroke. Press Enter to search straight away. Search matches name or email, and both tab counts show how many match.
+5. While results load, a spinner replaces the search icon.
+6. Select the clear button to clear the search and show the full list.
+7. Searching or clearing returns to page 1.
+8. Select a row to open that person's panel.
 
-Do not search as the user types. Search runs only when submitted.
+Do not list or count people who unsubscribed. The search field has no visible label, only the search icon and the placeholder. Do not add a search button. Searching doesn't add browser history entries. If an older search returns after a newer one, ignore it.
+
+#### Find someone who unsubscribed
+
+1. On **General members**, search for their name or email.
+2. Matching people who unsubscribed appear after every subscribed match. Their name and email are dimmed and their name has an **Unsubscribed** badge.
+
+Search on **Paying members** doesn't include them. They aren't added to either tab count.
 
 #### Add members
 
@@ -374,36 +419,35 @@ On the Paying members tab, the dialog adds paying members.
 #### Copy someone's email
 
 1. Do one of these:
-   - In the table, hover over or tab to a row's Email cell, then select the copy button. This doesn't open the row.
+   - In the table, hover over or tab to a row's Email cell, then select the copy button. This doesn't open the row. On touch screens the button is always shown.
    - In the panel header, select the copy button next to the email.
    - Select **Copy email** from the row's or the panel's actions menu.
-2. A toast confirms the email was copied.
+2. The copy button shows a check and a "Copied" tooltip for 1.5 seconds, then goes back to the copy icon. If copying fails, the tooltip says so instead.
+3. From an actions menu, a toast confirms the email was copied.
+
+Close the copy button's tooltip as soon as the pointer leaves or focus moves. Do not leave "Copied" showing.
 
 #### Convert to paying member
 
-1. Do one of these:
-   - Select **Convert to paying member** from a general member's row actions menu.
-   - Open their panel and select **Convert to paying member** in the header.
-2. They move to Paying members and get the upgrade email.
+1. Select **Convert to paying member** from a general member's row actions menu or from their panel's actions menu.
+2. They also appear in Paying members and get the upgrade email. A toast confirms it, and the panel closes.
 
 Do not ask for confirmation. The change runs straight away.
 
 #### Remove paying access
 
-1. Do one of these:
-   - Select **Remove paying access** from a paying member's row actions menu.
-   - Open their panel and select **Remove paying access** in the header.
+1. Select **Remove paying access** from a paying member's row actions menu or from their panel's actions menu.
 2. Select **Yes, remove paying access** to confirm, or **Keep paying access** to go back.
 3. Their paid benefits end now. They stay a general member and get a notice email.
 
 #### Unsubscribe
 
-1. Do one of these:
-   - Select **Unsubscribe** from a row's actions menu.
-   - Open the panel, select its actions menu, then select **Unsubscribe**.
+1. Select **Unsubscribe** from a row's actions menu or from the panel's actions menu.
 2. Select **Yes, unsubscribe** to confirm, or **Keep subscribed** to go back.
 3. All emails to them stop. A paying member also loses paying access.
-4. Their row shows their name dimmed with an unsubscribed icon.
+4. They leave the lists and the tab counts. Search General members to find them again.
+
+For someone who unsubscribed, the row's actions menu offers only **Copy email**.
 
 #### Resubscribe (turned off)
 
@@ -413,37 +457,53 @@ Do not ask for confirmation. The change runs straight away.
 #### Edit details
 
 1. Open a row's panel.
-2. Select **Edit details** from the panel's actions menu. This switches to the Details tab if needed.
+2. Select **Edit details** from the panel's actions menu. The form opens at the top of the panel, above Emails.
 3. Change **Name** or **Email**.
 4. Select **Save**, or **Cancel** to discard.
 
 If the email is already in use, show a field error and save nothing.
 
-#### View someone's email history
+#### View someone's details and email history
 
-1. Open a row's panel and select the **Emails ({n})** tab.
-2. Emails are listed newest first. Each shows its subject, type and date, and a **Bounced** badge if delivery failed.
-3. Select an email to expand it and see the full message.
-4. Select **Expand all** or **Collapse all** to open or close every email at once.
+1. Select a row to open the panel. It's one scrolling view.
+2. The header shows:
+   - The name, or the email if there's no name
+   - The email with a copy button, unless it's already the heading
+   - A status badge: **General member**, **Paying member** or **Unsubscribed**
+   - Added {date}
+3. Every action is in the header's actions menu:
+   - Edit details
+   - Copy email
+   - Convert to paying member, or Remove paying access
+   - Unsubscribe, or a disabled Resubscribe
+4. Below the header, **Emails ({n})** lists every email sent to them, newest first. Each shows its subject and the date it was sent, and a **Bounced** badge if delivery failed.
+5. Scroll to read each email. Every email is open. Each body loads as it comes near the visible area, with a same-size placeholder saying "Loading email…" until then.
+6. If an email's body can't load, select **Try again** in its place. If the list can't load, select **Try again** beside the message.
 
-#### Export
+Do not add tabs, an avatar or a primary button to the panel. Show each fact once.
 
-1. Select **Export**.
-2. Under **Who to export**, choose:
-   - General members
+#### Export members
+
+1. Select **Export members**.
+2. Under **Who to export**, keep the current tab or choose:
+   - General members: everyone subscribed, paying members included
    - Paying members
-   - Everyone
 3. Select **Include unsubscribed members** if needed.
 4. Check the count, then select **Download CSV**.
 
+The CSV has two columns: name and email. **Download CSV** is disabled while nobody would be exported.
+
 Accessibility:
 - Tab list: `aria-label="Community views"`
-- Search field: `aria-label="Search members"`
+- General members tab: the tooltip opens after 600ms on hover or keyboard focus, and a click doesn't pin it
+- Search: a `role="search"` landmark; the field has `aria-label="Search by name or email"`
+- Clear button: `aria-label="Clear search"`
 - Row and panel actions menus: `aria-label="Actions for {name}"`
-- Copy buttons: `aria-label="Copy email"`
-- Unsubscribed icon: tooltip and visually hidden text "Unsubscribed"
-- Panel tab list: `aria-label="{name} details"`
+- Copy buttons: `aria-label="Copy email"`. The result ("Copied" or the failure message) is announced through a `role="status"` region
+- Unsubscribed: a text badge, never color alone
 - Edit form: `aria-label="Edit member"`
+- Emails section: labelled by its Emails heading. Each subject is a heading
+- Emails list loading: `role="status"`. Emails list error: `role="alert"`
 - Address group toggle: `aria-label="{label}. Show addresses"` or `"{label}. Hide addresses"`
 - Email preview frame: `title="Email preview: {subject}"`
 
@@ -453,117 +513,109 @@ Toasts and messages returned by the server (`src/app/admin/community/_data/actio
 
 | Element | Current text | Notes |
 |---|---|---|
-| Page heading | Community | Keep. `page.title` |
-| Page description | View general and paying members, add people and manage their access. | Keep. `page.description` |
-| Tab list | Community views | Accessible label only. `tabs.ariaLabel` |
-| Tab | General members | Keep. `tabs.general` |
-| Tab | Paying members | Keep. `tabs.paying` |
-| General tab count | ({general} · {unsubscribed} unsubscribed) | Keep. `tabs.generalCount` |
-| Paying tab count | ({paying}) | Keep. `tabs.payingCount` |
-| Search field | Search members | Accessible label only. `toolbar.searchAriaLabel` |
-| Search field placeholder | Search by name or email | Keep. `toolbar.searchPlaceholder` |
-| Toolbar button | Export | Keep. `toolbar.export` |
-| Toolbar button and empty state action | Add members | Keep. `toolbar.addMembers` |
-| Column header | Name | Keep. `table.headerName` |
-| Column header | Email | Keep. `table.headerEmail` |
-| Column header | Last email | Keep. `table.headerLastEmail` |
-| Column header | Added | Keep. `table.headerAdded` |
-| Column header, visually hidden | Actions | Accessible label only. `table.headerActions` |
-| Name cell, no name on file | No name | Keep. `table.noName` |
-| Last email cell, never emailed | — | Keep. `table.noLastEmail` |
-| Email cell copy button | Copy email | Accessible label only. `table.copyEmailLabel` |
-| Unsubscribed icon | Unsubscribed | Tooltip and hidden text. `table.unsubscribedLabel` |
-| Row actions menu | Actions for {name} | Accessible label only. `table.rowActionsLabel` |
-| Row menu item | Copy email | Keep. `rowMenu.copyEmail` |
-| Row menu item, general member | Convert to paying member | Keep. `rowMenu.convert` |
-| Row menu item, paying member | Remove paying access | Keep. `rowMenu.remove` |
-| Row menu item | Unsubscribe | Keep. `rowMenu.unsubscribe` |
-| Empty state, search title | No matches for "{q}" | Keep. `empty.searchTitle` |
-| Empty state, search description | Try a different name or email. | Keep. `empty.searchDescription` |
-| Empty state, Paying tab title | No paying members yet | Keep. `empty.payingTitle` |
-| Empty state, Paying tab description | Convert a general member to paying from their record, or add paying members here. | Keep. `empty.payingDescription` |
-| Empty state, General tab title | No members yet | Keep. `empty.generalTitle` |
-| Empty state, General tab description | People who join or subscribe appear here. | Keep. `empty.generalDescription` |
-| Add dialog title, Paying tab | Add paying members | Keep. `addDialog.titlePaying` |
-| Add dialog title, General tab | Add general members | Keep. `addDialog.titleGeneral` |
-| Add dialog field label | Email addresses | Keep. `addDialog.emailsLabel` |
-| Add dialog field hint | Separate with commas or new lines | Keep. `addDialog.emailsHint` |
-| Add dialog field placeholder | ada@example.org, grace@example.org | Keep. `addDialog.emailsPlaceholder` |
-| Add dialog button | Cancel | Keep. `addDialog.cancel` |
-| Add dialog button, checks the list | Continue | Keep. `addDialog.continue` |
-| Add dialog button, back to the list | Back | Keep. `addDialog.back` |
-| Add dialog confirm, pending | Adding… | Keep. `addDialog.adding` |
-| Add dialog confirm | Add {n} members | Keep. "member" when n is 1. `addDialog.addCount` |
-| Check summary | {n} new members will be added and get a welcome email. | Keep. "member" when n is 1. `addDialog.summary` |
-| Check line, already members | {n} already members, skipped | Keep. "member" when n is 1. `addDialog.skipped` |
-| Check line, unsubscribed | {n} unsubscribed, not added | Keep. `addDialog.unsubscribedIssue` |
-| Check line, invalid | {n} invalid | Keep. `addDialog.invalid` |
-| Check note, duplicates | {n} duplicates removed | Keep. `addDialog.duplicates` |
-| Check line toggle, closed | {label}. Show addresses | Accessible label only. `addDialog.toggleAddresses` |
-| Check line toggle, open | {label}. Hide addresses | Accessible label only. `addDialog.toggleAddresses` |
-| Toast fallback, added | Members added. | Keep. `addDialog.addedFallback` |
-| Toast fallback, not added | The members weren't added. | Keep. `addDialog.notAddedFallback` |
-| Export dialog title | Export members | Keep. `exportDialog.title` |
-| Export dialog description | Download a CSV of member names and emails. | Keep. `exportDialog.description` |
-| Export field label | Who to export | Keep. `exportDialog.whoLabel` |
-| Export option | General members | Keep. `exportDialog.scopeGeneral` |
-| Export option | Paying members | Keep. `exportDialog.scopePaying` |
-| Export option | Everyone | Keep. `exportDialog.scopeEveryone` |
-| Export checkbox | Include unsubscribed members | Keep. `exportDialog.includeUnsubscribed` |
-| Export count, loading | Counting… | Keep. `exportDialog.counting` |
-| Export count | {n} people will be exported | Keep. "person" when n is 1. `exportDialog.countLine` |
-| Export dialog button | Cancel | Keep. `exportDialog.cancel` |
-| Export dialog button | Download CSV | Keep. `exportDialog.download` |
-| Export button, pending | Preparing… | Keep. `exportDialog.preparing` |
-| Toast, exported | Downloaded {filename}. | Keep. `exportDialog.downloadedToast` |
-| Toast, export failed | The export couldn't be created. Try again. | Keep. `exportDialog.errorToast` |
-| Panel category | General member | Keep. `panel.categoryGeneral` |
-| Panel category | Paying member | Keep. `panel.categoryPaying` |
-| Panel category | Unsubscribed | Keep. `panel.categoryUnsubscribed` |
-| Panel copy button | Copy email | Accessible label only. `panel.copyEmailLabel` |
-| Panel header button, general member | Convert to paying member | Keep. `panel.convertButton` |
-| Panel header button, paying member | Remove paying access | Keep. `panel.removeButton` |
-| Panel tab list | {name} details | Accessible label only. `panel.tabsAriaLabel` |
-| Panel actions menu | Actions for {name} | Accessible label only. `panel.menuLabel` |
-| Panel menu item | Edit details | Keep. `panel.menuEdit` |
-| Panel menu item | Copy email | Keep. `panel.menuCopyEmail` |
-| Panel menu item | Unsubscribe | Keep. `panel.menuUnsubscribe` |
-| Panel menu item, unsubscribed, disabled | Resubscribe | Keep. `panel.menuRestore` |
-| Disabled reason, Resubscribe | Turned off until SDC confirms its consent rules for resubscribing people. | Keep. `panel.restoreReason` |
-| Panel tab | Details | Keep. `panel.tabDetails` |
-| Panel tab, count loading | Emails | Keep. `panel.tabEmailsLoading` |
-| Panel tab | Emails ({n}) | Keep. `panel.tabEmails` |
-| Details row label | Email | Keep. `details.email` |
-| Details row label | Category | Keep. `details.category` |
-| Details row label | Date added | Keep. `details.dateAdded` |
-| Edit form | Edit member | Accessible label only. `editForm.ariaLabel` |
-| Edit field label | Name | Keep. `editForm.nameLabel` |
-| Edit field label | Email | Keep. `editForm.emailLabel` |
-| Edit form button | Cancel | Keep. `editForm.cancel` |
-| Edit form button | Save | Keep. `editForm.save` |
-| Remove paying access dialog title | Remove paying access for {name}? | Keep. `confirm.revokeTitle` |
-| Remove paying access dialog body | Their paid benefits end now. They'll keep getting general emails, and we'll send them a notice. | Keep. `confirm.revokeBody` |
-| Remove paying access dialog cancel | Keep paying access | Keep. `confirm.revokeCancel` |
-| Remove paying access dialog confirm | Yes, remove paying access | Keep. `confirm.revokeConfirm` |
-| Unsubscribe dialog title | Unsubscribe {name}? | Keep. `confirm.unsubscribeTitle` |
-| Unsubscribe dialog body, paying member | This stops all emails to them and removes their paying access, now. Their record is kept, marked Unsubscribed. | Keep. `confirm.unsubscribeBodyPaying` |
-| Unsubscribe dialog body, general member | This stops all emails to them now. Their record is kept, marked Unsubscribed. | Keep. `confirm.unsubscribeBodyGeneral` |
-| Unsubscribe dialog cancel | Keep subscribed | Keep. `confirm.unsubscribeCancel` |
-| Unsubscribe dialog confirm | Yes, unsubscribe | Keep. `confirm.unsubscribeConfirm` |
-| Emails tab button | Expand all | Keep. `emailsTab.expandAll` |
-| Emails tab button | Collapse all | Keep. `emailsTab.collapseAll` |
-| Bounced email badge | Bounced | Owner question: "Not delivered" is plainer if admins don't know "bounced". `emailsTab.bouncedBadge` |
-| Emails tab, none sent | No emails sent yet. | Keep. `emailsTab.empty` |
-| Emails tab, loading | Loading emails… | Keep. `emailsTab.loading` |
-| Emails tab, error | Couldn't load this person's emails. Try again. | Keep. `emailsTab.loadError` |
-| Email preview frame | Email preview: {subject} | Accessible label only. `emailsTab.previewTitle` |
-| Email type | Welcome | Keep. `emailsTab.kindLabel` |
-| Email type | Paying welcome | Keep. `emailsTab.kindLabel` |
-| Email type | Upgrade | Owner question: the action is Convert to paying member. Align the email name? `emailsTab.kindLabel` |
-| Email type | Paying access removed | Keep. `emailsTab.kindLabel` |
-| Email type | Opportunities | Keep. `emailsTab.kindLabel` |
-| Toast, email copied | Email copied | Keep. `toast.emailCopied` |
-| Toast fallback | Done. | Keep. `toast.done` |
+| Page heading | Community | Keep |
+| Tab list | Community views | Accessible label only |
+| Tab | General members | Keep |
+| General tab tooltip | Includes paying members. Doesn't include people who unsubscribed. | New, needs approval |
+| Tab | Paying members | Keep |
+| General tab count | ({count}) | Keep. Subscribed people only, paying members included. Follows the search |
+| Paying tab count | ({count}) | Keep. Follows the search |
+| Search field placeholder | Search by name or email | Keep. Also the field's accessible label. There's no visible label |
+| Clear search button | Clear search | Accessible label only |
+| Header button | Export members | Keep |
+| Header button and empty state action | Add members | Keep |
+| Column header | Name | Keep |
+| Column header | Email | Keep |
+| Column header | Last email | Keep |
+| Column header | Added | Keep |
+| Column header, visually hidden | Actions | Accessible label only |
+| Name cell, no name on file | No name | Keep |
+| Last email cell, never emailed | — | Keep |
+| Unsubscribed badge, search results | Unsubscribed | Keep |
+| Copy button, table and panel header | Copy email | Owner to rewrite. Accessible label and tooltip |
+| Copy button tooltip, copied | Copied | Keep |
+| Copy button tooltip, copy failed | Couldn't copy. Select the email to copy it. | New, needs approval |
+| Row actions menu | Actions for {name} | Accessible label only |
+| Row menu item | Copy email | Keep |
+| Row menu item, general member | Convert to paying member | Keep |
+| Row menu item, paying member | Remove paying access | Keep |
+| Row menu item | Unsubscribe | Keep |
+| Empty state, search title | No matches for "{q}" | Keep |
+| Empty state, search description | Try a different name or email. | Keep |
+| Empty state, Paying tab title | No paying members yet | Keep |
+| Empty state, Paying tab description | Convert a general member to paying from their record, or add paying members here. | Keep |
+| Empty state, General tab title | No members yet | Keep |
+| Empty state, General tab description | People who join or subscribe appear here. | Keep |
+| Add dialog title, Paying tab | Add paying members | Keep |
+| Add dialog title, General tab | Add general members | Keep |
+| Add dialog field label | Email addresses | Keep |
+| Add dialog field hint | Separate with commas or new lines | Keep |
+| Add dialog field placeholder | ada@example.org, grace@example.org | Keep |
+| Add dialog button | Cancel | Keep |
+| Add dialog button, checks the list | Continue | Keep |
+| Add dialog button, back to the list | Back | Keep |
+| Add dialog confirm, pending | Adding… | Keep |
+| Add dialog confirm | Add {n} members | Keep. "member" when n is 1 |
+| Check summary | {n} new members will be added and get a welcome email. | Keep. "member" when n is 1 |
+| Check line, already members | {n} already members, skipped | Keep. "member" when n is 1 |
+| Check line, unsubscribed | {n} unsubscribed, not added | Keep |
+| Check line, invalid | {n} invalid | Keep |
+| Check note, duplicates | {n} duplicates removed | Keep |
+| Check line toggle, closed | {label}. Show addresses | Accessible label only |
+| Check line toggle, open | {label}. Hide addresses | Accessible label only |
+| Toast fallback, added | Members added. | Keep |
+| Toast fallback, not added | The members weren't added. | Keep |
+| Export dialog title | Export members | Keep |
+| Export dialog description | Download a CSV of member names and emails. | Keep |
+| Export field label | Who to export | Keep |
+| Export option | General members | Keep. Everyone subscribed, paying members included |
+| Export option | Paying members | Keep |
+| Export checkbox | Include unsubscribed members | Keep. Review: changes nothing when Paying members is chosen |
+| Export count, loading | Counting… | Keep |
+| Export count | {n} people will be exported | Keep. "person" when n is 1 |
+| Export dialog button | Cancel | Keep |
+| Export dialog button | Download CSV | Keep |
+| Export button, pending | Preparing… | Keep |
+| Toast, exported | Downloaded {filename}. | Keep |
+| Toast, export failed | The export couldn't be created. Try again. | Keep |
+| Panel status badge | General member | Keep |
+| Panel status badge | Paying member | Keep |
+| Panel status badge | Unsubscribed | Keep |
+| Panel date line | Added {date} | New, needs approval |
+| Panel actions menu | Actions for {name} | Accessible label only |
+| Panel menu item | Edit details | Keep |
+| Panel menu item | Copy email | Keep |
+| Panel menu item, general member | Convert to paying member | Keep |
+| Panel menu item, paying member | Remove paying access | Keep |
+| Panel menu item | Unsubscribe | Keep |
+| Panel menu item, unsubscribed, disabled | Resubscribe | Keep |
+| Disabled reason, Resubscribe | Turned off until SDC confirms its consent rules for resubscribing people. | Keep |
+| Edit form | Edit member | Accessible label only |
+| Edit field label | Name | Keep |
+| Edit field label | Email | Keep |
+| Edit form button | Cancel | Keep |
+| Edit form button | Save | Keep |
+| Remove paying access dialog title | Remove paying access for {name}? | Keep |
+| Remove paying access dialog body | Their paid benefits end now. They'll keep getting general emails, and we'll send them a notice. | Keep |
+| Remove paying access dialog cancel | Keep paying access | Keep |
+| Remove paying access dialog confirm | Yes, remove paying access | Keep |
+| Unsubscribe dialog title | Unsubscribe {name}? | Keep |
+| Unsubscribe dialog body, paying member | This stops all emails to them and removes their paying access, now. Their record is kept, marked Unsubscribed. | Keep |
+| Unsubscribe dialog body, general member | This stops all emails to them now. Their record is kept, marked Unsubscribed. | Keep |
+| Unsubscribe dialog cancel | Keep subscribed | Keep |
+| Unsubscribe dialog confirm | Yes, unsubscribe | Keep |
+| Emails section heading | Emails | Keep |
+| Emails count | ({n}) | Keep. Hidden when no emails were sent |
+| Bounced email badge | Bounced | Owner question: "Not delivered" is plainer if admins don't know "bounced" |
+| Emails, none sent | No emails sent yet. | Keep |
+| Emails, loading | Loading emails… | Keep |
+| Emails, error | Couldn't load this person's emails. | Keep. Followed by Try again |
+| Email body, loading | Loading email… | New, needs approval |
+| Email body, error | Couldn't load this email. | New, needs approval |
+| Emails and email body retry button | Try again | New, needs approval |
+| Email preview frame | Email preview: {subject} | Accessible label only |
+| Toast, email copied | Email copied | Keep. Review: also shown when copying from a menu fails |
+| Toast fallback | Done. | Keep |
 
 ## Opportunities
 
@@ -573,7 +625,7 @@ Admins and partners share the same list, panel and form. The shared flows and st
 
 #### Filter by organization
 
-1. On **Opportunities**, select the **Organization** filter in the toolbar.
+1. On **Opportunities**, select the **Organization** filter above the table, next to **Type**.
 2. Select an organization. The list shows:
    - All organizations
    - Social Development Centre
@@ -619,10 +671,9 @@ Only admins see a removed partner's opportunities.
 
 | Element | Current text | Notes |
 |---|---|---|
-| Page description | Events, petitions, volunteer roles and jobs from SDC and Civic Hub partners. | Review: leaves out Other. Revisit after the 29 September types session |
 | Organization filter label | Organization | Keep |
 | Organization filter, no filter | All organizations | Keep |
-| Organization filter, removed partner | {name} (removed) | Keep |
+| Organization filter, removed partner | {name} (removed) | New, needs approval |
 | First option in the Organization filter and picker | Social Development Centre | Keep. SDC's own name, from catalog.ts |
 | Table column header | Organization | Keep |
 | Form field label | Organization | Keep |
@@ -630,9 +681,9 @@ Only admins see a removed partner's opportunities.
 | Form field placeholder | Choose one | Keep. Shared with the Employment type picker |
 | Field error, no organization | Choose an organization. | Keep. Also shown if the chosen partner was removed while the form was open |
 | Panel detail label | Posted by | Keep. Shared; on the admin side it shows whether SDC or a partner posted it |
-| Live tab and panel badge, removed partner | No longer emailed | Owner question: Partners calls this state "expire". Pick one word |
+| Live tab and panel badge, removed partner | No longer emailed | New, needs approval. Owner question: Partners calls this state "expire". Pick one word |
 | Panel note, removed partner | The partner was removed. People who already got it can see it until {date}. | Keep |
-| Closed tab and panel status, removed partner | Partner removed | Owner question: as above |
+| Closed tab and panel status, removed partner | Partner removed | New, needs approval. Owner question: as above |
 | Reopen error, removed partner | This partner was removed. Reinvite the partner before reopening its opportunities. | Keep |
 
 ## Copy principles

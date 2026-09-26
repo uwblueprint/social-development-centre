@@ -139,7 +139,7 @@ export async function restoreEmailEligibility(id: string): Promise<ActionState> 
 /** General: every subscribed person (paying included), plus unsubscribed people when asked. Paying: subscribed paying members. */
 function exportRows(scope: ExportScope, includeUnsubscribed: boolean): Member[] {
   return members().filter((m) =>
-    scope === "paying" ? m.subscribed && m.tier === "paying" : m.subscribed || includeUnsubscribed,
+    scope === "paying" ? m.subscribed && m.tier === "paying" : m.subscribed || includeUnsubscribed, // includeUnsubscribed is ignored for paying: unsubscribing ends paid access
   );
 }
 
