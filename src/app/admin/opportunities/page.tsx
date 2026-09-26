@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { OpportunitiesView } from "@/features/opportunities/components/OpportunitiesView";
 import { copy } from "@/features/opportunities/copy";
 import { parseListParams } from "@/features/opportunities/components/listParams";
-import { getOpportunityCounts, listOpportunities, listPublisherOptions } from "@/features/opportunities/queries";
+import { getOpportunityCounts, listOpportunities, listOrganizationFilterOptions } from "@/features/opportunities/queries";
 import type { Actor } from "@/features/opportunities/types";
 import { getCurrentAdmin } from "../_data/session";
 import {
@@ -25,7 +25,7 @@ export default async function Page({ searchParams }: PageProps<"/admin/opportuni
   const [items, counts, organizations] = await Promise.all([
     listOpportunities(actor, { tab, ...filters }),
     getOpportunityCounts(actor, filters),
-    listPublisherOptions(),
+    listOrganizationFilterOptions(),
   ]);
 
   return (

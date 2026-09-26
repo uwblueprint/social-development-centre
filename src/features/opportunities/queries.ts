@@ -2,7 +2,15 @@ import { orgs, statusOf } from "@/app/admin/partners/_data/store";
 import { SDC_ORG } from "./catalog";
 import { effectiveStatus, keyDate } from "./format";
 import { opportunities } from "./store";
-import type { Actor, Opportunity, OpportunityCounts, OpportunityFilters, OpportunityTab, OrganizationRef } from "./types";
+import type {
+  Actor,
+  Opportunity,
+  OpportunityCounts,
+  OpportunityFilters,
+  OpportunityTab,
+  OrganizationFilterOption,
+  OrganizationRef,
+} from "./types";
 
 /*
  * Backend: implement these against the real data store, keeping names and return shapes.
@@ -12,11 +20,21 @@ import type { Actor, Opportunity, OpportunityCounts, OpportunityFilters, Opportu
 
 const TAB_OF = { draft: "drafts", live: "live", closed: "closed" } as const;
 
-/** Adds automatic expiry and the organization's current name (organizations can be renamed). */
+/**
+ * Adds automatic expiry (including a removed partner's cutoff and `emailsStopped`) and the organization's
+ * current name (organizations can be renamed).
+ */
 function withEffectiveStatus(o: Opportunity): Opportunity {
-  const { status, closedReason } = effectiveStatus(o);
   const org = orgs().find((x) => x.id === o.organization.id);
-  return { ...o, status, closedReason, organization: org ? { id: org.id, name: org.name } : o.organization };
+  const { status, closedReason, emailsStopped, visibleUntil } = effectiveStatus(o, new Date(), org?.removedAt);
+  return {
+    ...o,
+    status,
+    closedReason,
+    emailsStopped,
+    visibleUntil,
+    organization: org ? { id: org.id, name: org.name } : o.organization,
+  };
 }
 
 function visibleTo(actor: Actor) {
@@ -74,7 +92,23 @@ export async function listPublisherOptions(): Promise<OrganizationRef[]> {
   return [SDC_ORG, ...partners];
 }
 
-/** Live (not ended) opportunities for one organization; used by Partners. */
+/**
+ * The admin list's Organization filter: SDC, current partners A–Z, then removed partners that still have
+ * opportunities (A–Z), so admins can find a removed partner's listings.
+ */
+export async function listOrganizationFilterOptions(): Promise<OrganizationFilterOption[]> {
+  const withListings = new Set(opportunities().map((o) => o.organization.id));
+  const removed = orgs()
+    .filter((o) => statusOf(o) === "removed" && withListings.has(o.id))
+    .map((o) => ({ id: o.id, name: o.name, removed: true }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  return [...(await listPublisherOptions()), ...removed];
+}
+
+/** Live (not ended) opportunities for one organization, including a removed partner's before its cutoff; used by Partners. */
 export function countLiveOpportunities(organizationId: string): number {
-  return opportunities().filter((o) => o.organization.id === organizationId && effectiveStatus(o).status === "live").length;
+  const removedAt = orgs().find((o) => o.id === organizationId)?.removedAt;
+  return opportunities().filter(
+    (o) => o.organization.id === organizationId && effectiveStatus(o, new Date(), removedAt).status === "live",
+  ).length;
 }

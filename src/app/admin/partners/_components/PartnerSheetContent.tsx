@@ -105,7 +105,7 @@ const ContactsSection = styled.div`
 function statusBadge(status: PartnerOrganization["status"]) {
   if (status === "active") return null;
   if (status === "removed") return <Badge $variant="outline">Removed</Badge>;
-  return <Badge $variant="neutral">Pending</Badge>;
+  return <Badge $variant="neutral">Invitation pending</Badge>;
 }
 
 export function PartnerSheetContent({
@@ -247,8 +247,8 @@ export function PartnerSheetContent({
           </AlertDialogTitle>
           {confirm === "reinvite" ? (
             <AlertDialogDescription>
-              Sends a fresh invitation to each saved contact and returns {org.name} to the current list as
-              Pending. Opportunities that already expired are not republished.
+              Sends a fresh invitation to each saved contact and returns {org.name} to the current list,
+              marked Invitation pending. Opportunities that already expired are not republished.
             </AlertDialogDescription>
           ) : (
             <AlertDialogDescription>

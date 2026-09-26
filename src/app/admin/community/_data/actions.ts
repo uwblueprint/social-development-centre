@@ -101,7 +101,7 @@ export async function updateMember(id: string, _prev: ActionState, fd: FormData)
 /** Sends the upgrade email with the paid benefits and access link. */
 export async function grantPaidAccess(id: string): Promise<ActionState> {
   const m = find(id);
-  if (!m || !m.subscribed || m.tier !== "general") return fail("Only subscribed general members can be given paying access.");
+  if (!m || !m.subscribed || m.tier !== "general") return fail("Only subscribed general members can be converted to paying members.");
   m.tier = "paying";
   return done(`${m.name ?? m.email} is now a paying member. Upgrade email sent.`);
 }

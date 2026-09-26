@@ -11,7 +11,10 @@ export async function getCurrentAdmin(): Promise<AdminUser | null> {
   return { name: "Admin User", email: "admin@sdc.example", initials: "AU" };
 }
 
-/** Backend: counts that need an admin's attention, shown as badges in the sidebar. Omit a key to hide its badge. */
+/**
+ * Backend: counts that need an admin's attention, shown as badges in the sidebar. Omit a key to hide its badge.
+ * The badge is only a number: the section's page must also say what it counts (e.g. "3 partners awaiting review").
+ */
 export async function getAdminNavCounts(): Promise<Partial<Record<AdminSection, number>>> {
   return {};
 }

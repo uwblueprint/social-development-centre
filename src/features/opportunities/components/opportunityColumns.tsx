@@ -70,12 +70,20 @@ export function formatUpdated(iso: string, now = new Date()): string {
 export function statusLabel(o: Opportunity): string {
   if (o.status === "draft") return copy.panel.statusDraft;
   if (o.status === "live") return copy.panel.statusLive;
+  if (o.closedReason === "partner_removed") return copy.removedPartner.closedBadge;
   return o.closedReason === "ended" ? copy.panel.statusEnded : copy.panel.statusClosed;
 }
 
+/** The Closed tab's reason badge. */
+function closedBadge(o: Opportunity): string {
+  if (o.closedReason === "partner_removed") return copy.removedPartner.closedBadge;
+  return o.closedReason === "ended" ? copy.table.ended : copy.table.closed;
+}
+
 /**
- * Opportunity table columns. There is no status column (the tab is the status); the Closed tab
- * alone shows an Ended/Closed badge, since it mixes both reasons.
+ * Opportunity table columns. There is no status column (the tab is the status); the Closed tab shows an
+ * Ended/Closed/Partner removed badge, since it mixes reasons, and Live flags a removed partner's listings
+ * with "No longer emailed".
  */
 export function opportunityColumns(scope: "admin" | "partner", tab: OpportunityTab): TableColumn<Opportunity>[] {
   const columns: TableColumn<Opportunity>[] = [
@@ -90,9 +98,8 @@ export function opportunityColumns(scope: "admin" | "partner", tab: OpportunityT
           <TitleText>
             <TitleLine>
               <Title title={o.title}>{o.title}</Title>
-              {tab === "closed" && (
-                <Badge $variant="outline">{o.closedReason === "ended" ? copy.table.ended : copy.table.closed}</Badge>
-              )}
+              {tab === "closed" && <Badge $variant="outline">{closedBadge(o)}</Badge>}
+              {tab === "live" && o.emailsStopped && <Badge $variant="outline">{copy.removedPartner.badge}</Badge>}
             </TitleLine>
             <Muted>{KIND_LABEL[o.kind]}</Muted>
           </TitleText>

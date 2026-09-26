@@ -8,7 +8,7 @@ For SDC admins. Partners are organizations that share opportunities with SDC. Ea
 3. Type in the search box. It matches organization names, contact names and emails.
 4. Click a row to open its details on the right.
 
-A **Pending** label means nobody at that organization has accepted their invitation yet (or, on the People tab, that this person hasn't).
+An **Invitation pending** label means nobody at that organization has accepted their invitation yet (or, on the People tab, that this person hasn't).
 
 ## Invite a person from a new or existing partner
 1. Go to **Partners** and click **Invite partner** (top right).
@@ -18,7 +18,7 @@ A **Pending** label means nobody at that organization has accepted their invitat
    - If it doesn't, choose **Create "<name you typed>"** to add it.
 4. Click **Send invitation**.
 
-The person gets an email with a link that works for 7 days. They appear as **Pending** until they accept.
+The person gets an email with a link that works for 7 days. They appear as **Invitation pending** until they accept.
 
 **If the invitation can't be sent,** you'll see why, and the person is still listed with a **Retry** option. **If the email is already a current partner contact,** you'll be asked to use a different one.
 
@@ -50,7 +50,7 @@ Changing someone's email sends a new invitation to the new address. If they were
 
 They lose access to the partner portal right away. Their email can later be invited under a different organization.
 
-You can't remove an organization's only contact; remove the organization instead.
+You can't remove an organization's only contact; remove the organization's access instead (see **Remove a partner**).
 
 ## Move a person to a different partner
 1. Remove them from their current organization (see above).
@@ -72,4 +72,4 @@ The partner moves to the **Removed** tab, where you can still see its details an
 2. Update the organization name or contacts if anything changed.
 3. Click **Reinvite** and confirm.
 
-Every saved contact gets a new invitation, and the partner returns to **Organizations** as **Pending**. Opportunities that expired aren't republished automatically; each one needs to be reviewed first.
+Every saved contact gets a new invitation, and the partner returns to **Organizations** marked **Invitation pending**. Opportunities that expired aren't republished automatically; each one needs to be reviewed first.

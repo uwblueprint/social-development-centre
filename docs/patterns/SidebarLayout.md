@@ -13,7 +13,7 @@ import { SidebarLayout, type SidebarConfig } from "@/components/patterns/Sidebar
 ```
 - `config.product`: `{ name, initials }` shown top-left.
 - `config.navLabel`: accessible name of the nav landmark ("Admin").
-- `config.items`: `{ href, label, icon, count? }[]`. Active state comes from the URL (`aria-current="page"`). `count` shows an accent badge; use it only for things that need attention.
+- `config.items`: `{ href, label, icon, count? }[]`. Active state comes from the URL (`aria-current="page"`). `count` shows an accent badge beside the label; use it only for things that need attention. The badge is just a number, so the section's page must say what it counts (e.g. "3 partners awaiting review").
 - `config.recent?`: `{ label, items: { href, icon, title, context? }[] }`.
 - `config.user`, `config.accountHref`, `config.onSignOut`: the profile menu holds only "My account" and "Sign out".
 
@@ -21,7 +21,8 @@ Config must be built in a client component (icons are components and can't cross
 
 ## Behavior
 - Desktop: always expanded (no collapse), so labels stay visible.
-- Below 768px: the sidebar becomes a drawer opened from a top bar; Escape, the backdrop or navigating closes it.
+- Below 768px: the sidebar becomes a drawer opened from the top bar's menu button ("Open menu") and dims the page behind it. Choosing a section navigates and closes it; the X button ("Close menu"), tapping the dimmed page or Escape closes it without navigating. Focus moves to the close button on open and back to the menu button on close, and the page behind is inert while it's open.
+- Profile row (avatar, name, email, chevron) opens a menu above it with "My account" and "Sign out". Sign out happens right away, with no confirmation.
 
 - First load: the sidebar settles in, nav items slide and fade in on a stagger, then the page content fades in (`--duration-enter`, `--stagger`, `--enter-offset`). Plays once per visit, not on every navigation, and not at all with reduced motion.
 

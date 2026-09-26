@@ -30,7 +30,7 @@ import type {
   OpportunityFilters,
   OpportunityKind,
   OpportunityTab,
-  OrganizationRef,
+  OrganizationFilterOption,
 } from "../types";
 import { KindIcon } from "./KindIcon";
 import { opportunityColumns } from "./opportunityColumns";
@@ -123,8 +123,8 @@ export interface OpportunitiesViewProps {
   filters: Omit<OpportunityFilters, "tab">;
   items: Opportunity[];
   counts: OpportunityCounts;
-  /** Admin only: organizations for the Organization filter. */
-  organizations?: OrganizationRef[];
+  /** Admin only: organizations for the Organization filter (listOrganizationFilterOptions). */
+  organizations?: OrganizationFilterOption[];
   actions: OpportunityActions;
 }
 
@@ -189,7 +189,10 @@ export function OpportunitiesView({ scope, basePath, tab, filters, items, counts
   ];
   const organizationOptions = [
     { value: ALL, label: copy.toolbar.allOrganizations },
-    ...(organizations ?? []).map((o) => ({ value: o.id, label: o.name })),
+    ...(organizations ?? []).map((o) => ({
+      value: o.id,
+      label: o.removed ? copy.removedPartner.filterOption(o.name) : o.name,
+    })),
   ];
 
   const filtered = !!(filters.q || filters.kind || (scope === "admin" && filters.organizationId));

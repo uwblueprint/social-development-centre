@@ -2,6 +2,15 @@
 
 import { revalidatePath } from "next/cache";
 import type { ActionState } from "@/lib/forms";
+import {
+  addInvitedContact,
+  cancelContactInvitation,
+  contactFieldErrors,
+  emailInUse,
+  removeContactFromOrganization,
+  resendContactInvitation,
+  sendInvitationEmail,
+} from "./contacts";
 import { applyOrganizationProfile, profileFieldsError, readOrganizationProfile } from "./profile";
 import { currentContacts, newInvitation, nextId, orgs, statusOf } from "./store";
 
@@ -11,7 +20,6 @@ import { currentContacts, newInvitation, nextId, orgs, statusOf } from "./store"
  * Every action must also verify the caller is an SDC admin.
  */
 
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const text = (fd: FormData, key: string) => String(fd.get(key) ?? "").trim();
 const done = (message: string): ActionState => {
   revalidatePath("/admin/partners");
@@ -22,12 +30,12 @@ const fail = (message: string, fieldErrors?: ActionState["fieldErrors"]): Action
   message,
   fieldErrors,
 });
-
-// Dev stand-in for the email service: addresses containing "fail" simulate a send error.
-async function sendInvitationEmail(email: string): Promise<string | undefined> {
-  await new Promise((r) => setTimeout(r, 500));
-  return email.includes("fail") ? "The invitation email couldn't be delivered." : undefined;
-}
+/** Revalidates Partners and the partner portal's Team list, then returns the shared result. */
+const settle = (result: ActionState): ActionState => {
+  revalidatePath("/admin/partners");
+  revalidatePath("/partner/organization");
+  return result;
+};
 
 function findContact(contactId: string) {
   for (const org of orgs()) {
@@ -37,14 +45,6 @@ function findContact(contactId: string) {
   return null;
 }
 
-function emailInUse(email: string, exceptContactId?: string) {
-  return orgs().some(
-    (o) =>
-      statusOf(o) !== "removed" &&
-      currentContacts(o).some((c) => c.id !== exceptContactId && c.email.toLowerCase() === email.toLowerCase()),
-  );
-}
-
 /** Fields: name, email, organizationId (existing) or organizationName (create new). */
 export async function invitePartner(_prev: ActionState, fd: FormData): Promise<ActionState> {
   const name = text(fd, "name");
@@ -52,10 +52,7 @@ export async function invitePartner(_prev: ActionState, fd: FormData): Promise<A
   const organizationId = text(fd, "organizationId");
   const organizationName = text(fd, "organizationName");
 
-  const fieldErrors: Record<string, string> = {};
-  if (!name) fieldErrors.name = "Enter the contact's name.";
-  if (!EMAIL.test(email)) fieldErrors.email = "Enter an email address like name@example.org.";
-  else if (emailInUse(email)) fieldErrors.email = "This person is already a current partner contact.";
+  const fieldErrors = contactFieldErrors(name, email, { inUseMessage: "This person is already a current partner contact." });
   if (!organizationId && !organizationName) fieldErrors.organization = "Choose an organization or create a new one.";
   if (organizationName && orgs().some((o) => o.name.toLowerCase() === organizationName.toLowerCase())) {
     fieldErrors.organization = "An organization with this name already exists. Choose it from the list.";
@@ -67,52 +64,27 @@ export async function invitePartner(_prev: ActionState, fd: FormData): Promise<A
     org = { id: nextId("org"), name: organizationName, contacts: [], createdAt: new Date().toISOString(), everActive: false };
     orgs().push(org);
   }
-  const sendError = await sendInvitationEmail(email);
-  org.contacts.push({ id: nextId("c"), name, email, status: "pending", invitation: { ...newInvitation(), sendError } });
-  revalidatePath("/admin/partners");
-  return sendError
-    ? { status: "error", message: `${name} was added, but the invitation wasn't sent. ${sendError} Try resending.` }
-    : { status: "success", message: `Invitation sent to ${email}.` };
+  return settle(await addInvitedContact(org, name, email));
 }
 
 export async function resendInvitation(contactId: string): Promise<ActionState> {
   const found = findContact(contactId);
   if (!found) return fail("This contact no longer exists.");
-  const sendError = await sendInvitationEmail(found.contact.email);
-  found.contact.invitation = { ...newInvitation(), sendError };
-  if (sendError) {
-    revalidatePath("/admin/partners");
-    return fail(`The invitation wasn't sent. ${sendError}`);
-  }
-  return done(`Invitation resent to ${found.contact.email}. The previous link no longer works.`);
+  return settle(await resendContactInvitation(found.org, contactId));
 }
 
-/** Deletes a pending contact; deletes the organization too if nobody is left and it was never active. */
+/** Deletes a pending contact; see cancelContactInvitation in _data/contacts.ts. */
 export async function cancelInvitation(contactId: string): Promise<ActionState> {
   const found = findContact(contactId);
-  if (!found || found.contact.status !== "pending") return fail("Only pending invitations can be cancelled.");
-  found.org.contacts = found.org.contacts.filter((c) => c.id !== contactId);
-  if (found.org.contacts.length === 0 && !found.org.everActive) {
-    const all = orgs();
-    all.splice(all.indexOf(found.org), 1);
-  }
-  return done("Invitation cancelled.");
+  if (!found) return fail("Only pending invitations can be cancelled.");
+  return settle(cancelContactInvitation(found.org, contactId));
 }
 
-/**
- * Removes one person from their organization (they left it). Their access ends now; the record is kept
- * for history and their email can be invited under another organization. The last contact can't be
- * removed; remove the organization instead.
- */
+/** Removes one person from their organization; see removeContactFromOrganization in _data/contacts.ts. */
 export async function removeContact(contactId: string): Promise<ActionState> {
   const found = findContact(contactId);
-  if (!found || found.contact.status !== "active") return fail("Only active contacts can be removed. Cancel a pending invitation instead.");
-  if (currentContacts(found.org).length === 1) {
-    return fail("This is the organization's only contact. Remove the organization instead.");
-  }
-  found.contact.removedAt = new Date().toISOString();
-  found.contact.invitation = undefined;
-  return done(`${found.contact.name} was removed from ${found.org.name}. Their access ended now.`);
+  if (!found) return fail("Only active contacts can be removed. Cancel a pending invitation instead.");
+  return settle(removeContactFromOrganization(found.org, contactId));
 }
 
 /** Fields: name, email. Changing the email sends a fresh invitation; active contacts stay active. */
@@ -121,10 +93,10 @@ export async function updateContact(contactId: string, _prev: ActionState, fd: F
   if (!found) return fail("This contact no longer exists.");
   const name = text(fd, "name");
   const email = text(fd, "email");
-  const fieldErrors: Record<string, string> = {};
-  if (!name) fieldErrors.name = "Enter the contact's name.";
-  if (!EMAIL.test(email)) fieldErrors.email = "Enter an email address like name@example.org.";
-  else if (emailInUse(email, contactId)) fieldErrors.email = "Another current partner contact uses this email.";
+  const fieldErrors = contactFieldErrors(name, email, {
+    exceptContactId: contactId,
+    inUseMessage: "Another current partner contact uses this email.",
+  });
   if (Object.keys(fieldErrors).length) return fail("Check the highlighted fields.", fieldErrors);
 
   const emailChanged = email.toLowerCase() !== found.contact.email.toLowerCase();
@@ -184,5 +156,5 @@ export async function reinvitePartner(orgId: string): Promise<ActionState> {
   revalidatePath("/admin/partners");
   return errors.length
     ? { status: "error", message: `Reinvited, but these invitations weren't sent: ${errors.join(", ")}. Resend from the partner's details.` }
-    : { status: "success", message: `${org.name} was reinvited. It shows as Pending until someone accepts.` };
+    : { status: "success", message: `${org.name} was reinvited. It shows as Invitation pending until someone accepts.` };
 }

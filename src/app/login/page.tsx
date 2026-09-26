@@ -28,7 +28,7 @@ export default async function LoginPage({
         <Input type="email" name="email" placeholder="Email" aria-label="Email" required />
         <Button type="submit">Send sign-in link</Button>
         {sent && <p>Check your email for a sign-in link.</p>}
-        {error && <p>{error}</p>}
+        {error && <p>We couldn&apos;t send a sign-in link. Check the email address, wait a minute, then try again.</p>}
       </Form>
     </Main>
   );

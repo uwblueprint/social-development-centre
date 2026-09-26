@@ -15,5 +15,5 @@ export async function getCurrentPartner(): Promise<PartnerUser | null> {
   const contact = org && currentContacts(org).find((c) => c.status === "active");
   if (!org || !contact) return null;
   const initials = contact.name.split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase();
-  return { name: contact.name, email: contact.email, initials, organization: { id: org.id, name: org.name } };
+  return { contactId: contact.id, name: contact.name, email: contact.email, initials, organization: { id: org.id, name: org.name } };
 }

@@ -9,8 +9,11 @@ export type OpportunityKind = "event" | "petition" | "volunteer" | "job" | "othe
 
 /** Stored status. `closed` covers both a manual close and an automatic end; see `closedReason`. */
 export type OpportunityStatus = "draft" | "live" | "closed";
-/** `ended`: its date passed on its own. `closed`: a person closed it. */
-export type ClosedReason = "ended" | "closed";
+/**
+ * `ended`: its date passed on its own. `closed`: a person closed it.
+ * `partner_removed`: its organization was removed and the visibility cutoff passed (derived; see format.ts effectiveStatus).
+ */
+export type ClosedReason = "ended" | "closed" | "partner_removed";
 
 /** List tabs. `closed` includes ended listings. */
 export type OpportunityTab = "live" | "drafts" | "closed";
@@ -110,6 +113,11 @@ export interface OrganizationRef {
   name: string;
 }
 
+/** An option in the admin list's Organization filter. Removed partners stay filterable. */
+export interface OrganizationFilterOption extends OrganizationRef {
+  removed?: boolean;
+}
+
 export interface Editor {
   name: string;
   role: "admin" | "partner";
@@ -126,6 +134,14 @@ interface OpportunityBase {
   organization: OrganizationRef;
   status: OpportunityStatus;
   closedReason?: ClosedReason;
+  /**
+   * Derived, never stored. Set on a live listing whose organization was removed: it's no longer emailed or
+   * recommended, and people who already got it can see it until `visibleUntil`, the earlier of its own end
+   * and removal + 30 days (REMOVED_PARTNER_VISIBLE_DAYS). After that it reads as closed with `partner_removed`.
+   */
+  emailsStopped?: true;
+  /** ISO timestamp; present with `emailsStopped`. */
+  visibleUntil?: string;
   createdAt: string;
   updatedAt: string;
   updatedBy: Editor;

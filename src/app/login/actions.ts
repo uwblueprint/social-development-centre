@@ -14,7 +14,11 @@ export async function signIn(formData: FormData) {
     options: { emailRedirectTo: `${origin}/auth/confirm` },
   });
 
-  if (error) redirect(`/login?error=${encodeURIComponent(error.message)}`);
+  // Supabase's messages are technical ("Signups not allowed for otp"), so show plain copy and log the detail.
+  if (error) {
+    console.error("signInWithOtp failed:", error.message);
+    redirect("/login?error=1");
+  }
   redirect("/login?sent=1");
 }
 

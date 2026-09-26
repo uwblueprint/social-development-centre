@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { css, keyframes, styled } from "next-yak";
 import type { LucideIcon } from "lucide-react";
-import { ChevronsUpDown, Menu } from "lucide-react";
+import { ChevronsUpDown, Menu, X } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import {
   DropdownMenu,
@@ -20,7 +20,10 @@ export interface SidebarNavItem {
   href: string;
   label: string;
   icon: LucideIcon;
-  /** Unread or pending count; shown as a badge. */
+  /**
+   * Number of things in this section that need attention; shown as a badge beside the label.
+   * The section's page must say what the number means (e.g. "3 partners awaiting review"): the badge alone doesn't.
+   */
   count?: number;
 }
 
@@ -219,6 +222,16 @@ const IconButton = styled.button`
   ${iconButton}
 `;
 
+// Only the mobile drawer needs a close button; on desktop the sidebar is always open.
+const CloseButton = styled.button`
+  ${iconButton}
+  display: none;
+
+  ${MOBILE} {
+    display: inline-flex;
+  }
+`;
+
 const Nav = styled.nav`
   display: flex;
   flex-direction: column;
@@ -400,7 +413,17 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function SidebarContent({ config, onNavigate }: { config: SidebarConfig; onNavigate: () => void }) {
+function SidebarContent({
+  config,
+  onNavigate,
+  onClose,
+  closeRef,
+}: {
+  config: SidebarConfig;
+  onNavigate: () => void;
+  onClose: () => void;
+  closeRef: React.Ref<HTMLButtonElement>;
+}) {
   const pathname = usePathname();
 
   return (
@@ -410,6 +433,9 @@ function SidebarContent({ config, onNavigate }: { config: SidebarConfig; onNavig
           <BrandMark aria-hidden="true">{config.product.initials}</BrandMark>
           {config.product.name}
         </Brand>
+        <CloseButton ref={closeRef} type="button" aria-label="Close menu" onClick={onClose}>
+          <Icon icon={X} size={20} />
+        </CloseButton>
       </Header>
 
       <Nav aria-label={config.navLabel}>
@@ -423,7 +449,7 @@ function SidebarContent({ config, onNavigate }: { config: SidebarConfig; onNavig
           >
             <Icon icon={item.icon} size={18} />
             <ItemLabel>{item.label}</ItemLabel>
-            {item.count ? <Count aria-label={`${item.count} new`}>{item.count}</Count> : null}
+            {item.count ? <Count>{item.count}</Count> : null}
           </ItemLink>
         ))}
       </Nav>
@@ -485,27 +511,51 @@ export function SidebarLayout({
 }) {
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const asideId = React.useId();
+  const menuRef = React.useRef<HTMLButtonElement>(null);
+  const closeRef = React.useRef<HTMLButtonElement>(null);
+  const wasOpen = React.useRef(false);
 
   React.useEffect(() => {
     if (!mobileOpen) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMobileOpen(false);
+    // Widening past the breakpoint turns the drawer back into the fixed sidebar, so drop the open state.
+    const desktop = window.matchMedia("(min-width: 768px)");
+    const onResize = () => desktop.matches && setMobileOpen(false);
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    desktop.addEventListener("change", onResize);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      desktop.removeEventListener("change", onResize);
+    };
+  }, [mobileOpen]);
+
+  // Move focus into the drawer when it opens and back to the menu button when it closes.
+  React.useEffect(() => {
+    if (mobileOpen) closeRef.current?.focus();
+    else if (wasOpen.current && menuRef.current?.offsetParent) menuRef.current.focus();
+    wasOpen.current = mobileOpen;
   }, [mobileOpen]);
 
   return (
     <Shell>
       <Aside id={asideId} $mobileOpen={mobileOpen}>
-        <SidebarContent config={config} onNavigate={() => setMobileOpen(false)} />
+        <SidebarContent
+          config={config}
+          onNavigate={() => setMobileOpen(false)}
+          onClose={() => setMobileOpen(false)}
+          closeRef={closeRef}
+        />
       </Aside>
       {mobileOpen && (
         <Scrim type="button" tabIndex={-1} aria-hidden="true" onClick={() => setMobileOpen(false)} />
       )}
-      <Main>
+      {/* While the drawer is open the page behind is dimmed and out of reach, like a dialog. */}
+      <Main inert={mobileOpen}>
         <MobileBar>
           <IconButton
+            ref={menuRef}
             type="button"
-            aria-label="Open navigation"
+            aria-label="Open menu"
             aria-expanded={mobileOpen}
             aria-controls={asideId}
             onClick={() => setMobileOpen(true)}

@@ -21,7 +21,7 @@ The sidebar on the left shows your organization's name at the top, and two secti
 - **Opportunities:** post and manage your events, petitions, volunteer roles, jobs and other asks. See [Partner portal: opportunities](./partner-opportunities.md).
 - **Organization:** your organization's details and who on your team has access.
 
-The section you're in is highlighted. On a phone, tap the menu button at the top left to open the sidebar, then choose a section.
+The section you're in is highlighted. On a phone, tap the menu button (**Open menu**) at the top left to open the sidebar, then choose a section. To close it without choosing, tap the **X** (**Close menu**), tap the dimmed page beside it, or press Escape.
 
 ## Go to your account or sign out
 1. Click your name at the bottom of the sidebar.

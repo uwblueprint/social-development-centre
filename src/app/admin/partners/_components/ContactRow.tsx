@@ -31,69 +31,15 @@ import { fieldError, idleState } from "@/lib/forms";
 import { cancelInvitation, removeContact, resendInvitation, updateContact } from "../_data/actions";
 import type { PartnerContact } from "../_data/types";
 import { formatDate } from "../_lib/format";
-
-const Row = styled.div<{ $highlighted?: boolean }>`
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--space-2) var(--space-1);
-  border-radius: var(--radius-md);
-  transition: background-color var(--duration) var(--ease);
-
-  ${({ $highlighted }) => $highlighted && `background: var(--color-accent-subtle);`}
-
-  &:focus-visible {
-    outline: none;
-    box-shadow: var(--focus-ring);
-  }
-`;
-
-const Info = styled.div`
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-`;
-
-const NameLine = styled.div`
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
-  color: var(--color-text);
-`;
-
-const Email = styled.p`
-  margin: 0;
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-  overflow-wrap: anywhere;
-`;
-
-const Muted = styled.p`
-  margin: 0;
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-`;
-
-const ErrorLine = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-wrap: wrap;
-  font-size: var(--text-xs);
-  color: var(--color-danger);
-
-  svg {
-    flex-shrink: 0;
-  }
-`;
-
-const MenuTrigger = styled(Button)`
-  flex-shrink: 0;
-`;
+import {
+  ContactEmail as Email,
+  ContactErrorLine as ErrorLine,
+  ContactInfo as Info,
+  ContactMenuTrigger as MenuTrigger,
+  ContactMeta as Muted,
+  ContactName as NameLine,
+  ContactRowFrame as Row,
+} from "./ContactRowParts";
 
 const EditForm = styled.form`
   display: flex;
@@ -207,7 +153,7 @@ export function ContactRow({
       {onlyContact && (
         <VisuallyHidden>
           {" "}
-          — This is the organization&apos;s only contact. Remove the organization instead.
+          — This is the organization&apos;s only contact. Remove the organization&apos;s access instead.
         </VisuallyHidden>
       )}
     </DropdownMenuItem>
@@ -218,7 +164,7 @@ export function ContactRow({
       <Info>
         <NameLine>
           {contact.name}
-          {contact.status === "pending" && <Badge $variant="neutral">Pending</Badge>}
+          {contact.status === "pending" && <Badge $variant="neutral">Invitation pending</Badge>}
         </NameLine>
         <Email>{contact.email}</Email>
         {contact.status === "pending" &&
@@ -257,7 +203,7 @@ export function ContactRow({
               Cancel invitation
             </DropdownMenuItem>
           ) : onlyContact ? (
-            <Tooltip content="This is the organization's only contact. Remove the organization instead.">
+            <Tooltip content="This is the organization's only contact. Remove the organization's access instead.">
               {removeItem}
             </Tooltip>
           ) : (

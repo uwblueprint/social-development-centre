@@ -10,7 +10,7 @@
 export const communityCopy = {
   page: {
     title: "Community",
-    description: "View subscribers and paying members, add people and manage their access.",
+    description: "View general and paying members, add people and manage their access.",
   },
 
   tabs: {
@@ -107,7 +107,7 @@ export const communityCopy = {
     menuEdit: "Edit details",
     menuCopyEmail: "Copy email",
     menuUnsubscribe: "Unsubscribe",
-    menuRestore: "Restore email eligibility",
+    menuRestore: "Resubscribe",
     restoreReason: "Turned off until SDC confirms its consent rules for resubscribing people.",
     tabDetails: "Details",
     tabEmailsLoading: "Emails",
@@ -154,7 +154,7 @@ export const communityCopy = {
         "general-welcome": "Welcome",
         "paying-welcome": "Paying welcome",
         upgrade: "Upgrade",
-        revoked: "Revoked",
+        revoked: "Paying access removed",
         opportunities: "Opportunities",
       })[kind] ?? kind,
   },

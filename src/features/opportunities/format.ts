@@ -26,25 +26,59 @@ export function keyDate(o: Opportunity): string | undefined {
   }
 }
 
-/** Events end at their start time; deadlines end when the day is over. */
-export function hasEnded(o: Opportunity, now = new Date()): boolean {
+/** When the listing ends on its own: an event at its start time, anything else at the end of its key date. */
+export function endsAt(o: Opportunity): Date | undefined {
   const date = keyDate(o);
-  if (!date) return false;
+  if (!date) return undefined;
   if (o.kind === "event") {
     const [h, min] = (o.details.startTime ?? "00:00").split(":").map(Number);
     const start = parseDate(date);
     start.setHours(h, min);
-    return start <= now;
+    return start;
   }
   const endOfDay = parseDate(date);
   endOfDay.setHours(23, 59, 59, 999);
-  return endOfDay < now;
+  return endOfDay;
 }
 
-/** Stored status plus automatic expiry. Drafts never expire. */
-export function effectiveStatus(o: Opportunity, now = new Date()): { status: OpportunityStatus; closedReason?: ClosedReason } {
-  if (o.status === "live" && hasEnded(o, now)) return { status: "closed", closedReason: "ended" };
-  return { status: o.status, closedReason: o.closedReason };
+/** Events end at their start time; deadlines end when the day is over. */
+export function hasEnded(o: Opportunity, now = new Date()): boolean {
+  const end = endsAt(o);
+  if (!end) return false;
+  return o.kind === "event" ? end <= now : end < now;
+}
+
+/** Days a removed partner's live listings stay visible to people who already got them (owner decision). */
+export const REMOVED_PARTNER_VISIBLE_DAYS = 30;
+
+export interface EffectiveStatus {
+  status: OpportunityStatus;
+  closedReason?: ClosedReason;
+  /** Live only: the partner was removed, so it's left out of emails and recommendations. */
+  emailsStopped?: true;
+  /** With `emailsStopped`: when it closes, the earlier of its own end and removal + REMOVED_PARTNER_VISIBLE_DAYS. */
+  visibleUntil?: string;
+}
+
+/**
+ * Stored status plus automatic expiry. Drafts never expire. `partnerRemovedAt` is the organization's
+ * removal time, if it was removed: from then on a live listing is no longer emailed, and it closes with
+ * `partner_removed` at removal + REMOVED_PARTNER_VISIBLE_DAYS unless its own end comes first.
+ */
+export function effectiveStatus(o: Opportunity, now = new Date(), partnerRemovedAt?: string): EffectiveStatus {
+  if (o.status !== "live") return { status: o.status, closedReason: o.closedReason };
+  const end = endsAt(o);
+  const cutoff = partnerRemovedAt
+    ? new Date(new Date(partnerRemovedAt).getTime() + REMOVED_PARTNER_VISIBLE_DAYS * 86_400_000)
+    : undefined;
+  const endedFirst = end && (!cutoff || end <= cutoff);
+  if (endedFirst && hasEnded(o, now)) return { status: "closed", closedReason: "ended" };
+  if (cutoff && cutoff <= now) return { status: "closed", closedReason: "partner_removed" };
+  if (cutoff) {
+    const until = end && end < cutoff ? end : cutoff;
+    return { status: "live", emailsStopped: true, visibleUntil: until.toISOString() };
+  }
+  return { status: "live" };
 }
 
 const dateFmt = new Intl.DateTimeFormat("en-CA", { weekday: "short", month: "short", day: "numeric" });
@@ -52,8 +86,13 @@ const dateYearFmt = new Intl.DateTimeFormat("en-CA", { month: "short", day: "num
 const timeFmt = new Intl.DateTimeFormat("en-CA", { hour: "numeric", minute: "2-digit" });
 
 export function formatDate(ymd: string): string {
-  const d = parseDate(ymd);
-  return d.getFullYear() === new Date().getFullYear() ? dateFmt.format(d) : dateYearFmt.format(d);
+  return formatDay(parseDate(ymd));
+}
+
+/** Like formatDate, for a timestamp (e.g. `visibleUntil`). */
+export function formatDay(d: Date | string): string {
+  const date = typeof d === "string" ? new Date(d) : d;
+  return date.getFullYear() === new Date().getFullYear() ? dateFmt.format(date) : dateYearFmt.format(date);
 }
 
 export function formatTime(hhmm: string): string {

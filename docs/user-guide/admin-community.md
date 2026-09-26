@@ -44,7 +44,7 @@ Their paid benefits end right away and they get a notice. They stay a general me
 
 They stop getting all SDC emails. A paying member also loses paid access. Their record stays, shown with a dimmed name and a mail-off icon.
 
-Bringing an unsubscribed person back isn't available yet; it's waiting on SDC's consent rules. Their panel's **⋯** menu shows a disabled **Restore email eligibility** with that reason.
+Bringing an unsubscribed person back isn't available yet; it's waiting on SDC's consent rules. Their panel's **⋯** menu shows a disabled **Resubscribe** with that reason.
 
 ## See someone's email history
 1. Click the person to open their panel.

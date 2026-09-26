@@ -137,6 +137,13 @@ export const copy = {
       removeDetail: (n: number) => `Remove detail ${n}`,
     },
   },
+  /** A listing whose partner organization was removed (derived `emailsStopped` / closedReason `partner_removed`). */
+  removedPartner: {
+    badge: "No longer emailed",
+    explanation: (date: string) => `The partner was removed. People who already got it can see it until ${date}.`,
+    closedBadge: "Partner removed",
+    filterOption: (name: string) => `${name} (removed)`,
+  },
   notFound: {
     title: "Opportunity not found",
     body: "It may have been deleted, or it belongs to another organization.",

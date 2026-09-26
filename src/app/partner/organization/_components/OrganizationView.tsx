@@ -3,8 +3,10 @@
 import * as React from "react";
 import { useActionState } from "react";
 import { styled } from "next-yak";
-import { Badge } from "@/components/ui/Badge";
+import { UserPlus } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
+import { Icon } from "@/components/ui/Icon";
 import { Input } from "@/components/ui/Input";
 import { List } from "@/components/ui/ListRow";
 import { SubmitButton } from "@/components/ui/SubmitButton";
@@ -14,6 +16,8 @@ import { ORGANIZATION_DESCRIPTION_MAX, type PartnerOrganization } from "@/app/ad
 import { fieldError, idleState } from "@/lib/forms";
 import { partnerCopy } from "../../_copy";
 import { updateMyOrganization } from "../_data/actions";
+import { InviteColleagueDialog } from "./InviteColleagueDialog";
+import { TeamMemberRow } from "./TeamMemberRow";
 
 const copy = partnerCopy.organization;
 
@@ -74,36 +78,17 @@ const Actions = styled.div`
   display: flex;
 `;
 
-const Person = styled.div`
+const SectionHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: var(--space-1) var(--space-3);
-  padding: var(--space-3) var(--space-1);
+  gap: var(--space-2) var(--space-3);
 `;
 
-const PersonInfo = styled.div`
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-`;
-
-const PersonName = styled.span`
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
-  color: var(--color-text);
-`;
-
-const PersonEmail = styled.span`
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-  overflow-wrap: anywhere;
-`;
-
-export function OrganizationView({ org }: { org: PartnerOrganization }) {
+export function OrganizationView({ org, currentContactId }: { org: PartnerOrganization; currentContactId: string }) {
   const { toast } = useToast();
+  const [inviteOpen, setInviteOpen] = React.useState(false);
   const [state, action] = useActionState(updateMyOrganization, idleState);
   // Controlled so a failed save keeps what the person typed (React resets uncontrolled forms after an action).
   const [name, setName] = React.useState(org.name);
@@ -161,19 +146,19 @@ export function OrganizationView({ org }: { org: PartnerOrganization }) {
       </Section>
 
       <Section aria-labelledby="team-heading">
-        <SectionTitle id="team-heading">{copy.teamHeading}</SectionTitle>
-        <Muted>{copy.teamNote}</Muted>
-        <List role="list">
+        <SectionHeader>
+          <SectionTitle id="team-heading">{copy.teamHeading}</SectionTitle>
+          <Button type="button" $variant="secondary" $size="sm" onClick={() => setInviteOpen(true)}>
+            <Icon icon={UserPlus} size={16} />
+            {copy.inviteButton}
+          </Button>
+        </SectionHeader>
+        <List role="list" aria-labelledby="team-heading">
           {org.contacts.map((c) => (
-            <Person key={c.id} role="listitem">
-              <PersonInfo>
-                <PersonName>{c.name}</PersonName>
-                <PersonEmail>{c.email}</PersonEmail>
-              </PersonInfo>
-              {c.status === "pending" && <Badge $variant="neutral">{copy.pending}</Badge>}
-            </Person>
+            <TeamMemberRow key={c.id} contact={c} isSelf={c.id === currentContactId} />
           ))}
         </List>
+        <InviteColleagueDialog open={inviteOpen} onOpenChange={setInviteOpen} />
       </Section>
     </Page>
   );
