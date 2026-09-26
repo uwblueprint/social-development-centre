@@ -11,20 +11,23 @@ export const communityCopy = {
   page: {
     title: "Community",
     description: "View general and paying members, add people and manage their access.",
+    searchPlaceholder: "Search by name or email",
   },
 
   tabs: {
     ariaLabel: "Community views",
     general: "General members",
     paying: "Paying members",
-    generalCount: (general: number, unsubscribed: number) => `(${general} · ${unsubscribed} unsubscribed)`,
+    /** Counts cover subscribed people only; unsubscribed people are never counted. */
+    generalCount: (general: number) => `(${general})`,
+    generalTabTooltip: "Includes paying members. Doesn't include people who unsubscribed.",
     payingCount: (paying: number) => `(${paying})`,
   },
 
   toolbar: {
     searchAriaLabel: "Search members",
     searchPlaceholder: "Search by name or email",
-    export: "Export",
+    export: "Export members",
     addMembers: "Add members",
   },
 
@@ -84,7 +87,6 @@ export const communityCopy = {
     whoLabel: "Who to export",
     scopeGeneral: "General members",
     scopePaying: "Paying members",
-    scopeEveryone: "Everyone",
     includeUnsubscribed: "Include unsubscribed members",
     counting: "Counting…",
     countLine: (n: number) => `${n} ${n === 1 ? "person" : "people"} will be exported`,
@@ -96,28 +98,24 @@ export const communityCopy = {
   },
 
   panel: {
-    categoryGeneral: "General member",
-    categoryPaying: "Paying member",
-    categoryUnsubscribed: "Unsubscribed",
-    copyEmailLabel: "Copy email",
-    convertButton: "Convert to paying member",
-    removeButton: "Remove paying access",
-    tabsAriaLabel: (name: string) => `${name} details`,
+    statusGeneral: "General member",
+    statusPaying: "Paying member",
+    statusUnsubscribed: "Unsubscribed",
+    added: (date: string) => `Added ${date}`,
     menuLabel: (name: string) => `Actions for ${name}`,
     menuEdit: "Edit details",
     menuCopyEmail: "Copy email",
+    menuConvert: "Convert to paying member",
+    menuRemove: "Remove paying access",
     menuUnsubscribe: "Unsubscribe",
     menuRestore: "Resubscribe",
     restoreReason: "Turned off until SDC confirms its consent rules for resubscribing people.",
-    tabDetails: "Details",
-    tabEmailsLoading: "Emails",
-    tabEmails: (n: number) => `Emails (${n})`,
   },
 
-  details: {
-    email: "Email",
-    category: "Category",
-    dateAdded: "Date added",
+  copyButton: {
+    label: "Copy email",
+    copied: "Copied",
+    failed: "Couldn't copy. Select the email to copy it.",
   },
 
   editForm: {
@@ -141,22 +139,17 @@ export const communityCopy = {
     unsubscribeConfirm: "Yes, unsubscribe",
   },
 
-  emailsTab: {
-    expandAll: "Expand all",
-    collapseAll: "Collapse all",
+  emails: {
+    heading: "Emails",
+    count: (n: number) => `(${n})`,
     bouncedBadge: "Bounced",
     empty: "No emails sent yet.",
     loading: "Loading emails…",
-    loadError: "Couldn't load this person's emails. Try again.",
+    loadError: "Couldn't load this person's emails.",
+    bodyLoading: "Loading email…",
+    bodyError: "Couldn't load this email.",
+    retry: "Try again",
     previewTitle: (subject: string) => `Email preview: ${subject}`,
-    kindLabel: (kind: string) =>
-      ({
-        "general-welcome": "Welcome",
-        "paying-welcome": "Paying welcome",
-        upgrade: "Upgrade",
-        revoked: "Paying access removed",
-        opportunities: "Opportunities",
-      })[kind] ?? kind,
   },
 
   toast: {

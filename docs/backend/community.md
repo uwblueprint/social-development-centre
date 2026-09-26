@@ -8,11 +8,12 @@ UI contract: `src/app/admin/community/_data/{types,queries,actions}.ts`. `store.
 - No source, payments, dates of access or admin edit history.
 
 ## Queries
-- `listMembers(tier, q, page)`: 50 per page. General: subscribed general first, then all unsubscribed. Paying: subscribed paying. Search by name or email, server-side.
-- `getCommunityCounts()`: subscribed general, subscribed paying, unsubscribed.
+- `listMembers(tier, q, page)`: 50 per page. General: every subscribed person, paying included. Paying: subscribed paying. Unsubscribed people are never listed, except that a General search also returns matching unsubscribed people after all subscribed matches. Search by name or email, server-side.
+- `getCommunityCounts(q?)`: subscribed people (paying included) and subscribed paying, narrowed by the search when given. Unsubscribed people are never counted.
 
 ## Email history
-- `listMemberEmails(id)`: every email sent to the person, newest first: `kind`, `subject`, `sentAt`, delivery `status`, and the rendered `html` as delivered (from the email provider's send log). The UI renders `html` in a sandboxed frame.
+- `listMemberEmails(id)`: every email sent to the person, newest first: `kind`, `subject`, `sentAt`, delivery `status` (from the email provider's send log). No bodies, so the panel opens fast.
+- `getSentEmailHtml(memberId, emailId)`: the rendered `html` of one email as delivered, or `null`. The panel calls it per email only when that email scrolls near view, and renders it in a sandboxed frame.
 - `listMembers` rows include `lastEmail` (`subject`, `sentAt`).
 
 ## Actions (all return `ActionState`; all require an SDC admin)
@@ -25,7 +26,7 @@ UI contract: `src/app/admin/community/_data/{types,queries,actions}.ts`. `store.
 | `revokePaidAccess(id)` | Paying → general; entitlement removed immediately. | Revoked |
 | `unsubscribeMember(id)` | Stop all sends; remove paid entitlement; keep record. | none |
 | `restoreEmailEligibility(id)` | Unsubscribed → subscribed general (never paying). **Disabled in the UI** until SDC's consent rules are confirmed. | none (no automatic welcome) |
-| `countExport` / `exportMembers(scope, includeUnsubscribed)` | CSV `name,email`. Scope `general` includes unsubscribed only when asked; `all` = everyone. | none |
+| `countExport` / `exportMembers(scope, includeUnsubscribed)` | CSV `name,email`. Scope `general` = every subscribed person (paying included), plus unsubscribed people only when asked; `paying` = subscribed paying. The old `all` scope is gone (it equalled `general` with unsubscribed). | none |
 
 ## Integrations and dependencies
 - **Signup sync:** new signups from SDC's current collection tool flow in automatically as general members (provider and mechanism TBC). Imports are the fallback.

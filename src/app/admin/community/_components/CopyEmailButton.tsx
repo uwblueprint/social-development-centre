@@ -1,55 +1,106 @@
 "use client";
 
+import * as React from "react";
 import type { MouseEvent } from "react";
 import { styled } from "next-yak";
-import { Copy } from "lucide-react";
+import { Check, Copy } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
-import { useToast } from "@/components/ui/Toast";
+import { TooltipContent, TooltipRoot, TooltipTrigger } from "@/components/ui/Tooltip";
 import { communityCopy as copy } from "../_copy";
 
-const IconButton = styled.button`
-  all: unset;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+/** How long the "Copied" confirmation stays before the button reverts. */
+const COPIED_MS = 1500;
+
+const IconButton = styled(Button)`
   width: 24px;
   height: 24px;
+  padding: 0;
   flex-shrink: 0;
-  border-radius: var(--radius-sm);
   color: var(--color-text-muted);
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity var(--duration) var(--ease), background-color var(--duration) var(--ease), color var(--duration) var(--ease);
 
-  &:hover {
-    background: var(--color-bg-hover);
+  &:hover:not(:disabled) {
     color: var(--color-text);
-  }
-  &:focus-visible {
-    opacity: 1;
-    box-shadow: var(--focus-ring);
   }
 `;
 
+const VisuallyHidden = styled.span`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+`;
+
+type CopyState = "idle" | "copied" | "failed";
+
 /**
- * Small icon button that copies `email` to the clipboard and toasts. Stays
- * invisible until its container is hovered or the button itself is focused —
- * wrap it and the email text together and add `&:hover button, &:focus-within button { opacity: 1; }`.
+ * Icon button that copies `email`, then shows "Copied" (check icon and tooltip)
+ * for 1.5s before reverting. The tooltip is controlled here rather than through
+ * the kit's click-to-pin `Tooltip`, so it always closes when the pointer
+ * leaves or focus moves, and the confirmation can never linger.
  */
 export function CopyEmailButton({ email, className }: { email: string; className?: string }) {
-  const { toast } = useToast();
+  const [open, setOpen] = React.useState(false);
+  const [state, setState] = React.useState<CopyState>("idle");
+  const timer = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  React.useEffect(() => () => clearTimeout(timer.current), []);
+
+  function reset() {
+    clearTimeout(timer.current);
+    setState("idle");
+    setOpen(false);
+  }
+
+  function show(next: CopyState) {
+    clearTimeout(timer.current);
+    setState(next);
+    setOpen(true);
+    timer.current = setTimeout(reset, COPIED_MS);
+  }
 
   function handleCopy(event: MouseEvent) {
     event.stopPropagation();
-    void navigator.clipboard.writeText(email).then(
-      () => toast({ title: copy.toast.emailCopied }),
-      () => toast({ title: copy.toast.emailCopied }),
+    // Stops Radix closing the tooltip on click, so the confirmation can show.
+    event.preventDefault();
+    navigator.clipboard.writeText(email).then(
+      () => show("copied"),
+      () => show("failed"),
     );
   }
 
+  const label = state === "copied" ? copy.copyButton.copied : state === "failed" ? copy.copyButton.failed : copy.copyButton.label;
+
   return (
-    <IconButton type="button" className={className} aria-label={copy.table.copyEmailLabel} onClick={handleCopy}>
-      <Icon icon={Copy} size={13} />
-    </IconButton>
+    <>
+      <TooltipRoot
+        delayDuration={0}
+        open={open}
+        onOpenChange={(next) => (next ? setOpen(true) : reset())}
+      >
+        <TooltipTrigger asChild>
+          <IconButton
+            type="button"
+            $variant="ghost"
+            $size="sm"
+            className={className}
+            aria-label={copy.copyButton.label}
+            onClick={handleCopy}
+            // Keeps Enter/Space from reaching a clickable table row, which would open the panel instead.
+            onKeyDown={(event) => event.stopPropagation()}
+            onPointerLeave={reset}
+            onBlur={reset}
+          >
+            <Icon icon={state === "copied" ? Check : Copy} size={14} />
+          </IconButton>
+        </TooltipTrigger>
+        <TooltipContent>{label}</TooltipContent>
+      </TooltipRoot>
+      <VisuallyHidden role="status">{state === "idle" ? "" : label}</VisuallyHidden>
+    </>
   );
 }

@@ -4,6 +4,13 @@ export function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
+/** Short date for dense lists: "Sep 12", or "Sep 12, 2025" outside the current year. */
+export function formatShortDate(iso: string): string {
+  const date = new Date(iso);
+  const sameYear = date.getFullYear() === new Date().getFullYear();
+  return date.toLocaleDateString(undefined, sameYear ? { month: "short", day: "numeric" } : { month: "short", day: "numeric", year: "numeric" });
+}
+
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
@@ -20,14 +27,4 @@ export function formatRelative(iso: string): string {
   if (diff < MONTH) return `${Math.floor(diff / WEEK)}w ago`;
   if (diff < YEAR) return `${Math.floor(diff / MONTH)}mo ago`;
   return `${Math.floor(diff / YEAR)}y ago`;
-}
-
-/** Initials for an avatar fallback: up to two letters from a name, or the email's first letter. */
-export function initialsFor(name: string | undefined, email: string): string {
-  if (name) {
-    const parts = name.trim().split(/\s+/).filter(Boolean);
-    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  }
-  return email.slice(0, 1).toUpperCase();
 }

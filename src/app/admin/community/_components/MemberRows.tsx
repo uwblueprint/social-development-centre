@@ -1,9 +1,7 @@
 "use client";
 
 import { styled } from "next-yak";
-import { MailX } from "lucide-react";
-import { Icon } from "@/components/ui/Icon";
-import { Tooltip } from "@/components/ui/Tooltip";
+import { Badge } from "@/components/ui/Badge";
 import type { TableColumn } from "@/components/ui/Table";
 import type { Member } from "../_data/types";
 import { communityCopy as copy } from "../_copy";
@@ -25,20 +23,17 @@ const VisuallyHidden = styled.span`
 const NameLine = styled.span<{ $muted?: boolean }>`
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
+  flex-wrap: wrap;
+  gap: var(--space-2);
   color: ${({ $muted }) => ($muted ? "var(--color-text-muted)" : "var(--color-text)")};
 `;
 
-const UnsubscribedIcon = styled.span`
-  display: inline-flex;
-  color: var(--color-text-muted);
-`;
-
-const EmailCell = styled.span`
+const EmailCell = styled.span<{ $muted?: boolean }>`
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
   overflow-wrap: anywhere;
+  color: ${({ $muted }) => ($muted ? "var(--color-text-muted)" : "inherit")};
 
   button {
     opacity: 0;
@@ -46,6 +41,12 @@ const EmailCell = styled.span`
   &:hover button,
   &:focus-within button {
     opacity: 1;
+  }
+  /* No hover on touch screens: keep the copy button visible. */
+  @media (hover: none) {
+    button {
+      opacity: 1;
+    }
   }
 `;
 
@@ -73,7 +74,8 @@ const RelativeDate = styled.span`
 `;
 
 /**
- * Community table columns: Name (dimmed + a MailX glyph when unsubscribed),
+ * Community table columns: Name (dimmed + an "Unsubscribed" badge for unsubscribed
+ * people, who only appear in General search results),
  * Email (hover-reveal copy button), Last email (subject + relative date, or
  * "—"), Added, and a trailing row-actions ⋯ menu.
  */
@@ -84,14 +86,7 @@ export const memberColumns: TableColumn<Member>[] = [
     render: (member) => (
       <NameLine $muted={!member.subscribed}>
         {member.name ?? copy.table.noName}
-        {!member.subscribed && (
-          <Tooltip content={copy.table.unsubscribedLabel}>
-            <UnsubscribedIcon tabIndex={0}>
-              <Icon icon={MailX} size={14} />
-              <VisuallyHidden>{copy.table.unsubscribedLabel}</VisuallyHidden>
-            </UnsubscribedIcon>
-          </Tooltip>
-        )}
+        {!member.subscribed && <Badge>{copy.table.unsubscribedLabel}</Badge>}
       </NameLine>
     ),
   },
@@ -99,7 +94,7 @@ export const memberColumns: TableColumn<Member>[] = [
     key: "email",
     header: copy.table.headerEmail,
     render: (member) => (
-      <EmailCell>
+      <EmailCell $muted={!member.subscribed}>
         {member.email}
         <CopyEmailButton email={member.email} />
       </EmailCell>

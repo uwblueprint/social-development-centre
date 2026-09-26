@@ -18,14 +18,16 @@ export interface Member {
 
 export type EmailKind = "general-welcome" | "paying-welcome" | "upgrade" | "revoked" | "opportunities";
 
-/** One email this person was sent, newest first. `html` is the rendered message as delivered. */
+/**
+ * One email this person was sent, newest first. The rendered message isn't included: the panel
+ * fetches each body separately (`getSentEmailHtml`) only when it scrolls into view.
+ */
 export interface SentEmail {
   id: string;
   kind: EmailKind;
   subject: string;
   sentAt: string;
   status: "delivered" | "bounced";
-  html: string;
 }
 
 export interface MemberPage {
@@ -35,10 +37,12 @@ export interface MemberPage {
   pageCount: number;
 }
 
+/** Subscribed people only; unsubscribed people are never counted. */
 export interface CommunityCounts {
+  /** Every subscribed person, paying members included. */
   general: number;
+  /** Subscribed paying members. */
   paying: number;
-  unsubscribed: number;
 }
 
 /** Result of checking pasted addresses before anything is saved or sent. */
@@ -58,4 +62,5 @@ export interface ImportPreview {
   emailsToSend: number;
 }
 
-export type ExportScope = "general" | "paying" | "all";
+/** "general" is every subscribed person (paying included), matching the General members tab. */
+export type ExportScope = "general" | "paying";

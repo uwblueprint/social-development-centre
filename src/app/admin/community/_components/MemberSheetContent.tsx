@@ -3,8 +3,8 @@
 import * as React from "react";
 import { useActionState } from "react";
 import { styled } from "next-yak";
-import { MoreVertical, UserMinus, UserPlus } from "lucide-react";
-import { Avatar } from "@/components/ui/Avatar";
+import { BadgeCheck, BadgeMinus, Copy, MailPlus, MailX, MoreVertical, Pencil, Save, X } from "lucide-react";
+import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import {
   DropdownMenu,
@@ -18,24 +18,22 @@ import { Icon } from "@/components/ui/Icon";
 import { Input } from "@/components/ui/Input";
 import { SheetBody, SheetHeader, SheetTitle } from "@/components/ui/Sheet";
 import { SubmitButton } from "@/components/ui/SubmitButton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { useToast } from "@/components/ui/Toast";
 import { fieldError, idleState } from "@/lib/forms";
 import { updateMember } from "../_data/actions";
-import type { Member, SentEmail } from "../_data/types";
+import type { Member } from "../_data/types";
 import { communityCopy as copy } from "../_copy";
-import { formatDate, initialsFor } from "../_lib/format";
-import { getMemberEmails } from "../_lib/emailHistoryAction";
+import { formatDate } from "../_lib/format";
 import { CopyEmailButton } from "./CopyEmailButton";
 import { MemberConfirmDialog } from "./MemberConfirmDialog";
-import { MemberEmailsTab } from "./MemberEmailsTab";
+import { MemberEmails } from "./MemberEmails";
 import { useMemberActions } from "./useMemberActions";
 
 const TitleRow = styled.div`
   display: flex;
   align-items: flex-start;
-  gap: var(--space-3);
+  gap: var(--space-2);
   /* Clears the Sheet's built-in top-right close (×) button. */
   padding-right: var(--space-6);
 `;
@@ -45,38 +43,40 @@ const TitleBlock = styled.div`
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding-top: 2px;
+  gap: var(--space-1);
 `;
 
-// The Sheet's own SheetTitle reserves space for the built-in close (×)
-// button; TitleRow already reserves that space for the whole header row, so
-// this drops the (now redundant) padding to keep the title's own line tight.
+// TitleRow already reserves the close button's space for the whole row.
 const Title = styled(SheetTitle)`
   padding-right: 0;
+  overflow-wrap: anywhere;
+`;
+
+const TitleWithCopy = styled.div`
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
 `;
 
 const EmailLine = styled.p`
   margin: 0;
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-1);
   font-size: var(--text-sm);
   color: var(--color-text-muted);
   overflow-wrap: anywhere;
 `;
 
-const CategoryLine = styled.p`
-  margin: 0;
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-`;
-
-const HeaderActions = styled.div`
+const MetaLine = styled.div`
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: var(--space-2);
-  margin-top: var(--space-3);
+  margin-top: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
 `;
 
 const MenuTrigger = styled(Button)`
@@ -91,6 +91,9 @@ const EditForm = styled.form`
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  padding-bottom: var(--space-5);
+  margin-bottom: var(--space-5);
+  border-bottom: 1px solid var(--color-border);
 `;
 
 const FormActions = styled.div`
@@ -99,58 +102,18 @@ const FormActions = styled.div`
   gap: var(--space-2);
 `;
 
-const DetailsList = styled.dl`
-  margin: 0;
-  display: grid;
-  gap: var(--space-3);
-`;
-
-const DetailRow = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-`;
-
-const DetailLabel = styled.dt`
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-`;
-
-const DetailValue = styled.dd`
-  margin: 0;
-  font-size: var(--text-sm);
-  color: var(--color-text);
-  overflow-wrap: anywhere;
-`;
-
-const TabBody = styled.div`
-  padding-top: var(--space-4);
-`;
-
+/**
+ * The member panel: one scrolling view. The header holds who they are (name,
+ * email with copy, status, date added) and a ⋯ menu with every action; the
+ * body lists every email they've been sent, each body loading as it scrolls
+ * into view. Each fact appears once.
+ */
 export function MemberSheetContent({ member, onClose }: { member: Member; onClose: () => void }) {
   const { toast } = useToast();
   const [editing, setEditing] = React.useState(false);
-  const [activeTab, setActiveTab] = React.useState<"details" | "emails">("details");
   const [editState, editAction] = useActionState(updateMember.bind(null, member.id), idleState);
 
   const { copyEmail, convert, confirm, setConfirm, shownConfirm, runConfirm } = useMemberActions(member, onClose);
-
-  const [emails, setEmails] = React.useState<SentEmail[] | null>(null);
-  const [emailsError, setEmailsError] = React.useState(false);
-
-  React.useEffect(() => {
-    let cancelled = false;
-    getMemberEmails(member.id)
-      .then((result) => {
-        if (!cancelled) setEmails(result);
-      })
-      .catch(() => {
-        if (!cancelled) setEmailsError(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [member.id]);
 
   // Exits edit mode once a save resolves without field errors; derived at
   // render time from the action state instead of mirrored in an effect.
@@ -168,44 +131,37 @@ export function MemberSheetContent({ member, onClose }: { member: Member; onClos
   }, [editState]);
 
   const displayName = member.name ?? member.email;
-  const category = !member.subscribed
-    ? copy.panel.categoryUnsubscribed
+  const status = !member.subscribed
+    ? copy.panel.statusUnsubscribed
     : member.tier === "paying"
-      ? copy.panel.categoryPaying
-      : copy.panel.categoryGeneral;
-
-  const canConvertOrRemove = member.subscribed;
+      ? copy.panel.statusPaying
+      : copy.panel.statusGeneral;
 
   return (
     <>
       <SheetHeader>
         <TitleRow>
-          <Avatar initials={initialsFor(member.name, member.email)} />
           <TitleBlock>
-            <Title>{displayName}</Title>
-            {member.name && (
-              <EmailLine>
-                {member.email}
-                <CopyEmailButton email={member.email} />
-              </EmailLine>
-            )}
-            <CategoryLine>{category}</CategoryLine>
-          </TitleBlock>
-        </TitleRow>
-
-        <HeaderActions>
-          {canConvertOrRemove &&
-            (member.tier === "general" ? (
-              <Button type="button" onClick={() => void convert()}>
-                <Icon icon={UserPlus} size={16} />
-                {copy.panel.convertButton}
-              </Button>
+            {member.name ? (
+              <>
+                <Title>{member.name}</Title>
+                <EmailLine>
+                  {member.email}
+                  <CopyEmailButton email={member.email} />
+                </EmailLine>
+              </>
             ) : (
-              <Button type="button" onClick={() => setConfirm("revoke")}>
-                <Icon icon={UserMinus} size={16} />
-                {copy.panel.removeButton}
-              </Button>
-            ))}
+              // No name: the email is the title, so it isn't repeated below.
+              <TitleWithCopy>
+                <Title>{member.email}</Title>
+                <CopyEmailButton email={member.email} />
+              </TitleWithCopy>
+            )}
+            <MetaLine>
+              <Badge>{status}</Badge>
+              <span>{copy.panel.added(formatDate(member.addedAt))}</span>
+            </MetaLine>
+          </TitleBlock>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -213,16 +169,32 @@ export function MemberSheetContent({ member, onClose }: { member: Member; onClos
                 <Icon icon={MoreVertical} size={16} />
               </MenuTrigger>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem
-                onSelect={() => {
-                  setActiveTab("details");
-                  setEditing(true);
-                }}
-              >
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={() => setEditing(true)}>
+                <Icon icon={Pencil} size={16} />
                 {copy.panel.menuEdit}
               </DropdownMenuItem>
-              <DropdownMenuItem onSelect={copyEmail}>{copy.panel.menuCopyEmail}</DropdownMenuItem>
+              <DropdownMenuItem onSelect={copyEmail}>
+                <Icon icon={Copy} size={16} />
+                {copy.panel.menuCopyEmail}
+              </DropdownMenuItem>
+              {member.subscribed &&
+                (member.tier === "general" ? (
+                  <DropdownMenuItem onSelect={() => void convert()}>
+                    <Icon icon={BadgeCheck} size={16} />
+                    {copy.panel.menuConvert}
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem
+                    onSelect={(event) => {
+                      event.preventDefault();
+                      setConfirm("revoke");
+                    }}
+                  >
+                    <Icon icon={BadgeMinus} size={16} />
+                    {copy.panel.menuRemove}
+                  </DropdownMenuItem>
+                ))}
               <DropdownMenuSeparator />
               {member.subscribed ? (
                 <DangerMenuItem
@@ -231,69 +203,45 @@ export function MemberSheetContent({ member, onClose }: { member: Member; onClos
                     setConfirm("unsubscribe");
                   }}
                 >
+                  <Icon icon={MailX} size={16} />
                   {copy.panel.menuUnsubscribe}
                 </DangerMenuItem>
               ) : (
                 <Tooltip content={copy.panel.restoreReason}>
-                  <DropdownMenuItem disabled>{copy.panel.menuRestore}</DropdownMenuItem>
+                  <DropdownMenuItem disabled>
+                    <Icon icon={MailPlus} size={16} />
+                    {copy.panel.menuRestore}
+                  </DropdownMenuItem>
                 </Tooltip>
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-        </HeaderActions>
+        </TitleRow>
       </SheetHeader>
 
       <SheetBody>
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value === "emails" ? "emails" : "details")}>
-          <TabsList aria-label={copy.panel.tabsAriaLabel(displayName)}>
-            <TabsTrigger value="details">{copy.panel.tabDetails}</TabsTrigger>
-            <TabsTrigger value="emails">
-              {emails === null ? copy.panel.tabEmailsLoading : copy.panel.tabEmails(emails.length)}
-            </TabsTrigger>
-          </TabsList>
+        {editing && (
+          <EditForm action={editAction} aria-label={copy.editForm.ariaLabel}>
+            <Field label={copy.editForm.nameLabel} error={fieldError(editState, "name")}>
+              {(p) => <Input {...p} name="name" defaultValue={member.name ?? ""} autoComplete="name" />}
+            </Field>
+            <Field label={copy.editForm.emailLabel} error={fieldError(editState, "email")} required>
+              {(p) => <Input {...p} name="email" type="email" defaultValue={member.email} autoComplete="email" />}
+            </Field>
+            <FormActions>
+              <Button type="button" $variant="secondary" $size="sm" onClick={() => setEditing(false)}>
+                <Icon icon={X} size={16} />
+                {copy.editForm.cancel}
+              </Button>
+              <SubmitButton $size="sm">
+                <Icon icon={Save} size={16} />
+                {copy.editForm.save}
+              </SubmitButton>
+            </FormActions>
+          </EditForm>
+        )}
 
-          <TabsContent value="details">
-            <TabBody>
-              {editing ? (
-                <EditForm action={editAction} aria-label={copy.editForm.ariaLabel}>
-                  <Field label={copy.editForm.nameLabel} error={fieldError(editState, "name")}>
-                    {(p) => <Input {...p} name="name" defaultValue={member.name ?? ""} autoComplete="name" />}
-                  </Field>
-                  <Field label={copy.editForm.emailLabel} error={fieldError(editState, "email")} required>
-                    {(p) => <Input {...p} name="email" type="email" defaultValue={member.email} autoComplete="email" />}
-                  </Field>
-                  <FormActions>
-                    <Button type="button" $variant="secondary" $size="sm" onClick={() => setEditing(false)}>
-                      {copy.editForm.cancel}
-                    </Button>
-                    <SubmitButton $size="sm">{copy.editForm.save}</SubmitButton>
-                  </FormActions>
-                </EditForm>
-              ) : (
-                <DetailsList>
-                  <DetailRow>
-                    <DetailLabel>{copy.details.email}</DetailLabel>
-                    <DetailValue>{member.email}</DetailValue>
-                  </DetailRow>
-                  <DetailRow>
-                    <DetailLabel>{copy.details.category}</DetailLabel>
-                    <DetailValue>{category}</DetailValue>
-                  </DetailRow>
-                  <DetailRow>
-                    <DetailLabel>{copy.details.dateAdded}</DetailLabel>
-                    <DetailValue>{formatDate(member.addedAt)}</DetailValue>
-                  </DetailRow>
-                </DetailsList>
-              )}
-            </TabBody>
-          </TabsContent>
-
-          <TabsContent value="emails">
-            <TabBody>
-              <MemberEmailsTab emails={emails} loading={emails === null && !emailsError} error={emailsError} />
-            </TabBody>
-          </TabsContent>
-        </Tabs>
+        <MemberEmails memberId={member.id} />
       </SheetBody>
 
       <MemberConfirmDialog

@@ -42,11 +42,14 @@ function html(title: string, body: string) {
 <p style="font-size:12px;margin-top:24px">Social Development Centre · <a href="#">Unsubscribe</a></p></div>`;
 }
 
+/** A sent email as stored: the summary plus its rendered body. */
+export type StoredEmail = SentEmail & { html: string };
+
 /** Deterministic sample history: a welcome (plus upgrade for paying members) and weekly opportunity digests. */
-export function emailsFor(m: Member): SentEmail[] {
+export function emailsFor(m: Member): StoredEmail[] {
   const added = new Date(m.addedAt).getTime();
   const end = m.unsubscribedAt ? new Date(m.unsubscribedAt).getTime() : Date.now();
-  const out: SentEmail[] = [];
+  const out: StoredEmail[] = [];
   const welcome = m.tier === "paying" && Number(m.id.slice(2)) % 2 === 0 ? "paying-welcome" : "general-welcome";
   out.push({
     id: `${m.id}_w`,
@@ -72,7 +75,7 @@ export function emailsFor(m: Member): SentEmail[] {
     out.push({
       id: `${m.id}_o${i}`,
       kind: "opportunities",
-      subject: `This week's opportunities · ${d.toLocaleDateString("en-CA", { month: "short", day: "numeric" })}`,
+      subject: "This week's opportunities",
       sentAt: d.toISOString(),
       status: i === 4 && Number(m.id.slice(2)) % 11 === 0 ? "bounced" : "delivered",
       html: html("This week's opportunities", "<ul><li><strong>Food bank volunteers</strong> · Northside Food Bank</li><li><strong>Youth mentor</strong> · Riverbend Youth Collective</li><li><strong>ESL conversation circle</strong> · Eastside Newcomer Services</li></ul>"),

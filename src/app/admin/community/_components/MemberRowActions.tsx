@@ -1,7 +1,8 @@
 "use client";
 
+import type { SyntheticEvent } from "react";
 import { styled } from "next-yak";
-import { MoreVertical } from "lucide-react";
+import { BadgeCheck, BadgeMinus, Copy, MailX, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/DropdownMenu";
 import { Icon } from "@/components/ui/Icon";
@@ -18,13 +19,24 @@ const DangerItem = styled(DropdownMenuItem)`
   color: var(--color-danger);
 `;
 
-/** The table row's ⋯ menu. Stops clicks from bubbling up into the row's own onClick (opening the panel). */
+/* Layout-neutral wrapper; see the stopPropagation note below. */
+const RowEventBoundary = styled.span`
+  display: contents;
+`;
+
+const stop = (event: SyntheticEvent) => event.stopPropagation();
+
+/**
+ * The table row's ⋯ menu. The menu and confirm dialog render in portals, but
+ * React still bubbles their clicks and key presses up the component tree to
+ * the table row, whose onClick/Enter opens the panel. The boundary stops that.
+ */
 export function MemberRowActions({ member }: { member: Member }) {
   const displayName = member.name ?? member.email;
   const { copyEmail, convert, confirm, setConfirm, shownConfirm, runConfirm } = useMemberActions(member);
 
   return (
-    <>
+    <RowEventBoundary role="presentation" onClick={stop} onKeyDown={stop}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Trigger
@@ -32,17 +44,22 @@ export function MemberRowActions({ member }: { member: Member }) {
             $variant="ghost"
             $size="sm"
             aria-label={copy.table.rowActionsLabel(displayName)}
-            onClick={(event) => event.stopPropagation()}
           >
             <Icon icon={MoreVertical} size={16} />
           </Trigger>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={copyEmail}>{copy.rowMenu.copyEmail}</DropdownMenuItem>
+          <DropdownMenuItem onSelect={copyEmail}>
+            <Icon icon={Copy} size={16} />
+            {copy.rowMenu.copyEmail}
+          </DropdownMenuItem>
           {member.subscribed && (
             <>
               {member.tier === "general" ? (
-                <DropdownMenuItem onSelect={() => void convert()}>{copy.rowMenu.convert}</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => void convert()}>
+                  <Icon icon={BadgeCheck} size={16} />
+                  {copy.rowMenu.convert}
+                </DropdownMenuItem>
               ) : (
                 <DropdownMenuItem
                   onSelect={(event) => {
@@ -50,6 +67,7 @@ export function MemberRowActions({ member }: { member: Member }) {
                     setConfirm("revoke");
                   }}
                 >
+                  <Icon icon={BadgeMinus} size={16} />
                   {copy.rowMenu.remove}
                 </DropdownMenuItem>
               )}
@@ -60,6 +78,7 @@ export function MemberRowActions({ member }: { member: Member }) {
                   setConfirm("unsubscribe");
                 }}
               >
+                <Icon icon={MailX} size={16} />
                 {copy.rowMenu.unsubscribe}
               </DangerItem>
             </>
@@ -74,6 +93,6 @@ export function MemberRowActions({ member }: { member: Member }) {
         onOpenChange={(open) => !open && setConfirm(null)}
         onConfirm={(kind) => void runConfirm(kind)}
       />
-    </>
+    </RowEventBoundary>
   );
 }

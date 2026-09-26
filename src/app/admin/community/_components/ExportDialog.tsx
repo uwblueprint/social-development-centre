@@ -22,7 +22,6 @@ import { communityCopy as copy } from "../_copy";
 const SCOPE_OPTIONS: { value: ExportScope; label: string }[] = [
   { value: "general", label: copy.exportDialog.scopeGeneral },
   { value: "paying", label: copy.exportDialog.scopePaying },
-  { value: "all", label: copy.exportDialog.scopeEveryone },
 ];
 
 const Body = styled.div`

@@ -136,9 +136,10 @@ export async function restoreEmailEligibility(id: string): Promise<ActionState> 
   return done(`${m.name ?? m.email} can receive general emails again.`);
 }
 
+/** General: every subscribed person (paying included), plus unsubscribed people when asked. Paying: subscribed paying members. */
 function exportRows(scope: ExportScope, includeUnsubscribed: boolean): Member[] {
-  return members().filter(
-    (m) => (m.subscribed || includeUnsubscribed) && (scope === "all" || (m.subscribed ? m.tier === scope : scope === "general")),
+  return members().filter((m) =>
+    scope === "paying" ? m.subscribed && m.tier === "paying" : m.subscribed || includeUnsubscribed,
   );
 }
 
