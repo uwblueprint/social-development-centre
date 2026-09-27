@@ -29,7 +29,14 @@ export default async function EditOpportunityPage({ params }: Props) {
   const opportunity = await load((await params).id);
   if (!opportunity) notFound(); // renders ../not-found.tsx with a 404 status
   return (
-    <OpportunityForm key={opportunity.id} scope="partner" basePath={BASE} kind={opportunity.kind} opportunity={opportunity} save={saveOpportunity}
-      prefill={prefillFromEventbrite} />
+    <OpportunityForm
+      key={opportunity.id}
+      scope="partner"
+      basePath={BASE}
+      kind={opportunity.kind}
+      opportunity={opportunity}
+      save={saveOpportunity}
+      prefill={prefillFromEventbrite}
+    />
   );
 }

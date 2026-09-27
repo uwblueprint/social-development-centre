@@ -532,21 +532,25 @@ export function DisplayDemos() {
         <Card>
           <CardHeader>
             <CardTitle>Topics</CardTitle>
-            <CardDescription>Pick the areas you&apos;d like to hear about.</CardDescription>
+            <CardDescription>Pick up to 3 areas you&apos;d like to hear about.</CardDescription>
           </CardHeader>
           <CardContent>
             <Stack style={{ gap: "var(--space-4)" }}>
               <TagSection>
                 <TagList role="group" aria-label="Available topics">
-                  {TOPICS.map((topic) => (
-                    <SelectableTag
-                      key={topic}
-                      selected={selectedTopics.includes(topic)}
-                      onClick={() => toggleTopic(topic)}
-                    >
-                      {topic}
-                    </SelectableTag>
-                  ))}
+                  {TOPICS.map((topic) => {
+                    const selected = selectedTopics.includes(topic);
+                    // At the cap, unselected topics are disabled with the reason in a tooltip.
+                    return selectedTopics.length >= 3 && !selected ? (
+                      <SelectableTag key={topic} disabled disabledReason="You can choose up to 3 topics. Unselect one to choose another.">
+                        {topic}
+                      </SelectableTag>
+                    ) : (
+                      <SelectableTag key={topic} selected={selected} onClick={() => toggleTopic(topic)}>
+                        {topic}
+                      </SelectableTag>
+                    );
+                  })}
                 </TagList>
               </TagSection>
               <TagSection>

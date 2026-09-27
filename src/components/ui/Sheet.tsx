@@ -7,6 +7,7 @@ import { Dialog as DialogPrimitive } from "radix-ui";
 import { X } from "lucide-react";
 import type { ReactNode } from "react";
 import { Icon } from "./Icon";
+import { keepEscapeForTagSelection } from "./TagInput";
 
 // Owner decision 9: subtle enter and exit. A short slide plus fade, not the full panel width.
 // Radix keeps the element mounted until the exit animation ends.
@@ -244,6 +245,7 @@ export const SheetFooter = Footer;
 export function SheetContent({
   children,
   onOpenAutoFocus,
+  onEscapeKeyDown,
   size = "default",
   ...props
 }: DialogPrimitive.DialogContentProps & { children: ReactNode; size?: SheetSize }) {
@@ -261,6 +263,10 @@ export function SheetContent({
           if (e.defaultPrevented) return;
           e.preventDefault();
           ref.current?.focus();
+        }}
+        onEscapeKeyDown={(event) => {
+          keepEscapeForTagSelection(event);
+          if (!event.defaultPrevented) onEscapeKeyDown?.(event);
         }}
         {...props}
       >

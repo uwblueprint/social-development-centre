@@ -24,6 +24,16 @@ export const tagInputCopy = {
 
 export type TagInputCopy = typeof tagInputCopy;
 
+/**
+ * For overlays' `onEscapeKeyDown` (Dialog, AlertDialog, Sheet): while focus is in a TagInput with
+ * selected tags, Escape only clears the selection, so the overlay stays open; a second Escape closes it.
+ * Radix listens for Escape in the capture phase, before the TagInput sees it, hence this hook-in.
+ */
+export function keepEscapeForTagSelection(event: KeyboardEvent) {
+  const active = typeof document === "undefined" ? null : document.activeElement;
+  if (active?.closest("[data-has-selection]")) event.preventDefault();
+}
+
 /** Typing any of these ends a tag. Newlines arrive by paste. */
 const SEPARATORS = /[\s,;]+/;
 
@@ -399,6 +409,8 @@ export const TagInput = React.forwardRef<HTMLInputElement, TagInputProps>(functi
       <Box
         $invalid={invalid}
         $disabled={disabled}
+        // Overlays read this to let Escape clear the selection instead of closing (keepEscapeForTagSelection).
+        data-has-selection={selected.size > 0 ? "" : undefined}
         onMouseDown={(event) => {
           // Clicking the box's empty space puts the caret in the field, like a native input.
           if (event.target === event.currentTarget) {

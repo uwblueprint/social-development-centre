@@ -5,6 +5,7 @@ import { Dialog as DialogPrimitive } from "radix-ui";
 import { X } from "lucide-react";
 import type { ReactNode } from "react";
 import { Icon } from "./Icon";
+import { keepEscapeForTagSelection } from "./TagInput";
 
 // Owner decision 9: subtle enter and exit. Radix keeps the element mounted until the exit animation ends.
 const overlayShow = keyframes`
@@ -122,12 +123,19 @@ export const DialogActions = Actions;
 
 export function DialogContent({
   children,
+  onEscapeKeyDown,
   ...props
 }: DialogPrimitive.DialogContentProps & { children: ReactNode }) {
   return (
     <DialogPrimitive.Portal>
       <Overlay />
-      <Content {...props}>
+      <Content
+        {...props}
+        onEscapeKeyDown={(event) => {
+          keepEscapeForTagSelection(event);
+          if (!event.defaultPrevented) onEscapeKeyDown?.(event);
+        }}
+      >
         {children}
         <CloseButton aria-label="Close">
           <Icon icon={X} size={16} />

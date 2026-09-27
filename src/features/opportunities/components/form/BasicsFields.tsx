@@ -1,7 +1,6 @@
 "use client";
 
 import { styled } from "next-yak";
-import { DisabledArea } from "@/components/ui/DisabledReason";
 import { Field } from "@/components/ui/Field";
 import { Select } from "@/components/ui/Select";
 import { SelectableTag, TagList } from "@/components/ui/Tag";
@@ -27,17 +26,6 @@ const Count = styled.span`
   color: var(--color-text-muted);
 `;
 
-/*
- * The kit's SelectableTag has no disabled state yet, so capped topics stay focusable (aria-disabled) to reach
- * the reason tooltip, and read as unavailable by text color and a dashed border as well as the tooltip.
- */
-const Topics = styled(TagList)`
-  & [aria-disabled="true"] {
-    color: var(--color-text-muted);
-    border-style: dashed;
-    cursor: not-allowed;
-  }
-`;
 
 /**
  * Organization (admins), title, short description and topics. Topics are capped at MAX_TOPICS: at the cap,
@@ -94,7 +82,7 @@ export function BasicsFields({
         required
       >
         {(p) => (
-          <Topics
+          <TagList
             id={p.id}
             role="group"
             tabIndex={-1}
@@ -106,11 +94,9 @@ export function BasicsFields({
               const selected = topics.includes(topic.id);
               if (atCap && !selected) {
                 return (
-                  <DisabledArea key={topic.id} reason={t.topics.capReason}>
-                    <SelectableTag aria-disabled="true" aria-description={t.topics.capReason}>
-                      {topic.label}
-                    </SelectableTag>
-                  </DisabledArea>
+                  <SelectableTag key={topic.id} disabled disabledReason={t.topics.capReason}>
+                    {topic.label}
+                  </SelectableTag>
                 );
               }
               return (
@@ -119,7 +105,7 @@ export function BasicsFields({
                 </SelectableTag>
               );
             })}
-          </Topics>
+          </TagList>
         )}
       </Field>
     </>

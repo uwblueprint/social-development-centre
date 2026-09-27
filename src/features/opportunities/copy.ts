@@ -178,7 +178,6 @@ export const copy = {
       noTopics: "No topics yet",
       editType: "Edit type and link",
       editDetails: "Edit details",
-      link: "Link",
       /** The email's button when a type has no call to action of its own. */
       cta: {
         event: "Register",

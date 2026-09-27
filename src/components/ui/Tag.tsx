@@ -4,6 +4,8 @@ import { css, styled } from "next-yak";
 import { Check, Plus } from "lucide-react";
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from "react";
 import { Icon } from "./Icon";
+import type { DisabledReasonText } from "./DisabledReason";
+import { Tooltip } from "./Tooltip";
 
 const tagBase = css`
   display: inline-flex;
@@ -52,6 +54,19 @@ const SelectableTagRoot = styled.button<{ $selected?: boolean }>`
         border-color: var(--color-primary);
       }
     `}
+
+  /*
+   * Disabled (aria-disabled, so it stays focusable for the reason's tooltip): muted text (taupe-600,
+   * 7.6:1 on white, still readable), a dashed border, and no hover change. Not color alone: the border
+   * style and the tooltip carry it too.
+   */
+  &[aria-disabled="true"] {
+    background: var(--color-bg);
+    border-style: dashed;
+    border-color: var(--color-border-strong);
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+  }
 `;
 
 const RemovableTagRoot = styled.span`
@@ -108,27 +123,50 @@ export function Tag({
   return <StaticTagRoot {...props}>{children}</StaticTagRoot>;
 }
 
+type SelectableTagDisabledProps =
+  | { disabled?: false; disabledReason?: never }
+  | {
+      disabled: true;
+      /** Shown in a tooltip on hover, focus or tap. Ask the product owner; pass null only if they decline. */
+      disabledReason: DisabledReasonText;
+    };
+
+export type SelectableTagProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children" | "disabled"> & {
+  selected?: boolean;
+  children: ReactNode;
+} & SelectableTagDisabledProps;
+
 /**
  * Toggleable pill for pickers/filters. Selected state is shown with a
  * background/text color change AND a check icon, so it never relies on
- * color alone.
+ * color alone. `disabled` (with a required `disabledReason`) keeps it
+ * focusable (`aria-disabled`), mutes it, blocks toggling and shows the
+ * reason in a tooltip.
  */
 export function SelectableTag({
   selected = false,
   children,
+  disabled,
+  disabledReason,
+  onClick,
   ...props
-}: Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> & {
-  selected?: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <SelectableTagRoot type="button" $selected={selected} aria-pressed={selected} {...props}>
+}: SelectableTagProps) {
+  const tag = (
+    <SelectableTagRoot
+      type="button"
+      $selected={selected && !disabled}
+      aria-pressed={selected}
+      aria-disabled={disabled || undefined}
+      onClick={disabled ? (event) => event.preventDefault() : onClick}
+      {...props}
+    >
       <IconSlot aria-hidden="true">
         <Icon icon={selected ? Check : Plus} size={14} />
       </IconSlot>
       {children}
     </SelectableTagRoot>
   );
+  return disabled && disabledReason ? <Tooltip content={disabledReason}>{tag}</Tooltip> : tag;
 }
 
 /** Pill with a trailing remove (×) button, for showing current selections. */

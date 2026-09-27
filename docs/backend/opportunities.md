@@ -123,7 +123,7 @@ All values are strings. Fields marked "multiple" repeat the key.
 | Job | `employmentType`, `workplace`, `area`, `address`, `pay`, `applyBy`, `qualifications` |
 | Other | `callToAction`, `deadline`, `detailLabel` (multiple), `detailValue` (multiple), paired by position. Rows with both empty are skipped. |
 
-Unknown ids in `area`, `timeCommitment`, `skills` and `accessibility` are rejected (`area`, `timeCommitment`) or dropped (the lists). The form is three steps, but it always posts the whole model at once (`toFormData` in `components/form/formValues.ts`), so this contract is unchanged in shape. `/components/form-contract` shows the fields.
+Unknown ids in `area`, `timeCommitment`, `skills` and `accessibility` are rejected (`area`, `timeCommitment`) or dropped (the lists). The form is three steps, but it always posts the whole model at once (`toFormData` in `components/form/formValues.ts`), so this contract is unchanged in shape.
 
 ### Validation
 - **The strictness depends on the next status.** Publishing, and saving a published or closed listing, are **strict** (every required field). Drafts are **lenient**: only a title is required, but anything that *is* filled in must still be valid (lengths, date and time format, link format, a positive integer, end time after start time, complete detail pairs).

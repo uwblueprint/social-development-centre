@@ -245,6 +245,39 @@ Confirm whether reinviting automatically reopens any listings. The wording above
 - The source material supplied here includes the action messages but does not include the full listing form or deletion dialog; retain their existing field requirements until those screens can be reviewed.
 - Avoid **live**, **feed**, **expired**, and **no longer emailed** as competing names for a listing's status. Use **Published**, **Closed**, and **Ended** only when each has a defined and distinct meaning.
 
+#### Posting and editing a listing (27 Sep)
+
+Admins and partners use the same form. Decisions 17–22 in `docs/decisions/opportunities.md`.
+
+- **Three steps on one page:** **1 Type** (type, then for events the Eventbrite link, then **Link**), **2 Details** (organization for admins, title, short description, topics, the type's own fields), **3 Review** (the email preview and **Publish**). **Back** and **Next** keep everything; **Save as draft** is on every step (**Save changes** once published).
+- **Validation:** a failed publish opens the step with the first invalid field, with the error summary on top; summary links open other steps.
+- **Matching fields are chosen, not typed:** **Area**, volunteer **Time commitment** and **Skills**, event **Accessibility** checkboxes (decision 19).
+- **Topics:** "{n} of 3 selected" beside the label; at 3, the rest are unavailable with the reason below.
+- **Hints** only where they prevent a mistake (decision 22).
+- **List:** a **Type** column with a colored tag (icon and name), **Last change** ("Created {when}" / "Edited {when}"), one-line rows, search in the page header, and the open panel in the address (`?opportunity=<id>`).
+
+| Element | Current text | Notes |
+|---|---|---|
+| Step indicator | 1 Type · 2 Details · 3 Review | New, needs approval |
+| Step buttons | Back / Next | New, needs approval |
+| Eventbrite field | Eventbrite link (optional) | Events only; owner's label |
+| Eventbrite hint | We copy the title, description, date, time and place from it. You can change them after. | New, needs approval |
+| Eventbrite button | Fill in details | Owner's label |
+| Prefill done (toast) | Filled in the title, description, date, time and place from Eventbrite. Check them on the next step. | New, needs approval |
+| Prefill refused | Enter an Eventbrite event link, like eventbrite.ca/e/… | New, needs approval |
+| Prefill, not an event page | That's not an event page. Copy the link from your event on Eventbrite. | New, needs approval |
+| Area / Address | Area / Address or venue | Owner's labels |
+| Accessibility note | Accessibility note | New, needs approval |
+| Topic count | {n} of 3 selected | New, needs approval |
+| Topic cap reason | You can choose up to 3 topics. Unselect one to choose another. | Owner's words |
+| Review intro | This is how the listing looks in members' emails. | New, needs approval |
+| Review edit links | Edit type and link / Edit details | New, needs approval |
+| Review button text | Register / Sign the petition / Sign up to volunteer / Apply / Learn more | New, needs approval; Other uses its **Call to action** |
+| Review empty values | No title yet / No description yet / No topics yet | New, needs approval |
+| Area required | Choose the area. | New, needs approval |
+| Time commitment required | Choose the time commitment. | New, needs approval |
+| Last change cells | Created {when} / Edited {when} | New, needs approval; {when} is "today", "yesterday", "3d ago" |
+
 ### Community
 
 #### Classifications and email status

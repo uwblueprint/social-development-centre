@@ -13,7 +13,7 @@ A small pill: a static label (`Tag`), a togglable filter chip (`SelectableTag`),
 import { Tag, SelectableTag, RemovableTag, TagList } from "@/components/ui/Tag";
 ```
 - `Tag`: plain `<span>` props, `children`.
-- `SelectableTag({ selected?: boolean, ...button props })` — sets `aria-pressed`; shows a check/plus icon plus color change.
+- `SelectableTag({ selected?: boolean, disabled?: true, disabledReason, ...button props })` — sets `aria-pressed`; shows a check/plus icon plus color change. `disabled` needs `disabledReason: DisabledReasonText` (ask the owner; `null` only if they decline). See Disabled.
 - `RemovableTag({ children, onRemove: () => void, ...span props })` — auto-labels its remove button when `children` is a string.
 - `TagList` — flex-wrap container with the standard gap.
 
@@ -28,6 +28,15 @@ import { Tag, SelectableTag, RemovableTag, TagList } from "@/components/ui/Tag";
 </TagList>
 ```
 
+## Disabled
+A disabled `SelectableTag` uses `aria-disabled` (not the native attribute), so it stays in the tab order and its reason is reachable: the kit `Tooltip` shows `disabledReason` on hover, focus or tap. It can't be toggled (clicks do nothing), has muted `--color-text-muted` text (7.6:1, still readable), a dashed `--color-border-strong` border and a not-allowed cursor, so it isn't carried by color alone. Use it for caps, e.g. Opportunities topics at 3: "You can choose up to 3 topics. Unselect one to choose another."
+
+```tsx
+<SelectableTag disabled disabledReason="You can choose up to 3 topics. Unselect one to choose another.">
+  Housing
+</SelectableTag>
+```
+
 ## Content rules
 Short nouns (1–3 words), sentence case, no trailing punctuation. Keep a group's tags parallel in form.
 
@@ -38,3 +47,4 @@ Short nouns (1–3 words), sentence case, no trailing punctuation. Keep a group'
 1. Using `SelectableTag` for a single-choice picker — use `RadioGroup`.
 2. Leaving a `RemovableTag` unlabeled when `children` isn't plain text.
 3. Forgetting the group `aria-label` on a `TagList` of pickers.
+4. Styling `aria-disabled` tags locally or wrapping them in `DisabledArea`: pass `disabled` and `disabledReason`.
