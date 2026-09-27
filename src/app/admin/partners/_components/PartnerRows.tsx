@@ -1,14 +1,17 @@
 "use client";
 
+import type * as React from "react";
 import { styled } from "next-yak";
 import { Archive, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import type { TableColumn, TableColumnFilter } from "@/components/ui/Table";
-import { partnersCopy } from "../_copy";
+import { TruncatedText } from "@/components/ui/TruncatedText";
+import { invitationCopy, partnersCopy } from "../_copy";
 import type { AdminPartnerOrganization, PartnerPerson } from "../_data/types";
-import { formatDate, formatDateTimeTitle, formatRelativeCell } from "../_lib/format";
-import { InvitationBadge, invitationDateText } from "./ContactRowParts";
+import { formatDateTimeTitle, formatRelativeCell, formatShortDateCell } from "../_lib/format";
+import { InvitationBadge } from "./ContactRowParts";
 import { CopyableEmail } from "./CopyableEmail";
 import { HealthBadge } from "./HealthBadge";
 
@@ -17,18 +20,33 @@ const copy = partnersCopy.table;
 /** A header filter (the Table column's `filter`). */
 export type HeaderFilter = TableColumnFilter;
 
+/* One line per row: cells never wrap; long text truncates (TruncatedText shows the rest on hover). */
 const NameLine = styled.span`
   display: inline-flex;
   align-items: center;
-  flex-wrap: wrap;
   gap: var(--space-2);
+  min-width: 0;
+  max-width: 100%;
+  white-space: nowrap;
 `;
 
-const Stack = styled.span`
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
+const TagLine = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  white-space: nowrap;
+`;
+
+/* The Organization cell opens that organization's panel (Organizations view). */
+const OrganizationLink = styled(Button)`
+  min-width: 0;
+  max-width: 100%;
+  font-size: var(--text-sm);
+`;
+
+const Badged = styled.span`
+  flex: none;
+  display: inline-flex;
 `;
 
 const Muted = styled.span`
@@ -47,6 +65,7 @@ const chevronColumn = <T,>(): TableColumn<T> => ({
   key: "open",
   header: "",
   align: "right",
+  width: "48px",
   render: () => (
     <Chevron aria-hidden="true">
       <Icon icon={ChevronRight} size={16} />
@@ -75,10 +94,15 @@ export function organizationColumns(
       header: copy.headerOrganization,
       sortKey: "name",
       filter: filters.status,
+      width: "320px",
       render: (org) => (
         <NameLine>
-          {org.name}
-          {org.status === "removed" && <RemovedBadge />}
+          <TruncatedText tooltip>{org.name}</TruncatedText>
+          {org.status === "removed" && (
+            <Badged>
+              <RemovedBadge />
+            </Badged>
+          )}
         </NameLine>
       ),
     },
@@ -124,20 +148,61 @@ export function organizationColumns(
   ];
 }
 
+/** "Expires Oct 2" / "Expired Oct 2" (no year in the current year); nothing when there's no expiry. */
+function invitationDateCell(person: PartnerPerson, now: string): string | null {
+  const expiresAt = person.invitation?.expiresAt;
+  if (!expiresAt) return null;
+  const date = formatShortDateCell(expiresAt, now);
+  if (person.invitationState === "pending") return invitationCopy.expires(date);
+  if (person.invitationState === "expired") return invitationCopy.expiredOn(date);
+  return null;
+}
+
 /**
- * People: Name (sticky), Email (click to copy), Organization (filter), Tags (filter; hidden when no row has
- * one): an invitation state with its date, or Removed with its date. Sort keys match PERSON_SORT_KEYS.
+ * People: Name (sticky), Email (click to copy), Organization (filter; opens its panel), Tags (filter; hidden
+ * when no row has one): an invitation state with its date, or Removed with its date, on one line; then the
+ * row's ⋯ menu. Rows don't open a panel. Sort keys match PERSON_SORT_KEYS.
  */
-export function personColumns(filters: { organization: HeaderFilter; tags: HeaderFilter }): TableColumn<PartnerPerson>[] {
+export function personColumns(
+  filters: { organization: HeaderFilter; tags: HeaderFilter },
+  options: {
+    now: string;
+    onOpenOrganization: (organizationId: string) => void;
+    renderActions: (person: PartnerPerson) => React.ReactNode;
+  },
+): TableColumn<PartnerPerson>[] {
+  const { now, onOpenOrganization, renderActions } = options;
   return [
-    { key: "name", header: copy.headerName, sortKey: "name", render: (person) => person.name },
-    { key: "email", header: copy.headerEmail, sortKey: "email", render: (person) => <CopyableEmail email={person.email} /> },
+    {
+      key: "name",
+      header: copy.headerName,
+      sortKey: "name",
+      width: "200px",
+      render: (person) => <TruncatedText tooltip>{person.name}</TruncatedText>,
+    },
+    {
+      key: "email",
+      header: copy.headerEmail,
+      sortKey: "email",
+      width: "260px",
+      render: (person) => <CopyableEmail email={person.email} />,
+    },
     {
       key: "organization",
       header: copy.headerOrganization,
       sortKey: "organization",
       filter: filters.organization,
-      render: (person) => person.organization.name,
+      width: "220px",
+      render: (person) => (
+        <OrganizationLink
+          type="button"
+          $variant="link"
+          aria-label={partnersCopy.person.openOrganization(person.organization.name)}
+          onClick={() => onOpenOrganization(person.organization.id)}
+        >
+          <TruncatedText tooltip>{person.organization.name}</TruncatedText>
+        </OrganizationLink>
+      ),
     },
     {
       key: "tags",
@@ -146,23 +211,16 @@ export function personColumns(filters: { organization: HeaderFilter; tags: Heade
       filter: filters.tags,
       isEmpty: (person) => !person.tag,
       render: (person) => {
-        if (person.tag === "removed") {
-          return (
-            <Stack>
-              <RemovedBadge />
-              {person.removedAt && <Muted>{formatDate(person.removedAt)}</Muted>}
-            </Stack>
-          );
-        }
-        const date = invitationDateText(person);
+        const date =
+          person.tag === "removed" ? person.removedAt && formatShortDateCell(person.removedAt, now) : invitationDateCell(person, now);
         return (
-          <Stack>
-            <InvitationBadge state={person.invitationState} />
-            {date && <Muted>{date}</Muted>}
-          </Stack>
+          <TagLine>
+            {person.tag === "removed" ? <RemovedBadge /> : <InvitationBadge state={person.invitationState} />}
+            {date && <Muted>· {date}</Muted>}
+          </TagLine>
         );
       },
     },
-    chevronColumn(),
+    { key: "actions", header: "", align: "right", width: "56px", render: renderActions },
   ];
 }

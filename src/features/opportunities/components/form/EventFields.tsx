@@ -1,20 +1,29 @@
 "use client";
 
+import { styled } from "next-yak";
+import { Checkbox } from "@/components/ui/Checkbox";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { Field } from "@/components/ui/Field";
 import { Input } from "@/components/ui/Input";
-import { Textarea } from "@/components/ui/Textarea";
-import { EVENT_FORMAT_LABEL } from "../../catalog";
+import { ACCESSIBILITY_FEATURES, EVENT_FORMAT_LABEL, LIMITS } from "../../catalog";
 import { copy } from "../../copy";
 import { ChoiceField, FieldRow } from "./FormParts";
-import { fieldId, type KindFieldsProps } from "./formValues";
+import { fieldId, listValue, toggleListValue, type KindFieldsProps } from "./formValues";
+import { onlineAreaFor, PlaceFields } from "./PlaceFields";
 
 const t = copy.form.event;
 
-/** Date and place. Location is hidden for online events; cost details only when paid (service.ts rules). */
-export function EventFields({ values, set, error }: KindFieldsProps) {
-  const showLocation = values.format !== "online";
+const Checks = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+`;
+
+/** Date, place, cost and accessibility. Cost details only when paid (service.ts rules). */
+export function EventFields(props: KindFieldsProps) {
+  const { values, set, error } = props;
   const paid = values.cost === "paid";
+  const features = listValue(values, "accessibility");
   return (
     <>
       <Field label={t.date} id={fieldId("date")} error={error("date")} required>
@@ -32,16 +41,15 @@ export function EventFields({ values, set, error }: KindFieldsProps) {
         label={t.format}
         name="format"
         value={values.format ?? ""}
-        onChange={(v) => set("format", v)}
+        onChange={(v) => {
+          set("format", v);
+          onlineAreaFor(v, values, set);
+        }}
         options={EVENT_FORMAT_LABEL}
         error={error("format")}
         required
       />
-      {showLocation && (
-        <Field label={t.location.label} hint={t.location.hint} id={fieldId("location")} error={error("location")} required>
-          {(p) => <Input {...p} name="location" value={values.location ?? ""} onChange={(e) => set("location", e.target.value)} />}
-        </Field>
-      )}
+      <PlaceFields {...props} />
       <ChoiceField
         label={t.cost}
         name="cost"
@@ -51,13 +59,34 @@ export function EventFields({ values, set, error }: KindFieldsProps) {
         error={error("cost")}
       />
       {paid && (
-        <Field label={t.costDetails.label} hint={t.costDetails.hint} id={fieldId("costDetails")} error={error("costDetails")} required>
+        <Field label={t.costDetails.label} id={fieldId("costDetails")} error={error("costDetails")} required>
           {(p) => <Input {...p} name="costDetails" value={values.costDetails ?? ""} onChange={(e) => set("costDetails", e.target.value)} />}
         </Field>
       )}
-      <Field label={t.accessibility.label} hint={t.accessibility.hint} id={fieldId("accessibility")} error={error("accessibility")}>
+      <Field label={t.accessibility.label} id={fieldId("accessibility")} error={error("accessibility")}>
         {(p) => (
-          <Textarea {...p} name="accessibility" rows={3} value={values.accessibility ?? ""} onChange={(e) => set("accessibility", e.target.value)} />
+          <Checks id={p.id} role="group" tabIndex={-1} aria-label={t.accessibility.label} aria-describedby={p["aria-describedby"]}>
+            {ACCESSIBILITY_FEATURES.map((f) => (
+              <Checkbox
+                key={f.id}
+                id={`${p.id}-${f.id}`}
+                label={f.label}
+                checked={features.includes(f.id)}
+                onCheckedChange={() => set("accessibility", toggleListValue(values, "accessibility", f.id))}
+              />
+            ))}
+          </Checks>
+        )}
+      </Field>
+      <Field label={t.accessibilityNote.label} id={fieldId("accessibilityNote")} error={error("accessibilityNote")}>
+        {(p) => (
+          <Input
+            {...p}
+            name="accessibilityNote"
+            maxLength={LIMITS.accessibilityNote}
+            value={values.accessibilityNote ?? ""}
+            onChange={(e) => set("accessibilityNote", e.target.value)}
+          />
         )}
       </Field>
     </>

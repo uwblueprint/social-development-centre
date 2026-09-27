@@ -18,9 +18,13 @@ export const copy = {
   table: {
     caption: "Opportunities",
     opportunity: "Opportunity",
+    type: "Type",
     organization: "Organization",
     date: "Date",
-    updated: "Updated",
+    /** NEW, NEEDS APPROVAL: header and cells ("Created today", "Edited 3d ago"). */
+    lastChange: "Last change",
+    created: (when: string) => `Created ${when}`,
+    edited: (when: string) => `Edited ${when}`,
   },
   empty: {
     published: { title: "Nothing published right now", body: "Publish an opportunity and it will show up here." },
@@ -62,6 +66,12 @@ export const copy = {
     saveChanges: "Save changes",
     saveDraft: "Save as draft",
     cancel: "Cancel",
+    /** Three steps on one page (decision 17). NEW, NEEDS APPROVAL: step names and Back/Next. */
+    steps: { type: "Type", details: "Details", review: "Review" },
+    stepsLabel: "Steps",
+    stepDone: "done",
+    next: "Next",
+    previous: "Back",
     /** The first field. Editable on new listings and drafts; plain text once published or closed. */
     kind: { label: "Type" },
     /**
@@ -75,7 +85,7 @@ export const copy = {
       job: "A paid position.",
       other: "Anything else, like a survey or a program.",
     },
-    /** Placeholder for pickers with nothing chosen yet (organization, employment type). */
+    /** Placeholder for pickers with nothing chosen yet (organization, employment type, area). */
     choose: "Choose one",
     sections: {
       basics: "Basics",
@@ -85,10 +95,23 @@ export const copy = {
       job: "Job details",
       other: "Details",
     },
-    organization: { label: "Organization", hint: "Post as SDC, or on behalf of a partner." },
-    title: { label: "Title", hint: "Say what it is in a few words. This is the email headline." },
+    /** Events only, the first field after Type (decision 18). NEW, NEEDS APPROVAL: label, hint and button. */
+    eventbrite: {
+      label: "Eventbrite link (optional)",
+      hint: "We copy the title, description, date, time and place from it. You can change them after.",
+      fill: "Fill in details",
+    },
+    /** Hints only where they prevent a mistake (decision 22). */
+    organization: { label: "Organization" },
+    title: { label: "Title" },
     summary: { label: "Short description", hint: "One or two sentences for the email. Full details stay on your page." },
-    topics: { label: "Topics", hint: "Choose up to 3. We send it to people who care about these." },
+    topics: {
+      label: "Topics",
+      /** NEW, NEEDS APPROVAL. Beside the label. */
+      count: (n: number, max: number) => `${n} of ${max} selected`,
+      /** Owner's words (27 Sep): the disabled reason on unselected topics at the cap. */
+      capReason: "You can choose up to 3 topics. Unselect one to choose another.",
+    },
     link: {
       label: "Link",
       hint: {
@@ -99,49 +122,71 @@ export const copy = {
         other: "Where people take part.",
       },
     },
+    /** Structured place for matching (decision 19). NEW, NEEDS APPROVAL. */
+    area: { label: "Area" },
+    address: { label: "Address or venue" },
     event: {
       date: "Date",
       startTime: "Start time",
       endTime: "End time",
       format: "How people attend",
-      location: { label: "Location", hint: "Address or venue name." },
       cost: "Cost",
       free: "Free",
       paid: "Paid",
-      costDetails: { label: "Cost details", hint: "For example, “$10, pay what you can”." },
-      accessibility: { label: "Accessibility", hint: "Step-free access, ASL, childcare, quiet space. Leave blank if you're not sure." },
+      costDetails: { label: "Cost details" },
+      /** NEW, NEEDS APPROVAL: checkbox group and note labels. */
+      accessibility: { label: "Accessibility" },
+      accessibilityNote: { label: "Accessibility note" },
     },
     petition: {
-      target: { label: "Addressed to", hint: "Who you're asking, for example “Region of Waterloo Council”." },
-      deadline: { label: "Deadline", hint: "Optional. It closes after this day." },
-      signatureGoal: { label: "Signature goal", hint: "Optional." },
+      target: { label: "Addressed to" },
+      deadline: { label: "Deadline", hint: "It closes after this day." },
+      signatureGoal: { label: "Signature goal" },
     },
     volunteer: {
-      commitment: "Commitment",
       format: "Where volunteers work",
-      location: { label: "Location", hint: "Address or neighbourhood." },
-      startDate: { label: "Start date", hint: "Optional." },
-      timeCommitment: { label: "Time commitment", hint: "For example, “2 hours a week”." },
-      skills: { label: "Skills or experience", hint: "Optional. Leave blank if anyone can help." },
-      minimumAge: { label: "Minimum age", hint: "Optional." },
-      applyBy: { label: "Apply by", hint: "Optional. It closes after this day." },
+      startDate: { label: "Start date" },
+      /** NEW, NEEDS APPROVAL: now a choice, not free text. */
+      timeCommitment: { label: "Time commitment" },
+      skills: { label: "Skills" },
+      minimumAge: { label: "Minimum age" },
+      applyBy: { label: "Apply by", hint: "It closes after this day." },
     },
     job: {
       employmentType: "Employment type",
       workplace: "Workplace",
-      location: { label: "Location", hint: "City or address." },
-      pay: { label: "Pay", hint: "For example, “$22–25 an hour”. Including pay gets more applicants." },
-      applyBy: { label: "Apply by", hint: "Optional. It closes after this day." },
-      qualifications: { label: "Qualifications", hint: "Optional. Must-haves only." },
+      pay: { label: "Pay" },
+      applyBy: { label: "Apply by", hint: "It closes after this day." },
+      qualifications: { label: "Qualifications" },
     },
     other: {
       callToAction: { label: "Call to action", hint: "The button people see, for example “Take the survey”." },
-      deadline: { label: "Deadline", hint: "Optional. It closes after this day." },
-      details: { label: "Details", hint: "Optional. Add up to 5, like “Time needed: 5 minutes”." },
+      deadline: { label: "Deadline", hint: "It closes after this day." },
+      details: { label: "Details" },
       detailLabel: "Label",
       detailValue: "Value",
       addDetail: "Add detail",
       removeDetail: (n: number) => `Remove detail ${n}`,
+    },
+    /** Step 3: the email preview (decision 17). NEW, NEEDS APPROVAL. */
+    review: {
+      intro: "This is how the listing looks in members' emails.",
+      previewLabel: "Email preview",
+      postedBy: (org: string) => `From ${org}`,
+      noTitle: "No title yet",
+      noSummary: "No description yet",
+      noTopics: "No topics yet",
+      editType: "Edit type and link",
+      editDetails: "Edit details",
+      link: "Link",
+      /** The email's button when a type has no call to action of its own. */
+      cta: {
+        event: "Register",
+        petition: "Sign the petition",
+        volunteer: "Sign up to volunteer",
+        job: "Apply",
+        other: "Learn more",
+      },
     },
   },
   /** Admin Organization filter label for a removed partner. It names the organization, not a listing status. */

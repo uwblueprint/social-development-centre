@@ -1,6 +1,7 @@
 "use server";
 
 import type { ActionState } from "@/lib/forms";
+import { prefillFromEventbrite as prefill } from "@/features/opportunities/eventbrite";
 import * as service from "@/features/opportunities/service";
 import type { Actor, SaveResult } from "@/features/opportunities/types";
 import { getCurrentPartner } from "../../_data/session";
@@ -27,4 +28,9 @@ export async function duplicateOpportunity(id: string) {
 }
 export async function deleteOpportunity(id: string) {
   return service.deleteOpportunity(await actor(), id);
+}
+/** SPIKE: dev mock of the Eventbrite prefill (docs/backend/opportunities.md#eventbrite-prefill). */
+export async function prefillFromEventbrite(url: string) {
+  await actor();
+  return prefill(url);
 }

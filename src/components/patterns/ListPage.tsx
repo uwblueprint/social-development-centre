@@ -48,16 +48,21 @@ export const ListPage = styled.div`
   }
 `;
 
+const HeaderContainer = styled.div`
+  container-type: inline-size;
+  min-width: 0;
+`;
+
 const Header = styled.header`
   display: flex;
   align-items: center;
-  justify-content: space-between;
   flex-wrap: wrap;
   gap: var(--space-2) var(--space-4);
   min-height: 36px;
 `;
 
 const Title = styled.h1`
+  flex: 1 1 auto;
   margin: 0;
   min-width: 0;
   font-size: var(--text-lg);
@@ -71,6 +76,17 @@ const Title = styled.h1`
   }
 `;
 
+/* A fixed, comfortable width just left of the actions. Narrow: its own full-width row under the title. */
+const HeaderSearch = styled.div`
+  flex: 0 0 var(--search-width);
+  min-width: 0;
+
+  @container (max-width: 640px) {
+    order: 1;
+    flex-basis: 100%;
+  }
+`;
+
 const Actions = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -79,15 +95,32 @@ const Actions = styled.div`
 `;
 
 /**
- * One compact row: the page's h1 on the left, its actions (buttons with icons) on the right. No description.
+ * One compact row: the page's h1 on the left, then the page's search (`search`, a `SearchField`) and
+ * its actions (buttons with icons) on the right. No description. Search filters the whole page across
+ * tabs, so it lives here, not in the tab toolbar. Below 640px the search wraps to its own full-width
+ * row under the title. `results` drives the polite "{n} results" announcement once a search settles.
  * The h1 takes focus (tabIndex -1) when the person arrives from the mobile navigation drawer.
  */
-export function ListPageHeader({ title, actions }: { title: React.ReactNode; actions?: React.ReactNode }) {
+export function ListPageHeader({
+  title,
+  search,
+  actions,
+  results,
+}: {
+  title: React.ReactNode;
+  search?: React.ReactNode;
+  actions?: React.ReactNode;
+  results?: { query: string; count: number; pending: boolean };
+}) {
   return (
-    <Header>
-      <Title tabIndex={-1}>{title}</Title>
-      {actions && <Actions>{actions}</Actions>}
-    </Header>
+    <HeaderContainer>
+      <Header>
+        <Title tabIndex={-1}>{title}</Title>
+        {search && <HeaderSearch>{search}</HeaderSearch>}
+        {actions && <Actions>{actions}</Actions>}
+      </Header>
+      {results && <SearchAnnouncer {...results} />}
+    </HeaderContainer>
   );
 }
 
@@ -126,68 +159,27 @@ function SearchAnnouncer({ query, count, pending }: { query: string; count: numb
 }
 
 const ToolbarContainer = styled.div`
-  container-type: inline-size;
   min-width: 0;
-`;
-
-/*
- * The tab list sits flush with the bottom edge, so its own 1px line and the toolbar's line coincide
- * and read as one line running under the search field too.
- */
-const ToolbarRow = styled.div`
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--space-2) var(--space-4);
-  box-shadow: inset 0 -1px 0 var(--color-border);
-
-  /* Narrow (360px phones, or a crowded tab list): search wraps to its own full-width row under the
-     tabs, keeping visual order = focus order. The tab list's own line then ends the tab row. */
-  @container (max-width: 560px) {
-    flex-direction: column;
-    align-items: stretch;
-    box-shadow: none;
-  }
-`;
-
-const ToolbarTabs = styled.div`
-  flex: 0 1 auto;
-  min-width: 0;
-`;
-
-const ToolbarSearch = styled.div`
-  flex: 0 1 280px;
-  min-width: 200px;
-  margin-bottom: var(--space-2);
-
-  @container (max-width: 560px) {
-    flex-basis: auto;
-    min-width: 0;
-    margin: var(--space-2) 0 0;
-  }
 `;
 
 /**
- * Tabs on the left, search on the right, in one row (search wraps under the tabs when narrow).
- * Render it inside `<Tabs>` and pass the `TabsList` as `tabs` and a `SearchField` as `search`.
+ * The page's tabs (views of the list), full width. Render it inside `<Tabs>` and pass the `TabsList`
+ * as `tabs`. Search lives in `ListPageHeader`'s `search` slot: it filters the whole page across tabs.
  * `results` drives a polite screen-reader announcement ("{n} results" / "No results") once a search
- * settles: pass the server's current `q`, the number of rows it matched in this view, and the search's `pending`.
+ * settles; pass it here or on `ListPageHeader`, not both.
  */
 export function ListPageToolbar({
   tabs,
-  search,
   results,
 }: {
   tabs: React.ReactNode;
+  /** @deprecated Ignored. Pass the `SearchField` to `ListPageHeader`'s `search` instead. */
   search?: React.ReactNode;
   results?: { query: string; count: number; pending: boolean };
 }) {
   return (
     <ToolbarContainer>
-      <ToolbarRow>
-        <ToolbarTabs>{tabs}</ToolbarTabs>
-        {search && <ToolbarSearch>{search}</ToolbarSearch>}
-      </ToolbarRow>
+      {tabs}
       {results && <SearchAnnouncer {...results} />}
     </ToolbarContainer>
   );

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { css, styled } from "next-yak";
-import { ErrorIcon } from "./Field";
+import { characterCountText, ErrorIcon, useFieldCounter } from "./Field";
 
 const Wrapper = styled.span`
   position: relative;
@@ -169,6 +169,9 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(fun
     lastRemaining.current = remaining;
   }, [remaining]);
 
+  // Inside a Field, the counter sits on the Field's hint line; standalone, it renders under the box.
+  const hostedCounter = useFieldCounter(remaining === null ? null : { remaining, warning });
+
   const invalid = isInvalid(ariaInvalid);
   const describedByIds = [describedBy, hasLimit ? counterId : null].filter(Boolean).join(" ");
 
@@ -194,10 +197,10 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(fun
           <ErrorIcon />
         </IconSlot>
       )}
-      {hasLimit && (
+      {hasLimit && !hostedCounter && (
         <CounterRow>
           <Counter id={counterId} $warning={warning}>
-            {remaining} {remaining === 1 ? "character" : "characters"} left
+            {characterCountText(remaining ?? 0)}
           </Counter>
         </CounterRow>
       )}

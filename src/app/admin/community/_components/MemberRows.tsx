@@ -2,6 +2,7 @@
 
 import { styled } from "next-yak";
 import { Badge } from "@/components/ui/Badge";
+import { TruncatedText } from "@/components/ui/TruncatedText";
 import type { TableColumn, TableColumnFilter } from "@/components/ui/Table";
 import { formatDateTime, formatRelative } from "@/lib/date";
 import type { Member, MemberStatus } from "../_data/types";
@@ -20,21 +21,15 @@ const VisuallyHidden = styled.span`
   white-space: nowrap;
 `;
 
+/* Block-level, so the truncating text inside has the cell's width to clip to. */
 const Dimmable = styled.span<{ $muted?: boolean }>`
-  white-space: nowrap;
+  display: block;
+  min-width: 0;
   color: ${({ $muted }) => ($muted ? "var(--color-text-muted)" : "inherit")};
 `;
 
 const Muted = styled.span`
   color: var(--color-text-muted);
-`;
-
-const Subject = styled.span`
-  display: block;
-  max-width: 220px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 `;
 
 const Nowrap = styled.time`
@@ -63,6 +58,9 @@ export function StatusBadge({ status }: { status: MemberStatus }) {
  * Community table columns: Name (sticky), Email (sticky; click to copy), Status (one badge, with the
  * Status filter in its header), Clicks (primary-action clicks), Last email, Sent (relative time, full
  * date on hover) and a trailing ⋯ menu. Unsubscribed people's name and email are dimmed.
+ * Every column has a fixed width, so a long name, email or subject ends in an ellipsis instead of
+ * widening the table: Name and Last email show the full text in a tooltip when cut off; Email truncates
+ * in the middle (the domain stays) and still copies the whole address.
  * `now` is the server's render time, so relative dates match on server and client.
  */
 export function memberColumns(now: string, statusFilter: TableColumnFilter): TableColumn<Member>[] {
@@ -71,15 +69,21 @@ export function memberColumns(now: string, statusFilter: TableColumnFilter): Tab
       key: "name",
       header: copy.table.headerName,
       sortKey: "name",
-      render: (member) => <Dimmable $muted={!member.subscribed}>{member.name ?? copy.table.noName}</Dimmable>,
+      width: "200px",
+      render: (member) => (
+        <Dimmable $muted={!member.subscribed}>
+          <TruncatedText tooltip>{member.name ?? copy.table.noName}</TruncatedText>
+        </Dimmable>
+      ),
     },
     {
       key: "email",
       header: copy.table.headerEmail,
       sortKey: "email",
+      width: "240px",
       render: (member) => (
         <Dimmable $muted={!member.subscribed}>
-          <CopyEmail email={member.email} />
+          <CopyEmail email={member.email} truncate />
         </Dimmable>
       ),
     },
@@ -87,6 +91,7 @@ export function memberColumns(now: string, statusFilter: TableColumnFilter): Tab
       key: "status",
       header: copy.table.headerStatus,
       filter: statusFilter,
+      width: "208px",
       render: (member) => <StatusBadge status={member.status} />,
     },
     {
@@ -95,15 +100,17 @@ export function memberColumns(now: string, statusFilter: TableColumnFilter): Tab
       sortKey: "clicks",
       defaultSortDirection: "desc",
       align: "right",
+      width: "96px",
       render: (member) => <Clicks>{member.ctaClicks}</Clicks>,
     },
     {
       key: "lastEmail",
       header: copy.table.headerLastEmail,
+      width: "240px",
       isEmpty: (member) => !member.lastEmail,
       render: (member) =>
         member.lastEmail ? (
-          <Subject title={member.lastEmail.subject}>{member.lastEmail.subject}</Subject>
+          <TruncatedText tooltip>{member.lastEmail.subject}</TruncatedText>
         ) : (
           <Muted>{copy.table.noLastEmail}</Muted>
         ),
@@ -113,6 +120,7 @@ export function memberColumns(now: string, statusFilter: TableColumnFilter): Tab
       header: copy.table.headerSent,
       sortKey: "sent",
       defaultSortDirection: "desc",
+      width: "112px",
       isEmpty: (member) => !member.lastEmail,
       render: (member) =>
         member.lastEmail ? (
@@ -127,6 +135,7 @@ export function memberColumns(now: string, statusFilter: TableColumnFilter): Tab
       key: "actions",
       header: <VisuallyHidden>{copy.table.headerActions}</VisuallyHidden>,
       align: "right",
+      width: "56px",
       render: (member) => <MemberRowActions member={member} />,
     },
   ];

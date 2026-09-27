@@ -28,17 +28,19 @@ import { Tag, TagList } from "@/components/ui/Tag";
 import { useToast } from "@/components/ui/Toast";
 import type { ActionState } from "@/lib/forms";
 import {
-  COMMITMENT_LABEL,
+  ACCESSIBILITY_LABEL,
   EMPLOYMENT_TYPE_LABEL,
   EVENT_FORMAT_LABEL,
   KIND_LABEL,
   KIND_NOUN,
+  SKILL_LABEL,
+  TIME_COMMITMENT_LABEL,
   TOPIC_LABEL,
   VOLUNTEER_FORMAT_LABEL,
   WORKPLACE_LABEL,
 } from "../catalog";
 import { copy } from "../copy";
-import { formatDate, formatTime } from "../format";
+import { formatDate, formatTime, formatWhere } from "../format";
 import type { Opportunity, OpportunityActions } from "../types";
 import { KindIcon } from "./KindIcon";
 import { closedReasonLabel, formatUpdated, statusLabel } from "./opportunityColumns";
@@ -139,10 +141,11 @@ function kindDetails(o: Opportunity): Detail[] {
         { label: f.event.startTime, value: d.startTime && formatTime(d.startTime) },
         { label: f.event.endTime, value: d.endTime && formatTime(d.endTime) },
         { label: f.event.format, value: d.format && EVENT_FORMAT_LABEL[d.format] },
-        { label: f.event.location.label, value: d.location },
+        { label: f.area.label, value: formatWhere(o) },
         { label: f.event.cost, value: d.cost && (d.cost === "paid" ? f.event.paid : f.event.free) },
         { label: f.event.costDetails.label, value: d.cost === "paid" ? d.costDetails : undefined },
-        { label: f.event.accessibility.label, value: d.accessibility },
+        { label: f.event.accessibility.label, value: d.accessibility?.map((a) => ACCESSIBILITY_LABEL[a]).join(", ") },
+        { label: f.event.accessibilityNote.label, value: d.accessibilityNote },
       ];
     }
     case "petition": {
@@ -156,12 +159,11 @@ function kindDetails(o: Opportunity): Detail[] {
     case "volunteer": {
       const d = o.details;
       return [
-        { label: f.volunteer.commitment, value: d.commitment && COMMITMENT_LABEL[d.commitment] },
+        { label: f.volunteer.timeCommitment.label, value: d.timeCommitment && TIME_COMMITMENT_LABEL[d.timeCommitment] },
         { label: f.volunteer.format, value: d.format && VOLUNTEER_FORMAT_LABEL[d.format] },
-        { label: f.volunteer.location.label, value: d.location },
+        { label: f.area.label, value: formatWhere(o) },
         { label: f.volunteer.startDate.label, value: date(d.startDate) },
-        { label: f.volunteer.timeCommitment.label, value: d.timeCommitment },
-        { label: f.volunteer.skills.label, value: d.skills },
+        { label: f.volunteer.skills.label, value: d.skills?.map((x) => SKILL_LABEL[x]).join(", ") },
         { label: f.volunteer.minimumAge.label, value: d.minimumAge },
         { label: f.volunteer.applyBy.label, value: date(d.applyBy) },
       ];
@@ -171,7 +173,7 @@ function kindDetails(o: Opportunity): Detail[] {
       return [
         { label: f.job.employmentType, value: d.employmentType && EMPLOYMENT_TYPE_LABEL[d.employmentType] },
         { label: f.job.workplace, value: d.workplace && WORKPLACE_LABEL[d.workplace] },
-        { label: f.job.location.label, value: d.location },
+        { label: f.area.label, value: formatWhere(o) },
         { label: f.job.pay.label, value: d.pay },
         { label: f.job.applyBy.label, value: date(d.applyBy) },
         { label: f.job.qualifications.label, value: d.qualifications },

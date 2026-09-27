@@ -9,12 +9,14 @@ import { EMPLOYMENT_TYPE_LABEL, WORKPLACE_LABEL } from "../../catalog";
 import { copy } from "../../copy";
 import { ChoiceField } from "./FormParts";
 import { fieldId, type KindFieldsProps } from "./formValues";
+import { onlineAreaFor, PlaceFields } from "./PlaceFields";
 
 const t = copy.form.job;
 const EMPLOYMENT_OPTIONS = Object.entries(EMPLOYMENT_TYPE_LABEL).map(([value, label]) => ({ value, label }));
 
-/** Job details. Location is hidden for remote jobs (service.ts rules). */
-export function JobFields({ values, set, error }: KindFieldsProps) {
+/** Job details. Area comes from a fixed list (decision 19). */
+export function JobFields(props: KindFieldsProps) {
+  const { values, set, error } = props;
   return (
     <>
       <Field label={t.employmentType} id={fieldId("employmentType")} error={error("employmentType")} required>
@@ -33,23 +35,22 @@ export function JobFields({ values, set, error }: KindFieldsProps) {
         label={t.workplace}
         name="workplace"
         value={values.workplace ?? ""}
-        onChange={(v) => set("workplace", v)}
+        onChange={(v) => {
+          set("workplace", v);
+          onlineAreaFor(v, values, set);
+        }}
         options={WORKPLACE_LABEL}
         error={error("workplace")}
         required
       />
-      {values.workplace !== "remote" && (
-        <Field label={t.location.label} hint={t.location.hint} id={fieldId("location")} error={error("location")} required>
-          {(p) => <Input {...p} name="location" value={values.location ?? ""} onChange={(e) => set("location", e.target.value)} />}
-        </Field>
-      )}
-      <Field label={t.pay.label} hint={t.pay.hint} id={fieldId("pay")} error={error("pay")}>
+      <PlaceFields {...props} />
+      <Field label={t.pay.label} id={fieldId("pay")} error={error("pay")}>
         {(p) => <Input {...p} name="pay" value={values.pay ?? ""} onChange={(e) => set("pay", e.target.value)} />}
       </Field>
       <Field label={t.applyBy.label} hint={t.applyBy.hint} id={fieldId("applyBy")} error={error("applyBy")}>
         {(p) => <DatePicker {...p} name="applyBy" value={values.applyBy ?? ""} onValueChange={(v) => set("applyBy", v)} />}
       </Field>
-      <Field label={t.qualifications.label} hint={t.qualifications.hint} id={fieldId("qualifications")} error={error("qualifications")}>
+      <Field label={t.qualifications.label} id={fieldId("qualifications")} error={error("qualifications")}>
         {(p) => (
           <Textarea {...p} name="qualifications" rows={3} value={values.qualifications ?? ""} onChange={(e) => set("qualifications", e.target.value)} />
         )}

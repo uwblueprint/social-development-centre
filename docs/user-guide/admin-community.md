@@ -15,7 +15,9 @@ Opening an email doesn't count, and neither does sharing an opportunity with a f
 
 ## Find someone
 1. Go to **Community** and choose **General members** or **Paying members**.
-2. Type a name or email in **Search by name or email**. Results update as you type. Click the **×** to clear it.
+2. Type a name or email in **Search by name or email**, next to the page title. Results update as you type. Click the **×** to clear it.
+
+Long names, emails and subjects end in "…". Point at a name or a **Last email** subject to see all of it; click an email to copy the whole address.
 
 If nobody matches but someone with a hidden status does (for example, they unsubscribed), the page says so. Click **Show all statuses** to see them.
 
@@ -66,15 +68,17 @@ Below the groups you'll see how many emails will be sent. The main button says w
 
 ## Sign people up at a booth
 1. Click **Open sign-up kiosk**.
-2. Under **Where are you?**, type the place, for example Kitchener Market.
-3. Click **Open kiosk**. The sign-up page opens in a new tab; hand the tablet to visitors.
+2. Optionally, under **Location**, type where the booth is. It's saved with each sign-up and shows in the Members export; visitors don't see it.
+3. Click **Open kiosk**. The sign-up page opens in a new tab; hand the tablet to visitors. To close without opening it, click **Cancel**.
 
-People who sign up become general members and show as **Invited**. Someone already in Community sees the same thanks and nothing changes for them.
+People who sign up become general members and show as **Invited**. After each sign-up the screen turns green with "You're in, {first name}!" and starts over after 20 seconds, or when they tap **Next person**. Someone already in Community sees the same thanks and nothing changes for them.
 
 ## See someone's details and emails
 1. Click the person's row. Their panel shows their name, email and a line such as "Active · General member · Added Apr 11, 2026".
 2. Scroll to **Emails**. It lists every email they were sent, newest first. Under each opportunities email you'll see what they did, such as "Signed up: Film night · Shared: Tenant workshop", or "No clicks". An email that couldn't be delivered shows **Not delivered**; use **Edit details** to correct their address.
 3. Keep scrolling to read each message. Each one loads as you reach it.
+
+To share someone's panel with another admin, copy the page address while it's open; the link opens Community with their panel showing.
 
 ## Edit someone's name or email
 1. Click the person's row, then click **Edit details**.

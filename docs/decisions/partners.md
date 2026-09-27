@@ -15,7 +15,7 @@ Each entry: the decision, which page it's on, what it affects, and when someone 
 - **When encountered:** A partner contact changes jobs within the organization, or their organization changes email domains.
 
 ## 3. Details open in a side panel
-- **Decision:** Clicking an organization or person row opens a right-hand panel over the list (drawer on mobile) instead of a separate page. Rows show a chevron. A person's panel is headed with their name and shows their organization as related information (select it to open the organization's panel).
+- **Decision:** Clicking an organization row opens a right-hand panel over the list (drawer on mobile) instead of a separate page. Rows show a chevron. *(Superseded for People by decision 20: people have no panel.)*
 - **Page:** Admin → Partners (both views, both statuses).
 - **Affects:** Where admins edit details, manage contacts and invitations, remove or reinvite a partner.
 - **When encountered:** Any time an admin opens a partner.
@@ -162,7 +162,7 @@ Each entry: the decision, which page it's on, what it affects, and when someone 
 - **Decision:** An organization is only ever created by inviting its first person (**Invite partner**), and it never ends up with nobody:
   - The last person with access can't be removed (decision 9); the disabled option points to **Remove access** for the organization.
   - Cancelling the only invitation at an organization that was never active deletes the organization too (decision 1). At an organization that was active before (a reinvited one), it goes back to Removed.
-- **Page:** Admin → Partners (Invite partner, organization panel, person panel).
+- **Page:** Admin → Partners (Invite partner, organization panel, People row menu).
 - **Affects:** Organization lifecycle, `cancelInvitation`.
 - **When encountered:** When removing people or cancelling invitations.
 
@@ -172,3 +172,16 @@ Each entry: the decision, which page it's on, what it affects, and when someone 
 - **Page:** Admin → Partners → organization panel; Admin → Opportunities → New.
 - **Affects:** Panel layout; the new-opportunity form's initial organization.
 - **When encountered:** Whenever an admin opens an organization.
+
+## 20. People rows have a menu, not a panel; panels are shareable
+- **Status:** Decided by owner, 27 Sep 2026. New copy (**Edit details** in the row menu and dialog title, "Open {organization}" as the Organization cell's accessible name) is new, needs approval.
+- **Decision:**
+  - **People has no side panel** and its rows aren't clickable. Each row ends in a ⋯ menu (**Actions for {name}**) with icons: **Edit details** (a small dialog with **Name** and **Email**, saved the same way as before), **Resend invitation** / **Retry** / **Send new invitation** (by invitation state), **Cancel invitation**, and **Remove from organization** (danger; disabled with the reason for the last person with access). Removed people's menu has **Invite again**.
+  - **The Organization cell is a link-styled button**: it switches to **Organizations** with that organization's panel open.
+  - **The open organization panel is in the URL** (`?view=organizations&org=<id>`): opening it sets the param with `router.replace` (no new history entry), closing clears it, and loading a link with it opens the panel. An unknown id opens nothing.
+  - **One line per row everywhere.** No cell wraps: Name, Email and Organization have fixed widths and truncate (full text on hover). Tags read "Invitation pending · Expires Oct 2" on one line: the badge, then the date in muted text, with no year when it's the current year ("Removed · Sep 12" for removed people).
+  - **Search sits in the page header** beside the title and actions, not in the tab row.
+  - **"Show them"** in the support callout uses the outline button so it stands out on the info background.
+- **Page:** Admin → Partners (both views).
+- **Affects:** URL param `org`; the person panel is gone (its actions moved to the row menu); decision 3.
+- **When encountered:** Managing people, and sharing a link to an organization.

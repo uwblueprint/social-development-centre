@@ -6,7 +6,7 @@ import { copy } from "@/features/opportunities/copy";
 import { getOpportunity } from "@/features/opportunities/queries";
 import type { Actor } from "@/features/opportunities/types";
 import { getCurrentPartner } from "../../../_data/session";
-import { saveOpportunity } from "../../_data/actions";
+import { prefillFromEventbrite, saveOpportunity } from "../../_data/actions";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -29,6 +29,7 @@ export default async function EditOpportunityPage({ params }: Props) {
   const opportunity = await load((await params).id);
   if (!opportunity) notFound(); // renders ../not-found.tsx with a 404 status
   return (
-    <OpportunityForm key={opportunity.id} scope="partner" basePath={BASE} kind={opportunity.kind} opportunity={opportunity} save={saveOpportunity} />
+    <OpportunityForm key={opportunity.id} scope="partner" basePath={BASE} kind={opportunity.kind} opportunity={opportunity} save={saveOpportunity}
+      prefill={prefillFromEventbrite} />
   );
 }

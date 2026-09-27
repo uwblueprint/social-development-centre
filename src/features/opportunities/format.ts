@@ -1,3 +1,4 @@
+import { AREA_LABEL } from "./catalog";
 import type { Opportunity, OpportunityStatus, ClosedReason } from "./types";
 
 /*
@@ -96,10 +97,18 @@ export function formatWhen(o: Opportunity): string {
     case "petition":
       return o.details.deadline ? `Closes ${formatDate(o.details.deadline)}` : "No deadline";
     case "volunteer":
-      return o.details.applyBy ? `Apply by ${formatDate(o.details.applyBy)}` : o.details.commitment === "one_time" ? "One-time" : "Ongoing";
+      return o.details.applyBy ? `Apply by ${formatDate(o.details.applyBy)}` : o.details.timeCommitment === "one_time" ? "One-time" : "Ongoing";
     case "job":
       return o.details.applyBy ? `Apply by ${formatDate(o.details.applyBy)}` : "Open until filled";
     case "other":
       return o.details.deadline ? `Closes ${formatDate(o.details.deadline)}` : "No deadline";
   }
+}
+
+/** Where it happens, for the panel and the email preview: "Kitchener · Civic Hub, 97 Victoria St N", or undefined. */
+export function formatWhere(o: Opportunity): string | undefined {
+  if (o.kind !== "event" && o.kind !== "volunteer" && o.kind !== "job") return undefined;
+  const { area, address } = o.details;
+  if (!area) return address || undefined;
+  return address && area !== "online" ? `${AREA_LABEL[area]} · ${address}` : AREA_LABEL[area];
 }

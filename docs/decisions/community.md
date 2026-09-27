@@ -158,10 +158,26 @@ Assumptions made while building the UI from the Community PRD. Each can be revis
 - **Decision (owner, 27 Sep):** how someone joined (legacy import, booth, website, partner event, referral, added by an admin, file import, plus a detail such as the booth location) is recorded when they're added and appears only in the Members export. It's for analysis, not for day-to-day decisions about a person, so the list and panel stay calm.
 
 ## 25. Header: Export primary; Add members and the kiosk secondary
-- **Decision (owner, 27 Sep):** **Export members** (Download icon) is the primary button. **Add members** and **Open sign-up kiosk** are secondary. The kiosk button opens a small popover asking "Where are you?" (required; e.g. Kitchener Market), then opens `/kiosk?location=…` in a new tab. The location is saved with each booth sign-up as its source detail.
+- **Decision (owner, 27 Sep):** **Export members** (Download icon) is the primary button. **Add members** and **Open sign-up kiosk** are secondary. The kiosk button opens a small popover asking "Where are you?" (required; e.g. Kitchener Market), then opens `/kiosk?location=…` in a new tab. The location is saved with each booth sign-up as its source detail. **Superseded in part (27 Sep):** the popover is now a dialog with an optional **Location**; see 31.
 
 ## 26. Add members: one person first, a file second
 - **Decision (owner, 27 Sep):** the dialog opens on a single-person form: **Name**, **Email** and **Make them a paying member** (unchecked). Footer: **Import from a file** on the left; **Cancel** and **Add member** on the right. A clear new person is added straight away; anything that needs a look (already a member, unsubscribed, deleted, invalid) shows the preview. **Import from a file** takes a CSV with name and email columns (with **Download template**), the same checkbox (**Make them paying members**) and the same preview. The tag input is gone from this dialog (it stays in the kit).
 
 ## 27. No bulk actions for now
 - **Decision (owner, 27 Sep):** no row selection or bulk convert, unsubscribe or delete. Each of those changes consent, access or data one person at a time, and a mistake across many people is hard to undo (a bulk delete can't be). Bulk adding is covered by **Import from a file** with its preview; bulk analysis by the export. Revisit if admins repeatedly do the same action to a filtered group.
+
+## 28. Fixed column widths; long text truncates
+- **Decision (27 Sep):** every Community column has a fixed width (Name 200px, Email 240px, Status 208px, Clicks 96px, Last email 240px, Sent 112px, actions 56px; extra room is shared out on wide screens), so a long value never widens the table. **Name** and **Last email** end in an ellipsis and show the full text in a tooltip, only when cut off. **Email** truncates in the middle and keeps the domain ("ada.lov…@northside.org"), with no tooltip; clicking it still copies the whole address (19). Screen readers always get the full text.
+- **Page:** Admin → Community table (kit: `TableColumn.width`, `TruncatedText`, `TruncatedEmail`).
+
+## 29. Search sits in the page header; only sorting spins the sort arrow
+- **Decision (27 Sep):** **Search by name or email** moves from the tab row to the header row, next to the title, because it searches across both tabs. While the next rows load after a tab, search, filter, page or sort change, the rows dim (see 18); the active sort arrow becomes a spinner **only** for a sort change, so switching tabs while sorted by Email doesn't spin the Email arrow.
+- **Page:** Admin → Community header and table.
+
+## 30. The open person panel is in the URL
+- **Decision (27 Sep):** opening a person's panel adds `?member=<id>` to the address (replacing the entry, so Back doesn't step through every panel); closing it removes the param; loading an address with it opens that panel, even when the person isn't on the current tab, page or filter. Admins can share the link. An unknown or deleted id opens nothing. Opening and closing never dim the table.
+- **Page:** Admin → Community → person panel.
+
+## 31. Open sign-up kiosk is a dialog with an optional Location
+- **Decision (owner, 27 Sep, replaces the popover in 25):** **Open sign-up kiosk** opens a dialog titled "Open sign-up kiosk" with one optional field, **Location** (no example, no question), and **Cancel** and **Open kiosk**. **Open kiosk** opens `/kiosk?location=…` (or `/kiosk` when blank) in a new tab and closes the dialog. The location stays export only (24) and is no longer shown on the kiosk.
+- **Page:** Admin → Community header.

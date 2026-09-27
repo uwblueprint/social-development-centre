@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { css, styled } from "next-yak";
-import { Field } from "@/components/ui/Field";
+import { styled } from "next-yak";
+import { Field, useFieldCounter } from "@/components/ui/Field";
 import { Input, type InputProps } from "@/components/ui/Input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/ToggleGroup";
 import { fieldId } from "./formValues";
@@ -25,11 +25,15 @@ const SectionTitle = styled.h2`
   line-height: var(--leading-heading);
 `;
 
-export function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  const id = React.useId();
+/** `headingId` makes the heading a focus target (tabIndex -1), e.g. when a form step opens. */
+export function Section({ title, headingId, children }: { title: string; headingId?: string; children: React.ReactNode }) {
+  const generatedId = React.useId();
+  const id = headingId ?? generatedId;
   return (
     <SectionRoot aria-labelledby={id}>
-      <SectionTitle id={id}>{title}</SectionTitle>
+      <SectionTitle id={id} tabIndex={headingId ? -1 : undefined}>
+        {title}
+      </SectionTitle>
       {children}
     </SectionRoot>
   );
@@ -47,40 +51,15 @@ export const FieldRow = styled.div`
   }
 `;
 
-const CounterRow = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  margin-top: var(--space-1);
-`;
-
-/* Matches the Textarea counter so single-line and multi-line limits read the same. */
-const Counter = styled.span<{ $warning?: boolean }>`
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-
-  ${({ $warning }) =>
-    $warning &&
-    css`
-      color: var(--color-danger);
-      font-weight: var(--weight-medium);
-    `}
-`;
-
-/** Input with a live "N characters left" counter, like Textarea's. */
+/**
+ * Input with a live "N characters left" counter, like Textarea's. Inside a Field the counter sits on the
+ * Field's hint line (kit `useFieldCounter`, id `{id}-counter`).
+ */
 export function CountedInput({ max, value, ...props }: Omit<InputProps, "maxLength" | "value"> & { max: number; value: string }) {
-  const counterId = React.useId();
   const remaining = Math.max(0, max - value.length);
-  const describedBy = [props["aria-describedby"], counterId].filter(Boolean).join(" ");
-  return (
-    <div>
-      <Input {...props} value={value} maxLength={max} aria-describedby={describedBy} />
-      <CounterRow>
-        <Counter id={counterId} $warning={remaining <= max * 0.1}>
-          {remaining} {remaining === 1 ? "character" : "characters"} left
-        </Counter>
-      </CounterRow>
-    </div>
-  );
+  useFieldCounter({ remaining, warning: remaining <= max * 0.1 });
+  const describedBy = [props["aria-describedby"], props.id ? `${props.id}-counter` : null].filter(Boolean).join(" ");
+  return <Input {...props} value={value} maxLength={max} aria-describedby={describedBy || undefined} />;
 }
 
 /**

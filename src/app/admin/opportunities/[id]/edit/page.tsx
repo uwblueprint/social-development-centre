@@ -6,7 +6,7 @@ import { copy } from "@/features/opportunities/copy";
 import { getOpportunity, listPublisherOptions } from "@/features/opportunities/queries";
 import type { Actor } from "@/features/opportunities/types";
 import { getCurrentAdmin } from "../../../_data/session";
-import { saveOpportunity } from "../../_data/actions";
+import { prefillFromEventbrite, saveOpportunity } from "../../_data/actions";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -37,6 +37,7 @@ export default async function EditOpportunityPage({ params }: Props) {
       opportunity={opportunity}
       organizations={organizations}
       save={saveOpportunity}
+      prefill={prefillFromEventbrite}
     />
   );
 }

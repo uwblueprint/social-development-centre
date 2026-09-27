@@ -13,7 +13,10 @@ For SDC admins. Partners are organizations that share opportunities with SDC. Ea
    - **Organizations:** **Organization** filters by status (**Active** or **Removed**; you see **Active** unless you change it). **Health** filters by tag.
    - **People:** **Organization** filters by organization. **Tags** filters by invitation state; **Removed** is unticked at first, so removed people are hidden until you tick it.
 5. To sort, click a column heading. Click it again to reverse the order.
-6. Click a row (or press Enter on it) to open its details on the right.
+6. On **Organizations**, click a row (or press Enter on it) to open its details on the right. The address bar now links to that organization, so you can copy the link to share it; closing the panel removes it from the link.
+7. On **People**, rows don't open. Use the ⋯ menu at the end of a row (**Actions for {name}**) for that person, or click their organization's name to open that organization.
+
+Long names, emails and organization names are cut short to keep each row on one line; point at one to see all of it.
 
 If nothing matches, the page says so and offers **Clear search** or **Clear filters**.
 
@@ -56,7 +59,7 @@ You'll see "Invitation sent to {email}." They're listed on **People** as **Invit
 
 **If something needs fixing,** the message shows under the field and what you typed stays. For example, "This person already has access to {organization}."
 
-**If the email couldn't be sent,** you'll see "{name} was added, but we couldn't send the invitation. Select Retry to try again." They're listed as **Invitation not sent**. Open them and click **Retry**.
+**If the email couldn't be sent,** you'll see "{name} was added, but we couldn't send the invitation. Select Retry to try again." They're listed as **Invitation not sent**. On **People**, open **Actions for {name}** (⋯) on their row and click **Retry**.
 
 Every new organization starts this way, with its first person.
 
@@ -66,8 +69,8 @@ Every new organization starts this way, with its first person.
 3. Enter their **Contact name** and **Email** and click **Send invitation**.
 
 ## Resend, retry or cancel an invitation
-1. Go to **Partners** > **People** and click the person's row.
-2. At the bottom of their panel, click:
+1. Go to **Partners** > **People** and click ⋯ (**Actions for {name}**) at the end of the person's row. The **Tags** column shows their invitation state and when it expires, for example "Invitation pending · Expires Oct 2".
+2. Click:
    - **Resend invitation** (pending), **Send new invitation** (expired) or **Retry** (not sent). You'll see "New invitation sent to {email}. The previous link won't work." (or "Invitation sent to {email}." after a retry). If it can't be sent, nothing changes and an earlier link that still works keeps working.
    - **Cancel invitation**, then **Cancel invitation** in the confirmation, to delete the invitation and the person's entry. To keep it, click **Keep invitation**. If that was the organization's only person, the organization is deleted too (or, if it had access before, it goes back to **Removed**).
 
@@ -81,8 +84,9 @@ You can do the same from the organization's panel: find the person under **Peopl
 If something needs fixing, the message shows under the field and the cursor moves to it.
 
 ## Change a person's name or email
-1. Go to **Partners** > **People** and open the person.
-2. Under **Details**, change **Name** or **Email**, then click **Save changes**.
+1. Go to **Partners** > **People** and click ⋯ (**Actions for {name}**) at the end of the person's row.
+2. Click **Edit details**.
+3. Change **Name** or **Email**, then click **Save changes**. To stop without saving, click **Cancel**.
 
 Changing someone's email sends a new invitation to the new address. If they already had access, they keep it; once they accept, they sign in with the new email. If the invitation can't be sent, nothing is saved: "We couldn't send the invitation. Try again."
 
@@ -91,7 +95,7 @@ Changing someone's email sends a new invitation to the new address. If they alre
 2. Click **View opportunities**. The Opportunities list opens filtered to that partner.
 
 ## Remove a person who left a partner organization
-1. Go to **Partners** > **People** and open the person (or open the organization and use **Actions for {name}**).
+1. Go to **Partners** > **People** and click ⋯ (**Actions for {name}**) at the end of the person's row (or open the organization and use **Actions for {name}** there).
 2. Click **Remove from organization**, then **Remove access**. To keep their access, click **Keep access**.
 
 You'll see "{name} was removed from {organization}. They no longer have access." They're tagged **Removed** on **People** (tick **Removed** in the **Tags** filter to see them). Their email can be invited again, here or under another organization.
@@ -121,5 +125,5 @@ You'll see "{organization} no longer has access. Its opportunities are closed." 
 You'll see "Invitation sent to {email}. {organization} is awaiting a response." The organization returns to **Active** tagged **Not onboarded**. Nobody has access until the person accepts; when they do, its closed opportunities whose dates haven't passed reopen automatically. Its other people stay under **Removed**; invite them again as needed.
 
 **A person:**
-1. Go to **Partners** > **People**, tick **Removed** in the **Tags** filter, and open the person.
+1. Go to **Partners** > **People**, tick **Removed** in the **Tags** filter, and click ⋯ (**Actions for {name}**) at the end of the person's row.
 2. Click **Invite again**. Their name, email and organization are filled in; change anything that's different and click **Send invitation**.

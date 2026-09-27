@@ -11,6 +11,7 @@ import { SubmitButton } from "@/components/ui/SubmitButton";
 import { fieldError } from "@/lib/forms";
 import { signUpAtBooth, type KioskState } from "./actions";
 import { kioskCopy as copy } from "./copy";
+import { firstName } from "./firstName";
 
 /** Seconds the confirmation stays up before the kiosk resets for the next person. */
 const RESET_SECONDS = 20;
@@ -18,46 +19,67 @@ const RESET_SECONDS = 20;
 /*
  * Kiosk sizing: the kit's largest control is 44px with 16px text, so this page scales kit
  * components up to 48px targets and 19px text (--text-lg) for people standing at a tablet.
+ * The page may scroll (dvh, never locked), so the on-screen keyboard can't trap a field under it.
+ * On phones the content starts at the top so both fields show without scrolling; tablets center it.
+ * After a sign-up the whole screen tints to --color-success-subtle (with an icon and text, not color alone).
  */
 const Main = styled.main`
   display: grid;
-  place-items: center;
+  align-items: start;
+  justify-items: center;
   min-height: 100dvh;
-  padding: var(--space-5) var(--space-4);
+  padding: var(--space-5) var(--space-4) var(--space-7);
   background: var(--color-bg);
   color: var(--color-text);
   font-size: var(--text-lg);
   line-height: var(--leading-body);
+  transition: background-color var(--duration-slow) var(--ease);
+
+  &[data-state="success"] {
+    background: var(--color-success-subtle);
+  }
+
+  @media (min-width: 600px) and (min-height: 600px) {
+    align-items: center;
+    padding: var(--space-6);
+  }
 `;
 
 const Panel = styled.div`
   display: grid;
-  gap: var(--space-6);
+  gap: var(--space-5);
   width: 100%;
   max-width: 36rem;
 
   @media (orientation: landscape) and (min-width: 900px) {
-    &[data-layout="split"] {
-      grid-template-columns: 1fr 1fr;
-      align-items: center;
-      gap: var(--space-8);
-      max-width: 64rem;
-    }
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    gap: var(--space-8);
+    max-width: 64rem;
   }
 `;
 
+/* Deliberately quieter than the form: a short heading and one muted paragraph. */
 const Intro = styled.div`
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-2);
 `;
 
-const Eyebrow = styled.p`
+const IntroHeading = styled.h1`
   margin: 0;
+  font-size: var(--text-lg);
+  line-height: var(--leading-heading);
+  font-weight: var(--weight-medium);
+`;
+
+const IntroBody = styled.p`
+  margin: 0;
+  font-size: var(--text-md);
   color: var(--color-text-muted);
 `;
 
-const Heading = styled.h1`
+const Heading = styled.h2`
   margin: 0;
   font-size: var(--text-xl);
   line-height: var(--leading-heading);
@@ -71,12 +93,14 @@ const Heading = styled.h1`
 
 const Body = styled.p`
   margin: 0;
+  overflow-wrap: anywhere;
 `;
 
 const Form = styled.form`
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
+  gap: var(--space-4);
+  scroll-margin: var(--space-5);
 
   label,
   span {
@@ -122,7 +146,7 @@ const Alert = styled.p`
 const Done = styled.div`
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
+  gap: var(--space-4);
 `;
 
 const DoneIcon = styled.span`
@@ -136,15 +160,36 @@ const Countdown = styled.p`
   font-variant-numeric: tabular-nums;
 `;
 
+/** Centers a focused field in view, again once the on-screen keyboard has opened and resized the viewport. */
+function useKeepFocusedFieldInView() {
+  useEffect(() => {
+    let timer: number | undefined;
+    const center = () => {
+      const el = document.activeElement;
+      if (el instanceof HTMLInputElement) el.scrollIntoView({ block: "center" });
+    };
+    const onFocusIn = (event: FocusEvent) => {
+      if (!(event.target instanceof HTMLInputElement)) return;
+      center();
+      window.clearTimeout(timer);
+      timer = window.setTimeout(center, 300); // after the keyboard's slide-in
+    };
+    document.addEventListener("focusin", onFocusIn);
+    window.visualViewport?.addEventListener("resize", center);
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener("focusin", onFocusIn);
+      window.visualViewport?.removeEventListener("resize", center);
+    };
+  }, []);
+}
+
 export function Kiosk({ location }: { location: string | null }) {
   // Each round is a fresh form: remounting clears the last person's details from the page.
   const [round, setRound] = useState(0);
   const next = useCallback(() => setRound((r) => r + 1), []);
-  return (
-    <Main>
-      <Round key={round} location={location} focusName={round > 0} onNext={next} />
-    </Main>
-  );
+  useKeepFocusedFieldInView();
+  return <Round key={round} location={location} focusName={round > 0} onNext={next} />;
 }
 
 function Round({ location, focusName, onNext }: { location: string | null; focusName: boolean; onNext: () => void }) {
@@ -163,59 +208,63 @@ function Round({ location, focusName, onNext }: { location: string | null; focus
     else if (state.fieldErrors?.email) emailRef.current?.focus();
   }, [state]);
 
-  if (state.status === "success" && state.data) {
-    return <Confirmation name={state.data.name} onNext={onNext} />;
-  }
+  const done = state.status === "success" ? state.data : undefined;
 
+  // Success keeps the two columns: the intro stays, and the confirmation takes the form's place.
   return (
-    <Panel data-layout="split">
-      <Intro>
-        <Eyebrow>{location ? `${copy.org} · ${location}` : copy.org}</Eyebrow>
-        <Heading>{copy.heading}</Heading>
-        <Body>{copy.intro}</Body>
-      </Intro>
-      {/* autoComplete off: this is a shared tablet, so it must never suggest the last person's details. */}
-      <Form action={action} noValidate autoComplete="off">
-        <Field label={copy.nameLabel} required error={fieldError(state, "name")}>
-          {(props) => (
-            <Input
-              {...props}
-              ref={nameRef}
-              name="name"
-              autoComplete="off"
-              autoCapitalize="words"
-              defaultValue={state.data?.name}
-            />
-          )}
-        </Field>
-        <Field label={copy.emailLabel} required error={fieldError(state, "email")}>
-          {(props) => (
-            <Input
-              {...props}
-              ref={emailRef}
-              name="email"
-              type="email"
-              inputMode="email"
-              autoComplete="off"
-              autoCapitalize="none"
-              spellCheck={false}
-              defaultValue={state.data?.email}
-            />
-          )}
-        </Field>
-        {state.status === "error" && state.message && (
-          <Alert role="alert">
-            <Icon icon={CircleAlert} size={20} />
-            <span>{state.message}</span>
-          </Alert>
+    <Main data-state={done ? "success" : undefined}>
+      <Panel>
+        <Intro>
+          <IntroHeading>{copy.heading}</IntroHeading>
+          <IntroBody>{copy.intro}</IntroBody>
+        </Intro>
+        {done ? (
+          <Confirmation name={done.name} email={done.email} onNext={onNext} />
+        ) : (
+          /* autoComplete off: this is a shared tablet, so it must never suggest the last person's details. */
+          <Form action={action} noValidate autoComplete="off">
+            <Field label={copy.nameLabel} required error={fieldError(state, "name")}>
+              {(props) => (
+                <Input
+                  {...props}
+                  ref={nameRef}
+                  name="name"
+                  autoComplete="off"
+                  autoCapitalize="words"
+                  defaultValue={state.data?.name}
+                />
+              )}
+            </Field>
+            <Field label={copy.emailLabel} required error={fieldError(state, "email")}>
+              {(props) => (
+                <Input
+                  {...props}
+                  ref={emailRef}
+                  name="email"
+                  type="email"
+                  inputMode="email"
+                  autoComplete="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  defaultValue={state.data?.email}
+                />
+              )}
+            </Field>
+            {state.status === "error" && state.message && (
+              <Alert role="alert">
+                <Icon icon={CircleAlert} size={20} />
+                <span>{state.message}</span>
+              </Alert>
+            )}
+            <BigSubmit $size="lg">{copy.submit}</BigSubmit>
+          </Form>
         )}
-        <BigSubmit $size="lg">{copy.submit}</BigSubmit>
-      </Form>
-    </Panel>
+      </Panel>
+    </Main>
   );
 }
 
-function Confirmation({ name, onNext }: { name: string; onNext: () => void }) {
+function Confirmation({ name, email, onNext }: { name: string; email: string; onNext: () => void }) {
   const [left, setLeft] = useState(RESET_SECONDS);
   const [paused, setPaused] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -241,20 +290,18 @@ function Confirmation({ name, onNext }: { name: string; onNext: () => void }) {
   }, [left, onNext]);
 
   return (
-    <Panel>
-      <Done>
-        <DoneIcon>
-          <Icon icon={CircleCheck} size={48} />
-        </DoneIcon>
-        <Heading ref={headingRef} tabIndex={-1}>
-          {copy.done(name)}
-        </Heading>
-        <Body>{copy.doneBody}</Body>
-        <BigButton $size="lg" type="button" onClick={onNext}>
-          {copy.next}
-        </BigButton>
-        <Countdown>{paused ? copy.paused : copy.countdown(Math.max(left, 0))}</Countdown>
-      </Done>
-    </Panel>
+    <Done>
+      <DoneIcon>
+        <Icon icon={CircleCheck} size={48} />
+      </DoneIcon>
+      <Heading ref={headingRef} tabIndex={-1}>
+        {copy.done(firstName(name))}
+      </Heading>
+      <Body>{copy.doneBody(email)}</Body>
+      <BigButton $size="lg" type="button" onClick={onNext}>
+        {copy.next}
+      </BigButton>
+      <Countdown>{paused ? copy.paused : copy.countdown(Math.max(left, 0))}</Countdown>
+    </Done>
   );
 }

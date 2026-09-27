@@ -22,7 +22,7 @@ import {
 
 export const metadata: Metadata = { title: "Partners" };
 
-type Params = { view?: string; q?: string; sort?: string; dir?: string; status?: string; health?: string; orgs?: string; tags?: string };
+type Params = { view?: string; q?: string; sort?: string; dir?: string; status?: string; health?: string; orgs?: string; tags?: string; org?: string };
 
 export default async function Page({ searchParams }: { searchParams: Promise<Params> }) {
   const params = await searchParams;
@@ -51,6 +51,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Par
     <PartnersView
       view={view}
       q={q}
+      openOrganizationId={view === "organizations" ? params.org : undefined}
       organizations={organizations}
       people={people}
       filters={{ status, health, organizations: organizationIds, tags }}

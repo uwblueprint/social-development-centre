@@ -2,10 +2,22 @@ import { revalidatePath } from "next/cache";
 import { orgs, statusOf } from "@/app/admin/partners/_data/store";
 import type { ActionState } from "@/lib/forms";
 import { normalizeWebAddress } from "@/lib/url";
-import { KIND_NOUN, LIMITS, MAX_TOPICS, SDC_ORG, TOPICS } from "./catalog";
+import { ACCESSIBILITY_FEATURES, AREAS, KIND_NOUN, LIMITS, MAX_TOPICS, SDC_ORG, SKILLS, TIME_COMMITMENTS, TOPICS } from "./catalog";
 import { effectiveStatus, hasEnded } from "./format";
 import { nextOpportunityId, opportunities } from "./store";
-import type { Actor, CustomDetail, Opportunity, OpportunityKind, OrganizationRef, SaveResult, TopicId } from "./types";
+import type {
+  AccessibilityFeature,
+  Actor,
+  Area,
+  CustomDetail,
+  Opportunity,
+  OpportunityKind,
+  OrganizationRef,
+  SaveResult,
+  SkillId,
+  TimeCommitment,
+  TopicId,
+} from "./types";
 
 /*
  * Server-side logic behind both portals' actions. Not a server action module itself:
@@ -18,15 +30,20 @@ import type { Actor, CustomDetail, Opportunity, OpportunityKind, OrganizationRef
  *   intent         draft | publish | save   (save keeps the current status)
  *   organizationId admin only; ignored for partners
  *   title, summary, link, topics (multiple)
- *   event:      date, startTime, endTime, format, location, cost, costDetails, accessibility
+ *   event:      date, startTime, endTime, format, area, address, cost, costDetails, accessibility (multiple), accessibilityNote
  *   petition:   target, deadline, signatureGoal
- *   volunteer:  commitment, format, location, startDate, timeCommitment, skills, minimumAge, applyBy
- *   job:        employmentType, workplace, location, pay, applyBy, qualifications
+ *   volunteer:  timeCommitment, format, area, address, startDate, skills (multiple), minimumAge, applyBy
+ *   job:        employmentType, workplace, area, address, pay, applyBy, qualifications
+ * area is one of AREAS; timeCommitment, skills and accessibility are ids from catalog.ts. Unknown list ids are dropped.
  *   other:      callToAction, deadline, detailLabel (multiple), detailValue (multiple)
  */
 
 const KINDS = new Set<OpportunityKind>(["event", "petition", "volunteer", "job", "other"]);
 const TOPIC_IDS = new Set<string>(TOPICS.map((t) => t.id));
+const AREA_IDS = new Set<string>(AREAS.map((a) => a.id));
+const TIME_COMMITMENT_IDS = new Set<string>(TIME_COMMITMENTS.map((t) => t.id));
+const SKILL_IDS = new Set<string>(SKILLS.map((t) => t.id));
+const ACCESSIBILITY_IDS = new Set<string>(ACCESSIBILITY_FEATURES.map((t) => t.id));
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME = /^\d{2}:\d{2}$/;
 
@@ -91,6 +108,21 @@ function readDetails(kind: OpportunityKind, fd: FormData, errors: Errors, strict
     if (v && !(Number.isInteger(Number(v)) && Number(v) > 0)) errors[key] = message;
   };
 
+  // Area: one of AREAS; address is optional and dropped for online. Shared by event, volunteer role and job.
+  const place = () => {
+    need("area", "Choose the area.");
+    const raw = opt(fd, "area");
+    if (raw && !AREA_IDS.has(raw)) errors.area = "Choose the area.";
+    const area = raw && AREA_IDS.has(raw) ? (raw as Area) : undefined;
+    const address = area === "online" ? undefined : opt(fd, "address")?.slice(0, LIMITS.address);
+    return { area, address };
+  };
+  /** Repeated values from a fixed list; unknown ids and duplicates are dropped. */
+  const pick = <T extends string>(key: string, allowed: Set<string>) => {
+    const values = [...new Set(all(fd, key))].filter((v) => allowed.has(v)) as T[];
+    return values.length ? values : undefined;
+  };
+
   switch (kind) {
     case "event": {
       need("date", "Choose the event date.");
@@ -99,16 +131,17 @@ function readDetails(kind: OpportunityKind, fd: FormData, errors: Errors, strict
       date("date");
       for (const k of ["startTime", "endTime"]) if (text(fd, k) && !TIME.test(text(fd, k))) errors[k] = "Enter a time like 18:30.";
       const format = opt(fd, "format") as "in_person" | "online" | "hybrid" | undefined;
-      if (format && format !== "online") need("location", "Enter where it's happening.");
       const start = text(fd, "startTime");
       const end = text(fd, "endTime");
       if (start && end && TIME.test(start) && TIME.test(end) && end <= start) errors.endTime = "End time must be after the start time.";
+      const where = place();
       const cost = (opt(fd, "cost") ?? "free") as "free" | "paid";
       if (cost === "paid") need("costDetails", "Say what it costs, for example “$10, pay what you can”.");
       return {
-        date: opt(fd, "date"), startTime: opt(fd, "startTime"), endTime: opt(fd, "endTime"), format,
-        location: format === "online" ? undefined : opt(fd, "location"), cost,
-        costDetails: cost === "paid" ? opt(fd, "costDetails") : undefined, accessibility: opt(fd, "accessibility"),
+        date: opt(fd, "date"), startTime: opt(fd, "startTime"), endTime: opt(fd, "endTime"), format, ...where, cost,
+        costDetails: cost === "paid" ? opt(fd, "costDetails") : undefined,
+        accessibility: pick<AccessibilityFeature>("accessibility", ACCESSIBILITY_IDS),
+        accessibilityNote: opt(fd, "accessibilityNote")?.slice(0, LIMITS.accessibilityNote),
       };
     }
     case "petition": {
@@ -118,28 +151,29 @@ function readDetails(kind: OpportunityKind, fd: FormData, errors: Errors, strict
       return { target: opt(fd, "target"), deadline: opt(fd, "deadline"), signatureGoal: num(fd, "signatureGoal") };
     }
     case "volunteer": {
-      need("commitment", "Choose one-time or ongoing.");
+      need("timeCommitment", "Choose the time commitment.");
+      const rawCommitment = opt(fd, "timeCommitment");
+      if (rawCommitment && !TIME_COMMITMENT_IDS.has(rawCommitment)) errors.timeCommitment = "Choose the time commitment.";
       need("format", "Choose where volunteers work.");
       const format = opt(fd, "format") as "in_person" | "remote" | "hybrid" | undefined;
-      if (format && format !== "remote") need("location", "Enter where volunteers go.");
+      const where = place();
       date("startDate");
       date("applyBy");
       positiveInt("minimumAge", "Enter an age in years, like 16.");
       return {
-        commitment: opt(fd, "commitment") as "one_time" | "ongoing" | undefined, format,
-        location: format === "remote" ? undefined : opt(fd, "location"), startDate: opt(fd, "startDate"),
-        timeCommitment: opt(fd, "timeCommitment"), skills: opt(fd, "skills"), minimumAge: num(fd, "minimumAge"), applyBy: opt(fd, "applyBy"),
+        timeCommitment: rawCommitment && TIME_COMMITMENT_IDS.has(rawCommitment) ? (rawCommitment as TimeCommitment) : undefined,
+        format, ...where, startDate: opt(fd, "startDate"), skills: pick<SkillId>("skills", SKILL_IDS),
+        minimumAge: num(fd, "minimumAge"), applyBy: opt(fd, "applyBy"),
       };
     }
     case "job": {
       need("employmentType", "Choose the employment type.");
       need("workplace", "Choose where the work happens.");
       const workplace = opt(fd, "workplace") as "on_site" | "remote" | "hybrid" | undefined;
-      if (workplace && workplace !== "remote") need("location", "Enter the city or address.");
+      const where = place();
       date("applyBy");
       return {
-        employmentType: opt(fd, "employmentType") as never, workplace,
-        location: workplace === "remote" ? undefined : opt(fd, "location"), pay: opt(fd, "pay"),
+        employmentType: opt(fd, "employmentType") as never, workplace, ...where, pay: opt(fd, "pay"),
         applyBy: opt(fd, "applyBy"), qualifications: opt(fd, "qualifications"),
       };
     }

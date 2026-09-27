@@ -43,11 +43,9 @@ import { copyEmails } from "./CopyableEmail";
 import { InviteDialog, type InvitePreset } from "./InviteDialog";
 import { organizationColumns, personColumns, type HeaderFilter } from "./PartnerRows";
 import { PartnerSheetContent } from "./PartnerSheetContent";
-import { PersonSheetContent } from "./PersonSheetContent";
+import { PersonRowActions } from "./PersonRowActions";
 
 export type PartnersViewName = "organizations" | "people";
-
-type Panel = { kind: "organization"; id: string } | { kind: "person"; id: string };
 
 export interface PartnersFilters {
   status: PartnerStatusFilter[];
@@ -87,6 +85,8 @@ const sameSet = (a: readonly string[], b: readonly string[]) => a.length === b.l
 export interface PartnersViewProps {
   view: PartnersViewName;
   q: string;
+  /** The organization whose panel is open (`org` URL param), so the panel can be shared by link. */
+  openOrganizationId?: string;
   organizations: {
     rows: AdminPartnerOrganization[];
     facets: { status: FacetOption<PartnerStatusFilter>[]; health: FacetOption<PartnerHealth>[] };
@@ -109,6 +109,7 @@ export interface PartnersViewProps {
 export function PartnersView({
   view,
   q,
+  openOrganizationId,
   organizations,
   people,
   filters,
@@ -121,6 +122,8 @@ export function PartnersView({
 }: PartnersViewProps) {
   const { toast } = useToast();
   const { setParams, pending: paramsPending } = useListParams();
+  // A separate instance, so opening or closing a panel doesn't dim the table as busy.
+  const { setParams: setPanelParams } = useListParams();
   const searchState = useListSearch(q);
   const serverSort = view === "organizations" ? sorts.organizations : sorts.people;
   const { sort: requestedSort, setSort, pending: sortPending } = useListSort(
@@ -139,7 +142,13 @@ export function PartnersView({
     setActiveView(view);
   }
 
-  const [panel, setPanel] = React.useState<Panel | null>(null);
+  // The open organization panel, mirrored in the URL (`?view=organizations&org=<id>`) with router.replace.
+  const [openOrgId, setOpenOrgId] = React.useState<string | undefined>(openOrganizationId);
+  const [prevOpenOrgId, setPrevOpenOrgId] = React.useState(openOrganizationId);
+  if (openOrganizationId !== prevOpenOrgId) {
+    setPrevOpenOrgId(openOrganizationId);
+    setOpenOrgId(openOrganizationId);
+  }
   const [inviteOpen, setInviteOpen] = React.useState(false);
   const [invitePreset, setInvitePreset] = React.useState<InvitePreset | undefined>(undefined);
   const [inviteKey, setInviteKey] = React.useState(0);
@@ -147,8 +156,26 @@ export function PartnersView({
   function handleViewChange(value: string) {
     const next: PartnersViewName = value === "people" ? "people" : "organizations";
     setActiveView(next);
+    setOpenOrgId(undefined);
     // Sorts are per view.
-    setParams({ view: next === "organizations" ? undefined : next, sort: undefined, dir: undefined });
+    setParams({ view: next === "organizations" ? undefined : next, sort: undefined, dir: undefined, org: undefined });
+  }
+
+  function openOrganization(id: string) {
+    setOpenOrgId(id);
+    setPanelParams({ view: "organizations", org: id });
+  }
+
+  /** From a People row: switch to Organizations with that organization's panel open. */
+  function showOrganization(id: string) {
+    setActiveView("organizations");
+    setOpenOrgId(id);
+    setPanelParams({ view: "organizations", org: id, sort: undefined, dir: undefined });
+  }
+
+  function closePanel() {
+    setOpenOrgId(undefined);
+    setPanelParams({ org: undefined });
   }
 
   function openInvite(preset?: InvitePreset) {
@@ -200,14 +227,12 @@ export function PartnersView({
   const peopleFiltered = filters.organizations.length > 0 || !sameSet(filters.tags, DEFAULT_PERSON_TAGS);
   const showSupport = needSupport > 0 && filters.health.length === 0;
 
-  const selectedOrg = panel?.kind === "organization" ? directory.organizations.find((o) => o.id === panel.id) : undefined;
-  const selectedPerson = panel?.kind === "person" ? directory.people.find((p) => p.id === panel.id) : undefined;
-  const personOrg = selectedPerson && directory.organizations.find((o) => o.id === selectedPerson.organization.id);
-  const lastWithAccess =
-    !!selectedPerson &&
-    selectedPerson.status === "active" &&
-    !selectedPerson.removal &&
-    (personOrg?.contacts.filter((c) => c.status === "active").length ?? 0) <= 1;
+  const selectedOrg = openOrgId ? directory.organizations.find((o) => o.id === openOrgId) : undefined;
+  const activeCounts = new Map(
+    directory.organizations.map((o) => [o.id, o.contacts.filter((c) => c.status === "active").length]),
+  );
+  const isLastWithAccess = (person: PartnerPerson) =>
+    person.status === "active" && !person.removal && (activeCounts.get(person.organization.id) ?? 0) <= 1;
 
   const inviteButton = (
     <Button type="button" onClick={() => openInvite()}>
@@ -228,11 +253,28 @@ export function PartnersView({
     </>
   );
 
-  const panelOpen = !!(selectedOrg || selectedPerson);
-
   return (
     <ListPage>
-      <ListPageHeader title={copy.title} actions={headerActions} />
+      <ListPageHeader
+        title={copy.title}
+        search={
+          <SearchField
+            name="q"
+            aria-label={copy.search.placeholder}
+            placeholder={copy.search.placeholder}
+            value={searchState.value}
+            onChange={(event) => searchState.setValue(event.target.value)}
+            onSearch={searchState.search}
+            pending={searchState.pending}
+          />
+        }
+        actions={headerActions}
+        results={{
+          query: q,
+          count: activeView === "organizations" ? organizations.rows.length : people.rows.length,
+          pending: searchState.pending,
+        }}
+      />
 
       <Tabs value={activeView} onValueChange={handleViewChange}>
         <ListPageToolbar
@@ -248,22 +290,6 @@ export function PartnersView({
               </TabsTrigger>
             </TabsList>
           }
-          search={
-            <SearchField
-              name="q"
-              aria-label={copy.search.placeholder}
-              placeholder={copy.search.placeholder}
-              value={searchState.value}
-              onChange={(event) => searchState.setValue(event.target.value)}
-              onSearch={searchState.search}
-              pending={searchState.pending}
-            />
-          }
-          results={{
-            query: q,
-            count: activeView === "organizations" ? organizations.rows.length : people.rows.length,
-            pending: searchState.pending,
-          }}
         />
 
         <TabsContent value="organizations">
@@ -275,7 +301,7 @@ export function PartnersView({
               <CalloutText>{copy.health.callout(needSupport)}</CalloutText>
               <Button
                 type="button"
-                $variant="secondary"
+                $variant="outline"
                 $size="sm"
                 onClick={() => setParams({ health: PARTNER_HEALTH.join(","), status: undefined })}
               >
@@ -287,7 +313,7 @@ export function PartnersView({
             columns={organizationColumns({ status: statusFilter, health: healthFilter }, now)}
             rows={organizations.rows}
             getRowId={(org) => org.id}
-            onRowClick={(org) => setPanel({ kind: "organization", id: org.id })}
+            onRowClick={(org) => openOrganization(org.id)}
             aria-label={copy.views.organizations}
             sort={view === "organizations" ? sort : sorts.organizations}
             onSortChange={setSort}
@@ -317,10 +343,28 @@ export function PartnersView({
 
         <TabsContent value="people">
           <Table
-            columns={personColumns({ organization: organizationFilter, tags: tagsFilter })}
+            columns={personColumns(
+              { organization: organizationFilter, tags: tagsFilter },
+              {
+                now,
+                onOpenOrganization: showOrganization,
+                renderActions: (person) => (
+                  <PersonRowActions
+                    person={person}
+                    lastWithAccess={isLastWithAccess(person)}
+                    onInviteAgain={() =>
+                      openInvite({
+                        name: person.name,
+                        email: person.email,
+                        organization: { id: person.organization.id, name: person.organization.name },
+                      })
+                    }
+                  />
+                ),
+              },
+            )}
             rows={people.rows}
             getRowId={(person) => `${person.id}-${person.organization.id}`}
-            onRowClick={(person) => setPanel({ kind: "person", id: person.id })}
             aria-label={copy.views.people}
             stickyColumns={1}
             sort={view === "people" ? sort : sorts.people}
@@ -350,7 +394,7 @@ export function PartnersView({
         </TabsContent>
       </Tabs>
 
-      <Sheet open={panelOpen} onOpenChange={(open) => !open && setPanel(null)}>
+      <Sheet open={!!selectedOrg} onOpenChange={(open) => !open && closePanel()}>
         <SheetContent>
           {selectedOrg && (
             <PartnerSheetContent
@@ -358,21 +402,6 @@ export function PartnersView({
               org={selectedOrg}
               now={now}
               onAddPerson={() => openInvite({ organization: { id: selectedOrg.id, name: selectedOrg.name } })}
-            />
-          )}
-          {selectedPerson && (
-            <PersonSheetContent
-              key={selectedPerson.id}
-              person={selectedPerson}
-              lastWithAccess={lastWithAccess}
-              onOpenOrganization={() => setPanel({ kind: "organization", id: selectedPerson.organization.id })}
-              onInviteAgain={() =>
-                openInvite({
-                  name: selectedPerson.name,
-                  email: selectedPerson.email,
-                  organization: { id: selectedPerson.organization.id, name: selectedPerson.organization.name },
-                })
-              }
             />
           )}
         </SheetContent>

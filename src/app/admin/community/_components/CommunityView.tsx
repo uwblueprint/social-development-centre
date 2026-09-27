@@ -73,9 +73,9 @@ export function CommunityView({
   // The server ignores unknown sort keys and uses the default; show the same.
   const sort =
     requestedSort && (MEMBER_SORT_KEYS as readonly string[]).includes(requestedSort.key) ? requestedSort : DEFAULT_MEMBER_SORT;
-  // Tab, filter, search and page changes keep the current rows on screen, dimmed, until the next ones
-  // arrive. Only a sort change spins the sort arrow (`sortPending`), so switching tabs never spins it.
-  const busy = paramsPending || searchState.pending;
+  // Tab, filter, search, page and sort changes keep the current rows on screen, dimmed, until the next
+  // ones arrive. Only a sort change spins the sort arrow (`sortPending`), so switching tabs never spins it.
+  const busy = paramsPending || searchState.pending || sortPending;
   // Its own transition, so opening or closing the panel never dims the table.
   const { setParams: setMemberParam } = useListParams();
   const searchRef = React.useRef<HTMLInputElement>(null);

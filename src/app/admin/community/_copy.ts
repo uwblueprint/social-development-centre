@@ -48,11 +48,11 @@ export const communityCopy = {
     openKiosk: "Open sign-up kiosk",
   },
 
-  /** The popover behind Open sign-up kiosk. The location is saved with each sign-up (export only). */
+  /** The dialog behind Open sign-up kiosk. The optional location is saved with each sign-up (export only). */
   kiosk: {
-    locationLabel: "Where are you?",
-    locationHint: "For example, Kitchener Market.",
-    locationRequired: "Enter where you are, like Kitchener Market.",
+    title: "Open sign-up kiosk",
+    locationLabel: "Location",
+    cancel: "Cancel",
     open: "Open kiosk",
   },
 

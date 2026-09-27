@@ -61,6 +61,24 @@ globalStyle`
     --color-danger-border: #fecaca;
     --color-info-border: #c9dbe5;
 
+    /* Opportunity types need distinct, non-status colors. Hues avoid the status and accent hues
+       (red, orange, amber, emerald, steel blue); each text color is 5.5:1 or more on its -subtle fill. */
+    --color-category-1: #1d4ed8; /* blue */
+    --color-category-1-subtle: #eff6ff;
+    --color-category-1-border: #bfdbfe;
+    --color-category-2: #6d28d9; /* violet */
+    --color-category-2-subtle: #f5f3ff;
+    --color-category-2-border: #ddd6fe;
+    --color-category-3: #a21caf; /* fuchsia */
+    --color-category-3-subtle: #fdf4ff;
+    --color-category-3-border: #f5d0fe;
+    --color-category-4: #be185d; /* pink */
+    --color-category-4-subtle: #fdf2f8;
+    --color-category-4-border: #fbcfe8;
+    --color-category-5: #3f6212; /* lime */
+    --color-category-5-subtle: #f7fee7;
+    --color-category-5-border: #d9f99d;
+
     --color-focus: var(--taupe-900);
     --color-overlay: rgb(29 24 22 / 0.4);
 
@@ -96,6 +114,13 @@ globalStyle`
     --shadow-sm: 0 1px 2px rgb(29 24 22 / 0.06);
     --shadow-md: 0 4px 16px rgb(29 24 22 / 0.08), 0 1px 2px rgb(29 24 22 / 0.06);
     --shadow-lg: 0 16px 40px rgb(29 24 22 / 0.14);
+    /* A soft shadow cast to the right by frozen table columns while the table is scrolled sideways. */
+    --shadow-edge: 6px 0 8px -6px rgb(29 24 22 / 0.16);
+
+    /* Every table row is one height (cells are single-line), so lists scan evenly; fits a 32px button. */
+    --row-height: 44px;
+    /* List page search in the header row: wide enough for a name or email, narrow enough to leave room for actions. */
+    --search-width: 280px;
 
     --focus-ring: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-focus);
     --duration: 160ms;

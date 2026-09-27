@@ -30,7 +30,9 @@ export const tableSortCopy = {
 export const tableFilterCopy = {
   trigger: (label: string, selected: number) => (selected > 0 ? `Filter ${label}, ${selected} selected` : `Filter ${label}`),
   legend: (label: string) => `Show ${label.toLowerCase()}`,
-  clear: "Clear filter",
+  /** Selects every option (no filtering) without closing; Apply still commits. */
+  clear: "Clear",
+  apply: "Apply",
 } as const;
 
 /**
@@ -67,6 +69,12 @@ export interface TableColumn<T> {
    * column (header and cells) is hidden. A column with an active filter always shows.
    */
   isEmpty?: (row: T) => boolean;
+  /**
+   * A fixed CSS width, e.g. `"240px"`. When any column sets one, the table uses fixed layout: columns
+   * without a width share the rest, and cell content that doesn't fit is clipped (use `TruncatedText`
+   * or `TruncatedEmail` in the cell to show an ellipsis).
+   */
+  width?: string;
 }
 
 export interface TableColumnFilter {
@@ -76,15 +84,32 @@ export interface TableColumnFilter {
   options: { value: string; label: string; count?: number }[];
   selected: string[];
   onChange: (values: string[]) => void;
-  /** The selection the page starts with (e.g. every status but Unsubscribed). The filter only reads as active, and only keeps an `isEmpty` column visible, when `selected` differs from it. Default: none selected. */
+  /**
+   * The selection the page starts with (e.g. every status but Unsubscribed). The filter only reads as
+   * active, and only keeps an `isEmpty` column visible, when `selected` differs from it. None selected
+   * and all selected both mean "no filtering". Default: no filtering.
+   */
   defaultSelected?: string[];
+}
+
+/** None selected and every option selected both mean "no filtering"; normalized to `null`. */
+function effectiveSelection(selected: string[], options: TableColumnFilter["options"]): Set<string> | null {
+  if (selected.length === 0 || options.every((o) => selected.includes(o.value))) return null;
+  return new Set(selected);
 }
 
 /** A filter is active when its selection differs from its default. */
 function isFilterActive(filter: TableColumnFilter | undefined): boolean {
   if (!filter) return false;
-  const base = filter.defaultSelected ?? [];
-  return filter.selected.length !== base.length || filter.selected.some((v) => !base.includes(v));
+  const current = effectiveSelection(filter.selected, filter.options);
+  const base = effectiveSelection(filter.defaultSelected ?? [], filter.options);
+  if (!current || !base) return current !== base;
+  return current.size !== base.size || [...current].some((v) => !base.has(v));
+}
+
+/** How many options the filter narrows to; 0 when it doesn't filter (none or all selected). */
+function filterCount(filter: TableColumnFilter): number {
+  return effectiveSelection(filter.selected, filter.options)?.size ?? 0;
 }
 
 export interface TableProps<T> {
@@ -103,25 +128,89 @@ export interface TableProps<T> {
   /** Called with the next sort when a sortable header is selected. Without it, headers render as plain text. */
   onSortChange?: (next: TableSort) => void;
   /**
-   * The next rows are loading (a sort, search or page change in flight). The current rows stay in
-   * place, dimmed; the active sort icon becomes a spinner, a thin line runs under the header, and the
-   * table is `aria-busy`.
+   * The next rows are loading (a search, filter or page change in flight). The current rows stay in
+   * place, dimmed, a thin line runs under the header, and the table is `aria-busy`.
    */
   busy?: boolean;
   /**
-   * Freezes the first N columns (header and cells) while the table scrolls sideways. Below 600px
-   * wide, only the first column freezes, so frozen columns never fill a phone screen.
+   * A sort change is in flight: the active sort icon becomes a spinner. Separate from `busy`; pass
+   * both while a sort loads (usually `useListSort().pending`) to dim the rows too.
+   */
+  sortPending?: boolean;
+  /**
+   * Freezes the first N columns (header and cells) while the table scrolls sideways; only when the
+   * table is wider than its container. The last frozen column shows a divider and a soft shadow while
+   * the table is scrolled. Below 600px wide, only the first column freezes, so frozen columns never
+   * fill a phone screen.
    */
   stickyColumns?: number;
   "aria-label"?: string;
 }
 
+/*
+ * Frozen columns (stickyColumns) live in the wrapper's CSS because they depend on its state:
+ * - data-overflowing (set when the table is wider than the wrapper): only then do frozen cells stick,
+ *   each at the summed width of the frozen columns before it (--frozen-left, measured). A solid
+ *   background hides the cells scrolling under it.
+ * - data-scrolled (set on scroll while scrollLeft > 0): only then does the last frozen column draw
+ *   its 1px divider and a soft shadow.
+ * Below 600px only the first column stays frozen.
+ */
 const Wrapper = styled.div`
   /* Contains absolutely positioned cell content (e.g. visually hidden text) so it scrolls with the
      table instead of widening the page at 360px. */
   position: relative;
   width: 100%;
   overflow-x: auto;
+
+  &[data-overflowing] [data-frozen] {
+    position: sticky;
+    left: var(--frozen-left, 0);
+    z-index: var(--z-raised);
+  }
+
+  &[data-overflowing] thead [data-frozen] {
+    z-index: calc(var(--z-sticky) + 1);
+  }
+
+  [data-frozen-edge]::after {
+    content: "";
+    display: none;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--color-border);
+    box-shadow: var(--shadow-edge);
+    pointer-events: none;
+  }
+
+  &[data-scrolled] [data-frozen-edge]::after {
+    display: block;
+  }
+
+  @media (min-width: 600px) {
+    &[data-scrolled] [data-frozen-edge="narrow"]::after {
+      display: none;
+    }
+  }
+
+  /* Narrow screens: later frozen columns scroll normally (left: auto keeps a sticky header's top). */
+  @media (max-width: 599px) {
+    &[data-overflowing] [data-frozen-rest] {
+      left: auto;
+      z-index: auto;
+    }
+
+    &[data-overflowing] thead [data-frozen-rest] {
+      z-index: var(--z-sticky);
+    }
+
+    &[data-scrolled] [data-frozen-edge="wide"]::after {
+      display: none;
+    }
+  }
 `;
 
 const StyledTable = styled.table`
@@ -132,62 +221,35 @@ const StyledTable = styled.table`
   border-collapse: collapse;
   font-size: var(--text-sm);
 
-  /*
-   * Frozen columns (stickyColumns): each cell sticks at the summed width of the frozen columns before
-   * it (--frozen-left, measured). A solid background hides the cells scrolling under it; the last
-   * frozen column draws a 1px divider. Below 600px only the first column stays frozen.
-   */
+  /* A column with a fixed width switches the table to fixed layout (data-fixed). */
+  &[data-fixed] {
+    table-layout: fixed;
+  }
+
+  /* Frozen cells paint their own background so scrolled cells don't show through. */
   [data-frozen] {
-    position: sticky;
-    left: var(--frozen-left, 0);
-    z-index: var(--z-raised);
     background: var(--color-bg);
   }
 
-  thead [data-frozen] {
-    z-index: calc(var(--z-sticky) + 1);
-  }
-
-  tbody tr:hover > [data-frozen] {
+  /*
+   * Row hover is pure CSS on every cell (frozen ones too), with no transition, so the whole row
+   * highlights in the same frame.
+   */
+  tbody tr:hover > td {
     background: var(--color-bg-hover);
   }
 
-  [data-frozen-edge]::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    width: 1px;
-    background: var(--color-border);
-    pointer-events: none;
-  }
-
-  @media (min-width: 600px) {
-    [data-frozen-edge="narrow"]::after {
-      display: none;
-    }
-  }
-
-  /* Narrow screens: later frozen columns scroll normally (left: auto keeps a sticky header's top). */
-  @media (max-width: 599px) {
-    [data-frozen-rest] {
-      left: auto;
-      z-index: auto;
-    }
-
-    thead [data-frozen-rest] {
-      z-index: var(--z-sticky);
-    }
-
-    [data-frozen-edge="wide"]::after {
-      display: none;
-    }
+  /* Fixed layout: content that doesn't fit its column is clipped rather than spilling into the next. */
+  &[data-fixed] td,
+  &[data-fixed] th {
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 `;
 
 const Th = styled.th<{ $align?: "left" | "right"; $sticky?: boolean }>`
-  padding: var(--space-2) var(--space-3);
+  height: var(--row-height);
+  padding: 0 var(--space-3);
   border-bottom: 1px solid var(--color-border);
   font-size: var(--text-xs);
   font-weight: var(--weight-medium);
@@ -288,13 +350,25 @@ const OptionCount = styled.span`
   font-variant-numeric: tabular-nums;
 `;
 
+/**
+ * Staged selection: checking options only changes a draft. Apply commits it (onChange) and closes;
+ * Clear selects every option (no filtering) without closing; closing any other way discards the draft.
+ */
 function ColumnFilter({ filter }: { filter: TableColumnFilter }) {
   const { label, options, selected, onChange } = filter;
-  const count = selected.length;
+  const [open, setOpen] = React.useState(false);
+  const [draft, setDraft] = React.useState<string[]>(selected);
+  const count = filterCount(filter);
   const toggle = (value: string, checked: boolean) =>
-    onChange(checked ? [...selected, value] : selected.filter((v) => v !== value));
+    setDraft((prev) => (checked ? [...prev.filter((v) => v !== value), value] : prev.filter((v) => v !== value)));
   return (
-    <Popover>
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        if (next) setDraft(selected);
+        setOpen(next);
+      }}
+    >
       <PopoverTrigger asChild>
         <FilterButton type="button" aria-label={tableFilterCopy.trigger(label, count)} $active={isFilterActive(filter)}>
           <Icon icon={ListFilter} size={SORT_ICON_SIZE} />
@@ -302,30 +376,42 @@ function ColumnFilter({ filter }: { filter: TableColumnFilter }) {
         </FilterButton>
       </PopoverTrigger>
       <PopoverContent align="start" showClose={false}>
-        <FilterFieldset>
-          <FilterLegend>{tableFilterCopy.legend(label)}</FilterLegend>
-          <FilterOptions>
-            {options.map((option) => (
-              <li key={option.value}>
-                <Checkbox
-                  checked={selected.includes(option.value)}
-                  onCheckedChange={(checked) => toggle(option.value, checked === true)}
-                  label={
-                    <OptionLabel>
-                      {option.label}
-                      {option.count !== undefined && <OptionCount>{option.count}</OptionCount>}
-                    </OptionLabel>
-                  }
-                />
-              </li>
-            ))}
-          </FilterOptions>
-        </FilterFieldset>
-        <PopoverActions>
-          <Button type="button" $variant="ghost" $size="sm" onClick={() => onChange([])}>
-            {tableFilterCopy.clear}
-          </Button>
-        </PopoverActions>
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            // Keep the page's option order, whatever order the boxes were checked in.
+            onChange(options.map((o) => o.value).filter((v) => draft.includes(v)));
+            setOpen(false);
+          }}
+        >
+          <FilterFieldset>
+            <FilterLegend>{tableFilterCopy.legend(label)}</FilterLegend>
+            <FilterOptions>
+              {options.map((option) => (
+                <li key={option.value}>
+                  <Checkbox
+                    checked={draft.includes(option.value)}
+                    onCheckedChange={(checked) => toggle(option.value, checked === true)}
+                    label={
+                      <OptionLabel>
+                        {option.label}
+                        {option.count !== undefined && <OptionCount>{option.count}</OptionCount>}
+                      </OptionLabel>
+                    }
+                  />
+                </li>
+              ))}
+            </FilterOptions>
+          </FilterFieldset>
+          <PopoverActions>
+            <Button type="button" $variant="ghost" $size="sm" onClick={() => setDraft(options.map((o) => o.value))}>
+              {tableFilterCopy.clear}
+            </Button>
+            <Button type="submit" $variant="primary" $size="sm">
+              {tableFilterCopy.apply}
+            </Button>
+          </PopoverActions>
+        </form>
       </PopoverContent>
     </Popover>
   );
@@ -402,12 +488,12 @@ function SortableHeader<T>({
   column,
   sort,
   onSortChange,
-  busy,
+  pending,
 }: {
   column: TableColumn<T> & { sortKey: string };
   sort?: TableSort;
   onSortChange: (next: TableSort) => void;
-  busy?: boolean;
+  pending?: boolean;
 }) {
   const active = sort?.key === column.sortKey ? sort.direction : undefined;
   const next = nextTableSort(sort, column);
@@ -426,7 +512,7 @@ function SortableHeader<T>({
       <span>{column.header}</span>
       {active ? (
         <SortIndicator>
-          {busy ? (
+          {pending ? (
             <Spinner>
               <Icon icon={LoaderCircle} size={SORT_ICON_SIZE} />
             </Spinner>
@@ -498,22 +584,19 @@ const Body = styled.tbody<{ $busy?: boolean }>`
   opacity: ${({ $busy }) => ($busy ? 0.6 : 1)};
 `;
 
+/* Every cell is single-line, so every row is exactly --row-height. */
 const Td = styled.td<{ $align?: "left" | "right" }>`
-  padding: var(--space-2) var(--space-3);
+  height: var(--row-height);
+  padding: 0 var(--space-3);
+  white-space: nowrap;
   color: var(--color-text);
   text-align: ${({ $align }) => $align ?? "left"};
   vertical-align: middle;
 `;
 
 const Row = styled.tr<{ $clickable?: boolean }>`
-  transition: background-color var(--duration) var(--ease);
-
   &:not(:first-child) {
     border-top: 1px solid var(--color-border);
-  }
-
-  &:hover {
-    background: var(--color-bg-hover);
   }
 
   ${({ $clickable }) => $clickable && `cursor: pointer;`}
@@ -551,16 +634,16 @@ const Row = styled.tr<{ $clickable?: boolean }>`
   }
 `;
 
-/** Data attributes and the measured left offset for a frozen column's cells. */
-function frozenProps(index: number, frozen: number, offsets: number[]) {
-  if (index >= frozen) return {};
+/** Data attributes and the measured left offset for a frozen column's cells; the header also carries the column's fixed width. */
+function frozenProps(index: number, frozen: number, offsets: number[], width?: string) {
+  if (index >= frozen) return width ? { style: { width } } : {};
   const last = index === frozen - 1;
   const edge = index === 0 ? (last ? "all" : "narrow") : last ? "wide" : undefined;
   return {
     "data-frozen": "",
     "data-frozen-rest": index > 0 ? "" : undefined,
     "data-frozen-edge": edge,
-    style: { "--frozen-left": `${offsets[index] ?? 0}px` } as React.CSSProperties,
+    style: { "--frozen-left": `${offsets[index] ?? 0}px`, width } as React.CSSProperties,
   };
 }
 
@@ -584,6 +667,7 @@ export function Table<T>({
   sort,
   onSortChange,
   busy = false,
+  sortPending = false,
   stickyColumns = 0,
   "aria-label": ariaLabel,
 }: TableProps<T>) {
@@ -614,11 +698,43 @@ export function Table<T>({
     return () => observer.disconnect();
   }, [frozen, columnKeys, rows.length]);
 
-  if (rows.length === 0) return <>{empty}</>;
+  // Frozen columns only stick when the table is wider than its container (data-overflowing), and the
+  // edge divider and shadow only show while scrolled sideways (data-scrolled). Both are set on the DOM
+  // directly, so scrolling never re-renders the table.
+  const wrapperRef = React.useRef<HTMLDivElement>(null);
+  const hasRows = rows.length > 0;
+  React.useLayoutEffect(() => {
+    const wrapper = wrapperRef.current;
+    const table = tableRef.current;
+    if (frozen < 1 || !wrapper || !table) return;
+    const update = () => {
+      const overflowing = wrapper.scrollWidth > wrapper.clientWidth + 1;
+      wrapper.toggleAttribute("data-overflowing", overflowing);
+      wrapper.toggleAttribute("data-scrolled", overflowing && wrapper.scrollLeft > 0);
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(wrapper);
+    observer.observe(table);
+    wrapper.addEventListener("scroll", update, { passive: true });
+    return () => {
+      observer.disconnect();
+      wrapper.removeEventListener("scroll", update);
+    };
+  }, [frozen, hasRows]);
+
+  if (!hasRows) return <>{empty}</>;
+
+  const fixed = visibleColumns.some((col) => col.width);
 
   return (
-    <Wrapper>
-      <StyledTable ref={tableRef} aria-label={ariaLabel} aria-busy={busy || undefined}>
+    <Wrapper ref={wrapperRef}>
+      <StyledTable
+        ref={tableRef}
+        aria-label={ariaLabel}
+        aria-busy={busy || sortPending || undefined}
+        data-fixed={fixed ? "" : undefined}
+      >
         <thead>
           <tr>
             {visibleColumns.map((col, index) => {
@@ -633,7 +749,7 @@ export function Table<T>({
                     : "none";
               const label =
                 sortKey !== undefined && onSortChange ? (
-                  <SortableHeader column={{ ...col, sortKey }} sort={sort} onSortChange={onSortChange} busy={busy} />
+                  <SortableHeader column={{ ...col, sortKey }} sort={sort} onSortChange={onSortChange} pending={sortPending} />
                 ) : (
                   col.header
                 );
@@ -644,7 +760,7 @@ export function Table<T>({
                   aria-sort={ariaSort}
                   $align={col.align}
                   $sticky={sticky}
-                  {...frozenProps(index, frozen, offsets)}
+                  {...frozenProps(index, frozen, offsets, col.width)}
                 >
                   {col.filter ? (
                     <HeaderInner $align={col.align}>

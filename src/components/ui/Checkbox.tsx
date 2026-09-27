@@ -16,8 +16,14 @@ import { Label } from "./Label";
  * Both show a lock icon with the reason on hover/focus.
  */
 
+/*
+ * The border is drawn inside the box (an inset box-shadow in --checkbox-border), so the box is exactly
+ * 20px in every state and checking never shifts the label.
+ */
 const Root = styled(CheckboxPrimitive.Root)`
   all: unset;
+  --checkbox-border: var(--color-border-strong);
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -25,42 +31,44 @@ const Root = styled(CheckboxPrimitive.Root)`
   width: 20px;
   height: 20px;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border-strong);
   background: var(--color-bg);
+  box-shadow: inset 0 0 0 1px var(--checkbox-border);
   cursor: pointer;
   transition:
     background-color var(--duration) var(--ease),
-    border-color var(--duration) var(--ease);
+    box-shadow var(--duration) var(--ease);
 
   &:hover:not([data-disabled]):not([data-readonly]) {
-    border-color: var(--color-text-muted);
+    --checkbox-border: var(--color-text-muted);
   }
 
   &[data-state="checked"],
   &[data-state="indeterminate"] {
     background: var(--color-primary);
-    border-color: var(--color-primary);
+    --checkbox-border: var(--color-primary);
   }
 
   &:focus-visible {
-    box-shadow: var(--focus-ring);
+    box-shadow:
+      inset 0 0 0 1px var(--checkbox-border),
+      var(--focus-ring);
   }
 
   &[aria-invalid="true"] {
-    border-color: var(--color-danger);
+    --checkbox-border: var(--color-danger);
   }
 
   /* Disabled: state unknown, always blank, never shows a check. */
   &[data-disabled] {
     background: var(--color-bg-hover);
-    border-color: var(--color-bg-hover);
+    --checkbox-border: var(--color-bg-hover);
     cursor: not-allowed;
   }
 
   &[data-disabled][data-state="checked"],
   &[data-disabled][data-state="indeterminate"] {
     background: var(--color-bg-hover);
-    border-color: var(--color-bg-hover);
+    --checkbox-border: var(--color-bg-hover);
   }
 
   /* Read-only: value stays visible, muted, but can't be toggled. */
@@ -71,7 +79,7 @@ const Root = styled(CheckboxPrimitive.Root)`
   &[data-readonly][data-state="checked"],
   &[data-readonly][data-state="indeterminate"] {
     background: var(--color-text-muted);
-    border-color: var(--color-text-muted);
+    --checkbox-border: var(--color-text-muted);
   }
 `;
 

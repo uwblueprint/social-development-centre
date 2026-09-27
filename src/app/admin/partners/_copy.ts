@@ -176,14 +176,10 @@ export const partnersCopy = {
     notesEdited: (name: string, when: string) => `Last edited by ${name}, ${when}`,
   },
 
+  /** A person's fields and actions (the People view has no panel; these show in its row menu and edit dialog). */
   personPanel: {
-    organizationHeading: "Organization",
-    detailsHeading: "Details",
     nameLabel: "Name",
     emailLabel: "Email",
-    save: "Save changes",
-    removedOn: (date: string) => `Removed ${date}`,
-    organizationRemoved: (organization: string) => `${organization}'s access was removed.`,
     inviteAgain: "Invite again",
   },
 

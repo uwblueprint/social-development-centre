@@ -25,6 +25,7 @@ Shares don't change status. For SQL, keep `last_cta_click_at` and `cta_clicks` d
 ## Queries
 - `listMembers(tier, q, page, sort, statuses)`: 50 per page. The tiers are exclusive (owner, 27 Sep): General is `tier = general`, Paying is `tier = paying`, subscribed or not. `statuses` is the Status filter from the `status` URL param (absent = every status except `unsubscribed`; `all`; `none`; or a comma list). Search by name or email, server-side.
 - Rows are `Member`: the record without `source`/`sourceDetail`, plus `status`, `ctaClicks`, `lastClickAt?` and `lastEmail` (`subject`, `sentAt`).
+  - **Last email** and **Sent** (confirmed 27 Sep): the server sends `lastEmail.subject` as the plain subject string and `lastEmail.sentAt` as an ISO 8601 timestamp (`toISOString()`), never display text. The page also sends `now` (ISO, the render time). All relative and formatted text ("3d ago", the full date on hover) comes from `src/lib/date.ts` (`formatRelative`, `formatDateTime`) on the client, so a real backend must keep sending ISO dates and raw subjects.
 - Sorting is server-side, before paginating. `sort` is `{ key, direction }` from the `sort` and `dir` URL params: `key` is one of `MEMBER_SORT_KEYS` (`name`, `email`, `clicks` = `ctaClicks`, `sent` = the latest email's `sentAt`, `added` = `addedAt`), `direction` is `asc` or `desc`. Unknown or missing keys use the default, `added` `desc` (`DEFAULT_MEMBER_SORT`; there's no Added column, it's just the default order); any `dir` other than `desc` is `asc`.
   - Name and email compare case-insensitively. People with no name (for `name`) or no email sent (for `sent`) come last in either direction.
   - Ties break on `id` ascending, so a person never appears on two pages.
@@ -33,7 +34,7 @@ Shares don't change status. For SQL, keep `last_cta_click_at` and `cta_clicks` d
 ## Email history
 - `listMemberEmails(id)`: every email sent to the person, newest first: `kind` (`general-welcome`, `paying-welcome`, `paying-added` = "Paying membership added", `paying-removed` = "Paying access removed", `opportunities`), `subject`, `sentAt`, delivery `status` (`delivered` | `not-delivered`, from the email provider's send log), and `opportunities` with this person's actions (empty for non-opportunity emails). No bodies, so the panel opens fast.
 - `getSentEmailHtml(memberId, emailId)`: the rendered `html` of one email as delivered, or `null`. The panel calls it per email only when that email scrolls near view, and renders it in a sandboxed frame.
-- `getMember(id)`: one `Member`; the panel re-reads the person after each action.
+- `getMember(id)`: one `Member`, or `null` when unknown or deleted; the panel re-reads the person after each action, and the page calls it for `?member=<id>` so a shared link opens that person's panel even when they're not on the current page.
 
 ## Actions (all return `ActionState`; all require an SDC admin)
 | Action | Rules | Email |
@@ -67,5 +68,5 @@ The `/kiosk` page ([decisions](../decisions/kiosk.md)) calls one action through 
 | `addBoothSignup(name, email, location)` → `ActionState` | Requires an SDC admin session (the kiosk runs on an admin's tablet). New email → subscribed general member with `source = booth`, `sourceDetail` = `location` (nullable, max 80 chars), onboarding `not_started` and sign-up time. **Existing email, any state (general, paying or unsubscribed) → `success` and no change, no email**, so the kiosk never discloses membership. Never resubscribes anyone. Invalid email → `fieldErrors.email`; any other failure → `status: "error"` (the kiosk shows its own retry copy). | General welcome, new people only |
 
 - **Landed (27 Sep):** `addBoothSignup(name, email, location: string | null)` is in `src/app/admin/community/_data/actions.ts`. New people get `source = booth`, `sourceDetail = location`, onboarding `not_started` (so they show as **Invited**). A deleted person signing up again is fresh consent: they're added and removed from the suppression list. The kiosk's stub in `src/app/kiosk/actions.ts` (marked `TODO(kiosk)`) can be swapped for the import.
-- Admins open the kiosk from Community with **Open sign-up kiosk**, which asks "Where are you?" and opens `/kiosk?location=…` in a new tab.
+- Admins open the kiosk from Community with **Open sign-up kiosk**, a dialog with an optional **Location** that opens `/kiosk?location=…` (or `/kiosk`) in a new tab. `location` may be `null`.
 - `source`/`sourceDetail` stay export only (decision); they're not shown in the member panel.

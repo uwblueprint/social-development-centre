@@ -4,26 +4,47 @@ import * as React from "react";
 import { useActionState } from "react";
 import { useRouter } from "next/navigation";
 import { styled } from "next-yak";
-import { ArrowLeft, Check, FilePen, Send } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, FilePen, Send } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 import { ErrorSummary } from "@/components/ui/ErrorSummary";
+import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
+import { Input } from "@/components/ui/Input";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { useToast } from "@/components/ui/Toast";
 import { fieldError, type ActionState } from "@/lib/forms";
-import { KIND_NOUN } from "../../catalog";
+import { KIND_NOUN, SDC_ORG } from "../../catalog";
 import { copy } from "../../copy";
+import type { EventbritePrefill } from "../../eventbrite";
 import type { Opportunity, OpportunityActions, OpportunityKind, OrganizationRef, SaveResult, TopicId } from "../../types";
 import { BasicsFields } from "./BasicsFields";
+import { EventbriteField } from "./EventbriteField";
 import { EventFields } from "./EventFields";
 import { BackLink, GhostLink, Section } from "./FormParts";
-import { emptyKindValues, initialModel, orderedErrors, type DetailRow, type KindFieldsProps } from "./formValues";
-import { TypeField } from "./TypeField";
-
-const SHARED_FIELDS = new Set(["organizationId", "title", "summary", "link"]);
+import {
+  emptyKindValues,
+  fieldId,
+  initialModel,
+  orderedErrors,
+  previewOpportunity,
+  stepOf,
+  toFormData,
+  type DetailRow,
+  type KindFieldsProps,
+  type Step,
+} from "./formValues";
 import { JobFields } from "./JobFields";
 import { OtherFields } from "./OtherFields";
 import { PetitionFields } from "./PetitionFields";
+import { ReviewStep } from "./ReviewStep";
+import { StepIndicator } from "./StepIndicator";
+import { TypeField } from "./TypeField";
 import { VolunteerFields } from "./VolunteerFields";
+
+/** Fields every type shares; the rest live per type in `byKind`. `eventbrite` is never submitted. */
+const SHARED_FIELDS = new Set(["organizationId", "title", "summary", "link", "eventbrite"]);
+/** The focus target when a step opens: its first heading. */
+const STEP_HEADING = "opportunity-step-heading";
 
 const Page = styled.div`
   width: 100%;
@@ -104,12 +125,18 @@ export interface OpportunityFormProps {
   /** Admin, new listings only: preselects who it's posted as (one of `organizations`). */
   initialOrganizationId?: string;
   save: OpportunityActions["save"];
+  /** The portal's Eventbrite prefill action (a dev-mock spike; see eventbrite.ts). */
+  prefill: (url: string) => Promise<ActionState<EventbritePrefill>>;
+  /** Partner only: their organization, named in the Review step's preview. */
+  organizationName?: string;
 }
 
 /**
- * Full-page create/edit form for every kind. Posts the FormData contract in service.ts:
- * `id` and `kind` (and each selected topic) are appended in the action wrapper, since
- * native hidden inputs are off-limits in feature code; `intent` comes from the clicked button.
+ * Full-page create/edit form for every kind, in three steps on one route: 1 Type (type and links), 2 Details,
+ * 3 Review (the email preview, and Publish). Steps live in component state, not the URL. Save as draft works
+ * on every step. The FormData contract in service.ts is built from the model (toFormData), since only the
+ * current step is rendered; `intent` comes from the clicked button. A server validation error opens the
+ * step with the first invalid field, with the error summary on top (its links switch steps too).
  */
 export function OpportunityForm({
   scope,
@@ -119,11 +146,18 @@ export function OpportunityForm({
   organizations,
   initialOrganizationId,
   save,
+  prefill,
+  organizationName,
 }: OpportunityFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [state, formAction] = useActionState(save, initialState);
   const [model, setModel] = React.useState(() => initialModel(initialKind, opportunity, initialOrganizationId));
+  const [step, setStep] = React.useState<Step>(1);
+  const [prefillError, setPrefillError] = React.useState<string>();
+  const [prefilling, startPrefill] = React.useTransition();
+  // A field id (or the step heading) to focus once the current render lands.
+  const pendingFocus = React.useRef<string | null>(null);
 
   const status = opportunity?.status ?? "draft";
   const isDraft = status === "draft";
@@ -150,27 +184,88 @@ export function OpportunityForm({
   // Field errors show inline and in a summary that stays until the next submit; never as a toast.
   const summary = state.status === "error" ? orderedErrors(kind, state.fieldErrors) : [];
 
+  function goTo(next: Step, focusId = STEP_HEADING) {
+    pendingFocus.current = focusId;
+    setStep(next);
+  }
+
   React.useEffect(() => {
     if (state.status === "success") {
       if (state.message) toast({ title: state.message });
       router.push(`${basePath}?tab=${state.data?.tab ?? "published"}`);
     } else if (state.status === "error") {
-      if (summary.length > 0) focusField(summary[0].fieldId);
+      if (summary.length > 0) goTo(stepOf(summary[0].key), summary[0].fieldId);
       else if (state.message) toast({ title: state.message });
     }
     // Runs once per submission result.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 
-  function submit(fd: FormData) {
-    fd.set("kind", kind);
-    if (opportunity) fd.set("id", opportunity.id);
-    fd.delete("topics");
-    for (const topic of model.topics) fd.append("topics", topic);
-    formAction(fd);
+  React.useEffect(() => {
+    if (!pendingFocus.current) return;
+    focusField(pendingFocus.current);
+    pendingFocus.current = null;
+  });
+
+  /** Error summary links to a field on another step open that step first. */
+  function onSummaryClick(event: React.MouseEvent) {
+    const href = (event.target as HTMLElement).closest("a")?.getAttribute("href");
+    const item = href && summary.find((e) => `#${e.fieldId}` === href);
+    if (!item || stepOf(item.key) === step) return;
+    event.preventDefault();
+    event.stopPropagation();
+    goTo(stepOf(item.key), item.fieldId);
   }
 
-  const fieldProps: KindFieldsProps = { values: { ...model.values, ...model.byKind[kind] }, set, error };
+  /** Next is a submit button, so Enter in a field moves on; only Save as draft, Publish and Save changes post. */
+  function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    const submitter = (event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+    if (submitter?.value === "next" || (!submitter && step < 3)) {
+      event.preventDefault();
+      if (step < 3) goTo((step + 1) as Step);
+    }
+  }
+
+  function submit(fd: FormData) {
+    formAction(toFormData(model, String(fd.get("intent") ?? "publish"), opportunity?.id));
+  }
+
+  function fillFromEventbrite() {
+    const url = (model.values.eventbrite ?? "").trim();
+    if (prefilling) return;
+    startPrefill(async () => {
+      const result = await prefill(url);
+      if (result.status !== "success" || !result.data) {
+        setPrefillError(result.fieldErrors?.eventbrite ?? result.message);
+        return;
+      }
+      const d = result.data;
+      setPrefillError(undefined);
+      setModel((m) => ({
+        ...m,
+        values: { ...m.values, title: d.title, summary: d.summary, link: m.values.link?.trim() ? m.values.link : d.link },
+        byKind: {
+          ...m.byKind,
+          event: {
+            ...m.byKind.event,
+            date: d.date,
+            startTime: d.startTime,
+            endTime: d.endTime ?? "",
+            area: d.area,
+            address: d.address ?? "",
+            format: m.byKind.event?.format || "in_person",
+          },
+        },
+      }));
+      if (result.message) toast({ title: result.message });
+    });
+  }
+
+  const fieldProps: KindFieldsProps = { kind, values: { ...model.values, ...model.byKind[kind] }, set, error };
+  const publisher =
+    scope === "admin"
+      ? (organizations?.find((o) => o.id === model.values.organizationId) ?? SDC_ORG)
+      : (opportunity?.organization ?? { id: "", name: organizationName ?? "" });
 
   return (
     <Page>
@@ -180,44 +275,80 @@ export function OpportunityForm({
           {copy.form.back}
         </BackLink>
         <Title>{opportunity ? copy.form.editTitle(noun) : copy.form.newTitle(noun)}</Title>
+        <StepIndicator step={step} />
       </Header>
 
-      <Form action={submit} noValidate>
-        {summary.length > 0 && <ErrorSummary title={state.message ?? ""} errors={summary} />}
-        <Section title={copy.form.sections.basics}>
-          <TypeField kind={kind} editable={isDraft} onChange={setKind} error={error("kind")} />
-          <BasicsFields
-            {...fieldProps}
-            scope={scope}
-            kind={kind}
-            organizations={organizations}
-            topics={model.topics}
-            onToggleTopic={toggleTopic}
-          />
-        </Section>
+      <Form action={submit} onSubmit={onSubmit} noValidate>
+        {summary.length > 0 && (
+          <div onClickCapture={onSummaryClick}>
+            <ErrorSummary title={state.message ?? ""} errors={summary} />
+          </div>
+        )}
 
-        <Section title={copy.form.sections[kind]}>
-          {kind === "event" && <EventFields {...fieldProps} />}
-          {kind === "petition" && <PetitionFields {...fieldProps} />}
-          {kind === "volunteer" && <VolunteerFields {...fieldProps} />}
-          {kind === "job" && <JobFields {...fieldProps} />}
-          {kind === "other" && <OtherFields {...fieldProps} details={model.details} setDetails={setDetails} />}
-        </Section>
+        {step === 1 && (
+          <Section title={copy.form.steps.type} headingId={STEP_HEADING}>
+            <TypeField kind={kind} editable={isDraft} onChange={setKind} error={error("kind")} />
+            {kind === "event" && (
+              <EventbriteField
+                value={model.values.eventbrite ?? ""}
+                onChange={(v) => set("eventbrite", v)}
+                onFill={fillFromEventbrite}
+                pending={prefilling}
+                error={prefillError}
+              />
+            )}
+            <Field label={copy.form.link.label} hint={copy.form.link.hint[kind]} id={fieldId("link")} error={error("link")} required>
+              {(p) => (
+                <Input
+                  {...p}
+                  inputMode="url"
+                  autoComplete="url"
+                  spellCheck={false}
+                  name="link"
+                  value={model.values.link ?? ""}
+                  onChange={(e) => set("link", e.target.value)}
+                />
+              )}
+            </Field>
+          </Section>
+        )}
+
+        {step === 2 && (
+          <>
+            <Section title={copy.form.sections.basics} headingId={STEP_HEADING}>
+              <BasicsFields {...fieldProps} scope={scope} organizations={organizations} topics={model.topics} onToggleTopic={toggleTopic} />
+            </Section>
+            <Section title={copy.form.sections[kind]}>
+              {kind === "event" && <EventFields {...fieldProps} />}
+              {kind === "petition" && <PetitionFields {...fieldProps} />}
+              {kind === "volunteer" && <VolunteerFields {...fieldProps} />}
+              {kind === "job" && <JobFields {...fieldProps} />}
+              {kind === "other" && <OtherFields {...fieldProps} details={model.details} setDetails={setDetails} />}
+            </Section>
+          </>
+        )}
+
+        {step === 3 && <ReviewStep preview={previewOpportunity(model, publisher)} headingId={STEP_HEADING} onEdit={(s) => goTo(s)} />}
 
         <ActionBar>
-          {/* First in DOM order, so Enter in a field submits this one. */}
-          {isDraft ? (
-            <SubmitButton name="intent" value="publish">
+          {step > 1 && (
+            <Button type="button" $variant="ghost" onClick={() => goTo((step - 1) as Step)}>
+              <Icon icon={ArrowLeft} size={16} />
+              {copy.form.previous}
+            </Button>
+          )}
+          {/* The first submit button in DOM order is what Enter in a field presses: Next, then Publish or Save changes. */}
+          {step < 3 && (
+            <Button type="submit" name="intent" value="next">
+              {copy.form.next}
+              <Icon icon={ArrowRight} size={16} />
+            </Button>
+          )}
+          {(step === 3 || !isDraft) && (
+            <SubmitButton name="intent" value={isDraft ? "publish" : "save"} $variant={step === 3 ? undefined : "secondary"}>
               <ButtonContent>
-                <Icon icon={Send} />
-                {copy.form.publish}
-              </ButtonContent>
-            </SubmitButton>
-          ) : (
-            <SubmitButton name="intent" value="save">
-              <ButtonContent>
-                <Icon icon={Check} />
-                {copy.form.saveChanges}
+                <Icon icon={isDraft ? Send : Check} />
+                {isDraft ? copy.form.publish : copy.form.saveChanges}
               </ButtonContent>
             </SubmitButton>
           )}

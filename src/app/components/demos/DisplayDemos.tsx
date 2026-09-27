@@ -17,7 +17,8 @@ import { List, ListRow } from "@/components/ui/ListRow";
 import { Pagination } from "@/components/ui/Pagination";
 import { Table } from "@/components/ui/Table";
 import type { TableColumn, TableSort } from "@/components/ui/Table";
-import { Building2, ChevronRight, Search, UserPlus, UsersRound } from "lucide-react";
+import { TruncatedEmail, TruncatedText } from "@/components/ui/TruncatedText";
+import { Briefcase, Building2, CalendarDays, ChevronRight, HandHeart, Megaphone, Search, Shapes, UserPlus, UsersRound } from "lucide-react";
 import { ListEmptyState } from "@/components/patterns/ListPage";
 import { Icon } from "@/components/ui/Icon";
 
@@ -210,7 +211,7 @@ function sortMembers(rows: DemoMember[], sort: TableSort) {
   return sort.direction === "asc" ? sorted : sorted.reverse();
 }
 
-/** Shows `busy` the way a server sort does: the chosen column is active at once, the rows follow. */
+/** Shows `sortPending` and `busy` the way a server sort does: the chosen column is active at once (spinner), the rows follow. */
 export function SortableTableDemo() {
   const [sort, setSort] = useState<TableSort>({ key: "added", direction: "desc" });
   const [rowsSort, setRowsSort] = useState<TableSort>(sort);
@@ -227,6 +228,7 @@ export function SortableTableDemo() {
         setTimeout(() => setRowsSort(next), 900); // a pretend server round trip
       }}
       busy={busy}
+      sortPending={busy}
       aria-label="Members, sortable"
     />
   );
@@ -244,7 +246,7 @@ interface DemoPartnerPerson {
 }
 
 const PARTNER_PEOPLE: DemoPartnerPerson[] = [
-  { id: "1", name: "Amara Okafor", organization: "Northside Food Bank", email: "amara@northsidefood.org", role: "Owner", status: "Active", city: "Toronto", tags: [] },
+  { id: "1", name: "Amara Okafor", organization: "Northside Community Food Bank and Kitchen", email: "amara.okafor.coordinator@northsidefood.org", role: "Owner", status: "Active", city: "Toronto", tags: [] },
   { id: "2", name: "Luis Romero", organization: "Riverbend Youth Collective", email: "luis@riverbend.org", role: "Poster", status: "Invited", city: "Hamilton", tags: [] },
   { id: "3", name: "Grace Liu", organization: "Eastside Newcomer Services", email: "grace@eastside.org", role: "Poster", status: "Active", city: "Mississauga", tags: [] },
   { id: "4", name: "Samir Haddad", organization: "Northside Food Bank", email: "samir@northsidefood.org", role: "Poster", status: "Invited", city: "Toronto", tags: [] },
@@ -269,8 +271,8 @@ export function FilterTableDemo() {
   );
   const columns: TableColumn<DemoPartnerPerson>[] = [
     { key: "name", header: "Name", render: (p) => <Nowrap>{p.name}</Nowrap> },
-    { key: "organization", header: "Organization", render: (p) => <Nowrap>{p.organization}</Nowrap> },
-    { key: "email", header: "Email", render: (p) => p.email },
+    { key: "organization", header: "Organization", width: "200px", render: (p) => <TruncatedText tooltip>{p.organization}</TruncatedText> },
+    { key: "email", header: "Email", width: "220px", render: (p) => <TruncatedEmail email={p.email} /> },
     {
       key: "role",
       header: "Role",
@@ -497,6 +499,13 @@ export function DisplayDemos() {
         <Badge>Volunteer</Badge>
         <Badge $variant="outline">11 members</Badge>
       </BadgeRow>
+      <BadgeRow aria-label="Badge categories">
+        <Badge $category={1}><Icon icon={CalendarDays} size={12} />Event</Badge>
+        <Badge $category={2}><Icon icon={Megaphone} size={12} />Petition</Badge>
+        <Badge $category={3}><Icon icon={HandHeart} size={12} />Volunteer</Badge>
+        <Badge $category={4}><Icon icon={Briefcase} size={12} />Job</Badge>
+        <Badge $category={5}><Icon icon={Shapes} size={12} />Other</Badge>
+      </BadgeRow>
 
       <Card>
         <CardHeader>
@@ -595,5 +604,25 @@ export function DisplayDemos() {
         </Card>
       </Grid>
     </Stack>
+  );
+}
+
+const TruncationFrame = styled.div`
+  display: grid;
+  gap: var(--space-3);
+  max-width: calc(var(--space-8) * 3);
+  font-size: var(--text-sm);
+`;
+
+/** TruncatedText (tooltip only when cut off) and TruncatedEmail (middle truncation keeps the domain). */
+export function TruncationDemo() {
+  return (
+    <TruncationFrame>
+      <TruncatedText tooltip>Northside Community Food Bank and Kitchen</TruncatedText>
+      <TruncatedText tooltip>Short name, no tooltip</TruncatedText>
+      <TruncatedEmail email="amara.okafor.coordinator@northsidefood.org" />
+      <TruncatedEmail email="luis@riverbend.org" />
+      <TruncatedEmail email="x@a-very-long-domain-that-cannot-fit-anywhere.example.org" />
+    </TruncationFrame>
   );
 }

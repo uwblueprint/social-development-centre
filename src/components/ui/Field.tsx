@@ -25,10 +25,65 @@ const Required = styled.span`
   font-size: var(--text-xs);
 `;
 
+/* One line under the control: the hint (or the error, which replaces it) left, the counter right. */
+const Footer = styled.div`
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+`;
+
 const Hint = styled.span`
+  min-width: 0;
   font-size: var(--text-xs);
   color: var(--color-text-muted);
 `;
+
+const Counter = styled.span<{ $warning?: boolean }>`
+  flex: none;
+  margin-left: auto;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+
+  /* The count itself says how little is left, so this isn't a color-only signal. */
+  &[data-warning] {
+    color: var(--color-danger);
+    font-weight: var(--weight-medium);
+  }
+`;
+
+/** A control's character counter, shown by its `Field` on the hint line. */
+export interface FieldCounterState {
+  remaining: number;
+  /** Near the limit (the last 10%): the counter turns danger-colored and medium weight. */
+  warning: boolean;
+}
+
+const FieldCounterContext = React.createContext<((counter: FieldCounterState | null) => void) | null>(null);
+
+/**
+ * For kit controls with a `maxLength` (e.g. `Textarea`): hands the counter to the enclosing `Field`,
+ * which shows it on the hint line with id `{control id}-counter`. Returns whether a Field shows it;
+ * when false the control renders its own counter.
+ */
+export function useFieldCounter(counter: FieldCounterState | null): boolean {
+  const setCounter = React.useContext(FieldCounterContext);
+  const remaining = counter?.remaining;
+  const warning = counter?.warning;
+  React.useLayoutEffect(() => {
+    if (!setCounter) return;
+    setCounter(remaining === undefined ? null : { remaining, warning: !!warning });
+  }, [setCounter, remaining, warning]);
+  React.useLayoutEffect(() => (setCounter ? () => setCounter(null) : undefined), [setCounter]);
+  return setCounter !== null;
+}
+
+/** "{n} characters left". */
+export function characterCountText(remaining: number) {
+  return `${remaining} ${remaining === 1 ? "character" : "characters"} left`;
+}
 
 const ErrorMessage = styled.span`
   display: flex;
@@ -93,10 +148,10 @@ export function Field({
   const controlId = id ?? generatedId;
   const hintId = React.useId();
   const errorId = React.useId();
+  const [counter, setCounter] = React.useState<FieldCounterState | null>(null);
 
-  const describedBy =
-    [hint ? hintId : null, error ? errorId : null].filter(Boolean).join(" ") ||
-    undefined;
+  // The error replaces the hint line, so only one of them describes the control.
+  const describedBy = (error ? errorId : hint ? hintId : null) ?? undefined;
 
   const body = (
     <Wrapper>
@@ -107,19 +162,32 @@ export function Field({
         {required && <Required>(required)</Required>}
         {disabled && <DisabledIcon reason={disabledReason} />}
       </LabelRow>
-      {children({
-        id: controlId,
-        disabled,
-        required,
-        "aria-describedby": describedBy,
-        "aria-invalid": error ? true : undefined,
-      })}
-      {hint && <Hint id={hintId}>{hint}</Hint>}
-      {error && (
-        <ErrorMessage id={errorId}>
-          <ErrorIcon />
-          <span>{error}</span>
-        </ErrorMessage>
+      <FieldCounterContext.Provider value={setCounter}>
+        {children({
+          id: controlId,
+          disabled,
+          required,
+          "aria-describedby": describedBy,
+          "aria-invalid": error ? true : undefined,
+        })}
+      </FieldCounterContext.Provider>
+      {(hint || error || counter) && (
+        <Footer>
+          {error ? (
+            <ErrorMessage id={errorId}>
+              <ErrorIcon />
+              <span>{error}</span>
+            </ErrorMessage>
+          ) : (
+            hint && <Hint id={hintId}>{hint}</Hint>
+          )}
+          {/* The control adds this id to its own aria-describedby. */}
+          {counter && (
+            <Counter id={`${controlId}-counter`} data-warning={counter.warning ? "" : undefined}>
+              {characterCountText(counter.remaining)}
+            </Counter>
+          )}
+        </Footer>
       )}
     </Wrapper>
   );

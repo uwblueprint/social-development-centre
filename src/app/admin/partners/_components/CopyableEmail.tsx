@@ -7,6 +7,7 @@ import { Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { TooltipContent, TooltipRoot, TooltipTrigger } from "@/components/ui/Tooltip";
+import { TruncatedEmail } from "@/components/ui/TruncatedText";
 import { partnersCopy } from "../_copy";
 
 const copy = partnersCopy.emails;
@@ -24,6 +25,9 @@ const CopyIcon = styled.span<{ $shown: boolean }>`
 
 /* The email reads as the cell's text; its own padding is cancelled so it lines up with the other cells. */
 const EmailButton = styled(Button)`
+  min-width: 0;
+  max-width: calc(100% + var(--space-2));
+  justify-content: flex-start;
   height: auto;
   min-height: 24px;
   margin: calc(var(--space-1) * -1);
@@ -102,7 +106,7 @@ export function CopyableEmail({ email }: { email: string }) {
             onPointerLeave={reset}
             onBlur={reset}
           >
-            <span>{email}</span>
+            <TruncatedEmail email={email} />
             <CopyIcon $shown={state !== "idle"} aria-hidden="true">
               <Icon icon={state === "copied" ? Check : Copy} size={14} />
             </CopyIcon>

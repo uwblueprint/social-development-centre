@@ -113,6 +113,7 @@ The SDC brand mark is decorative when adjacent text already says **SDC Admin**.
    - An organization row shows that organization's details.
    - A person row opens a panel headed with that person's name, showing their organization as related information.
    - Make row interactivity clear with hover and focus treatment and a chevron.
+   *(Owner, 27 Sep: People rows don't open a panel. Each has a ⋯ menu with **Edit details** (dialog with Name and Email), **Resend invitation** / **Retry** / **Send new invitation**, **Cancel invitation** and **Remove from organization**; removed people get **Invite again**. The Organization cell is a link-styled button that opens that organization's panel on **Organizations**. The open organization panel is in the URL (`?view=organizations&org=<id>`) so it can be shared. Rows stay on one line: long names, emails and organizations truncate, and Tags read "Invitation pending · Expires Oct 2" (no year in the current year). Search sits in the page header. New copy (**Edit details** for a person, "Open {organization}") is new, needs approval. See docs/decisions/partners.md, decision 20.)*
 
 The tabs have `aria-label="Partner views"`. Label the tables **Organizations** and **People**; label the filter **Status**. Row selection must also work from a keyboard. If **Removed** contains a different set of objects or has different restoration rules, confirm that model before implementing the filter.
 
@@ -320,10 +321,11 @@ Status model, filter, panel actions, delete and export: see decisions 16 to 27 i
 | Copy confirmation (`copyButton.copied`) | Copied | Existing |
 | Copy toast (`toast.emailCopied`) | Copied {name}'s email / Copied {email} | New, needs approval. Only where there's no in-place confirmation |
 | Kiosk button (`toolbar.openKiosk`) | Open sign-up kiosk | New, needs approval. Secondary |
-| Kiosk popover label (`kiosk.locationLabel`) | Where are you? | New, needs approval |
-| Kiosk popover hint (`kiosk.locationHint`) | For example, Kitchener Market. | New, needs approval |
-| Kiosk location missing (`kiosk.locationRequired`) | Enter where you are, like Kitchener Market. | New, needs approval |
-| Kiosk popover button (`kiosk.open`) | Open kiosk | New, needs approval. Opens /kiosk?location=… in a new tab |
+| Kiosk dialog title (`kiosk.title`) | Open sign-up kiosk | New, needs approval. A dialog since 27 Sep (was a popover) |
+| Kiosk dialog field (`kiosk.locationLabel`) | Location | New, needs approval. Optional, no hint. Was "Where are you?" |
+| Kiosk popover hint (`kiosk.locationHint`) | For example, Kitchener Market. | Removed 27 Sep |
+| Kiosk location missing (`kiosk.locationRequired`) | Enter where you are, like Kitchener Market. | Removed 27 Sep: Location is optional |
+| Kiosk dialog buttons (`kiosk.cancel`, `kiosk.open`) | Cancel; Open kiosk | New, needs approval. Open kiosk opens /kiosk?location=… (or /kiosk) in a new tab and closes the dialog |
 | Empty, filter hides everything (`empty.filtered`) | No {members} with these statuses | New, needs approval. Body and **Clear filters** from the list pattern |
 | Empty, search matches hidden (`empty.hiddenByFilter`) | {n} match has / matches have a status the Status filter hides. | New, needs approval |
 | Empty, hidden matches in other tab (`empty.hiddenElsewhere`) | {n} matches in {tab}, with a status the Status filter hides. | New, needs approval |
@@ -635,21 +637,21 @@ An empty or error state says what's empty, why, and the one action that fixes it
 
 A tablet sign-up page for SDC booths, e.g. Kitchener Market. An admin opens `/kiosk` (optionally `/kiosk?location=Kitchener Market`) from Community in a new tab. Admins only; no admin sidebar. Decisions: [kiosk.md](../decisions/kiosk.md). Copy lives in `src/app/kiosk/copy.ts`.
 
-**Flow:** Sign up (Name, Email, **Sign me up**) → confirmation → reset after 20s or on **Next person**. Existing emails see the same confirmation. Focus goes to the confirmation heading, then to Name after a reset. Any touch or keypress pauses the countdown.
+**Flow:** Sign up (Name, Email, **Sign me up**) → confirmation → reset after 20s or on **Next person**. Existing emails see the same confirmation. Focus goes to the confirmation heading, then to Name after a reset. Any touch or keypress pauses the countdown. The confirmation replaces the form in the same layout and tints the screen green (with an icon and text). `{first name}` rules: [kiosk.md, 5](../decisions/kiosk.md#5-greeting-by-first-name).
 
 | Element | Current text | Notes |
 |---|---|---|
-| Label above the heading | Social Development Centre · {location} | New, needs approval. Just "Social Development Centre" without `?location=` |
-| Heading | Get involved in your community | New, needs approval |
-| Intro | Leave your name and email and we'll send you about one email a month with local ways to volunteer, learn and take part. We only use your details for these emails, and you can unsubscribe anytime. | New, needs approval |
+| Label above the heading | Social Development Centre · {location} | Removed 27 Sep |
+| Heading | Get involved with your community | New, needs approval. Changed 27 Sep ("in" → "with"); smaller, so the form leads |
+| Intro | Leave your name and email and we'll send you opportunities that matter to you. We only use these details for those emails. | New, needs approval. Changed 27 Sep: shorter, no "once a month" |
 | Field labels | Name / Email | New, needs approval. Both required |
 | Button | Sign me up | New, needs approval |
 | Name missing | Enter your name. | New, needs approval |
 | Email missing | Enter your email address. | New, needs approval |
 | Email invalid | Enter an email address like name@example.org. | Matches sign-in |
 | Sign-up failed | We couldn't sign you up. Check your connection and tap Sign me up again. | New, needs approval. Values are kept |
-| Confirmation heading | You're in, {name}! | New, needs approval |
-| Confirmation body | Check your inbox for a welcome email. | New, needs approval |
+| Confirmation heading | You're in, {first name}! | New, needs approval. First name since 27 Sep |
+| Confirmation body | Check {email} for a welcome email. | New, needs approval. Changed 27 Sep (was "Check your inbox…") |
 | Countdown | Starting over in {n}s | New, needs approval. Counts down from 20 |
 | Countdown paused | Paused. Tap Next person when you're ready. | New, needs approval |
 | Reset button | Next person | New, needs approval |

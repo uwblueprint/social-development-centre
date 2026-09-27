@@ -4,7 +4,7 @@ import { OpportunityForm } from "@/features/opportunities/components/form/Opport
 import { copy } from "@/features/opportunities/copy";
 import { listPublisherOptions } from "@/features/opportunities/queries";
 import type { OpportunityKind } from "@/features/opportunities/types";
-import { saveOpportunity } from "../_data/actions";
+import { prefillFromEventbrite, saveOpportunity } from "../_data/actions";
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
@@ -37,6 +37,7 @@ export default async function NewOpportunityPage({ searchParams }: Props) {
       organizations={organizations}
       initialOrganizationId={org}
       save={saveOpportunity}
+      prefill={prefillFromEventbrite}
     />
   );
 }

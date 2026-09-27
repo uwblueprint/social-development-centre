@@ -118,7 +118,7 @@ export function TextareaDemo() {
         {(props) => <Textarea {...props} maxLength={200} placeholder="Write your message..." />}
       </Field>
       <Field label="Feedback" error="Feedback is required">
-        {(props) => <Textarea {...props} placeholder="Required" />}
+        {(props) => <Textarea {...props} maxLength={500} placeholder="Required" />}
       </Field>
     </Section>
   );

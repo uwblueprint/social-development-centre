@@ -22,7 +22,7 @@ import {
   ToggleGroupDemo,
 } from "./demos/ControlDemos";
 import { OverlayDemos } from "./demos/OverlayDemos";
-import { DisplayDemos, EmptyStateDemo, FilterTableDemo, ListRowDemo, PaginationDemo, SortableTableDemo, TableDemo } from "./demos/DisplayDemos";
+import { DisplayDemos, EmptyStateDemo, FilterTableDemo, ListRowDemo, PaginationDemo, SortableTableDemo, TableDemo, TruncationDemo } from "./demos/DisplayDemos";
 
 export const metadata: Metadata = {
   title: "Components · Social Development Centre",
@@ -38,7 +38,7 @@ const sections: { id: string; title: string; description: string; demo: ReactNod
   { id: "date-picker", title: "Date picker", description: "Type a date or pick one from a calendar.", demo: <DatePickerDemo /> },
   { id: "select", title: "Select", description: "Pick one option from a list.", demo: <SelectDemo /> },
   { id: "creatable-combobox", title: "Creatable combobox", description: "Pick an existing option or create one inline.", demo: <CreatableComboboxDemo /> },
-  { id: "tag-input", title: "Tag input", description: "Type or paste many entries, such as email addresses; each becomes a removable tag. Invalid entries are marked with an icon and a reason.", demo: <TagInputDemo /> },
+  { id: "tag-input", title: "Tag input", description: "Type or paste many entries, such as email addresses; each becomes a removable tag. Invalid entries are marked with an icon and a reason. Click, Shift-click or Cmd/Ctrl-click tags to select them (Cmd/Ctrl+A in the empty field selects all), then Backspace removes and Cmd/Ctrl+C copies them.", demo: <TagInputDemo /> },
   { id: "error-summary", title: "Error summary", description: "A persistent list of a long form's errors, each linking to its field.", demo: <ErrorSummaryDemo /> },
   { id: "checkbox", title: "Checkbox", description: "Independent on/off choices, including indeterminate.", demo: <CheckboxDemo /> },
   { id: "radio", title: "Radio group", description: "One choice from a small set.", demo: <RadioGroupDemo /> },
@@ -50,8 +50,9 @@ const sections: { id: string; title: string; description: string; demo: ReactNod
   { id: "display", title: "Display & navigation", description: "Card, badge, avatar, progress, tabs, accordion, scroll area and collapsible.", demo: <DisplayDemos /> },
   { id: "list-row", title: "List row", description: "A dense, clickable row for lists and simple tables.", demo: <ListRowDemo /> },
   { id: "table", title: "Table", description: "A semantic data table with column headers, row dividers and a clickable row.", demo: <TableDemo /> },
-  { id: "table-sortable", title: "Table, sortable", description: "Select a column header to sort by it; select it again to reverse. The active column shows an arrow; others show a hint on hover or focus. While the next rows load (busy), rows dim in place, the arrow becomes a spinner and a line runs under the header.", demo: <SortableTableDemo /> },
-  { id: "table-filters", title: "Table, filters and frozen columns", description: "Filters live in column headers: the filter icon opens a checkbox list, and an active filter shows its count. The first two columns stay frozen while the table scrolls sideways (only the first below 600px). The Tags column is hidden because no row has tags.", demo: <FilterTableDemo /> },
+  { id: "table-sortable", title: "Table, sortable", description: "Select a column header to sort by it; select it again to reverse. The active column shows an arrow; others show a hint on hover or focus. While a sort loads, the arrow becomes a spinner (sortPending); while any rows load (busy), rows dim in place and a line runs under the header.", demo: <SortableTableDemo /> },
+  { id: "table-filters", title: "Table, filters and frozen columns", description: "Filters live in column headers: the filter icon opens a checkbox list; changes apply with Apply, Clear selects everything, and closing discards. An active filter shows its count. The first two columns freeze only when the table overflows, with a divider and shadow once scrolled sideways (only the first below 600px). Organization and Email have fixed widths and truncate. The Tags column is hidden because no row has tags.", demo: <FilterTableDemo /> },
+  { id: "truncation", title: "Truncated text and email", description: "One line with an ellipsis. TruncatedText shows the full text in a tooltip only when it's cut off; TruncatedEmail keeps the @domain whole and shortens the name part.", demo: <TruncationDemo /> },
   { id: "empty-state", title: "Empty state", description: "An empty list, section or no-results placeholder. Lists use ListEmptyState, which picks the variant: matches elsewhere, no matches, filters, search plus filters, truly empty.", demo: <EmptyStateDemo /> },
   { id: "pagination", title: "Pagination", description: "Page summary, Previous/Next and page numbers for a paged list.", demo: <PaginationDemo /> },
 ];

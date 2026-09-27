@@ -1,26 +1,50 @@
 "use client";
 
+import { styled } from "next-yak";
+import { DisabledArea } from "@/components/ui/DisabledReason";
 import { Field } from "@/components/ui/Field";
-import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { SelectableTag, TagList } from "@/components/ui/Tag";
 import { Textarea } from "@/components/ui/Textarea";
-import { LIMITS, TOPICS } from "../../catalog";
+import { LIMITS, MAX_TOPICS, TOPICS } from "../../catalog";
 import { copy } from "../../copy";
-import type { OpportunityKind, OrganizationRef, TopicId } from "../../types";
+import type { OrganizationRef, TopicId } from "../../types";
 import { CountedInput } from "./FormParts";
 import { fieldId, type KindFieldsProps } from "./formValues";
 
 const t = copy.form;
 
+const LabelWithCount = styled.span`
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+`;
+
+const Count = styled.span`
+  font-size: var(--text-xs);
+  font-weight: var(--weight-regular);
+  color: var(--color-text-muted);
+`;
+
+/*
+ * The kit's SelectableTag has no disabled state yet, so capped topics stay focusable (aria-disabled) to reach
+ * the reason tooltip, and read as unavailable by text color and a dashed border as well as the tooltip.
+ */
+const Topics = styled(TagList)`
+  & [aria-disabled="true"] {
+    color: var(--color-text-muted);
+    border-style: dashed;
+    cursor: not-allowed;
+  }
+`;
+
 /**
- * Title, description, topics and link, plus the organization picker for admins.
- * Topics stay clickable past MAX_TOPICS: the server returns "Choose up to 3 topics." instead of a
- * disabled state, since there's no approved disabled reason. They're appended to FormData by the form.
+ * Organization (admins), title, short description and topics. Topics are capped at MAX_TOPICS: at the cap,
+ * the unselected ones are unavailable with the owner's reason (decision 21); service.ts enforces it too.
  */
 export function BasicsFields({
   scope,
-  kind,
   organizations,
   values,
   set,
@@ -29,15 +53,15 @@ export function BasicsFields({
   onToggleTopic,
 }: KindFieldsProps & {
   scope: "admin" | "partner";
-  kind: OpportunityKind;
   organizations?: OrganizationRef[];
   topics: TopicId[];
   onToggleTopic: (id: TopicId) => void;
 }) {
+  const atCap = topics.length >= MAX_TOPICS;
   return (
     <>
       {scope === "admin" && (
-        <Field label={t.organization.label} hint={t.organization.hint} id={fieldId("organizationId")} error={error("organizationId")} required>
+        <Field label={t.organization.label} id={fieldId("organizationId")} error={error("organizationId")} required>
           {(p) => (
             <Select
               {...p}
@@ -50,7 +74,7 @@ export function BasicsFields({
           )}
         </Field>
       )}
-      <Field label={t.title.label} hint={t.title.hint} id={fieldId("title")} error={error("title")} required>
+      <Field label={t.title.label} id={fieldId("title")} error={error("title")} required>
         {(p) => <CountedInput {...p} name="title" max={LIMITS.title} value={values.title ?? ""} onChange={(e) => set("title", e.target.value)} />}
       </Field>
       <Field label={t.summary.label} hint={t.summary.hint} id={fieldId("summary")} error={error("summary")} required>
@@ -58,9 +82,19 @@ export function BasicsFields({
           <Textarea {...p} name="summary" rows={3} maxLength={LIMITS.summary} value={values.summary ?? ""} onChange={(e) => set("summary", e.target.value)} />
         )}
       </Field>
-      <Field label={t.topics.label} hint={t.topics.hint} id={fieldId("topics")} error={error("topics")} required>
+      <Field
+        label={
+          <LabelWithCount>
+            {t.topics.label}
+            <Count aria-live="polite">{t.topics.count(topics.length, MAX_TOPICS)}</Count>
+          </LabelWithCount>
+        }
+        id={fieldId("topics")}
+        error={error("topics")}
+        required
+      >
         {(p) => (
-          <TagList
+          <Topics
             id={p.id}
             role="group"
             tabIndex={-1}
@@ -68,17 +102,24 @@ export function BasicsFields({
             aria-describedby={p["aria-describedby"]}
             data-invalid={error("topics") ? "" : undefined}
           >
-            {TOPICS.map((topic) => (
-              <SelectableTag key={topic.id} selected={topics.includes(topic.id)} onClick={() => onToggleTopic(topic.id)}>
-                {topic.label}
-              </SelectableTag>
-            ))}
-          </TagList>
-        )}
-      </Field>
-      <Field label={t.link.label} hint={t.link.hint[kind]} id={fieldId("link")} error={error("link")} required>
-        {(p) => (
-          <Input {...p} inputMode="url" autoComplete="url" spellCheck={false} name="link" value={values.link ?? ""} onChange={(e) => set("link", e.target.value)} />
+            {TOPICS.map((topic) => {
+              const selected = topics.includes(topic.id);
+              if (atCap && !selected) {
+                return (
+                  <DisabledArea key={topic.id} reason={t.topics.capReason}>
+                    <SelectableTag aria-disabled="true" aria-description={t.topics.capReason}>
+                      {topic.label}
+                    </SelectableTag>
+                  </DisabledArea>
+                );
+              }
+              return (
+                <SelectableTag key={topic.id} selected={selected} onClick={() => onToggleTopic(topic.id)}>
+                  {topic.label}
+                </SelectableTag>
+              );
+            })}
+          </Topics>
         )}
       </Field>
     </>

@@ -60,7 +60,7 @@ export function OtherFields({
       <Field label={t.deadline.label} hint={t.deadline.hint} id={fieldId("deadline")} error={error("deadline")}>
         {(p) => <DatePicker {...p} name="deadline" value={values.deadline ?? ""} onValueChange={(v) => set("deadline", v)} />}
       </Field>
-      <Field label={t.details.label} hint={t.details.hint} id={fieldId("details")} error={error("details")}>
+      <Field label={t.details.label} id={fieldId("details")} error={error("details")}>
         {(p) => (
           <Rows
             id={p.id}

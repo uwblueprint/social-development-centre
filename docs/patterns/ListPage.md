@@ -1,6 +1,6 @@
 # ListPage
 
-The layout for a portal section that is mostly one list: a compact header row, then tabs and search in one toolbar row, then the table. Used by Opportunities, Partners and Community (admin), and Opportunities (partner). The partner Organization page uses the header only.
+The layout for a portal section that is mostly one list: a compact header row (title, search, actions), then the tabs, then the table. Used by Opportunities, Partners and Community (admin), and Opportunities (partner). The partner Organization page uses the header only.
 
 ## Use when / Don't use when
 - A top-level section whose main job is scanning, searching and opening items in a list or table.
@@ -14,8 +14,9 @@ import {
 } from "@/components/patterns/ListPage";
 ```
 - `ListPage`: the page body. Full width, **no `max-width`**, so tables use wide monitors. Padding `--space-5`/`--space-6` (`--space-4` under 768px).
-- `ListPageHeader({ title, actions? })`: an `h1` in `--text-lg` medium on the left, `actions` on the right. No description: what the section is for lives in the sidebar item's `description` tooltip.
-- `ListPageToolbar({ tabs, search?, results? })`: tabs on the left, search on the right, one row with one line under both. Render it inside `<Tabs>` and pass the `TabsList` and a `SearchField`. When the toolbar is narrower than 560px (360px phones, or a crowded tab list), the search wraps to its own full-width row under the tabs. `results: { query, count, pending }` (the server's `q`, the rows it matched in this view, and `useListSearch`'s `pending`) adds a polite live region that announces "{n} results" or "No results" once a search settles. Nothing is announced on first load or while the search is loading.
+- `ListPageHeader({ title, search?, actions?, results? })`: an `h1` in `--text-lg` medium on the left; on the right, `search` (a `SearchField`) at a fixed `--search-width` (280px) just left of the `actions`. When the header is narrower than 640px, the search wraps to its own full-width row under the title and actions. No description: what the section is for lives in the sidebar item's `description` tooltip. `results: { query, count, pending }` (the server's `q`, the rows it matched in the current view, and `useListSearch`'s `pending`) adds a polite live region that announces "{n} results" or "No results" once a search settles. Nothing is announced on first load or while the search is loading.
+- `ListPageToolbar({ tabs, results? })`: the tabs only, full width. Render it inside `<Tabs>` and pass the `TabsList`. `results` works as on the header; pass it in one place. Its `search` prop is deprecated and ignored.
+- **Why search is in the header:** search filters the whole page across tabs (tab counts follow it, and `ListEmptyState` points to matches in other tabs), so it belongs with the page, not with one tab's toolbar.
 - `ListEmptyState(props)`: the list's empty state, tailored to why it's empty. Pass it as the `Table`'s `empty`. See below.
 - `listEmptyCopy`: every string the pattern writes itself (no-results titles, bodies, button labels, announcements). The owner edits them there.
 - `useListParams()`: `{ setParams(next), pending }`. Replaces URL params with `router.replace` inside a transition and keeps every param it isn't given. `undefined` or `""` removes a param.
@@ -31,6 +32,17 @@ const { sort, setSort } = useListSort({ key: "name", direction: "asc" });
 <ListPage>
   <ListPageHeader
     title="Partners"
+    search={
+      <SearchField
+        aria-label="Search by name or email"
+        placeholder="Search by name or email"
+        value={search.value}
+        onChange={(event) => search.setValue(event.target.value)}
+        onSearch={search.search}
+        pending={search.pending}
+      />
+    }
+    results={{ query: q, count: rows.length, pending: search.pending }}
     actions={
       <Button type="button" onClick={openInvite}>
         <Icon icon={UserPlus} size={16} />
@@ -39,19 +51,7 @@ const { sort, setSort } = useListSort({ key: "name", direction: "asc" });
     }
   />
   <Tabs value={tab} onValueChange={(next) => setParams({ tab: next })}>
-    <ListPageToolbar
-      tabs={<TabsList aria-label="Partner views">…</TabsList>}
-      search={
-        <SearchField
-          aria-label="Search by name or email"
-          placeholder="Search by name or email"
-          value={search.value}
-          onChange={(event) => search.setValue(event.target.value)}
-          onSearch={search.search}
-          pending={search.pending}
-        />
-      }
-    />
+    <ListPageToolbar tabs={<TabsList aria-label="Partner views">…</TabsList>} />
     <TabsContent value={tab}>
       <Table columns={columns} rows={rows} getRowId={(p) => p.id} sort={sort} onSortChange={setSort} />
     </TabsContent>
@@ -113,6 +113,6 @@ Opportunity edit pages call `notFound()` for a missing id, which renders `[id]/n
 ## Accessibility
 - One `h1` per page, from `ListPageHeader`.
 - The search field is a `role="search"` landmark with an `aria-label`; the tabs keep their `aria-label`.
-- Visual order matches focus order at every width: tabs, then search.
-- Search results are announced politely through `ListPageToolbar`'s `results`, not by moving focus.
+- Focus order is title area, search, actions, then tabs. At full width the visual order matches; below 640px the search sits on its own row under the actions, the one place visual order and focus order differ (search is still the first control).
+- Search results are announced politely through `ListPageHeader`'s (or `ListPageToolbar`'s) `results`, not by moving focus.
 - `ListEmptyState` is plain text plus one button with a leading or trailing icon and a verb label; the icon above the title is decorative.

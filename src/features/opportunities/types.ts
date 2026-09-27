@@ -37,6 +37,26 @@ export type VolunteerFormat = "in_person" | "remote" | "hybrid";
 export type Workplace = "on_site" | "remote" | "hybrid";
 export type EmploymentType = "full_time" | "part_time" | "contract" | "temporary" | "internship";
 
+/** Where it happens, as a matchable value: Waterloo Region's municipalities, or online. Labels in catalog.ts AREAS. */
+export type Area =
+  | "kitchener"
+  | "waterloo"
+  | "cambridge"
+  | "north_dumfries"
+  | "wellesley"
+  | "wilmot"
+  | "woolwich"
+  | "online";
+
+/** Volunteer time commitment, as a matchable value. Labels in catalog.ts TIME_COMMITMENTS. */
+export type TimeCommitment = "under_2" | "2_to_5" | "5_plus" | "one_time";
+
+/** Volunteer skills from a small fixed list, so they can be matched. Labels in catalog.ts SKILLS. */
+export type SkillId = "no_experience" | "driving" | "languages" | "tech" | "childcare" | "cooking" | "writing" | "event_setup";
+
+/** Event accessibility features people can filter on. Labels in catalog.ts ACCESSIBILITY_FEATURES. */
+export type AccessibilityFeature = "step_free" | "accessible_washroom" | "asl" | "childcare" | "quiet_space";
+
 export interface EventDetails {
   /** yyyy-mm-dd, local to Waterloo Region. */
   date: string;
@@ -44,12 +64,16 @@ export interface EventDetails {
   startTime: string;
   endTime?: string;
   format: EventFormat;
-  /** Required unless format is online. */
-  location?: string;
+  /** Required to publish. */
+  area: Area;
+  /** Optional street address or venue name. Dropped when the area is online. */
+  address?: string;
   cost: "free" | "paid";
   /** e.g. "$10, pay what you can". Shown when cost is paid. */
   costDetails?: string;
-  accessibility?: string;
+  accessibility?: AccessibilityFeature[];
+  /** Anything the checkboxes don't cover, e.g. "ASL with one week's notice". */
+  accessibilityNote?: string;
 }
 
 export interface PetitionDetails {
@@ -61,15 +85,16 @@ export interface PetitionDetails {
 }
 
 export interface VolunteerDetails {
-  commitment: "one_time" | "ongoing";
+  /** Required to publish. "One-time" replaced the old one-time/ongoing Commitment field. */
+  timeCommitment: TimeCommitment;
   format: VolunteerFormat;
-  /** Required unless format is remote. */
-  location?: string;
+  /** Required to publish. */
+  area: Area;
+  /** Optional street address or venue name. Dropped when the area is online. */
+  address?: string;
   /** yyyy-mm-dd */
   startDate?: string;
-  /** Free text, e.g. "3 hours a week". */
-  timeCommitment?: string;
-  skills?: string;
+  skills?: SkillId[];
   minimumAge?: number;
   /** yyyy-mm-dd */
   applyBy?: string;
@@ -78,8 +103,10 @@ export interface VolunteerDetails {
 export interface JobDetails {
   employmentType: EmploymentType;
   workplace: Workplace;
-  /** Required unless workplace is remote. */
-  location?: string;
+  /** Required to publish. */
+  area: Area;
+  /** Optional street address. Dropped when the area is online. */
+  address?: string;
   /** Free text, e.g. "$22–25 an hour". */
   pay?: string;
   /** yyyy-mm-dd */
