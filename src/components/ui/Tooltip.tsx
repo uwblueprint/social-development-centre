@@ -11,7 +11,7 @@ const contentShow = keyframes`
 `;
 
 const Content = styled(TooltipPrimitive.Content)`
-  z-index: 60;
+  z-index: var(--z-tooltip);
   max-width: 260px;
   background: var(--color-text);
   color: var(--color-bg);

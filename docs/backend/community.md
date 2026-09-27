@@ -43,3 +43,13 @@ UI contract: `src/app/admin/community/_data/{types,queries,actions}.ts`. `store.
 - **Access enforcement:** protected member pages and automated sends read the current `tier`/`subscribed` state; paid access delivery (sign-in) follows the Authentication PRD.
 - **CSV upload** is parsed in the browser into the text box; the server only ever receives the `emails` text.
 - Confirm the paid benefit and access link before finalizing the paying-member emails ([drafts](../emails/community.md)).
+
+## Booth kiosk
+The `/kiosk` page ([decisions](../decisions/kiosk.md)) calls one action through `signUpAtBooth` in `src/app/kiosk/actions.ts`, which validates Name and Email and checks the admin session first.
+
+| Action | Rules | Email |
+|---|---|---|
+| `addBoothSignup(name, email, location)` → `ActionState` | Requires an SDC admin session (the kiosk runs on an admin's tablet). New email → subscribed general member with `source = booth`, `location` (nullable, max 80 chars) and sign-up time. **Existing email, any state (general, paying or unsubscribed) → `success` and no change, no email**, so the kiosk never discloses membership. Never resubscribes anyone. Invalid email → `fieldErrors.email`; any other failure → `status: "error"` (the kiosk shows its own retry copy). | General welcome, new people only |
+
+- **Until it lands** the kiosk uses a stub in `src/app/kiosk/actions.ts` (marked `TODO(kiosk)`) that always succeeds. Swap it for the import from `src/app/admin/community/_data/actions.ts`.
+- Show `source`/`location` in the member panel later if admins want to know which booth someone came from (not built).

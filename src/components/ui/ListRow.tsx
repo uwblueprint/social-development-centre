@@ -36,7 +36,7 @@ export const ListRow = styled.button`
 
   &:focus-visible {
     position: relative;
-    z-index: 1;
+    z-index: var(--z-raised);
     outline: none;
     box-shadow: var(--focus-ring);
   }

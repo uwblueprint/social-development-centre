@@ -2,6 +2,8 @@
 
 A modal that interrupts for a decision the person must explicitly confirm or cancel — no outside-click dismiss.
 
+The overlay dims and slightly blurs the page (`--overlay-blur`), like `Dialog`. Sheets never blur.
+
 ## Use when / Don't use when
 - Confirming a destructive or hard-to-reverse action: delete, remove access, discard changes.
 - Any other modal task (editing, forms) — use `Dialog`, which allows outside-click dismiss.

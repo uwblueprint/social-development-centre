@@ -2,9 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import type { ActionState } from "@/lib/forms";
-import type { ExportScope, ImportPreview, Member } from "./types";
-import { findByEmail, members, nextMemberId, sendEmail } from "./store";
+import { dayKey } from "@/lib/date";
+import type { ExportKind, ExportScope, ImportPreview, MemberRecord } from "./types";
+import { summarizeActivity } from "./status";
+import { deleteRecord, emailsFor, findByEmail, forgetDeleted, isDeleted, members, nextMemberId, sendEmail } from "./store";
 import { EMAIL, parseInput } from "../_lib/import";
+import { exportCopy } from "../_copy";
 
 /*
  * Backend: implement against the real audience store and email provider, keeping names,
@@ -56,9 +59,14 @@ function analyse(raw: string, paying: boolean): ImportPreview {
     invalid,
     unsubscribedSelf: [],
     unsubscribedAdmin: [],
+    deleted: [],
   };
   for (const entry of entries) {
     const m = findByEmail(entry.email);
+    if (!m && isDeleted(entry.email)) {
+      preview.deleted.push(entry.email); // deleted at their request: an admin can't add them back
+      continue;
+    }
     if (!m) {
       preview.added.push(entry);
       continue;
@@ -98,10 +106,19 @@ export async function confirmMembers(mode: AddMode, _prev: ActionState, fd: Form
   const now = new Date().toISOString();
   let sent = 0;
   let notDelivered = 0;
-  const send = (m: Member, kind: Parameters<typeof sendEmail>[1]) => (sendEmail(m, kind) === "delivered" ? sent++ : notDelivered++);
+  const send = (m: MemberRecord, kind: Parameters<typeof sendEmail>[1]) => (sendEmail(m, kind) === "delivered" ? sent++ : notDelivered++);
 
   for (const { email, name } of p.added) {
-    const m: Member = { id: nextMemberId(), email, name, tier: paying ? "paying" : "general", subscribed: true, addedAt: now };
+    const m: MemberRecord = {
+      id: nextMemberId(),
+      email,
+      name,
+      tier: paying ? "paying" : "general",
+      subscribed: true,
+      addedAt: now,
+      onboarding: "not_started",
+      source: mode === "single" ? "admin_added" : "file_import",
+    };
     members().push(m);
     send(m, paying ? "paying-welcome" : "general-welcome");
   }
@@ -212,20 +229,123 @@ export async function resubscribeMember(id: string): Promise<ActionState> {
   return done(`${m.name ?? m.email} was resubscribed.`);
 }
 
+/**
+ * Deletes the person permanently, for data-removal requests: the record and its send log go, so they
+ * leave Community and every export. Backend: also delete them from the email provider, and add a hash of
+ * the address to a suppression list so imports and Add members can't bring them back.
+ */
+export async function deleteMember(id: string): Promise<ActionState> {
+  const m = deleteRecord(id);
+  if (!m) return fail("This person was already deleted.");
+  return done(`${m.name ?? m.email} was deleted.`);
+}
+
+/**
+ * For the sign-up kiosk: adds a general member with source `booth`, `sourceDetail` = the location, and
+ * onboarding not started, and sends the general welcome. Returns the same success whether or not the
+ * email already exists, and never changes an existing member (no resubscribe, no rename), so the kiosk
+ * can't reveal who's on the list. Only an invalid email returns an error, on the `email` field.
+ * A deleted person signing up again is fresh consent, so they're added. No admin check: the kiosk is public.
+ */
+export async function addBoothSignup(name: string, email: string, location: string): Promise<ActionState> {
+  const address = email.trim().toLowerCase();
+  if (!EMAIL.test(address)) return { status: "error", fieldErrors: { email: "Enter an email address like name@example.org." } };
+  if (!findByEmail(address)) {
+    forgetDeleted(address);
+    const m: MemberRecord = {
+      id: nextMemberId(),
+      name: name.replace(/[<>]/g, "").trim() || undefined,
+      email: address,
+      tier: "general",
+      subscribed: true,
+      addedAt: new Date().toISOString(),
+      onboarding: "not_started",
+      source: "booth",
+      sourceDetail: location.trim() || undefined,
+    };
+    members().push(m);
+    sendEmail(m, "general-welcome");
+    revalidatePath("/admin/community");
+  }
+  return { status: "success" };
+}
+
 /** General members (not paying), Paying members, or both; unsubscribed people of the same tiers only when asked. */
-function exportRows(scope: ExportScope, includeUnsubscribed: boolean): Member[] {
+function exportRows(scope: ExportScope, includeUnsubscribed: boolean): MemberRecord[] {
   return members().filter((m) => (scope === "both" || m.tier === scope) && (m.subscribed || includeUnsubscribed));
 }
 
-export async function countExport(scope: ExportScope, includeUnsubscribed: boolean): Promise<number> {
-  return exportRows(scope, includeUnsubscribed).length;
+/** People for Members; clicks (primary actions and shares) for Activity. */
+export async function countExport(kind: ExportKind, scope: ExportScope, includeUnsubscribed: boolean): Promise<number> {
+  const rows = exportRows(scope, includeUnsubscribed);
+  if (kind === "members") return rows.length;
+  return rows.reduce((n, m) => n + emailsFor(m).reduce((k, e) => k + e.opportunities.reduce((j, o) => j + o.actions.length, 0), 0), 0);
 }
 
-/** Returns CSV text (name,email) for the browser to download. */
-export async function exportMembers(scope: ExportScope, includeUnsubscribed: boolean): Promise<{ filename: string; csv: string; count: number }> {
+/** Quotes cells that need it, and defuses values a spreadsheet would run as a formula. */
+const cell = (v: string | number | undefined = "") => {
+  const text = String(v);
+  const safe = /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+  return /[",\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
+};
+const day = (iso?: string) => (iso ? dayKey(iso) : "");
+
+function membersCsv(rows: MemberRecord[]): string[] {
+  const c = exportCopy;
+  const now = Date.now();
+  const header = "name,email,status,tier,subscribed,unsubscribed_by,unsubscribed,onboarding,source,source_detail,added,last_email,emails_received,cta_clicks,signups,shares,last_click";
+  return [
+    header,
+    ...rows.map((m) => {
+      const a = summarizeActivity(m, emailsFor(m), now);
+      return [
+        m.name,
+        m.email,
+        c.status[a.status],
+        c.tier[m.tier],
+        m.subscribed ? c.yes : c.no,
+        m.unsubscribedBy && c.unsubscribedBy[m.unsubscribedBy],
+        day(m.unsubscribedAt),
+        c.onboarding[m.onboarding],
+        c.source[m.source],
+        m.sourceDetail,
+        day(m.addedAt),
+        day(a.lastEmail?.sentAt),
+        a.emailsReceived,
+        a.ctaClicks,
+        a.signups,
+        a.shares,
+        day(a.lastClickAt),
+      ]
+        .map((v) => cell(v))
+        .join(",");
+    }),
+  ];
+}
+
+function activityCsv(rows: MemberRecord[]): string[] {
+  const out = ["email,subject,sent,opportunity,action,clicked"];
+  for (const m of rows) {
+    for (const e of emailsFor(m)) {
+      for (const o of e.opportunities) {
+        for (const a of o.actions) {
+          const action = a.type === "share" ? exportCopy.action.shared : exportCopy.action[o.cta];
+          out.push([m.email, e.subject, day(e.sentAt), o.title, action, day(a.at)].map((v) => cell(v)).join(","));
+        }
+      }
+    }
+  }
+  return out;
+}
+
+/** Returns CSV text for the browser to download: one row per person (members) or per click (activity). */
+export async function exportMembers(
+  kind: ExportKind,
+  scope: ExportScope,
+  includeUnsubscribed: boolean,
+): Promise<{ filename: string; csv: string; count: number }> {
   const rows = exportRows(scope, includeUnsubscribed);
-  const cell = (v = "") => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
-  const csv = ["name,email", ...rows.map((m) => `${cell(m.name)},${cell(m.email)}`)].join("\n");
-  const date = new Date().toISOString().slice(0, 10);
-  return { filename: `sdc-${scope === "both" ? "general-and-paying" : scope}-members-${date}.csv`, csv, count: rows.length };
+  const lines = kind === "members" ? membersCsv(rows) : activityCsv(rows);
+  const who = scope === "both" ? "general-and-paying" : scope;
+  return { filename: `sdc-${who}-${kind}-${dayKey(new Date().toISOString())}.csv`, csv: lines.join("\n"), count: lines.length - 1 };
 }

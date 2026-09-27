@@ -117,7 +117,7 @@ const Aside = styled.div<{ $mobileOpen: boolean }>`
 
   ${MOBILE} {
     position: fixed;
-    z-index: 50;
+    z-index: calc(var(--z-nav) + 1);
     left: 0;
     width: min(288px, 85vw);
     padding: var(--space-3);
@@ -146,7 +146,7 @@ const Scrim = styled.button`
     display: block;
     position: fixed;
     inset: 0;
-    z-index: 40;
+    z-index: var(--z-nav);
     background: var(--color-overlay);
   }
 `;

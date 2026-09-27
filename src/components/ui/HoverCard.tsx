@@ -10,7 +10,7 @@ const contentShow = keyframes`
 `;
 
 const Content = styled(HoverCardPrimitive.Content)`
-  z-index: 50;
+  z-index: var(--z-tooltip);
   width: 300px;
   background: var(--color-surface-raised);
   border-radius: var(--radius-lg);

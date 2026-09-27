@@ -511,3 +511,26 @@ An empty or error state says what's empty, why, and the one action that fixes it
 | Any section fails to load, body | Your data is safe; this is a loading problem. | New, needs approval |
 | Any section fails to load, button | Try again | New, needs approval |
 | Partner portal fails to load, contact line | If it keeps happening, contact SDC at {SDC contact email}. | New, needs approval |
+
+## Booth kiosk
+
+A tablet sign-up page for SDC booths, e.g. Kitchener Market. An admin opens `/kiosk` (optionally `/kiosk?location=Kitchener Market`) from Community in a new tab. Admins only; no admin sidebar. Decisions: [kiosk.md](../decisions/kiosk.md). Copy lives in `src/app/kiosk/copy.ts`.
+
+**Flow:** Sign up (Name, Email, **Sign me up**) → confirmation → reset after 20s or on **Next person**. Existing emails see the same confirmation. Focus goes to the confirmation heading, then to Name after a reset. Any touch or keypress pauses the countdown.
+
+| Element | Current text | Notes |
+|---|---|---|
+| Label above the heading | Social Development Centre · {location} | New, needs approval. Just "Social Development Centre" without `?location=` |
+| Heading | Get involved in your community | New, needs approval |
+| Intro | Leave your name and email and we'll send you about one email a month with local ways to volunteer, learn and take part. We only use your details for these emails, and you can unsubscribe anytime. | New, needs approval |
+| Field labels | Name / Email | New, needs approval. Both required |
+| Button | Sign me up | New, needs approval |
+| Name missing | Enter your name. | New, needs approval |
+| Email missing | Enter your email address. | New, needs approval |
+| Email invalid | Enter an email address like name@example.org. | Matches sign-in |
+| Sign-up failed | We couldn't sign you up. Check your connection and tap Sign me up again. | New, needs approval. Values are kept |
+| Confirmation heading | You're in, {name}! | New, needs approval |
+| Confirmation body | Check your inbox for a welcome email. | New, needs approval |
+| Countdown | Starting over in {n}s | New, needs approval. Counts down from 20 |
+| Countdown paused | Paused. Tap Next person when you're ready. | New, needs approval |
+| Reset button | Next person | New, needs approval |

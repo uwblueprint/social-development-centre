@@ -34,7 +34,7 @@ const Overlay = styled(DialogPrimitive.Overlay)`
   position: fixed;
   inset: 0;
   background: var(--color-overlay);
-  z-index: 40;
+  z-index: var(--z-modal);
   animation: ${overlayShow} var(--duration-slow) var(--ease);
 
   &[data-state="closed"] {
@@ -47,7 +47,9 @@ const Content = styled(DialogPrimitive.Content)<{ $size?: SheetSize }>`
   top: 0;
   right: 0;
   bottom: 0;
-  z-index: 41;
+  z-index: var(--z-modal);
+  /* The panel's horizontal inset matches the ListPage gutter, so a sheet lines up with the page. */
+  --sheet-inset: var(--space-6);
   display: flex;
   flex-direction: column;
   width: ${({ $size }) => ($size === "wide" ? "min(720px, 100vw)" : "420px")};
@@ -64,6 +66,10 @@ const Content = styled(DialogPrimitive.Content)<{ $size?: SheetSize }>`
     outline: none;
   }
 
+  @media (max-width: 767px) {
+    --sheet-inset: var(--space-4);
+  }
+
   @media (max-width: 640px) {
     width: 100vw;
   }
@@ -75,7 +81,8 @@ const CloseButton = styled(DialogPrimitive.Close)`
   all: unset;
   position: absolute;
   top: var(--space-4);
-  right: var(--space-4);
+  /* The icon's right edge sits on the inset line. */
+  right: calc(var(--sheet-inset) - var(--space-2));
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -115,7 +122,7 @@ const Description = styled(DialogPrimitive.Description)`
 const HeaderRoot = styled.div`
   position: relative;
   flex-shrink: 0;
-  padding: var(--space-4) var(--space-5);
+  padding: var(--space-4) var(--sheet-inset);
   border-bottom: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
@@ -168,7 +175,7 @@ const Body = styled.div`
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: var(--space-4) var(--space-5);
+  padding: var(--space-4) var(--sheet-inset);
 `;
 
 const Footer = styled.div`
@@ -177,7 +184,7 @@ const Footer = styled.div`
   align-items: center;
   justify-content: flex-end;
   gap: var(--space-3);
-  padding: var(--space-4) var(--space-5);
+  padding: var(--space-4) var(--sheet-inset);
   border-top: 1px solid var(--color-border);
 `;
 

@@ -1,5 +1,5 @@
 import { countPublishedOpportunities } from "@/features/opportunities/queries";
-import type { Invitation, PartnerContact, PartnerOrganization, PartnerStatus } from "./types";
+import type { Invitation, OrganizationNotes, PartnerContact, PartnerOrganization, PartnerStatus } from "./types";
 
 /*
  * In-memory stand-in for the backend so the UI works end to end in development.
@@ -11,6 +11,10 @@ export type StoredContact = Omit<PartnerContact, "invitationState">;
 export interface StoredOrg extends Omit<PartnerOrganization, "status" | "opportunityCount" | "contacts"> {
   contacts: StoredContact[];
   everActive: boolean;
+  /** When the first person accepted an invitation. */
+  joinedAt?: string;
+  /** SDC-only; never sent to the partner portal. */
+  notes?: OrganizationNotes;
 }
 
 const DAY = 86_400_000;
@@ -31,18 +35,18 @@ const contact = (
 
 function seed(): StoredOrg[] {
   return [
-    { id: "org_1", name: "Northside Food Bank", website: "https://northsidefood.org", description: "Free groceries and hot meals for Northside families, run by neighbours and volunteers since 1998.", createdAt: iso(-120), everActive: true, contacts: [
+    { id: "org_1", name: "Northside Food Bank", website: "https://northsidefood.org", description: "Free groceries and hot meals for Northside families, run by neighbours and volunteers since 1998.", createdAt: iso(-120), joinedAt: iso(-118), everActive: true, contacts: [
       contact("c_1", "Amara Okafor", "amara@northsidefood.org", "active"),
       contact("c_2", "Luis Romero", "luis@northsidefood.org", "active"),
     ] },
-    { id: "org_2", name: "Riverbend Youth Collective", website: "https://riverbendyouth.ca", createdAt: iso(-60), everActive: true, contacts: [
+    { id: "org_2", name: "Riverbend Youth Collective", website: "https://riverbendyouth.ca", createdAt: iso(-60), joinedAt: iso(-58), everActive: true, contacts: [
       contact("c_3", "Priya Nair", "priya@riverbendyouth.ca", "active"),
       contact("c_4", "Sam Chen", "sam@riverbendyouth.ca", "pending", { invitation: { sentAt: iso(-2), expiresAt: iso(5) } }),
     ] },
     { id: "org_3", name: "Maple Literacy Project", createdAt: iso(-3), everActive: false, contacts: [
       contact("c_5", "Hannah Lee", "hannah@mapleliteracy.org", "pending", { invitation: { sentAt: iso(-3), expiresAt: iso(4) } }),
     ] },
-    { id: "org_4", name: "Eastside Newcomer Services", website: "https://eastsidenewcomers.ca", description: "Settlement support, language circles and job help for newcomers to the region.", createdAt: iso(-300), everActive: true, contacts: [
+    { id: "org_4", name: "Eastside Newcomer Services", website: "https://eastsidenewcomers.ca", description: "Settlement support, language circles and job help for newcomers to the region.", createdAt: iso(-300), joinedAt: iso(-298), everActive: true, notes: { text: "Omar prefers a phone call to email. Their summer program runs June to August, so expect fewer posts in the spring.", editedBy: "Admin User", editedAt: iso(-4) }, contacts: [
       contact("c_6", "Omar Haddad", "omar@eastsidenewcomers.ca", "active"),
       contact("c_7", "Julia Novak", "julia@eastsidenewcomers.ca", "active"),
       contact("c_8", "Tom Becker", "tom@eastsidenewcomers.ca", "active"),
@@ -53,15 +57,24 @@ function seed(): StoredOrg[] {
       // Never delivered: the invitation shows as not sent.
       contact("c_9", "Grace Wu", "grace@harbourseniors", "pending", { invitation: {} }),
     ] },
-    { id: "org_6", name: "Greenway Community Gardens", createdAt: iso(-400), removedAt: iso(-20), everActive: true, contacts: [
+    { id: "org_6", name: "Greenway Community Gardens", createdAt: iso(-400), joinedAt: iso(-398), removedAt: iso(-20), everActive: true, contacts: [
       contact("c_10", "Ben Adeyemi", "ben@greenwaygardens.org", "active"),
+    ] },
+    // Joined 5 months ago and has never posted: No recent posts.
+    { id: "org_7", name: "Lakeview Tenants Association", website: "https://lakeviewtenants.ca", createdAt: iso(-155), joinedAt: iso(-150), everActive: true, contacts: [
+      contact("c_13", "Nadia Petrova", "nadia@lakeviewtenants.ca", "active"),
+    ] },
+    // Joined 3 weeks ago, no posts yet: still inside the 60 days, so no tag.
+    { id: "org_8", name: "Westmount Arts Circle", createdAt: iso(-22), joinedAt: iso(-20), everActive: true, contacts: [
+      contact("c_14", "Kofi Mensah", "kofi@westmountarts.org", "active"),
+      contact("c_15", "Elena Rossi", "elena@westmountarts.org", "active"),
     ] },
   ];
 }
 
 // Bump the key when the seed or shape changes, so a running dev server picks up the new seed.
-const globalStore = globalThis as unknown as { __partnersStoreV4?: StoredOrg[] };
-export const orgs = (): StoredOrg[] => (globalStore.__partnersStoreV4 ??= seed());
+const globalStore = globalThis as unknown as { __partnersStoreV5?: StoredOrg[] };
+export const orgs = (): StoredOrg[] => (globalStore.__partnersStoreV5 ??= seed());
 
 export function statusOf(org: StoredOrg): PartnerStatus {
   if (org.removedAt) return "removed";

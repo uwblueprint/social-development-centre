@@ -22,7 +22,7 @@ import {
   ToggleGroupDemo,
 } from "./demos/ControlDemos";
 import { OverlayDemos } from "./demos/OverlayDemos";
-import { DisplayDemos, EmptyStateDemo, ListRowDemo, PaginationDemo, SortableTableDemo, TableDemo } from "./demos/DisplayDemos";
+import { DisplayDemos, EmptyStateDemo, FilterTableDemo, ListRowDemo, PaginationDemo, SortableTableDemo, TableDemo } from "./demos/DisplayDemos";
 
 export const metadata: Metadata = {
   title: "Components · Social Development Centre",
@@ -51,6 +51,7 @@ const sections: { id: string; title: string; description: string; demo: ReactNod
   { id: "list-row", title: "List row", description: "A dense, clickable row for lists and simple tables.", demo: <ListRowDemo /> },
   { id: "table", title: "Table", description: "A semantic data table with column headers, row dividers and a clickable row.", demo: <TableDemo /> },
   { id: "table-sortable", title: "Table, sortable", description: "Select a column header to sort by it; select it again to reverse. The active column shows an arrow; others show a hint on hover or focus. While the next rows load (busy), rows dim in place, the arrow becomes a spinner and a line runs under the header.", demo: <SortableTableDemo /> },
+  { id: "table-filters", title: "Table, filters and frozen columns", description: "Filters live in column headers: the filter icon opens a checkbox list, and an active filter shows its count. The first two columns stay frozen while the table scrolls sideways (only the first below 600px). The Tags column is hidden because no row has tags.", demo: <FilterTableDemo /> },
   { id: "empty-state", title: "Empty state", description: "An empty list, section or no-results placeholder. Lists use ListEmptyState, which picks the variant: matches elsewhere, no matches, filters, search plus filters, truly empty.", demo: <EmptyStateDemo /> },
   { id: "pagination", title: "Pagination", description: "Page summary, Previous/Next and page numbers for a paged list.", demo: <PaginationDemo /> },
 ];

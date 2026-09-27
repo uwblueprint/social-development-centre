@@ -21,6 +21,9 @@ import type { TableColumn, TableSort } from "@/components/ui/Table";
 - `sort?`: `{ key, direction: "asc" | "desc" }`, the active sort. Controlled.
 - `onSortChange?`: `(next: TableSort) => void`. Without it, every header renders as plain text, even with a `sortKey`.
 - `busy?`: the next rows are loading. See Loading.
+- `stickyColumns?`: `number` — freezes the first N columns while the table scrolls sideways. See Frozen columns.
+- On a column, `filter?`: `{ label, options: { value, label, count? }[], selected, onChange }` — a filter in the column header. See Filters.
+- On a column, `isEmpty?`: `(row: T) => boolean` — when every row is empty for the column, the column is hidden. See Empty columns.
 - `aria-label?`: accessible name for the table, when no visible heading already names it.
 
 Paginate below the table with `Pagination`, outside `Table` itself.
@@ -74,11 +77,43 @@ Pass `busy` while a sort, search, tab or page change is in flight (on a list pag
 
 Show the chosen sort at once (`useListSort` does this optimistically) so the spinner appears on the column that was selected. Don't replace the rows with a skeleton for a re-sort: the table is already on screen. For the first load, use the page's loading state instead.
 
+## Filters
+**Filters live in column headers; don't add filter selects to toolbars.** Give the column a `filter` and a small filter icon (`ListFilter`) appears after its label. Selecting the label still sorts; the icon opens a popover with a checkbox list and a "Clear filter" button.
+
+- Controlled, like sorting: the page keeps `selected` (usually in the URL, via `useListParams`), filters the rows (on the server when paginated) and goes back to page 1.
+- `options[].count` is how many records have that value; it shows muted after the option label. Leave it off when you can't count cheaply.
+- An active filter shows the icon in `--color-text` with the number of selected values next to it, so it isn't carried by color alone.
+- A filtered list that ends up empty uses `ListEmptyState`, which offers a way to clear the filters.
+- The toolbar keeps the search field and page-level actions only.
+
+```tsx
+{
+  key: "status",
+  header: "Status",
+  sortKey: "status",
+  render: (p) => <Badge $variant={statusVariant(p.status)}>{p.status}</Badge>,
+  filter: {
+    label: "Status",
+    options: [{ value: "active", label: "Active", count: 12 }, { value: "invited", label: "Invited", count: 3 }],
+    selected: statusFilter,
+    onChange: setStatusFilter,
+  },
+}
+```
+
+## Empty columns
+**Tag columns hide when empty.** Give optional columns (tags, notes, secondary IDs) an `isEmpty(row)`. When every row on screen is empty for that column, `Table` leaves out the header and the cells, so the table doesn't carry a column of placeholders. A column with an active filter always shows, so its filter can be cleared. Required columns (name, status) never take `isEmpty`: an empty value there reads as muted placeholder text (see Content rules).
+
+## Frozen columns
+`stickyColumns={n}` keeps the first `n` columns (header and cells) in place while the rest scroll sideways, with the table background behind them and a 1px `--color-border` divider after the last frozen column. Freeze what identifies a row, usually the name (1) or name and organization (2), never more. Below 600px only the first column freezes, so frozen columns never fill a phone screen. It works with `sticky` (the header row stays up too). Row focus rings are drawn inside the cells, so the scroll container never clips them.
+
 ## Content rules
 Header labels are short nouns in sentence case ("Date added", not "DATE ADDED"). A cell with no value reads as muted placeholder text ("No name"), never a blank cell — a blank cell reads as missing data, not "not set".
 
 ## Accessibility
 Renders a real `<table>`/`<thead>`/`<tbody>`, so column headers (`scope="col"`) are announced with each cell by screen readers. A clickable row is reachable and activatable by keyboard (`tabIndex`, `Enter`) with a visible focus ring; never nest another focusable control (a button, a link) inside a clickable row — a row can't contain a control that needs its own independent activation. Never convey status with a cell's color alone (pair it with a badge/label, as in the example's Status column).
+
+A header filter is its own `button` after the sort button, reached with Tab. Its accessible name is "Filter Status", or "Filter Status, 2 selected" when active (copy in `tableFilterCopy`). Enter or Space opens the popover and moves focus to the first checkbox; Tab moves through the checkboxes and "Clear filter"; Escape closes it and returns focus to the icon. The checkboxes sit in a `fieldset` whose legend names the column.
 
 A sortable header is a real `button` inside the `th`: reach it with Tab, sort with Enter or Space, with a visible focus ring and a hover fill. The `th` carries `aria-sort` (`ascending`, `descending`, or `none` on sortable columns that aren't active). The button's accessible name says what selecting does: "Name, sorted ascending. Select to sort descending", or "Name. Select to sort". The screen-reader text lives in `tableSortCopy` in `Table.tsx`.
 
@@ -88,4 +123,6 @@ A toolbar's search field above a `Table` is one documented exception to "every c
 1. Nesting a `Button` or link inside a clickable row (`onRowClick` set) — move it to a non-clickable table or stop the click from bubbling isn't a safe substitute; use `List`/`ListRow` or a plain table without `onRowClick` instead.
 2. Using `Table` for one or two loosely related fields per record — that's `List`/`ListRow`.
 3. Sorting only the rows on screen when the list is paginated. Sort on the server, then paginate.
-4. Leaving off `getRowId` in favor of array index — breaks focus/selection identity when rows reorder or filter.
+4. Adding a filter `Select` to the toolbar for a value that has a column — put a `filter` on that column instead.
+5. Freezing more than two columns, or freezing actions.
+6. Leaving off `getRowId` in favor of array index — breaks focus/selection identity when rows reorder or filter.

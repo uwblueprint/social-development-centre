@@ -162,7 +162,7 @@ const Content = styled(SelectPrimitive.Content)`
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
   border: 1px solid var(--color-border);
-  z-index: 50;
+  z-index: var(--z-popover);
 `;
 
 const Viewport = styled(SelectPrimitive.Viewport)`
@@ -287,7 +287,7 @@ function NativeSelect({
 /* ---------------------------------------------------------------------- */
 
 const ComboContent = styled(PopoverPrimitive.Content)`
-  z-index: 50;
+  z-index: var(--z-popover);
   min-width: var(--radix-popover-trigger-width);
   display: flex;
   flex-direction: column;

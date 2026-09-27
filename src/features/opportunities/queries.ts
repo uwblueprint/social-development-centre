@@ -105,3 +105,15 @@ export function countPublishedOpportunities(organizationId: string): number {
 
 /** @deprecated Renamed to countPublishedOpportunities; kept until Partners switches over. */
 export const countLiveOpportunities = countPublishedOpportunities;
+
+/**
+ * Read-only, for Partners health (src/app/admin/partners/_data/health.ts): every opportunity an organization
+ * has ever published, with when it was published and its effective status now (a removed partner's are closed).
+ * Drafts that were never published are left out.
+ */
+export function listPublishedHistory(organizationId: string): { id: string; publishedAt: string; status: Opportunity["status"] }[] {
+  const removedAt = orgs().find((o) => o.id === organizationId)?.removedAt;
+  return opportunities()
+    .filter((o) => o.organization.id === organizationId && o.publishedAt)
+    .map((o) => ({ id: o.id, publishedAt: o.publishedAt as string, status: effectiveStatus(o, new Date(), removedAt).status }));
+}

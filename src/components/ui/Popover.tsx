@@ -12,7 +12,7 @@ const contentShow = keyframes`
 `;
 
 const Content = styled(PopoverPrimitive.Content)`
-  z-index: 50;
+  z-index: var(--z-popover);
   width: 280px;
   background: var(--color-surface-raised);
   border-radius: var(--radius-lg);

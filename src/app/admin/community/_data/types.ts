@@ -5,7 +5,27 @@ export type MemberTier = "general" | "paying";
 /** Who unsubscribed the person. Only people an admin unsubscribed can be resubscribed by an admin. */
 export type UnsubscribedBy = "self" | "admin";
 
-export interface Member {
+/** How the person joined. Export only: never shown in the UI. */
+export type MemberSource = "legacy_import" | "booth" | "website" | "partner_event" | "referral" | "admin_added" | "file_import";
+
+/** Whether they've finished setting up their preferences after joining. */
+export type OnboardingState = "not_started" | "in_progress" | "completed";
+
+/**
+ * Where each person is in their journey. Derived on the server (see `deriveStatus`), never stored, and
+ * checked in this order; the first that applies wins.
+ */
+export const MEMBER_STATUSES = ["unsubscribed", "invited", "onboarding_incomplete", "never_clicked", "active", "inactive"] as const;
+export type MemberStatus = (typeof MEMBER_STATUSES)[number];
+
+/** Shown by default: every status except Unsubscribed (owner decision). */
+export const DEFAULT_MEMBER_STATUSES: readonly MemberStatus[] = MEMBER_STATUSES.filter((s) => s !== "unsubscribed");
+
+/** A CTA click within this many days makes someone Active; older clicks only, Inactive. */
+export const ACTIVE_WINDOW_DAYS = 60;
+
+/** What the stored record holds. `Member` adds what's derived from it and the send log. */
+export interface MemberRecord {
   id: string;
   /** Optional: pasted addresses often have no name; it can be added later. */
   name?: string;
@@ -17,11 +37,42 @@ export interface Member {
   unsubscribedAt?: string;
   /** Set whenever `subscribed` is false. */
   unsubscribedBy?: UnsubscribedBy;
+  onboarding: OnboardingState;
+  /** Export only. */
+  source: MemberSource;
+  /** Export only: e.g. the booth's location or the partner event's name. */
+  sourceDetail?: string;
+}
+
+/** One person as the list and panel show them. `source` stays on the server (export only). */
+export interface Member extends Omit<MemberRecord, "source" | "sourceDetail"> {
+  status: MemberStatus;
+  /** Total primary-action clicks (signed up or took action) across every email. Shares and opens don't count. */
+  ctaClicks: number;
+  lastClickAt?: string;
   /** Most recent email sent to this person, for the table. */
   lastEmail?: { subject: string; sentAt: string };
 }
 
 export type EmailKind = "general-welcome" | "paying-welcome" | "paying-added" | "paying-removed" | "opportunities";
+
+/** An opportunity's primary action: register for something, or do something (sign a petition). */
+export type CtaKind = "sign_up" | "take_action";
+
+/** One thing a person did with an opportunity in an email. Opens are never recorded. */
+export interface OpportunityAction {
+  /** `cta`: clicked the primary action. `share`: used "Invite a friend". */
+  type: "cta" | "share";
+  at: string;
+}
+
+/** One opportunity an email contained, and what this person did with it. */
+export interface EmailOpportunity {
+  id: string;
+  title: string;
+  cta: CtaKind;
+  actions: OpportunityAction[];
+}
 
 /**
  * One email this person was sent, newest first. The rendered message isn't included: the panel
@@ -33,10 +84,12 @@ export interface SentEmail {
   subject: string;
   sentAt: string;
   status: "delivered" | "not-delivered";
+  /** The opportunities it contained (opportunity emails only), each with this person's actions. */
+  opportunities: EmailOpportunity[];
 }
 
-/** Columns the member list can sort by (the `sort` URL param). */
-export const MEMBER_SORT_KEYS = ["name", "email", "sent", "added"] as const;
+/** Columns the member list can sort by (the `sort` URL param). `added` is the default order, not a column. */
+export const MEMBER_SORT_KEYS = ["name", "email", "clicks", "sent", "added"] as const;
 export type MemberSortKey = (typeof MEMBER_SORT_KEYS)[number];
 
 export interface MemberSort {
@@ -54,17 +107,16 @@ export interface MemberPage {
   pageCount: number;
 }
 
-/** Subscribed people only; unsubscribed people are never counted. The two counts never overlap. */
+/** Counts for the tabs, the Status filter and the empty states. All narrowed by the search when there is one. */
 export interface CommunityCounts {
-  /** Subscribed people who aren't paying members. */
+  /** General members (not paying) with a selected status. */
   general: number;
-  /** Subscribed paying members. */
+  /** Paying members with a selected status. */
   paying: number;
-  /**
-   * Unsubscribed people matching the search (0 when there's no search). They're listed only at the end of
-   * General members search results, so an empty Paying search uses this to say where its matches are.
-   */
-  unsubscribedMatches: number;
+  /** Matches in each tab that the Status filter hides. */
+  hidden: Record<MemberTier, number>;
+  /** People in the current tab per status, whatever the filter, for the filter's options. */
+  byStatus: Record<MemberStatus, number>;
 }
 
 /** One address from the admin's input, with the name given for it (or the existing record's name). */
@@ -82,7 +134,7 @@ export interface UnsubscribedEntry extends ImportEntry {
 /**
  * Result of checking an Add member or Import members input before anything is saved or sent.
  * Every valid, distinct address is in exactly one of: added, converted, alreadyPaying,
- * alreadyMembers, unsubscribedSelf, unsubscribedAdmin. `duplicates` and `invalid` describe the input.
+ * alreadyMembers, unsubscribedSelf, unsubscribedAdmin, deleted. `duplicates` and `invalid` describe the input.
  */
 export interface ImportPreview {
   /** "Make them paying members" was checked. */
@@ -103,8 +155,12 @@ export interface ImportPreview {
   unsubscribedSelf: UnsubscribedEntry[];
   /** People an admin unsubscribed: resubscribed only if the admin checks "Resubscribe…" in the preview. */
   unsubscribedAdmin: UnsubscribedEntry[];
+  /** Addresses of people who were deleted: never re-added by an admin. Skipped. */
+  deleted: string[];
 }
 
-/** "general" is every subscribed person (paying included), matching the General members tab. */
-/** Which tab to export; "both" is General members plus Paying members. */
+/** Which tier to export; "both" is General members plus Paying members. */
 export type ExportScope = "general" | "paying" | "both";
+
+/** Members: one row per person. Activity: one row per click (primary action or share). */
+export type ExportKind = "members" | "activity";

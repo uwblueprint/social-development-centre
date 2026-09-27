@@ -12,7 +12,7 @@ const contentShow = keyframes`
 `;
 
 const Content = styled(DropdownMenuPrimitive.Content)`
-  z-index: 50;
+  z-index: var(--z-popover);
   min-width: 220px;
   background: var(--color-surface-raised);
   border-radius: var(--radius-lg);

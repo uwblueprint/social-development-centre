@@ -31,7 +31,9 @@ const Overlay = styled(DialogPrimitive.Overlay)`
   position: fixed;
   inset: 0;
   background: var(--color-overlay);
-  z-index: 40;
+  /* Dialogs blur what's behind them; sheets don't (see tokens: --overlay-blur). */
+  backdrop-filter: blur(var(--overlay-blur));
+  z-index: var(--z-modal);
   animation: ${overlayShow} var(--duration-slow) var(--ease);
 
   &[data-state="closed"] {
@@ -52,7 +54,7 @@ const Content = styled(DialogPrimitive.Content)`
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   padding: 20px;
-  z-index: 41;
+  z-index: var(--z-modal);
   animation: ${contentShow} var(--duration-slow) var(--ease);
 
   &[data-state="closed"] {

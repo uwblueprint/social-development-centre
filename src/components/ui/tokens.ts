@@ -55,6 +55,11 @@ globalStyle`
     --color-warning-subtle: #fffbeb;
     --color-info: #3a6c88;
     --color-info-subtle: #eef4f7;
+    /* Hairline borders for status badges on their -subtle fills (Tailwind -200 steps; info matched by hue). */
+    --color-success-border: #a7f3d0;
+    --color-warning-border: #fde68a;
+    --color-danger-border: #fecaca;
+    --color-info-border: #c9dbe5;
 
     --color-focus: var(--taupe-900);
     --color-overlay: rgb(29 24 22 / 0.4);
@@ -101,6 +106,20 @@ globalStyle`
     --enter-offset: 12px;
     --ease: cubic-bezier(0.215, 0.61, 0.355, 1);
     --ease-spring: cubic-bezier(0.34, 1.3, 0.64, 1);
+
+    /* Stacking layers, lowest to highest. One scale so a toast always sits above a sheet or dialog
+       (the owner copied from a sheet and never saw the toast). */
+    --z-raised: 1; /* in-flow content lifted above its neighbors: frozen table columns, a focused row */
+    --z-sticky: 2; /* sticky table headers, above frozen columns scrolling under them */
+    --z-nav: 40; /* the mobile sidebar drawer and its scrim */
+    --z-modal: 50; /* sheets, dialogs and alert dialogs, with their overlays */
+    --z-popover: 60; /* popovers, menus, selects and date pickers; they open from inside modals */
+    --z-tooltip: 70; /* tooltips and hover cards, above the control they describe */
+    --z-toast: 80; /* toasts confirm actions taken anywhere, including inside a modal */
+
+    /* Dialogs soften what's behind them so the decision in front reads first. Sheets don't blur:
+       the list behind a sheet is context people keep reading. */
+    --overlay-blur: 2px;
   }
 
   *, *::before, *::after { box-sizing: border-box; }

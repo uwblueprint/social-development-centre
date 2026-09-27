@@ -167,7 +167,11 @@ export async function resendContactInvitation(org: StoredOrg, contactId: string)
   return ok(state === "notSent" ? contactMessages.sent(contact.email) : contactMessages.resent(contact.email));
 }
 
-/** Deletes a pending person (any invitation state); deletes the organization too if nobody is left and it was never active. */
+/**
+ * Deletes a pending person (any invitation state). An organization always has at least one person, so if
+ * nobody is left: one that was never active is deleted too; one that was (a reinvited organization whose
+ * only invitation is cancelled) goes back to Removed.
+ */
 export function cancelContactInvitation(org: StoredOrg, contactId: string): ActionState {
   const contact = findContactIn(org, contactId);
   if (!contact) return fail(contactMessages.personMissing);
@@ -176,6 +180,8 @@ export function cancelContactInvitation(org: StoredOrg, contactId: string): Acti
   if (org.contacts.length === 0 && !org.everActive) {
     const all = orgs();
     all.splice(all.indexOf(org), 1);
+  } else if (currentContacts(org).length === 0 && !org.removedAt) {
+    org.removedAt = new Date().toISOString();
   }
   return ok(contactMessages.cancelled);
 }

@@ -232,6 +232,85 @@ export function SortableTableDemo() {
   );
 }
 
+interface DemoPartnerPerson {
+  id: string;
+  name: string;
+  organization: string;
+  email: string;
+  role: "Owner" | "Poster";
+  status: "Active" | "Invited";
+  city: string;
+  tags: string[];
+}
+
+const PARTNER_PEOPLE: DemoPartnerPerson[] = [
+  { id: "1", name: "Amara Okafor", organization: "Northside Food Bank", email: "amara@northsidefood.org", role: "Owner", status: "Active", city: "Toronto", tags: [] },
+  { id: "2", name: "Luis Romero", organization: "Riverbend Youth Collective", email: "luis@riverbend.org", role: "Poster", status: "Invited", city: "Hamilton", tags: [] },
+  { id: "3", name: "Grace Liu", organization: "Eastside Newcomer Services", email: "grace@eastside.org", role: "Poster", status: "Active", city: "Mississauga", tags: [] },
+  { id: "4", name: "Samir Haddad", organization: "Northside Food Bank", email: "samir@northsidefood.org", role: "Poster", status: "Invited", city: "Toronto", tags: [] },
+];
+
+const Nowrap = styled.span`
+  white-space: nowrap;
+`;
+
+/* Narrower than the table so it scrolls sideways and the frozen columns show. */
+const ScrollDemoFrame = styled.div`
+  max-width: calc(var(--space-8) * 8);
+`;
+
+/** Filters in column headers, the first two columns frozen, and an all-empty Tags column hidden. */
+export function FilterTableDemo() {
+  const [status, setStatus] = useState<string[]>([]);
+  const [role, setRole] = useState<string[]>([]);
+  const countOf = (key: "status" | "role", value: string) => PARTNER_PEOPLE.filter((p) => p[key] === value).length;
+  const rows = PARTNER_PEOPLE.filter(
+    (p) => (status.length === 0 || status.includes(p.status)) && (role.length === 0 || role.includes(p.role)),
+  );
+  const columns: TableColumn<DemoPartnerPerson>[] = [
+    { key: "name", header: "Name", render: (p) => <Nowrap>{p.name}</Nowrap> },
+    { key: "organization", header: "Organization", render: (p) => <Nowrap>{p.organization}</Nowrap> },
+    { key: "email", header: "Email", render: (p) => p.email },
+    {
+      key: "role",
+      header: "Role",
+      render: (p) => p.role,
+      filter: {
+        label: "Role",
+        options: ["Owner", "Poster"].map((v) => ({ value: v, label: v, count: countOf("role", v) })),
+        selected: role,
+        onChange: setRole,
+      },
+    },
+    {
+      key: "status",
+      header: "Status",
+      render: (p) => <Badge $variant={p.status === "Active" ? "success" : "neutral"}>{p.status}</Badge>,
+      filter: {
+        label: "Status",
+        options: ["Active", "Invited"].map((v) => ({ value: v, label: v, count: countOf("status", v) })),
+        selected: status,
+        onChange: setStatus,
+      },
+    },
+    { key: "city", header: "City", render: (p) => p.city },
+    { key: "tags", header: "Tags", render: (p) => p.tags.join(", "), isEmpty: (p) => p.tags.length === 0 },
+  ];
+  return (
+    <ScrollDemoFrame>
+      <Table
+        columns={columns}
+        rows={rows}
+        getRowId={(p) => p.id}
+        onRowClick={() => {}}
+        stickyColumns={2}
+        aria-label="Partner people, filterable"
+        empty={<EmptyState icon={Search} title="No people match these filters" description="Clear a filter to see more people." />}
+      />
+    </ScrollDemoFrame>
+  );
+}
+
 export function PaginationDemo() {
   const [page, setPage] = useState(2);
   const total = 962;

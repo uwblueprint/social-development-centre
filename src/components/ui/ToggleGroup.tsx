@@ -34,7 +34,7 @@ const Indicator = styled.div`
 export const ToggleGroupItem = styled(ToggleGroupPrimitive.Item)`
   all: unset;
   position: relative;
-  z-index: 1;
+  z-index: var(--z-raised);
   display: inline-flex;
   align-items: center;
   justify-content: center;

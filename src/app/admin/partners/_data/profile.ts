@@ -1,7 +1,7 @@
 import type { ActionState } from "@/lib/forms";
 import { normalizeWebAddress } from "@/lib/url";
 import { orgs, type StoredOrg } from "./store";
-import { ORGANIZATION_DESCRIPTION_MAX } from "./types";
+import { ORGANIZATION_DESCRIPTION_MAX, ORGANIZATION_NOTES_MAX } from "./types";
 
 /*
  * Organization profile rules shared by the admin (Partners) and partner (/partner/organization) actions,
@@ -25,6 +25,12 @@ export const organizationMessages = {
   alreadyRemoved: "This organization's access was already removed.",
   missing: "This organization could not be found.",
   reinvited: (email: string, organization: string) => `Invitation sent to ${email}. ${organization} is awaiting a response.`,
+} as const;
+
+/** SDC notes on an organization (admin only). New, needs approval: docs/ux/portal.md → Partners. */
+export const notesMessages = {
+  saved: "Notes saved.",
+  tooLong: `Shorten the notes to ${ORGANIZATION_NOTES_MAX.toLocaleString("en-CA")} characters or fewer.`,
 } as const;
 
 export interface ProfileChanges {

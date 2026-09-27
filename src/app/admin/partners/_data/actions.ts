@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { closeListingsForOrganization } from "@/features/opportunities/service";
+import { getCurrentAdmin } from "../../_data/session";
 import type { ActionState } from "@/lib/forms";
 import {
   addInvitedContact,
@@ -16,12 +17,14 @@ import {
 } from "./contacts";
 import {
   applyOrganizationProfile,
+  notesMessages,
   organizationMessages,
   profileFieldsError,
   profileMessages,
   readOrganizationProfile,
 } from "./profile";
 import { currentContacts, newInvitation, nextId, orgs, statusOf, type StoredOrg } from "./store";
+import { ORGANIZATION_NOTES_MAX } from "./types";
 
 /*
  * Backend: implement these against the real data store and email service,
@@ -151,4 +154,19 @@ export async function removePartner(orgId: string): Promise<ActionState> {
   org.removedAt = new Date().toISOString();
   closeListingsForOrganization(org.id);
   return settle({ status: "success", message: organizationMessages.removed(org.name) });
+}
+
+/**
+ * Field: notes. SDC-only notes on an organization, saved with the admin's name and the time. Empty clears
+ * them. Never returned to the partner portal.
+ */
+export async function saveOrganizationNotes(orgId: string, _prev: ActionState, fd: FormData): Promise<ActionState> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return fail(organizationMessages.missing);
+  const org = orgs().find((o) => o.id === orgId);
+  if (!org) return fail(organizationMessages.missing);
+  const notes = text(fd, "notes");
+  if (notes.length > ORGANIZATION_NOTES_MAX) return { status: "error", fieldErrors: { notes: notesMessages.tooLong } };
+  org.notes = notes ? { text: notes, editedBy: admin.name, editedAt: new Date().toISOString() } : undefined;
+  return settle({ status: "success", message: notesMessages.saved });
 }

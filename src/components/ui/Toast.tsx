@@ -1,7 +1,7 @@
 "use client";
 
 import { keyframes, styled } from "next-yak";
-import { Toast as ToastPrimitive } from "radix-ui";
+import { Portal, Toast as ToastPrimitive } from "radix-ui";
 import { X } from "lucide-react";
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
 import { Icon } from "./Icon";
@@ -23,8 +23,10 @@ const Viewport = styled(ToastPrimitive.Viewport)`
   list-style: none;
   margin: 0;
   padding: 0;
-  z-index: 70;
+  z-index: var(--z-toast);
   outline: none;
+  /* An open modal sets pointer-events: none on the body; toasts stay closable above it. */
+  pointer-events: auto;
 `;
 
 const Root = styled(ToastPrimitive.Root)`
@@ -173,7 +175,11 @@ export function AppToastProvider({ children }: { children: ReactNode }) {
             )}
           </Toast>
         ))}
-        <ToastViewport />
+        {/* Portalled to the body: inside the app shell, the page's entrance animation makes a stacking
+            context that would trap the toast under a sheet or dialog. */}
+        <Portal.Root>
+          <ToastViewport />
+        </Portal.Root>
       </ToastPrimitive.Provider>
     </ToastContext.Provider>
   );

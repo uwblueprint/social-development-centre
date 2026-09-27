@@ -29,6 +29,9 @@ toast({
 ## Content rules
 Title is a short, past-tense confirmation ("Changes saved"), sentence case. Description adds one clarifying sentence at most. `actionLabel` is a verb ("Undo").
 
+## Layering
+The viewport is portalled to `<body>` at `--z-toast`, the top of the z-index scale in `tokens.ts` (above `--z-modal`, `--z-popover` and `--z-tooltip`), so a toast fired from inside a sheet or dialog ("Copied") shows above it. Use the `--z-*` tokens for any new layer; never a raw number.
+
 ## Accessibility
 Announced via a Radix live region; swipeable to dismiss, closable via the labeled × button. `ToastAction` sits on its own right-aligned row so it's never confused with close, and needs its own `altText`.
 

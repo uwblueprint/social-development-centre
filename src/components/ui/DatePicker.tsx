@@ -204,7 +204,7 @@ const TriggerButton = styled(PopoverPrimitive.Trigger)`
 /* ------------------------------------------------------------------ */
 
 const CalendarContent = styled(PopoverPrimitive.Content)`
-  z-index: 50;
+  z-index: var(--z-popover);
   background: var(--color-surface-raised);
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);

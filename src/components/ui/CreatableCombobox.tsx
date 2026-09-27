@@ -128,7 +128,7 @@ const ChevronSlot = styled.span`
 `;
 
 const Content = styled(PopoverPrimitive.Content)`
-  z-index: 50;
+  z-index: var(--z-popover);
   min-width: var(--radix-popover-trigger-width);
   display: flex;
   flex-direction: column;

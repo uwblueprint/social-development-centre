@@ -2,6 +2,8 @@
 
 A modal window for a focused task — editing a record, a short form — that blocks the rest of the page until dismissed.
 
+The overlay dims and slightly blurs the page (`backdrop-filter: blur(var(--overlay-blur))`), so the decision in front reads first. Sheets dim without blurring, because the list behind a sheet is context people keep reading.
+
 ## Use when / Don't use when
 - A self-contained task needing the person's full attention and a clear commit/cancel.
 - Confirming a destructive action — use `AlertDialog`, which can't be dismissed by outside click.

@@ -1,4 +1,4 @@
-import type { EmailKind, Member, SentEmail } from "./types";
+import type { CtaKind, EmailKind, EmailOpportunity, MemberRecord, MemberSource, OnboardingState, SentEmail } from "./types";
 
 /*
  * In-memory stand-in for the backend so the UI works end to end in development.
@@ -8,88 +8,169 @@ import type { EmailKind, Member, SentEmail } from "./types";
 const FIRST = ["Amara", "Luis", "Priya", "Sam", "Hannah", "Omar", "Julia", "Tom", "Grace", "Ben", "Aisha", "Noah", "Mei", "Ravi", "Lena", "Diego", "Fatima", "Jonas", "Chloe", "Kwame"];
 const LAST = ["Okafor", "Romero", "Nair", "Chen", "Lee", "Haddad", "Novak", "Becker", "Wu", "Adeyemi", "Singh", "Martin", "Tremblay", "Roy", "Gagnon", "Kim", "Patel", "Nguyen", "Silva", "Mensah"];
 
-function seed(): Member[] {
-  const out: Member[] = [];
-  const day = 86_400_000;
+const OPPORTUNITIES: { title: string; cta: CtaKind }[] = [
+  { title: "Film night", cta: "sign_up" },
+  { title: "Tenant workshop", cta: "sign_up" },
+  { title: "Food bank volunteers", cta: "sign_up" },
+  { title: "Youth mentor", cta: "sign_up" },
+  { title: "ESL conversation circle", cta: "sign_up" },
+  { title: "Park clean-up", cta: "sign_up" },
+  { title: "Petition: safer crosswalks", cta: "take_action" },
+  { title: "Community garden day", cta: "sign_up" },
+  { title: "Tax clinic volunteers", cta: "sign_up" },
+  { title: "Write to council about transit", cta: "take_action" },
+  { title: "Newcomer welcome dinner", cta: "sign_up" },
+  { title: "Repair café", cta: "sign_up" },
+];
+
+const DAY = 86_400_000;
+const WEEK = 7 * DAY;
+
+/** Deterministic pseudo-random numbers, so the sample data is the same on every restart. */
+function rng(seed: number) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function pick<T>(r: () => number, weighted: [T, number][]): T {
+  let x = r() * weighted.reduce((sum, [, w]) => sum + w, 0);
+  for (const [value, w] of weighted) if ((x -= w) < 0) return value;
+  return weighted[weighted.length - 1][0];
+}
+
+const SOURCE_DETAIL: Partial<Record<MemberSource, string[]>> = {
+  legacy_import: ["Newsletter list, 2019 to 2025"],
+  booth: ["Kitchener Market", "Waterloo Public Library", "Uptown Waterloo Jazz Festival"],
+  partner_event: ["Northside Food Bank open house", "Riverbend Youth Collective fair"],
+  file_import: ["Volunteer fair sign-up sheet"],
+};
+
+interface Store {
+  members: MemberRecord[];
+  /** Send log per member id, newest first. */
+  emails: Record<string, SentEmail[]>;
+  /** Lowercased addresses of deleted people. Backend: store a hash, not the address. */
+  deleted: Set<string>;
+  seq: number;
+}
+
+function seed(): Store {
+  const now = Date.now();
+  const members: MemberRecord[] = [];
+  const emails: Record<string, SentEmail[]> = {};
+
   for (let i = 0; i < 1000; i++) {
+    const r = rng(i + 1);
     const first = FIRST[i % FIRST.length];
     const last = LAST[Math.floor(i / FIRST.length) % LAST.length];
-    const tier = i % 16 === 3 ? "paying" : "general";
-    const unsubscribed = tier === "general" && i % 25 === 7;
-    out.push({
+    const source = pick<MemberSource>(r, [
+      ["legacy_import", 40],
+      ["booth", 18],
+      ["website", 14],
+      ["partner_event", 10],
+      ["referral", 8],
+      ["admin_added", 6],
+      ["file_import", 4],
+    ]);
+    const legacy = source === "legacy_import";
+    const addedAt = now - (legacy ? 380 + r() * 720 : r() * 360) * DAY;
+    // Legacy imports skew Invited: most never started onboarding.
+    const onboarding = pick<OnboardingState>(
+      r,
+      legacy
+        ? [["not_started", 65], ["in_progress", 10], ["completed", 25]]
+        : [["not_started", 12], ["in_progress", 13], ["completed", 75]],
+    );
+    const tier = onboarding === "completed" && r() < 0.09 ? "paying" : "general";
+    const unsubscribed = r() < 0.06;
+    const unsubscribedAt = unsubscribed ? addedAt + r() * (now - addedAt) : undefined;
+    const details = SOURCE_DETAIL[source];
+
+    const m: MemberRecord = {
       id: `m_${i + 1}`,
       name: i % 9 === 4 ? undefined : `${first} ${last}`,
       email: `${first}.${last}${i}`.toLowerCase() + "@example.org",
       tier,
       subscribed: !unsubscribed,
-      addedAt: new Date(Date.now() - (i + 1) * day).toISOString(),
-      unsubscribedAt: unsubscribed ? new Date(Date.now() - i * 3600_000).toISOString() : undefined,
+      addedAt: new Date(addedAt).toISOString(),
+      unsubscribedAt: unsubscribedAt === undefined ? undefined : new Date(unsubscribedAt).toISOString(),
       // Most people unsubscribe themselves; a few were unsubscribed by an admin.
-      unsubscribedBy: unsubscribed ? (i % 75 === 7 ? "admin" : "self") : undefined,
-    });
+      unsubscribedBy: unsubscribed ? (r() < 0.15 ? "admin" : "self") : undefined,
+      onboarding,
+      source,
+      sourceDetail: details && details[Math.floor(r() * details.length)],
+    };
+    members.push(m);
+    emails[m.id] = seedEmails(m, r, onboarding, unsubscribedAt ?? now, now);
   }
-  return out;
+  return { members, emails, deleted: new Set(), seq: 5000 };
 }
 
-const g = globalThis as unknown as {
-  __communityStoreV2?: Member[];
-  __communitySeq?: number;
-  __communitySent?: Record<string, StoredEmail[]>;
-};
-export const members = (): Member[] => (g.__communityStoreV2 ??= seed()); // V2: reseeds with unsubscribedBy
-export const nextMemberId = () => `m_${(g.__communitySeq = (g.__communitySeq ?? 5000) + 1)}`;
-export const findByEmail = (email: string) => members().find((m) => m.email.toLowerCase() === email.toLowerCase());
-
-const DAY = 86_400_000;
-
-function html(title: string, body: string) {
-  return `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;line-height:1.5">
-<h1 style="font-size:20px;margin:0 0 12px">${title}</h1>${body}
-<p style="font-size:12px;margin-top:24px">Social Development Centre · <a href="#">Unsubscribe</a></p></div>`;
-}
-
-/** A sent email as stored: the summary plus its rendered body. */
-export type StoredEmail = SentEmail & { html: string };
-
-/** Deterministic sample history: a welcome (plus Paying membership added for some paying members) and weekly opportunity digests. */
-export function emailsFor(m: Member): StoredEmail[] {
+/** A welcome, then (once onboarded) a weekly opportunities email for up to 26 weeks, with varied clicks. */
+function seedEmails(m: MemberRecord, r: () => number, onboarding: OnboardingState, end: number, now: number): SentEmail[] {
   const added = new Date(m.addedAt).getTime();
-  const end = m.unsubscribedAt ? new Date(m.unsubscribedAt).getTime() : Date.now();
-  const out: StoredEmail[] = [];
-  const welcome = m.tier === "paying" && Number(m.id.slice(2)) % 2 === 0 ? "paying-welcome" : "general-welcome";
-  out.push({
-    id: `${m.id}_w`,
-    kind: welcome,
-    subject: welcome === "paying-welcome" ? "Welcome to the Social Development Centre: your membership is active" : "Welcome to the Social Development Centre community",
-    sentAt: new Date(added).toISOString(),
-    status: "delivered",
-    html: html("Welcome to the community", "<p>You're now on the Social Development Centre community list. Each week we'll email you opportunities from SDC and our partners.</p>"),
+  const out: SentEmail[] = [];
+  const email = (kind: EmailKind, subject: string, at: number, opportunities: EmailOpportunity[] = []): SentEmail => ({
+    id: `${m.id}_${out.length}`,
+    kind,
+    subject,
+    sentAt: new Date(at).toISOString(),
+    status: r() < 0.015 ? "not-delivered" : "delivered",
+    opportunities,
   });
-  if (m.tier === "paying" && welcome === "general-welcome") {
-    out.push({
-      id: `${m.id}_u`,
-      kind: "paying-added",
-      subject: "Your Social Development Centre membership is now active",
-      sentAt: new Date(added + 3 * DAY).toISOString(),
-      status: "delivered",
-      html: html("Your membership is active", '<p>Your account now includes paid membership.</p><p><a href="#">Access the member platform</a></p>'),
+
+  const payingWelcome = m.tier === "paying" && r() < 0.5;
+  out.push(email(payingWelcome ? "paying-welcome" : "general-welcome", TEMPLATES[payingWelcome ? "paying-welcome" : "general-welcome"].subject, added));
+  if (m.tier === "paying" && !payingWelcome) out.push(email("paying-added", TEMPLATES["paying-added"].subject, added + 3 * DAY));
+  if (onboarding !== "completed") return out.reverse();
+
+  // Active: clicked recently. Lapsed: clicked, but only more than 60 days ago. Quiet: never clicked.
+  const engagement = pick(r, [["active", 45], ["lapsed", 33], ["quiet", 22]] as ["active" | "lapsed" | "quiet", number][]);
+  for (let t = Math.max(added + WEEK, now - 26 * WEEK); t < end; t += WEEK) {
+    const recent = now - t < 60 * DAY;
+    const chance = engagement === "quiet" ? 0 : engagement === "active" ? (recent ? 0.35 : 0.15) : recent ? 0 : 0.3;
+    const start = Math.floor(r() * OPPORTUNITIES.length);
+    const opportunities = [0, 4, 7].map((offset, k): EmailOpportunity => {
+      const o = OPPORTUNITIES[(start + offset) % OPPORTUNITIES.length];
+      const actions: EmailOpportunity["actions"] = [];
+      const clickAt = () => new Date(Math.min(t + r() * 3 * DAY, now - 3600_000)).toISOString();
+      if (r() < chance / 2 || (k === 0 && r() < chance / 3)) actions.push({ type: "cta", at: clickAt() });
+      if (engagement !== "quiet" && r() < chance / 4) actions.push({ type: "share", at: clickAt() });
+      return { id: `${m.id}_${out.length}_${k}`, title: o.title, cta: o.cta, actions };
     });
+    out.push(email("opportunities", "This week's opportunities", t, opportunities));
   }
-  const first = Math.max(added + 7 * DAY, end - 12 * 7 * DAY);
-  for (let t = first, i = 0; t < end; t += 7 * DAY, i++) {
-    const d = new Date(t);
-    out.push({
-      id: `${m.id}_o${i}`,
-      kind: "opportunities",
-      subject: "This week's opportunities",
-      sentAt: d.toISOString(),
-      status: i === 4 && Number(m.id.slice(2)) % 11 === 0 ? "not-delivered" : "delivered",
-      html: html("This week's opportunities", "<ul><li><strong>Food bank volunteers</strong> · Northside Food Bank</li><li><strong>Youth mentor</strong> · Riverbend Youth Collective</li><li><strong>ESL conversation circle</strong> · Eastside Newcomer Services</li></ul>"),
-    });
-  }
-  out.push(...(g.__communitySent?.[m.id] ?? []));
-  return out.sort((a, b) => b.sentAt.localeCompare(a.sentAt));
+  return out.reverse();
 }
+
+const g = globalThis as unknown as { __communityStoreV3?: Store };
+const store = (): Store => (g.__communityStoreV3 ??= seed()); // V3: reseeds with source, onboarding and clicks
+
+export const members = (): MemberRecord[] => store().members;
+export const nextMemberId = () => `m_${++store().seq}`;
+export const findByEmail = (email: string) => members().find((m) => m.email.toLowerCase() === email.toLowerCase());
+export const emailsFor = (m: MemberRecord): SentEmail[] => store().emails[m.id] ?? [];
+export const isDeleted = (email: string) => store().deleted.has(email.toLowerCase());
+
+/** Removes the person and their send log, and remembers the address so admins can't re-add it. */
+export function deleteRecord(id: string): MemberRecord | undefined {
+  const s = store();
+  const index = s.members.findIndex((m) => m.id === id);
+  if (index < 0) return undefined;
+  const [m] = s.members.splice(index, 1);
+  delete s.emails[id];
+  s.deleted.add(m.email.toLowerCase());
+  return m;
+}
+
+/** A booth sign-up is fresh consent from the person, so it lifts an earlier deletion's block. */
+export const forgetDeleted = (email: string) => store().deleted.delete(email.toLowerCase());
 
 const TEMPLATES: Record<Exclude<EmailKind, "opportunities">, { subject: string; body: string }> = {
   "general-welcome": {
@@ -110,12 +191,25 @@ const TEMPLATES: Record<Exclude<EmailKind, "opportunities">, { subject: string; 
   },
 };
 
+function html(title: string, body: string) {
+  return `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;line-height:1.5">
+<h1 style="font-size:20px;margin:0 0 12px">${title}</h1>${body}
+<p style="font-size:12px;margin-top:24px">Social Development Centre · <a href="#">Unsubscribe</a></p></div>`;
+}
+
+/** The rendered body of a sent email. Backend: the provider's stored copy. */
+export function renderEmail(e: SentEmail): string {
+  if (e.kind !== "opportunities") return html(e.subject, TEMPLATES[e.kind].body);
+  const items = e.opportunities
+    .map((o) => `<li><strong>${o.title}</strong> · <a href="#">${o.cta === "sign_up" ? "Sign up" : "Take action"}</a> · <a href="#">Invite a friend</a></li>`)
+    .join("");
+  return html(e.subject, `<ul>${items}</ul>`);
+}
+
 /** Dev stand-in for the email provider: records the send and reports delivery. Always delivers here. */
-export function sendEmail(m: Member, kind: Exclude<EmailKind, "opportunities">): SentEmail["status"] {
-  const { subject, body } = TEMPLATES[kind];
-  const log = (g.__communitySent ??= {});
-  const list = (log[m.id] ??= []);
+export function sendEmail(m: MemberRecord, kind: Exclude<EmailKind, "opportunities">): SentEmail["status"] {
+  const list = (store().emails[m.id] ??= []);
   const status = "delivered" as const;
-  list.push({ id: `${m.id}_s${list.length}`, kind, subject, sentAt: new Date().toISOString(), status, html: html(subject, body) });
+  list.unshift({ id: `${m.id}_s${list.length}`, kind, subject: TEMPLATES[kind].subject, sentAt: new Date().toISOString(), status, opportunities: [] });
   return status;
 }
