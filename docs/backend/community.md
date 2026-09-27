@@ -9,7 +9,12 @@ UI contract: `src/app/admin/community/_data/{types,queries,actions}.ts`. `store.
 - No source, payments, dates of access or admin edit history.
 
 ## Queries
-- `listMembers(tier, q, page)`: 50 per page. General: every subscribed person, paying included. Paying: subscribed paying. Unsubscribed people are never listed, except that a General search also returns matching unsubscribed people after all subscribed matches. Search by name or email, server-side.
+- `listMembers(tier, q, page, sort)`: 50 per page. General: every subscribed person, paying included. Paying: subscribed paying. Unsubscribed people are never listed, except that a General search also returns matching unsubscribed people after all subscribed matches. Search by name or email, server-side.
+- Sorting is server-side, before paginating. `sort` is `{ key, direction }` from the `sort` and `dir` URL params: `key` is one of `MEMBER_SORT_KEYS` (`name`, `email`, `sent` = the latest email's `sentAt`, `added` = `addedAt`), `direction` is `asc` or `desc`. Unknown or missing keys use the default, `added` `desc` (`DEFAULT_MEMBER_SORT`); any `dir` other than `desc` is `asc`.
+  - Name and email compare case-insensitively. People with no name (for `name`) or no email sent (for `sent`) come last in either direction.
+  - Ties break on `id` ascending, so a person never appears on two pages.
+  - Subscribed and unsubscribed matches are sorted separately: unsubscribed matches stay after every subscribed match whatever the sort.
+  - SQL sketch: `ORDER BY subscribed DESC, <column> <dir> NULLS LAST, id ASC`, with `sent` from the latest row of the send log per person (a lateral join or a denormalized `last_email_sent_at`, indexed).
 - `getCommunityCounts(q?)`: subscribed people (paying included) and subscribed paying, narrowed by the search when given. Unsubscribed people are never counted in those two. Also `unsubscribedMatches`: unsubscribed people matching the search (0 without one), so an empty Paying members search can say its only matches are unsubscribed people at the end of General members.
 
 ## Email history

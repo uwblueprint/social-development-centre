@@ -35,6 +35,18 @@ export interface SentEmail {
   status: "delivered" | "not-delivered";
 }
 
+/** Columns the member list can sort by (the `sort` URL param). */
+export const MEMBER_SORT_KEYS = ["name", "email", "sent", "added"] as const;
+export type MemberSortKey = (typeof MEMBER_SORT_KEYS)[number];
+
+export interface MemberSort {
+  key: MemberSortKey;
+  direction: "asc" | "desc";
+}
+
+/** The order when no sort is chosen: newest added first. */
+export const DEFAULT_MEMBER_SORT: MemberSort = { key: "added", direction: "desc" };
+
 export interface MemberPage {
   rows: Member[];
   total: number;

@@ -156,6 +156,7 @@ const SortIndicator = styled.span`
   flex: none;
 `;
 
+/* Fallback for a non-string `header`: its sort text is read after the label (possibly with a space before it). */
 const VisuallyHidden = styled.span`
   position: absolute;
   width: 1px;
@@ -180,8 +181,18 @@ function SortableHeader<T>({
 }) {
   const active = sort?.key === column.sortKey ? sort.direction : undefined;
   const next = nextTableSort(sort, column);
+  const suffix = active ? tableSortCopy.sorted(active, next.direction) : tableSortCopy.unsorted;
+  // A string header names the button exactly ("Name, sorted ascending. …"); browsers would add a
+  // space before visually hidden text that isn't part of the label's inline flow.
+  const label = typeof column.header === "string" ? column.header + suffix : undefined;
   return (
-    <SortButton type="button" $align={column.align} $active={!!active} onClick={() => onSortChange(next)}>
+    <SortButton
+      type="button"
+      aria-label={label}
+      $align={column.align}
+      $active={!!active}
+      onClick={() => onSortChange(next)}
+    >
       <span>{column.header}</span>
       {active ? (
         <SortIndicator>
@@ -192,7 +203,7 @@ function SortableHeader<T>({
           <Icon icon={ChevronsUpDown} size={SORT_ICON_SIZE} />
         </SortHint>
       )}
-      <VisuallyHidden>{active ? tableSortCopy.sorted(active, next.direction) : tableSortCopy.unsorted}</VisuallyHidden>
+      {label === undefined && <VisuallyHidden>{suffix}</VisuallyHidden>}
     </SortButton>
   );
 }

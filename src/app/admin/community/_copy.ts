@@ -33,6 +33,7 @@ export const communityCopy = {
     headerName: "Name",
     headerEmail: "Email",
     headerLastEmail: "Last email",
+    headerSent: "Sent",
     headerAdded: "Added",
     headerActions: "Actions",
     noName: "No name",

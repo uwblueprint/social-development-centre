@@ -6,6 +6,13 @@ For SDC admins. Community holds everyone who gets SDC emails. **General members*
 1. Go to **Community** and choose **General members** or **Paying members**.
 2. Type a name or email in **Search by name or email**. Results update as you type. Click the **×** to clear it.
 
+## Sort the list
+1. To sort: select a column header: **Name**, **Email**, **Sent** or **Added**. The list is sorted newest **Added** first until you choose another.
+2. Select the same header again to reverse the order. An arrow beside the header shows the current order.
+3. The order stays while you search, switch between **General members** and **Paying members**, and change pages. Changing the order takes you back to the first page.
+
+**Last email** shows the subject of the most recent email the person was sent, and **Sent** shows how long ago it went out. Point at the time to see the full date.
+
 ## Find someone who unsubscribed
 1. On **General members**, search for their name or email.
 2. Matching people who unsubscribed appear after everyone else, dimmed, with an **Unsubscribed** badge.

@@ -1,12 +1,36 @@
-import type { CommunityCounts, Member, MemberPage, MemberTier, SentEmail } from "./types";
+import { DEFAULT_MEMBER_SORT } from "./types";
+import type { CommunityCounts, Member, MemberPage, MemberSort, MemberTier, SentEmail } from "./types";
 import { emailsFor, members } from "./store";
 
 /** Backend: replace these with real queries; keep the signatures. */
 
 export const PAGE_SIZE = 50;
 
-const label = (m: Member) => (m.name ?? m.email).toLowerCase();
-const byLabel = (a: Member, b: Member) => label(a).localeCompare(label(b));
+const withLastEmail = (m: Member): Member => {
+  const [latest] = emailsFor(m);
+  return latest ? { ...m, lastEmail: { subject: latest.subject, sentAt: latest.sentAt } } : m;
+};
+
+/** The value each sort key orders by; `undefined` (no name, never emailed) always sorts last. */
+const sortValue: Record<MemberSort["key"], (m: Member) => string | undefined> = {
+  name: (m) => m.name?.toLowerCase(),
+  email: (m) => m.email.toLowerCase(),
+  sent: (m) => m.lastEmail?.sentAt,
+  added: (m) => m.addedAt,
+};
+
+/** Orders by the sort's value, missing values last in either direction, then by id so pages never overlap. */
+const comparator = ({ key, direction }: MemberSort) => (a: Member, b: Member) => {
+  const va = sortValue[key](a);
+  const vb = sortValue[key](b);
+  if (va !== vb) {
+    if (va === undefined) return 1;
+    if (vb === undefined) return -1;
+    const order = va.localeCompare(vb);
+    if (order !== 0) return direction === "asc" ? order : -order;
+  }
+  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+};
 const matcher = (q: string) => {
   const query = q.trim().toLowerCase();
   return (m: Member) => !query || m.email.toLowerCase().includes(query) || (m.name ?? "").toLowerCase().includes(query);
@@ -16,20 +40,19 @@ const matcher = (q: string) => {
  * General tab: every subscribed person, paying members included. Paying tab: subscribed paying members.
  * Unsubscribed people are never listed, except that a search on the General tab also returns
  * matching unsubscribed people, after every subscribed match (the UI badges them "Unsubscribed").
- * Search matches name or email.
+ * Search matches name or email. `sort` orders each group (subscribed, then unsubscribed) on its own,
+ * so unsubscribed matches stay at the end whatever the sort; ties break on id.
  */
-export async function listMembers(tier: MemberTier, q = "", page = 1): Promise<MemberPage> {
+export async function listMembers(tier: MemberTier, q = "", page = 1, sort: MemberSort = DEFAULT_MEMBER_SORT): Promise<MemberPage> {
   const matches = matcher(q);
-  const all = members();
-  const subscribed = all.filter((m) => m.subscribed && (tier === "general" || m.tier === "paying") && matches(m)).sort(byLabel);
-  const unsubscribed = tier === "general" && q.trim() ? all.filter((m) => !m.subscribed && matches(m)).sort(byLabel) : [];
+  const byChosenSort = comparator(sort);
+  const all = members().map(withLastEmail);
+  const subscribed = all.filter((m) => m.subscribed && (tier === "general" || m.tier === "paying") && matches(m)).sort(byChosenSort);
+  const unsubscribed = tier === "general" && q.trim() ? all.filter((m) => !m.subscribed && matches(m)).sort(byChosenSort) : [];
   const rows = [...subscribed, ...unsubscribed];
   const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
   const current = Math.min(Math.max(1, page), pageCount);
-  const slice = rows.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE).map((m) => {
-    const [latest] = emailsFor(m);
-    return latest ? { ...m, lastEmail: { subject: latest.subject, sentAt: latest.sentAt } } : m;
-  });
+  const slice = rows.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE);
   return { rows: slice, total: rows.length, page: current, pageCount };
 }
 

@@ -92,3 +92,8 @@ Assumptions made while building the UI from the Community PRD. Each can be revis
 - **Decision (27 Sep, follows owner decision 7 and docs/ux/portal.md "Email subscription is independent of paying access"):** **Unsubscribe** stops emails only. A paying member who unsubscribes stays a paying member. Paying access ends only through **Remove paying access**.
 - **Where:** Community, member ⋯ menu and panel; the unsubscribe confirmation says "They stay a paying member."
 - **Revisit when:** SDC says paid benefits depend on receiving emails.
+
+## Sortable columns, and Last email split into Last email and Sent
+- **Decision (27 Sep, owner asked for sortable headers):** **Name**, **Email**, **Sent** and **Added** sort on the server; select a header to sort, select it again to reverse. Name and Email start A to Z; Sent and Added start newest first. With no choice made, the list is newest **Added** first, shown as the active column. People with no name or no email sent come last either way, and unsubscribed search matches stay at the end.
+- **Last email** now shows only the subject; the new **Sent** column shows the relative time ("1w ago"), with the full date on hover, so the list can be sorted by when someone was last emailed.
+- **Where:** Community table headers. The sort lives in the URL (`sort`, `dir`) and survives search, tab and page changes; changing it returns to page 1.

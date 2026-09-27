@@ -4,6 +4,11 @@ export function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
+/** Full date and time, e.g. for the tooltip on a relative time: "Sep 12, 2026, 3:04 PM". */
+export function formatDateTime(iso: string): string {
+  return new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+}
+
 /** Short date for dense lists: "Sep 12", or "Sep 12, 2025" outside the current year. */
 export function formatShortDate(iso: string): string {
   const date = new Date(iso);

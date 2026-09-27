@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/Badge";
 import type { TableColumn } from "@/components/ui/Table";
 import type { Member } from "../_data/types";
 import { communityCopy as copy } from "../_copy";
-import { formatDate, formatRelative } from "../_lib/format";
+import { formatDate, formatDateTime, formatRelative } from "../_lib/format";
 import { CopyEmailButton } from "./CopyEmailButton";
 import { MemberRowActions } from "./MemberRowActions";
 
@@ -54,35 +54,30 @@ const Muted = styled.span`
   color: var(--color-text-muted);
 `;
 
-const LastEmailCell = styled.span`
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  max-width: 220px;
-`;
-
 const Subject = styled.span`
   display: block;
+  max-width: 220px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 `;
 
-const RelativeDate = styled.span`
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
+const SentAt = styled.time`
+  white-space: nowrap;
 `;
 
 /**
  * Community table columns: Name (dimmed + an "Unsubscribed" badge for unsubscribed
  * people, who only appear in General search results),
- * Email (hover-reveal copy button), Last email (subject + relative date, or
- * "—"), Added, and a trailing row-actions ⋯ menu.
+ * Email (hover-reveal copy button), Last email (subject, or "—"), Sent (relative time, full date
+ * on hover, or "—"), Added, and a trailing row-actions ⋯ menu. Name, Email, Sent and Added sort
+ * (server-side); their `sortKey`s match `MEMBER_SORT_KEYS`.
  */
 export const memberColumns: TableColumn<Member>[] = [
   {
     key: "name",
     header: copy.table.headerName,
+    sortKey: "name",
     render: (member) => (
       <NameLine $muted={!member.subscribed}>
         {member.name ?? copy.table.noName}
@@ -93,6 +88,7 @@ export const memberColumns: TableColumn<Member>[] = [
   {
     key: "email",
     header: copy.table.headerEmail,
+    sortKey: "email",
     render: (member) => (
       <EmailCell $muted={!member.subscribed}>
         {member.email}
@@ -105,10 +101,21 @@ export const memberColumns: TableColumn<Member>[] = [
     header: copy.table.headerLastEmail,
     render: (member) =>
       member.lastEmail ? (
-        <LastEmailCell>
-          <Subject title={member.lastEmail.subject}>{member.lastEmail.subject}</Subject>
-          <RelativeDate>{formatRelative(member.lastEmail.sentAt)}</RelativeDate>
-        </LastEmailCell>
+        <Subject title={member.lastEmail.subject}>{member.lastEmail.subject}</Subject>
+      ) : (
+        <Muted>{copy.table.noLastEmail}</Muted>
+      ),
+  },
+  {
+    key: "sent",
+    header: copy.table.headerSent,
+    sortKey: "sent",
+    defaultSortDirection: "desc",
+    render: (member) =>
+      member.lastEmail ? (
+        <SentAt dateTime={member.lastEmail.sentAt} title={formatDateTime(member.lastEmail.sentAt)}>
+          {formatRelative(member.lastEmail.sentAt)}
+        </SentAt>
       ) : (
         <Muted>{copy.table.noLastEmail}</Muted>
       ),
@@ -116,6 +123,8 @@ export const memberColumns: TableColumn<Member>[] = [
   {
     key: "added",
     header: copy.table.headerAdded,
+    sortKey: "added",
+    defaultSortDirection: "desc",
     render: (member) => formatDate(member.addedAt),
   },
   {

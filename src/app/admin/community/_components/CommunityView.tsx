@@ -10,6 +10,7 @@ import {
   ListPageToolbar,
   useListParams,
   useListSearch,
+  useListSort,
 } from "@/components/patterns/ListPage";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
@@ -21,7 +22,8 @@ import { Tabs, TabsContent, TabsCount, TabsList, TabsTrigger } from "@/component
 import { AppToastProvider } from "@/components/ui/Toast";
 import { Tooltip } from "@/components/ui/Tooltip";
 import type { AddMode } from "../_data/actions";
-import type { CommunityCounts, Member, MemberPage, MemberTier } from "../_data/types";
+import { DEFAULT_MEMBER_SORT } from "../_data/types";
+import type { CommunityCounts, Member, MemberPage, MemberSort, MemberTier } from "../_data/types";
 import { communityCopy as copy } from "../_copy";
 import { AddMembersDialog } from "./AddMembersDialog";
 import { ExportDialog } from "./ExportDialog";
@@ -44,16 +46,20 @@ export function CommunityView({
   q,
   memberPage,
   counts,
+  sort,
   pageSize,
 }: {
   tab: MemberTier;
   q: string;
   memberPage: MemberPage;
   counts: CommunityCounts;
+  /** The server's sort, after it dropped unknown keys; `useListSort` writes the next one to the URL. */
+  sort: MemberSort;
   pageSize: number;
 }) {
   const { setParams } = useListParams();
   const searchState = useListSearch(q);
+  const { setSort } = useListSort(DEFAULT_MEMBER_SORT);
   const searchRef = React.useRef<HTMLInputElement>(null);
 
   const [activeTab, setActiveTab] = React.useState<MemberTier>(tab);
@@ -170,6 +176,8 @@ export function CommunityView({
                 rows={memberPage.rows}
                 getRowId={(m) => m.id}
                 onRowClick={(m) => setSelectedId(m.id)}
+                sort={sort}
+                onSortChange={setSort}
                 aria-label={activeTab === "paying" ? copy.tabs.paying : copy.tabs.general}
                 empty={
                   <ListEmptyState
