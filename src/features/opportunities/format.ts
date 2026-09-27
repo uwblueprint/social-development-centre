@@ -48,37 +48,24 @@ export function hasEnded(o: Opportunity, now = new Date()): boolean {
   return o.kind === "event" ? end <= now : end < now;
 }
 
-/** Days a removed partner's live listings stay visible to people who already got them (owner decision). */
-export const REMOVED_PARTNER_VISIBLE_DAYS = 30;
-
 export interface EffectiveStatus {
   status: OpportunityStatus;
   closedReason?: ClosedReason;
-  /** Live only: the partner was removed, so it's left out of emails and recommendations. */
-  emailsStopped?: true;
-  /** With `emailsStopped`: when it closes, the earlier of its own end and removal + REMOVED_PARTNER_VISIBLE_DAYS. */
-  visibleUntil?: string;
 }
 
 /**
- * Stored status plus automatic expiry. Drafts never expire. `partnerRemovedAt` is the organization's
- * removal time, if it was removed: from then on a live listing is no longer emailed, and it closes with
- * `partner_removed` at removal + REMOVED_PARTNER_VISIBLE_DAYS unless its own end comes first.
+ * Stored status plus the rules applied at read time. Drafts never change. A published listing reads as
+ * closed when its organization's access was removed (`partner_removed`, unless its date had already passed
+ * by then) or when its date has passed (`ended`). What members who already got it can still see is a
+ * separate, member-side rule: docs/backend/opportunities.md#removed-partners.
  */
 export function effectiveStatus(o: Opportunity, now = new Date(), partnerRemovedAt?: string): EffectiveStatus {
-  if (o.status !== "live") return { status: o.status, closedReason: o.closedReason };
-  const end = endsAt(o);
-  const cutoff = partnerRemovedAt
-    ? new Date(new Date(partnerRemovedAt).getTime() + REMOVED_PARTNER_VISIBLE_DAYS * 86_400_000)
-    : undefined;
-  const endedFirst = end && (!cutoff || end <= cutoff);
-  if (endedFirst && hasEnded(o, now)) return { status: "closed", closedReason: "ended" };
-  if (cutoff && cutoff <= now) return { status: "closed", closedReason: "partner_removed" };
-  if (cutoff) {
-    const until = end && end < cutoff ? end : cutoff;
-    return { status: "live", emailsStopped: true, visibleUntil: until.toISOString() };
+  if (o.status !== "published") return { status: o.status, closedReason: o.closedReason };
+  if (partnerRemovedAt) {
+    return { status: "closed", closedReason: hasEnded(o, new Date(partnerRemovedAt)) ? "ended" : "partner_removed" };
   }
-  return { status: "live" };
+  if (hasEnded(o, now)) return { status: "closed", closedReason: "ended" };
+  return { status: "published" };
 }
 
 const dateFmt = new Intl.DateTimeFormat("en-CA", { weekday: "short", month: "short", day: "numeric" });
@@ -89,9 +76,7 @@ export function formatDate(ymd: string): string {
   return formatDay(parseDate(ymd));
 }
 
-/** Like formatDate, for a timestamp (e.g. `visibleUntil`). */
-export function formatDay(d: Date | string): string {
-  const date = typeof d === "string" ? new Date(d) : d;
+function formatDay(date: Date): string {
   return date.getFullYear() === new Date().getFullYear() ? dateFmt.format(date) : dateYearFmt.format(date);
 }
 

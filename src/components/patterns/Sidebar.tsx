@@ -17,21 +17,29 @@ import {
 import { Icon } from "@/components/ui/Icon";
 import { Tooltip } from "@/components/ui/Tooltip";
 
-export interface SidebarNavItem {
+/**
+ * A badge is a number that needs attention, and it always comes with an accessible label saying what it
+ * counts, including the number (e.g. "3 awaiting review" → "Partners, 3 awaiting review"). The number is
+ * never announced alone. Use the same wording on the section's page.
+ */
+type SidebarNavCount =
+  | { count?: undefined; countLabel?: undefined }
+  | {
+      count: number;
+      /** What the count means, including the number, e.g. "3 awaiting review". */
+      countLabel: string;
+    };
+
+export type SidebarNavItem = SidebarNavCount & {
   href: string;
   label: string;
   icon: LucideIcon;
-  /**
-   * Number of things in this section that need attention; shown as a badge beside the label.
-   * The section's page must say what the number means (e.g. "3 partners awaiting review"): the badge alone doesn't.
-   */
-  count?: number;
   /**
    * One sentence on what the section is for, shown as a tooltip to the right after a short hover or
    * keyboard focus. Never pinned on click. It replaces a page description, so keep it supplementary.
    */
   description?: string;
-}
+};
 
 /** Long enough that sweeping the pointer down the nav doesn't flash every description. */
 const DESCRIPTION_DELAY_MS = 600;
@@ -92,7 +100,8 @@ const enter = css`
   }
 `;
 
-const Aside = styled.aside<{ $mobileOpen: boolean }>`
+// A div, not an aside: below 768px it becomes a modal dialog, a role <aside> can't take. The nav inside is the landmark.
+const Aside = styled.div<{ $mobileOpen: boolean }>`
   ${enter}
   position: sticky;
   top: 0;
@@ -300,6 +309,18 @@ const Count = styled.span`
   font-variant-numeric: tabular-nums;
 `;
 
+const VisuallyHidden = styled.span`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+`;
+
 const Divider = styled.hr`
   margin: var(--space-3) var(--space-2);
   border: 0;
@@ -427,9 +448,12 @@ function SidebarContent({
   onNavigate,
   onClose,
   closeRef,
+  brandId,
 }: {
   config: SidebarConfig;
-  onNavigate: () => void;
+  brandId: string;
+  /** Called with the destination when a link in the sidebar is chosen. */
+  onNavigate: (href: string) => void;
   onClose: () => void;
   closeRef: React.Ref<HTMLButtonElement>;
 }) {
@@ -438,7 +462,7 @@ function SidebarContent({
   return (
     <>
       <Header>
-        <Brand>
+        <Brand id={brandId}>
           <BrandMark aria-hidden="true">{config.product.initials}</BrandMark>
           {config.product.name}
         </Brand>
@@ -455,11 +479,16 @@ function SidebarContent({
               style={{ "--i": i } as React.CSSProperties}
               href={item.href}
               aria-current={isActive(pathname, item.href) ? "page" : undefined}
-              onClick={onNavigate}
+              onClick={() => onNavigate(item.href)}
             >
               <Icon icon={item.icon} size={18} />
               <ItemLabel>{item.label}</ItemLabel>
-              {item.count ? <Count>{item.count}</Count> : null}
+              {item.count ? (
+                <>
+                  <Count aria-hidden="true">{item.count}</Count>
+                  <VisuallyHidden>, {item.countLabel}</VisuallyHidden>
+                </>
+              ) : null}
             </ItemLink>
           );
           return item.description ? (
@@ -484,7 +513,7 @@ function SidebarContent({
           <nav aria-label={config.recent.label}>
             <SectionLabel>{config.recent.label}</SectionLabel>
             {config.recent.items.map((item) => (
-              <RecentLink key={item.href} href={item.href} onClick={onNavigate}>
+              <RecentLink key={item.href} href={item.href} onClick={() => onNavigate(item.href)}>
                 <Icon icon={item.icon} size={14} />
                 <RecentText>
                   {item.title}
@@ -499,7 +528,7 @@ function SidebarContent({
       <Footer>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <ProfileButton type="button" aria-label={`Account menu for ${config.user.name}`}>
+            <ProfileButton type="button" aria-label={`Open account menu for ${config.user.name}`}>
               <Avatar initials={config.user.initials} src={config.user.avatarSrc} size="sm" />
               <ProfileText>
                 <ProfileName>{config.user.name}</ProfileName>
@@ -512,7 +541,7 @@ function SidebarContent({
           </DropdownMenuTrigger>
           <DropdownMenuContent side="top" align="start" style={{ minWidth: 220 }}>
             <DropdownMenuItem asChild>
-              <MenuLink href={config.accountHref} onClick={onNavigate}>
+              <MenuLink href={config.accountHref} onClick={() => onNavigate(config.accountHref)}>
                 My account
               </MenuLink>
             </DropdownMenuItem>
@@ -525,7 +554,28 @@ function SidebarContent({
   );
 }
 
-/** App layout with a left sidebar; becomes a drawer below 768px. */
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/**
+ * Focus the page's h1 once it's on screen (a new route can render a moment after the URL changes).
+ * List pages make it focusable with tabIndex -1; any other h1 is given it here so focus can land.
+ */
+function focusHeading(container: HTMLElement | null) {
+  let frames = 0;
+  const tryFocus = () => {
+    const heading = container?.querySelector<HTMLElement>("h1");
+    if (heading) {
+      if (!heading.hasAttribute("tabindex")) heading.setAttribute("tabindex", "-1");
+      heading.focus();
+      return;
+    }
+    if (++frames < 120) requestAnimationFrame(tryFocus);
+  };
+  requestAnimationFrame(tryFocus);
+}
+
+/** App layout with a left sidebar; becomes a modal drawer below 768px. */
 export function SidebarLayout({
   config,
   children,
@@ -533,15 +583,26 @@ export function SidebarLayout({
   config: SidebarConfig;
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const asideId = React.useId();
+  const brandId = React.useId();
+  const asideRef = React.useRef<HTMLElement>(null);
+  const mainRef = React.useRef<HTMLElement>(null);
   const menuRef = React.useRef<HTMLButtonElement>(null);
   const closeRef = React.useRef<HTMLButtonElement>(null);
   const wasOpen = React.useRef(false);
+  /** Set when a link in the open drawer is chosen: focus then goes to the destination's h1, not the menu button. */
+  const pendingHref = React.useRef<string | null>(null);
 
   React.useEffect(() => {
     if (!mobileOpen) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMobileOpen(false);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      // Leave Escape to the account menu (it renders outside the drawer) while that's open.
+      const target = e.target as Node | null;
+      if (target === document.body || asideRef.current?.contains(target)) setMobileOpen(false);
+    };
     // Widening past the breakpoint turns the drawer back into the fixed sidebar, so drop the open state.
     const desktop = window.matchMedia("(min-width: 768px)");
     const onResize = () => desktop.matches && setMobileOpen(false);
@@ -553,28 +614,78 @@ export function SidebarLayout({
     };
   }, [mobileOpen]);
 
-  // Move focus into the drawer when it opens and back to the menu button when it closes.
+  // Move focus into the drawer when it opens. On close, return it to the menu button, unless a link was
+  // chosen: then it goes to the destination page's heading.
   React.useEffect(() => {
     if (mobileOpen) closeRef.current?.focus();
-    else if (wasOpen.current && menuRef.current?.offsetParent) menuRef.current.focus();
+    else if (wasOpen.current) {
+      if (pendingHref.current) {
+        // Same page: nothing will re-render, so focus its heading now. Otherwise wait for the route change.
+        if (pendingHref.current === pathname) {
+          pendingHref.current = null;
+          focusHeading(mainRef.current);
+        }
+      } else if (menuRef.current?.offsetParent) menuRef.current.focus();
+    }
     wasOpen.current = mobileOpen;
+    // pathname is read, not tracked: the route-change effect below handles navigation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mobileOpen]);
+
+  React.useEffect(() => {
+    if (!pendingHref.current) return;
+    pendingHref.current = null;
+    focusHeading(mainRef.current);
+  }, [pathname]);
+
+  function onNavigate(href: string) {
+    if (!mobileOpen) return;
+    pendingHref.current = href;
+    setMobileOpen(false);
+  }
+
+  // Keep Tab and Shift+Tab inside the open drawer. The page behind is inert, but without this Tab would
+  // leave the document for the browser's own controls.
+  function onAsideKeyDown(e: React.KeyboardEvent<HTMLElement>) {
+    const aside = asideRef.current;
+    if (!mobileOpen || e.key !== "Tab" || !aside || !aside.contains(e.target as Node)) return;
+    const focusables = Array.from(aside.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
+      (el) => el.offsetParent !== null,
+    );
+    if (focusables.length === 0) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
 
   return (
     <Shell>
-      <Aside id={asideId} $mobileOpen={mobileOpen}>
+      <Aside
+        ref={asideRef}
+        id={asideId}
+        $mobileOpen={mobileOpen}
+        onKeyDown={onAsideKeyDown}
+        {...(mobileOpen ? { role: "dialog", "aria-modal": true, "aria-labelledby": brandId } : {})}
+      >
         <SidebarContent
           config={config}
-          onNavigate={() => setMobileOpen(false)}
+          onNavigate={onNavigate}
           onClose={() => setMobileOpen(false)}
           closeRef={closeRef}
+          brandId={brandId}
         />
       </Aside>
       {mobileOpen && (
         <Scrim type="button" tabIndex={-1} aria-hidden="true" onClick={() => setMobileOpen(false)} />
       )}
       {/* While the drawer is open the page behind is dimmed and out of reach, like a dialog. */}
-      <Main inert={mobileOpen}>
+      <Main ref={mainRef} inert={mobileOpen}>
         <MobileBar>
           <IconButton
             ref={menuRef}

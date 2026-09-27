@@ -15,6 +15,7 @@ import { Field } from "@/components/ui/Field";
 - `hint?: ReactNode` — helper text below the control.
 - `error?: ReactNode` — what happened and how to fix it; shows an error icon and sets `aria-invalid`.
 - `required?: boolean` — shows "(required)" next to the label.
+- `id?: string` — the control's id. Set it when an [`ErrorSummary`](./ErrorSummary.md) links to the field; otherwise one is generated.
 - `disabled?: boolean` + `disabledReason: DisabledReasonText` (required together — ask, or pass `null`).
 - `children: (props: FieldControlProps) => ReactNode` — spread `props` onto the inner control.
 

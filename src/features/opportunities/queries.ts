@@ -18,23 +18,13 @@ import type {
  * Automatic expiry (format.ts effectiveStatus) should become a scheduled job or a query-time rule.
  */
 
-const TAB_OF = { draft: "drafts", live: "live", closed: "closed" } as const;
+const TAB_OF = { draft: "drafts", published: "published", closed: "closed" } as const;
 
-/**
- * Adds automatic expiry (including a removed partner's cutoff and `emailsStopped`) and the organization's
- * current name (organizations can be renamed).
- */
+/** Adds automatic expiry, partner removal (format.ts effectiveStatus) and the organization's current name (organizations can be renamed). */
 function withEffectiveStatus(o: Opportunity): Opportunity {
   const org = orgs().find((x) => x.id === o.organization.id);
-  const { status, closedReason, emailsStopped, visibleUntil } = effectiveStatus(o, new Date(), org?.removedAt);
-  return {
-    ...o,
-    status,
-    closedReason,
-    emailsStopped,
-    visibleUntil,
-    organization: org ? { id: org.id, name: org.name } : o.organization,
-  };
+  const { status, closedReason } = effectiveStatus(o, new Date(), org?.removedAt);
+  return { ...o, status, closedReason, organization: org ? { id: org.id, name: org.name } : o.organization };
 }
 
 function visibleTo(actor: Actor) {
@@ -53,10 +43,10 @@ function scoped(actor: Actor, filters: Omit<OpportunityFilters, "tab">) {
   return opportunities().filter(visibleTo(actor)).map(withEffectiveStatus).filter(matches(filters, actor));
 }
 
-/** Live: soonest date first, undated last. Drafts and closed: most recently updated first. */
+/** Published: soonest date first, undated last. Drafts and closed: most recently updated first. */
 function sortFor(tab: OpportunityTab) {
   return (a: Opportunity, b: Opportunity) => {
-    if (tab === "live") {
+    if (tab === "published") {
       const ka = keyDate(a) ?? "9999";
       const kb = keyDate(b) ?? "9999";
       if (ka !== kb) return ka < kb ? -1 : 1;
@@ -73,7 +63,7 @@ export async function listOpportunities(actor: Actor, filters: OpportunityFilter
 
 /** Counts per tab for the same filters (search, type, organization). */
 export async function getOpportunityCounts(actor: Actor, filters: Omit<OpportunityFilters, "tab">): Promise<OpportunityCounts> {
-  const counts: OpportunityCounts = { live: 0, drafts: 0, closed: 0 };
+  const counts: OpportunityCounts = { published: 0, drafts: 0, closed: 0 };
   for (const o of scoped(actor, filters)) counts[TAB_OF[o.status]]++;
   return counts;
 }
@@ -105,10 +95,13 @@ export async function listOrganizationFilterOptions(): Promise<OrganizationFilte
   return [...(await listPublisherOptions()), ...removed];
 }
 
-/** Live (not ended) opportunities for one organization, including a removed partner's before its cutoff; used by Partners. */
-export function countLiveOpportunities(organizationId: string): number {
+/** Published (not ended or closed) opportunities for one organization; used by Partners. A removed partner has none. */
+export function countPublishedOpportunities(organizationId: string): number {
   const removedAt = orgs().find((o) => o.id === organizationId)?.removedAt;
   return opportunities().filter(
-    (o) => o.organization.id === organizationId && effectiveStatus(o, new Date(), removedAt).status === "live",
+    (o) => o.organization.id === organizationId && effectiveStatus(o, new Date(), removedAt).status === "published",
   ).length;
 }
+
+/** @deprecated Renamed to countPublishedOpportunities; kept until Partners switches over. */
+export const countLiveOpportunities = countPublishedOpportunities;

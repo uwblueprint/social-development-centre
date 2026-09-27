@@ -49,6 +49,7 @@ Each doc covers when to use it, its API, a working example, content rules, and a
 ## Foundations
 - [DisabledReason](./DisabledReason.md) — explain why a control is disabled or read-only.
 - [Field](./Field.md) — labels a form control with hint, error, and required state.
+- [ErrorSummary](./ErrorSummary.md) — a persistent summary of a long form's errors, linked to the fields.
 - [Icon](./Icon.md) — a consistent wrapper around `lucide-react` glyphs.
 
 ## Forms and the backend

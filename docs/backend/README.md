@@ -5,7 +5,6 @@ The UI is built so the backend plugs in at a few fixed seams. Nothing in `src/co
 ## 1. Who is signed in
 `src/app/admin/_data/session.ts`
 - `getCurrentAdmin()`: return the admin (`AdminUser` in `_data/types.ts`) or `null`. **Must check the SDC admin role**, not just sign-in. It throws in production until implemented, so the admin portal fails closed.
-- `getAdminNavCounts()`: badge counts per sidebar section (e.g. `{ partners: 3 }` for pending invitations needing attention). Return `{}` for none.
 
 ## 2. Reading data
 Each admin page (`src/app/admin/<section>/page.tsx`) is a Server Component. Fetch there (or in a `_data/` function next to it) and pass plain, serializable props to client components. Keep types for each section in `src/app/admin/<section>/_data/types.ts`; the UI is written against those types, so they are the contract.

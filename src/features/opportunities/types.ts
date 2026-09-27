@@ -7,16 +7,17 @@ import type { ActionState } from "@/lib/forms";
 
 export type OpportunityKind = "event" | "petition" | "volunteer" | "job" | "other";
 
-/** Stored status. `closed` covers both a manual close and an automatic end; see `closedReason`. */
-export type OpportunityStatus = "draft" | "live" | "closed";
+/** Stored status: Draft, Published, Closed. `closed` covers a manual close, an automatic end and partner removal; see `closedReason`. */
+export type OpportunityStatus = "draft" | "published" | "closed";
 /**
- * `ended`: its date passed on its own. `closed`: a person closed it.
- * `partner_removed`: its organization was removed and the visibility cutoff passed (derived; see format.ts effectiveStatus).
+ * Why a listing is closed. `ended`: its date passed on its own. `closed`: a person closed it.
+ * `partner_removed`: its organization's portal access was removed (shown as "Partner access removed"; see
+ * format.ts effectiveStatus). Reinstating the organization reopens these (service.ts reopenListingsForOrganization).
  */
 export type ClosedReason = "ended" | "closed" | "partner_removed";
 
-/** List tabs. `closed` includes ended listings. */
-export type OpportunityTab = "live" | "drafts" | "closed";
+/** List tabs. `closed` includes ended listings and those of removed partners. */
+export type OpportunityTab = "published" | "drafts" | "closed";
 
 export type TopicId =
   | "housing"
@@ -113,7 +114,7 @@ export interface OrganizationRef {
   name: string;
 }
 
-/** An option in the admin list's Organization filter. Removed partners stay filterable. */
+/** An option in the admin list's Organization filter. Removed partners stay filterable, labelled "{name} (removed)". */
 export interface OrganizationFilterOption extends OrganizationRef {
   removed?: boolean;
 }
@@ -129,19 +130,11 @@ interface OpportunityBase {
   /** Up to 280 characters; written for email. */
   summary: string;
   topics: TopicId[];
-  /** External https link where people take action. Required to publish. */
+  /** Where people take action. Stored normalized to https (src/lib/url.ts normalizeWebAddress). Required to publish. */
   link: string;
   organization: OrganizationRef;
   status: OpportunityStatus;
   closedReason?: ClosedReason;
-  /**
-   * Derived, never stored. Set on a live listing whose organization was removed: it's no longer emailed or
-   * recommended, and people who already got it can see it until `visibleUntil`, the earlier of its own end
-   * and removal + 30 days (REMOVED_PARTNER_VISIBLE_DAYS). After that it reads as closed with `partner_removed`.
-   */
-  emailsStopped?: true;
-  /** ISO timestamp; present with `emailsStopped`. */
-  visibleUntil?: string;
   createdAt: string;
   updatedAt: string;
   updatedBy: Editor;
@@ -165,7 +158,7 @@ export interface OpportunityFilters {
 
 export interface SaveResult {
   id: string;
-  /** Where the listing now appears, after automatic expiry (an ended listing moved to a future date is live again). */
+  /** The list tab the listing now belongs in, after its effective status (an ended listing moved to a future date is published again). */
   tab: OpportunityTab;
 }
 

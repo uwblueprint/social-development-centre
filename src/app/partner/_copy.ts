@@ -5,7 +5,7 @@
  */
 export const partnerCopy = {
   nav: {
-    label: "Partner",
+    label: "Partner navigation",
     opportunities: "Opportunities",
     organization: "Organization",
     /** Shown as a delayed tooltip on the sidebar item; replaces the old page descriptions. */

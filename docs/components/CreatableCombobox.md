@@ -16,8 +16,11 @@ import { CreatableCombobox, type CreatableComboboxValue } from "@/components/ui/
 - `createFieldName: string` — hidden field submitted with the typed text when creating a new one.
 - Exactly one of the two hidden fields is ever non-empty; the server action tells them apart the same way `invitePartner` does (`organizationId` vs `organizationName`).
 - `defaultValue?: CreatableComboboxValue` (`{ kind: "existing", value, label }` or `{ kind: "create", label }`), `onValueChange?`.
-- `placeholder?`, `disabled?`, `required?`, `id?`, `aria-invalid?`, `aria-describedby?`, `aria-label?`/`aria-labelledby?` — always wrap in `Field` instead of setting these by hand.
-- When the typed text has no case-insensitive exact match among `options`, the list's last row is `Create "<text>"` with a plus icon.
+- `placeholder?: string` — trigger text before anything is chosen. Default `Search or create…`; name the action per instance.
+- `searchPlaceholder?: string` — placeholder of the search box inside the list. Default `Search organizations…`.
+- `createLabel?: (query: string) => string` — label of the create row, and of the trigger once a new option is chosen. Default `` (q) => `Create “${q}”` ``. Per instance, so one screen can say `Add “{name}” as a new organization` without changing others.
+- `disabled?`, `required?`, `id?`, `aria-invalid?`, `aria-describedby?`, `aria-label?`/`aria-labelledby?` — always wrap in `Field` instead of setting these by hand.
+- When the typed text has no case-insensitive exact match among `options`, the list's last row is `createLabel(text)` with a plus icon.
 
 ## Example
 ```tsx
@@ -29,13 +32,14 @@ import { CreatableCombobox, type CreatableComboboxValue } from "@/components/ui/
       existingFieldName="organizationId"
       createFieldName="organizationName"
       placeholder="Search or create an organization…"
+      createLabel={(name) => `Add “${name}” as a new organization`}
     />
   )}
 </Field>
 ```
 
 ## Content rules
-Placeholder names the action ("Search or create an organization…"). The create row always echoes the exact text typed, in double quotes, so there's no ambiguity about what will be created.
+Placeholder names the action ("Search or create an organization…"). A custom `createLabel` must still echo the exact text typed, in curly double quotes, so there's no ambiguity about what will be created.
 
 ## Accessibility
 Full listbox/combobox ARIA and keyboard support (arrows, type-ahead, Enter, Esc) via `cmdk` inside a `Popover`. The create row is announced like any other option — it isn't a separate control.

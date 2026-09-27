@@ -25,7 +25,12 @@ export interface CreatableComboboxProps {
   createFieldName: string;
   defaultValue?: CreatableComboboxValue;
   onValueChange?: (value: CreatableComboboxValue | undefined) => void;
+  /** Trigger text before anything is chosen. Name the action, e.g. "Search or create an organization…". */
   placeholder?: string;
+  /** Placeholder for the search box inside the list. */
+  searchPlaceholder?: string;
+  /** Label of the create row (and of the trigger once a new one is chosen). Default: `Create "{query}"`. */
+  createLabel?: (query: string) => string;
   disabled?: boolean;
   id?: string;
   required?: boolean;
@@ -211,6 +216,8 @@ function ChevronIcon() {
   return <Icon icon={ChevronDown} size={14} />;
 }
 
+const defaultCreateLabel = (query: string) => `Create “${query}”`;
+
 function toDisplayValue(value: CreatableComboboxValue | undefined): CreatableComboboxOption | undefined {
   if (!value) return undefined;
   return value.kind === "existing" ? { value: value.value, label: value.label } : { value: "", label: value.label };
@@ -228,6 +235,8 @@ export function CreatableCombobox({
   defaultValue,
   onValueChange,
   placeholder = "Search or create…",
+  searchPlaceholder = "Search organizations…",
+  createLabel = defaultCreateLabel,
   disabled,
   id,
   required,
@@ -285,7 +294,7 @@ export function CreatableCombobox({
           data-placeholder={display ? undefined : ""}
         >
           <TriggerLabel>
-            {display ? (selected?.kind === "create" ? `Create "${display.label}"` : display.label) : placeholder}
+            {display ? (selected?.kind === "create" ? createLabel(display.label) : display.label) : placeholder}
           </TriggerLabel>
           <IconGroup>
             {invalid && (
@@ -321,7 +330,7 @@ export function CreatableCombobox({
                 ref={inputRef}
                 value={search}
                 onValueChange={setSearch}
-                placeholder="Search organizations…"
+                placeholder={searchPlaceholder}
               />
             </SearchRow>
             <List>
@@ -341,7 +350,7 @@ export function CreatableCombobox({
                   onSelect={() => commit({ kind: "create", label: trimmed })}
                 >
                   <Icon icon={Plus} size={14} />
-                  <ComboItemLabel>Create &ldquo;{trimmed}&rdquo;</ComboItemLabel>
+                  <ComboItemLabel>{createLabel(trimmed)}</ComboItemLabel>
                 </CreateItem>
               )}
             </List>

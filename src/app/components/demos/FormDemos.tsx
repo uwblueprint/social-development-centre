@@ -10,6 +10,7 @@ import { Select } from "@/components/ui/Select";
 import { CreatableCombobox } from "@/components/ui/CreatableCombobox";
 import { SearchField } from "@/components/ui/SearchField";
 import { DatePicker } from "@/components/ui/DatePicker";
+import { ErrorSummary } from "@/components/ui/ErrorSummary";
 
 const Section = styled.div`
   display: flex;
@@ -255,3 +256,22 @@ export function CreatableComboboxDemo() {
   );
 }
 
+
+const summaryErrors = [
+  { fieldId: "demo-summary-title", message: "Enter a title." },
+  { fieldId: "demo-summary-website", message: "Enter a web address like sdckw.ca." },
+];
+
+export function ErrorSummaryDemo() {
+  return (
+    <Section>
+      <ErrorSummary title="Fix 2 fields to publish this opportunity" errors={summaryErrors} />
+      <Field id="demo-summary-title" label="Title" required error={summaryErrors[0].message}>
+        {(props) => <Input {...props} />}
+      </Field>
+      <Field id="demo-summary-website" label="Website" error={summaryErrors[1].message}>
+        {(props) => <Input {...props} defaultValue="sdckw" />}
+      </Field>
+    </Section>
+  );
+}

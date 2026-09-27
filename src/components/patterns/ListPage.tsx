@@ -34,6 +34,11 @@ const Title = styled.h1`
   font-weight: var(--weight-medium);
   line-height: var(--leading-heading);
   letter-spacing: var(--tracking-tight);
+
+  /* Focused by script only (after choosing a section in the mobile drawer); it isn't a control. */
+  &:focus {
+    outline: none;
+  }
 `;
 
 const Actions = styled.div`
@@ -43,11 +48,14 @@ const Actions = styled.div`
   gap: var(--space-2);
 `;
 
-/** One compact row: the page's h1 on the left, its actions (buttons with icons) on the right. No description. */
+/**
+ * One compact row: the page's h1 on the left, its actions (buttons with icons) on the right. No description.
+ * The h1 takes focus (tabIndex -1) when the person arrives from the mobile navigation drawer.
+ */
 export function ListPageHeader({ title, actions }: { title: React.ReactNode; actions?: React.ReactNode }) {
   return (
     <Header>
-      <Title>{title}</Title>
+      <Title tabIndex={-1}>{title}</Title>
       {actions && <Actions>{actions}</Actions>}
     </Header>
   );

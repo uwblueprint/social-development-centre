@@ -8,6 +8,7 @@ import {
   SearchFieldDemo,
   SelectDemo,
   CreatableComboboxDemo,
+  ErrorSummaryDemo,
   TextareaDemo,
 } from "./demos/FormDemos";
 import {
@@ -36,6 +37,7 @@ const sections: { id: string; title: string; description: string; demo: ReactNod
   { id: "date-picker", title: "Date picker", description: "Type a date or pick one from a calendar.", demo: <DatePickerDemo /> },
   { id: "select", title: "Select", description: "Pick one option from a list.", demo: <SelectDemo /> },
   { id: "creatable-combobox", title: "Creatable combobox", description: "Pick an existing option or create one inline.", demo: <CreatableComboboxDemo /> },
+  { id: "error-summary", title: "Error summary", description: "A persistent list of a long form's errors, each linking to its field.", demo: <ErrorSummaryDemo /> },
   { id: "checkbox", title: "Checkbox", description: "Independent on/off choices, including indeterminate.", demo: <CheckboxDemo /> },
   { id: "radio", title: "Radio group", description: "One choice from a small set.", demo: <RadioGroupDemo /> },
   { id: "switch", title: "Switch", description: "Settings that apply immediately.", demo: <SwitchDemo /> },

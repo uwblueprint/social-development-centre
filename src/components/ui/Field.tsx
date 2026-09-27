@@ -61,6 +61,8 @@ interface BaseFieldProps {
   /** Say what went wrong and how to fix it, e.g. "Enter a URL starting with https://". */
   error?: React.ReactNode;
   required?: boolean;
+  /** The control's id. Set it when something links to the field, e.g. an `ErrorSummary`; otherwise one is generated. */
+  id?: string;
   children: (props: FieldControlProps) => React.ReactNode;
 }
 
@@ -82,11 +84,13 @@ export function Field({
   hint,
   error,
   required,
+  id,
   disabled,
   disabledReason,
   children,
 }: FieldProps) {
-  const controlId = React.useId();
+  const generatedId = React.useId();
+  const controlId = id ?? generatedId;
   const hintId = React.useId();
   const errorId = React.useId();
 

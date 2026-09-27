@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { orgs, statusOf } from "@/app/admin/partners/_data/store";
 import type { ActionState } from "@/lib/forms";
+import { normalizeWebAddress } from "@/lib/url";
 import { KIND_NOUN, LIMITS, MAX_TOPICS, SDC_ORG, TOPICS } from "./catalog";
 import { effectiveStatus, hasEnded } from "./format";
 import { nextOpportunityId, opportunities } from "./store";
@@ -37,15 +38,6 @@ const num = (fd: FormData, key: string) => {
   return v ? Number(v) : undefined;
 };
 
-function isHttpsUrl(value: string) {
-  try {
-    const u = new URL(value);
-    return u.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
-
 function revalidate() {
   revalidatePath("/admin/opportunities");
   revalidatePath("/partner/opportunities");
@@ -53,6 +45,21 @@ function revalidate() {
 }
 
 const fail = (message: string, fieldErrors?: ActionState["fieldErrors"]): ActionState<never> => ({ status: "error", message, fieldErrors });
+
+const MISSING = "This opportunity no longer exists.";
+
+/** The form's error summary title, e.g. "Fix 2 fields to publish this event". */
+function summaryTitle(count: number, intent: string, noun: string) {
+  const fields = count === 1 ? "1 field" : `${count} fields`;
+  if (intent === "draft") return `Fix ${fields} to save this draft`;
+  if (intent === "save") return `Fix ${fields} to save your changes`;
+  return `Fix ${fields} to publish this ${noun}`;
+}
+
+const isRemoved = (organizationId: string) => {
+  const org = orgs().find((o) => o.id === organizationId);
+  return !!org && statusOf(org) === "removed";
+};
 
 function canEdit(actor: Actor, o: Opportunity) {
   return actor.role === "admin" || o.organization.id === actor.organizationId;
@@ -158,14 +165,14 @@ function readDetails(kind: OpportunityKind, fd: FormData, errors: Errors, strict
 export async function saveOpportunity(actor: Actor, fd: FormData): Promise<ActionState<SaveResult>> {
   const id = text(fd, "id");
   const existing = id ? opportunities().find((o) => o.id === id) : undefined;
-  if (id && (!existing || !canEdit(actor, existing))) return fail("This opportunity no longer exists, or you can't edit it. Go back to the list.");
+  if (id && (!existing || !canEdit(actor, existing))) return fail(MISSING);
 
   const kind = (existing?.kind ?? text(fd, "kind")) as OpportunityKind;
   if (!KINDS.has(kind)) return fail("Choose a type of opportunity.");
 
   const intent = text(fd, "intent") || "publish";
-  // "save" keeps the stored status. An ended listing is stored as live, so moving its date forward revives it.
-  const nextStatus = intent === "draft" ? "draft" : intent === "save" ? (existing?.status ?? "draft") : "live";
+  // "save" keeps the stored status. An ended listing is stored as published, so moving its date forward revives it.
+  const nextStatus = intent === "draft" ? "draft" : intent === "save" ? (existing?.status ?? "draft") : "published";
   const strict = nextStatus !== "draft";
 
   const organization = resolveOrganization(actor, fd);
@@ -174,7 +181,8 @@ export async function saveOpportunity(actor: Actor, fd: FormData): Promise<Actio
 
   const title = text(fd, "title");
   const summary = text(fd, "summary");
-  const link = text(fd, "link");
+  const rawLink = text(fd, "link");
+  const link = rawLink ? normalizeWebAddress(rawLink) : "";
   const topics = [...new Set(all(fd, "topics"))].filter((t) => TOPIC_IDS.has(t)) as TopicId[];
 
   if (!title) errors.title = "Enter a title.";
@@ -183,14 +191,14 @@ export async function saveOpportunity(actor: Actor, fd: FormData): Promise<Actio
   if (strict && !summary) errors.summary = "Add a short description.";
   if (strict && topics.length === 0) errors.topics = "Choose at least one topic.";
   if (topics.length > MAX_TOPICS) errors.topics = `Choose up to ${MAX_TOPICS} topics.`;
-  if (strict && !link) errors.link = "Add the link where people take action.";
-  else if (link && !isHttpsUrl(link)) errors.link = "Enter a full link that starts with https://";
+  if (strict && !rawLink) errors.link = "Add the link where people take action.";
+  else if (link === null) errors.link = "Enter a web address, like sdckw.ca.";
 
   const details = readDetails(kind, fd, errors, strict);
+  const noun = KIND_NOUN[kind];
 
-  if (Object.keys(errors).length) {
-    return fail(strict ? "Fix the highlighted fields to publish." : "Fix the highlighted fields to save.", errors);
-  }
+  // The message titles the form's error summary; there's no toast for field errors.
+  if (Object.keys(errors).length) return fail(summaryTitle(Object.keys(errors).length, intent, noun), errors);
 
   const now = new Date().toISOString();
   const record = {
@@ -199,7 +207,7 @@ export async function saveOpportunity(actor: Actor, fd: FormData): Promise<Actio
     title,
     summary,
     topics,
-    link,
+    link: link ?? "",
     organization: organization!,
     details,
     status: nextStatus,
@@ -207,12 +215,12 @@ export async function saveOpportunity(actor: Actor, fd: FormData): Promise<Actio
     createdAt: existing?.createdAt ?? now,
     updatedAt: now,
     updatedBy: { name: actor.name, role: actor.role },
-    publishedAt: nextStatus === "live" ? (existing?.publishedAt ?? now) : existing?.publishedAt,
+    publishedAt: nextStatus === "published" ? (existing?.publishedAt ?? now) : existing?.publishedAt,
   } as Opportunity;
 
   if (intent === "publish" && hasEnded(record)) {
     const field = kind === "event" ? "date" : kind === "volunteer" || kind === "job" ? "applyBy" : "deadline";
-    return fail("Fix the highlighted fields to publish.", {
+    return fail(summaryTitle(1, intent, noun), {
       [field]: kind === "event" ? "This date and time has passed. Choose a future date." : "This date has passed. Choose a future date or clear it.",
     });
   }
@@ -222,9 +230,12 @@ export async function saveOpportunity(actor: Actor, fd: FormData): Promise<Actio
   else list.push(record);
   revalidate();
 
-  const noun = KIND_NOUN[kind];
   const message =
-    nextStatus === "draft" ? "Draft saved." : !existing || existing.status === "draft" ? `Published. The ${noun} is now live.` : "Changes saved.";
+    nextStatus === "draft"
+      ? "Draft saved."
+      : !existing || existing.status === "draft"
+        ? `Published. Members can now see this ${noun}.`
+        : "Changes saved.";
   const removedAt = orgs().find((o) => o.id === record.organization.id)?.removedAt;
   const shown = effectiveStatus(record, new Date(), removedAt).status;
   return { status: "success", message, data: { id: record.id, tab: shown === "draft" ? "drafts" : shown } };
@@ -237,34 +248,33 @@ function find(actor: Actor, id: string) {
 
 export async function closeOpportunity(actor: Actor, id: string): Promise<ActionState> {
   const o = find(actor, id);
-  if (!o) return fail("This opportunity no longer exists.");
+  if (!o) return fail(MISSING);
   o.status = "closed";
   o.closedReason = "closed";
   o.updatedAt = new Date().toISOString();
   o.updatedBy = { name: actor.name, role: actor.role };
   revalidate();
-  return { status: "success", message: `Closed. It won't appear in emails or the feed.` };
+  return { status: "success", message: "Closed. This opportunity won't be recommended to members or included in emails." };
 }
 
 export async function reopenOpportunity(actor: Actor, id: string): Promise<ActionState> {
   const o = find(actor, id);
-  if (!o) return fail("This opportunity no longer exists.");
+  if (!o) return fail(MISSING);
   if (hasEnded(o)) return fail(`This ${KIND_NOUN[o.kind]} has already ended. Edit its date to reopen it.`);
-  const removedAt = orgs().find((x) => x.id === o.organization.id)?.removedAt;
-  if (effectiveStatus({ ...o, status: "live" }, new Date(), removedAt).closedReason === "partner_removed") {
-    return fail("This partner was removed. Reinvite the partner before reopening its opportunities.");
+  if (isRemoved(o.organization.id)) {
+    return fail("This partner no longer has access. Reinvite them before reopening their opportunities.");
   }
-  o.status = "live";
+  o.status = "published";
   o.closedReason = undefined;
   o.updatedAt = new Date().toISOString();
   o.updatedBy = { name: actor.name, role: actor.role };
   revalidate();
-  return { status: "success", message: "Reopened. It's live again." };
+  return { status: "success", message: "Reopened. Members can see this opportunity again." };
 }
 
 export async function duplicateOpportunity(actor: Actor, id: string): Promise<ActionState<{ id: string }>> {
   const o = find(actor, id);
-  if (!o) return fail("This opportunity no longer exists.");
+  if (!o) return fail(MISSING);
   const now = new Date().toISOString();
   const copy = {
     ...structuredClone(o),
@@ -284,7 +294,7 @@ export async function duplicateOpportunity(actor: Actor, id: string): Promise<Ac
 
 export async function deleteOpportunity(actor: Actor, id: string): Promise<ActionState> {
   const o = find(actor, id);
-  if (!o) return fail("This opportunity no longer exists.");
+  if (!o) return fail(MISSING);
   const list = opportunities();
   list.splice(list.indexOf(o), 1);
   revalidate();
@@ -292,18 +302,44 @@ export async function deleteOpportunity(actor: Actor, id: string): Promise<Actio
 }
 
 /**
- * Called when a removed partner is reinvited, before its removal is cleared: listings already past the
- * removal cutoff are stored as closed (`partner_removed`), so reinviting doesn't republish them; each needs
- * review first (partners decision 6). Listings still inside the cutoff simply become emailed again.
+ * Stores a removed organization's published listings as closed (`partner_removed`), so they stay closed
+ * while its access is being restored. Listings whose date passed before removal are left to read as Ended.
+ * Call it when access is removed, or at the latest before the removal is cleared on reinvite.
  */
-export function closeListingsPastRemovalCutoff(organizationId: string, removedAt: string) {
-  const now = new Date();
+export function closeListingsForOrganization(organizationId: string) {
+  const removedAt = orgs().find((o) => o.id === organizationId)?.removedAt;
   for (const o of opportunities()) {
-    if (o.organization.id !== organizationId) continue;
-    if (effectiveStatus(o, now, removedAt).closedReason === "partner_removed") {
-      o.status = "closed";
-      o.closedReason = "partner_removed";
-    }
+    if (o.organization.id !== organizationId || o.status !== "published") continue;
+    if (effectiveStatus(o, new Date(), removedAt ?? new Date().toISOString()).closedReason !== "partner_removed") continue;
+    o.status = "closed";
+    o.closedReason = "partner_removed";
   }
   revalidate();
+}
+
+/** @deprecated Use closeListingsForOrganization; kept so Partners' reinvite keeps working until it switches over. */
+export function closeListingsPastRemovalCutoff(organizationId: string, _removedAt?: string) {
+  closeListingsForOrganization(organizationId);
+}
+
+/**
+ * Reinstatement (owner decision 8): when someone accepts an invitation to a removed organization and its
+ * access returns, the acceptance handler calls this. It reopens the organization's listings that were closed
+ * because its access was removed and whose dates haven't passed. Listings someone closed by hand, and
+ * listings that ended, stay closed. Returns how many reopened.
+ */
+export function reopenListingsForOrganization(organizationId: string): number {
+  let reopened = 0;
+  for (const o of opportunities()) {
+    if (o.organization.id !== organizationId || o.status !== "closed" || o.closedReason !== "partner_removed") continue;
+    if (hasEnded(o)) {
+      o.closedReason = "ended";
+      continue;
+    }
+    o.status = "published";
+    o.closedReason = undefined;
+    reopened++;
+  }
+  revalidate();
+  return reopened;
 }

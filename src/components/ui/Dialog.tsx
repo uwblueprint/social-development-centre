@@ -6,14 +6,25 @@ import { X } from "lucide-react";
 import type { ReactNode } from "react";
 import { Icon } from "./Icon";
 
+// Owner decision 9: subtle enter and exit. Radix keeps the element mounted until the exit animation ends.
 const overlayShow = keyframes`
   from { opacity: 0; }
   to { opacity: 1; }
 `;
 
+const overlayHide = keyframes`
+  from { opacity: 1; }
+  to { opacity: 0; }
+`;
+
 const contentShow = keyframes`
-  from { opacity: 0; transform: translate(-50%, -48%) scale(0.97); }
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.98); }
   to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+`;
+
+const contentHide = keyframes`
+  from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  to { opacity: 0; transform: translate(-50%, -50%) scale(0.98); }
 `;
 
 const Overlay = styled(DialogPrimitive.Overlay)`
@@ -21,7 +32,11 @@ const Overlay = styled(DialogPrimitive.Overlay)`
   inset: 0;
   background: var(--color-overlay);
   z-index: 40;
-  animation: ${overlayShow} var(--duration) var(--ease);
+  animation: ${overlayShow} var(--duration-slow) var(--ease);
+
+  &[data-state="closed"] {
+    animation: ${overlayHide} var(--duration-slow) var(--ease) forwards;
+  }
 `;
 
 const Content = styled(DialogPrimitive.Content)`
@@ -38,7 +53,11 @@ const Content = styled(DialogPrimitive.Content)`
   box-shadow: var(--shadow-lg);
   padding: 20px;
   z-index: 41;
-  animation: ${contentShow} var(--duration) var(--ease);
+  animation: ${contentShow} var(--duration-slow) var(--ease);
+
+  &[data-state="closed"] {
+    animation: ${contentHide} var(--duration-slow) var(--ease) forwards;
+  }
 
   &:focus {
     outline: none;

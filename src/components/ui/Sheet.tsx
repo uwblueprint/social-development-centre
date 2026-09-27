@@ -8,14 +8,26 @@ import { X } from "lucide-react";
 import type { ReactNode } from "react";
 import { Icon } from "./Icon";
 
+// Owner decision 9: subtle enter and exit. A short slide plus fade, not the full panel width.
+// Radix keeps the element mounted until the exit animation ends.
 const overlayShow = keyframes`
   from { opacity: 0; }
   to { opacity: 1; }
 `;
 
+const overlayHide = keyframes`
+  from { opacity: 1; }
+  to { opacity: 0; }
+`;
+
 const slideIn = keyframes`
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
+  from { opacity: 0; transform: translateX(var(--space-6)); }
+  to { opacity: 1; transform: translateX(0); }
+`;
+
+const slideOut = keyframes`
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(var(--space-6)); }
 `;
 
 const Overlay = styled(DialogPrimitive.Overlay)`
@@ -23,14 +35,14 @@ const Overlay = styled(DialogPrimitive.Overlay)`
   inset: 0;
   background: var(--color-overlay);
   z-index: 40;
-  animation: ${overlayShow} var(--duration) var(--ease);
+  animation: ${overlayShow} var(--duration-slow) var(--ease);
+
+  &[data-state="closed"] {
+    animation: ${overlayHide} var(--duration-slow) var(--ease) forwards;
+  }
 `;
 
 const Content = styled(DialogPrimitive.Content)`
-  &:focus {
-    outline: none;
-  }
-
   position: fixed;
   top: 0;
   right: 0;
@@ -43,6 +55,10 @@ const Content = styled(DialogPrimitive.Content)`
   background: var(--color-surface-raised);
   box-shadow: var(--shadow-lg);
   animation: ${slideIn} var(--duration-slow) var(--ease);
+
+  &[data-state="closed"] {
+    animation: ${slideOut} var(--duration-slow) var(--ease) forwards;
+  }
 
   &:focus {
     outline: none;

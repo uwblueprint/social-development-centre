@@ -20,27 +20,19 @@ const sections: { key: AdminSection; label: string; description: string; icon: S
   { key: "insights", label: "Insights", description: "Reports on what people click and join.", icon: ChartColumnIncreasing },
 ];
 
-export function AdminShell({
-  user,
-  counts,
-  children,
-}: {
-  user: AdminUser;
-  counts: Partial<Record<AdminSection, number>>;
-  children: ReactNode;
-}) {
-  const items = sections.map((s) => ({
+/** No section shows a count badge yet (owner decision 10); a count needs `count` plus a `countLabel` that explains it. */
+export function AdminShell({ user, children }: { user: AdminUser; children: ReactNode }) {
+  const items: SidebarNavItem[] = sections.map((s) => ({
     href: `/admin/${s.key}`,
     label: s.label,
     description: s.description,
     icon: s.icon,
-    count: counts[s.key],
   }));
   return (
     <SidebarLayout
       config={{
         product: { name: "SDC Admin", initials: "SDC" },
-        navLabel: "Admin",
+        navLabel: "Admin navigation",
         items,
         user: { ...user, avatarSrc: user.avatarUrl },
         accountHref: "/admin/account",
