@@ -50,9 +50,12 @@ export const communityCopy = {
     resubscribe: "Resubscribe",
   },
 
+  /** No-results wording comes from ListEmptyState (listEmptyCopy); these are the Community nouns it uses. */
   empty: {
-    searchTitle: (q: string) => `No matches for "${q}"`,
-    searchDescription: "Try a different name or email.",
+    /** What each tab lists, as it reads mid-sentence: "No paying members match “ada”". */
+    generalItems: "members",
+    payingItems: "paying members",
+    searchedFields: "names and emails",
     payingTitle: "No paying members yet",
     payingDescription: "Convert a general member to paying from their record, or add a paying member here.",
     generalTitle: "No members yet",
@@ -81,6 +84,12 @@ export const communityCopy = {
     confirm: (n: number) => `Confirm ${n} ${n === 1 ? "change" : "changes"}`,
     emailsLine: (n: number) => (n === 0 ? "No emails will be sent." : `${n} ${n === 1 ? "email" : "emails"} will be sent.`),
     nothingToChange: "Nothing will change. Go back to edit the list.",
+    /** Import members: nothing pasted was an email address. */
+    noValidAddresses: "None of these are email addresses, so nothing will change. Edit the list so each entry looks like name@example.org.",
+    /** Every address is already a subscribed member and nothing else would change. */
+    allAlreadyMembers: (n: number) =>
+      n === 1 ? "They're already a member, so nothing will change." : `All ${n} are already members, so nothing will change.`,
+    editList: "Edit the list",
     toggleAddresses: (label: string, open: boolean) => `${label}. ${open ? "Hide" : "Show"} addresses`,
     groups: {
       added: (n: number, paying: boolean) => `${n} new ${paying ? "paying" : "general"} ${n === 1 ? "member" : "members"}`,
@@ -170,13 +179,22 @@ export const communityCopy = {
     heading: "Emails",
     count: (n: number) => `(${n})`,
     notDeliveredBadge: "Not delivered",
-    empty: "No emails sent yet.",
+    empty: "No emails sent to them yet.",
+    /** Unsubscribed and never emailed: nothing will be sent, so "yet" would be wrong. */
+    emptyUnsubscribed: "No emails sent. They're unsubscribed, so none will be sent.",
     loading: "Loading emails…",
-    loadError: "Couldn't load this person's emails.",
+    loadError: "We couldn't load their emails. Nothing was changed; this is a loading problem.",
     bodyLoading: "Loading email…",
     bodyError: "Couldn't load this email.",
     retry: "Try again",
     previewTitle: (subject: string) => `Email preview: ${subject}`,
+  },
+
+  /** The page's error boundary (error.tsx), shown when the page fails to load. */
+  loadError: {
+    title: "We couldn't load Community.",
+    body: "Your data is safe; this is a loading problem.",
+    retry: "Try again",
   },
 
   toast: {

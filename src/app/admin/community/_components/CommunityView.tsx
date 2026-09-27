@@ -2,11 +2,17 @@
 
 import * as React from "react";
 import { styled } from "next-yak";
-import { Download, FileUp, Search as SearchIcon, UserPlus, UsersRound } from "lucide-react";
-import { ListPage, ListPageHeader, ListPageToolbar, useListParams, useListSearch } from "@/components/patterns/ListPage";
+import { Download, FileUp, UserPlus, UsersRound } from "lucide-react";
+import {
+  ListEmptyState,
+  ListPage,
+  ListPageHeader,
+  ListPageToolbar,
+  useListParams,
+  useListSearch,
+} from "@/components/patterns/ListPage";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
-import { EmptyState } from "@/components/ui/EmptyState";
 import { Pagination } from "@/components/ui/Pagination";
 import { SearchField } from "@/components/ui/SearchField";
 import { Sheet, SheetContent } from "@/components/ui/Sheet";
@@ -48,6 +54,7 @@ export function CommunityView({
 }) {
   const { setParams } = useListParams();
   const searchState = useListSearch(q);
+  const searchRef = React.useRef<HTMLInputElement>(null);
 
   const [activeTab, setActiveTab] = React.useState<MemberTier>(tab);
 
@@ -70,6 +77,18 @@ export function CommunityView({
     const next = normalizeTab(value);
     setActiveTab(next);
     setParams({ tab: next === "general" ? undefined : next, page: undefined });
+  }
+
+  /** From the empty state: the button disappears with it, so focus goes back to the search field. */
+  function clearSearch() {
+    searchState.setValue("");
+    setParams({ q: undefined, page: undefined });
+    searchRef.current?.focus();
+  }
+
+  function showInOtherTab(next: MemberTier) {
+    handleTabChange(next);
+    searchRef.current?.focus();
   }
 
   function handlePageChange(page: number) {
@@ -131,6 +150,7 @@ export function CommunityView({
             }
             search={
               <SearchField
+                ref={searchRef}
                 name="q"
                 aria-label={copy.toolbar.searchPlaceholder}
                 placeholder={copy.toolbar.searchPlaceholder}
@@ -140,6 +160,7 @@ export function CommunityView({
                 pending={searchState.pending}
               />
             }
+            results={{ query: q, count: memberPage.total, pending: searchState.pending }}
           />
 
           <TabsContent value={activeTab}>
@@ -151,21 +172,29 @@ export function CommunityView({
                 onRowClick={(m) => setSelectedId(m.id)}
                 aria-label={activeTab === "paying" ? copy.tabs.paying : copy.tabs.general}
                 empty={
-                  q ? (
-                    <EmptyState icon={SearchIcon} title={copy.empty.searchTitle(q)} description={copy.empty.searchDescription} />
-                  ) : (
-                    <EmptyState
-                      icon={UsersRound}
-                      title={activeTab === "paying" ? copy.empty.payingTitle : copy.empty.generalTitle}
-                      description={activeTab === "paying" ? copy.empty.payingDescription : copy.empty.generalDescription}
-                      action={
+                  <ListEmptyState
+                    items={activeTab === "paying" ? copy.empty.payingItems : copy.empty.generalItems}
+                    query={q}
+                    searchedFields={copy.empty.searchedFields}
+                    onClearSearch={clearSearch}
+                    // General members includes paying members, so only a Paying search can match elsewhere.
+                    elsewhere={
+                      activeTab === "paying"
+                        ? { count: counts.general, scope: copy.tabs.general, onShow: () => showInOtherTab("general") }
+                        : undefined
+                    }
+                    empty={{
+                      icon: UsersRound,
+                      title: activeTab === "paying" ? copy.empty.payingTitle : copy.empty.generalTitle,
+                      description: activeTab === "paying" ? copy.empty.payingDescription : copy.empty.generalDescription,
+                      action: (
                         <Button type="button" onClick={() => openAdd("single")}>
                           <Icon icon={UserPlus} size={16} />
                           {copy.toolbar.addMember}
                         </Button>
-                      }
-                    />
-                  )
+                      ),
+                    }}
+                  />
                 }
               />
               {memberPage.rows.length > 0 && (

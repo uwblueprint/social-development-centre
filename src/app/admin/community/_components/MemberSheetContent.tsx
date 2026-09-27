@@ -265,7 +265,7 @@ export function MemberSheetContent({ member, onClose }: { member: Member; onClos
           </EditForm>
         )}
 
-        <MemberEmails memberId={member.id} />
+        <MemberEmails memberId={member.id} subscribed={member.subscribed} />
       </SheetBody>
 
       <MemberConfirmDialog

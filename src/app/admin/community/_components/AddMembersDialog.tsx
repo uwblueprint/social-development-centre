@@ -262,6 +262,13 @@ export function AddMembersDialog({
     startTransition(() => confirmAction(fd));
   }
 
+  /** Back to the input step, with focus on the field to edit (the preview's buttons disappear). */
+  function backToInput() {
+    if (confirmPending) return;
+    setStep("input");
+    requestAnimationFrame(() => (single ? emailRef : emailsRef).current?.focus());
+  }
+
   function pickCsv() {
     // Created on demand, never rendered: the visible control is the kit Button.
     const picker = document.createElement("input");
@@ -293,6 +300,13 @@ export function AddMembersDialog({
   const payingLabel = single ? copy.addDialog.payingSingle : copy.addDialog.payingBulk;
   const selfConverting = preview?.unsubscribedSelf.filter((e) => e.willConvert).length ?? 0;
   const adminConverting = preview?.unsubscribedAdmin.filter((e) => e.willConvert).length ?? 0;
+  // Edge cases where the generic "Nothing will change" doesn't say why.
+  const existing = preview ? preview.alreadyPaying.length + preview.alreadyMembers.length : 0;
+  const others = preview
+    ? preview.added.length + preview.converted.length + preview.unsubscribedSelf.length + preview.unsubscribedAdmin.length
+    : 0;
+  const noValid = preview !== undefined && existing + others === 0;
+  const allExisting = preview !== undefined && existing > 0 && others === 0 && preview.invalid.length === 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -424,7 +438,13 @@ export function AddMembersDialog({
             </GroupList>
 
             <Summary role="status">
-              {summary.changes === 0 ? copy.addDialog.nothingToChange : copy.addDialog.emailsLine(summary.emails)}
+              {summary.changes > 0
+                ? copy.addDialog.emailsLine(summary.emails)
+                : noValid
+                  ? copy.addDialog.noValidAddresses
+                  : allExisting
+                    ? copy.addDialog.allAlreadyMembers(existing)
+                    : copy.addDialog.nothingToChange}
             </Summary>
 
             {confirmState.status === "error" && confirmState.message && (
@@ -435,10 +455,23 @@ export function AddMembersDialog({
             )}
 
             <DialogActions>
-              <Button type="button" $variant="secondary" onClick={() => !confirmPending && setStep("input")}>
-                {copy.addDialog.back}
-              </Button>
-              {summary.changes > 0 ? (
+              {noValid ? (
+                <>
+                  <DialogClose asChild>
+                    <Button type="button" $variant="secondary">
+                      {copy.addDialog.cancel}
+                    </Button>
+                  </DialogClose>
+                  <Button type="button" onClick={backToInput}>
+                    {copy.addDialog.editList}
+                  </Button>
+                </>
+              ) : (
+                <Button type="button" $variant="secondary" onClick={backToInput}>
+                  {copy.addDialog.back}
+                </Button>
+              )}
+              {noValid ? null : summary.changes > 0 ? (
                 <Button type="button" onClick={handleConfirm} aria-busy={confirmPending || undefined} aria-disabled={confirmPending || undefined}>
                   {confirmPending ? copy.addDialog.applying : copy.addDialog.confirm(summary.changes)}
                 </Button>

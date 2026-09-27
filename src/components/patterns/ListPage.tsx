@@ -3,6 +3,35 @@
 import * as React from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { styled } from "next-yak";
+import { ArrowRight, FunnelX, SearchX, X, type LucideIcon } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Icon } from "@/components/ui/Icon";
+
+/**
+ * Every string the list pattern writes itself (not the caller's nouns, scopes or filter names).
+ * The owner edits them here. See docs/ux/portal.md, "Empty and error states".
+ */
+export const listEmptyCopy = {
+  /** "No paying members match “ada”", or with filters: "No closed jobs from Northside Food Bank match “ada”". */
+  searchTitle: (items: string, query: string) => `No ${items} match “${query}”`,
+  /** Search finds nothing here but matches in another tab or view. */
+  elsewhere: (count: number, scope: string) => `${count} ${count === 1 ? "match" : "matches"} in ${scope}`,
+  showIn: (scope: string) => `Show in ${scope}`,
+  /** Search finds nothing anywhere. */
+  searched: (fields: string) => `Searched ${fields}. Check the spelling, or clear the search.`,
+  clearSearch: "Clear search",
+  /** Filters hide everything: the title is "No " + the caller's description of the filtered items. */
+  filtersTitle: (filtered: string) => `No ${filtered}`,
+  filtersBody: "Nothing matches these filters.",
+  clearFilters: "Clear filters",
+  /** Search plus filters. */
+  searchAndFiltersBody: (fields: string) => `Searched ${fields} with these filters on. Check the spelling, or clear the search and filters.`,
+  clearSearchAndFilters: "Clear search and filters",
+  /** Screen-reader announcement after search results settle (ListPageToolbar's `results`). */
+  results: (count: number) => `${count} ${count === 1 ? "result" : "results"}`,
+  noResults: "No results",
+} as const;
 
 /** Page body for a list page: fills the available width (no max-width), so tables use wide monitors. */
 export const ListPage = styled.div`
@@ -61,6 +90,40 @@ export function ListPageHeader({ title, actions }: { title: React.ReactNode; act
   );
 }
 
+const VisuallyHidden = styled.span`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+`;
+
+/**
+ * Politely announces "{n} results" or "No results" once a search settles (not on first load, and not
+ * while the next results are still loading). Each message is a new node, so the same text is still
+ * announced for a new search.
+ */
+function SearchAnnouncer({ query, count, pending }: { query: string; count: number; pending: boolean }) {
+  const key = `${query}\u0000${count}`;
+  const [announced, setAnnounced] = React.useState(key);
+  const [message, setMessage] = React.useState({ id: 0, text: "" });
+  if (!pending && key !== announced) {
+    setAnnounced(key);
+    setMessage((prev) => ({
+      id: prev.id + 1,
+      text: query ? (count === 0 ? listEmptyCopy.noResults : listEmptyCopy.results(count)) : "",
+    }));
+  }
+  return (
+    <VisuallyHidden aria-live="polite" aria-atomic="true">
+      <span key={message.id}>{message.text}</span>
+    </VisuallyHidden>
+  );
+}
+
 const ToolbarContainer = styled.div`
   container-type: inline-size;
   min-width: 0;
@@ -106,16 +169,146 @@ const ToolbarSearch = styled.div`
 /**
  * Tabs on the left, search on the right, in one row (search wraps under the tabs when narrow).
  * Render it inside `<Tabs>` and pass the `TabsList` as `tabs` and a `SearchField` as `search`.
+ * `results` drives a polite screen-reader announcement ("{n} results" / "No results") once a search
+ * settles: pass the server's current `q`, the number of rows it matched in this view, and the search's `pending`.
  */
-export function ListPageToolbar({ tabs, search }: { tabs: React.ReactNode; search?: React.ReactNode }) {
+export function ListPageToolbar({
+  tabs,
+  search,
+  results,
+}: {
+  tabs: React.ReactNode;
+  search?: React.ReactNode;
+  results?: { query: string; count: number; pending: boolean };
+}) {
   return (
     <ToolbarContainer>
       <ToolbarRow>
         <ToolbarTabs>{tabs}</ToolbarTabs>
         {search && <ToolbarSearch>{search}</ToolbarSearch>}
       </ToolbarRow>
+      {results && <SearchAnnouncer {...results} />}
     </ToolbarContainer>
   );
+}
+
+export interface ListEmptyStateProps {
+  /** What the list holds, plural and lowercase as it reads mid-sentence: "members", "paying members". */
+  items: string;
+  /** The server's current search (`q`), trimmed; "" or omitted when not searching. */
+  query?: string;
+  /** What the search looks in, for "Searched {fields}.": "names and emails". */
+  searchedFields?: string;
+  /** Clears the search (Clear search). Needed whenever `query` can be set. */
+  onClearSearch?: () => void;
+  /**
+   * The same search's matches in another tab or view. When `count` > 0 and nothing matches here, the
+   * state says so and offers a button to switch there. Use the per-tab counts computed with the search.
+   */
+  elsewhere?: { count: number; scope: string; onShow: () => void };
+  /**
+   * The active filters (beyond search), described as the items they'd show, e.g. "closed jobs from
+   * Northside Food Bank". Omit when no filter is on.
+   */
+  filtered?: string;
+  /** Resets the filters (Clear filters). Needed whenever `filtered` can be set. */
+  onClearFilters?: () => void;
+  /** Clears the search and resets the filters in one URL update (Clear search and filters). */
+  onClearSearchAndFilters?: () => void;
+  /** The truly empty state (no search, no filters): the caller's own title, body and optional action. */
+  empty: { icon: LucideIcon; title: string; description?: string; action?: React.ReactNode };
+}
+
+/**
+ * A list's empty state, tailored to why it's empty. It picks one of five variants from its props:
+ * search matches elsewhere, search matches nothing, filters hide everything, search plus filters, or
+ * truly empty. Each says what's empty, why, and offers the one action that fixes it.
+ * Render it as the `Table`'s `empty`.
+ */
+export function ListEmptyState({
+  items,
+  query = "",
+  searchedFields = "",
+  onClearSearch,
+  elsewhere,
+  filtered,
+  onClearFilters,
+  onClearSearchAndFilters,
+  empty,
+}: ListEmptyStateProps) {
+  const c = listEmptyCopy;
+
+  if (query && elsewhere && elsewhere.count > 0) {
+    return (
+      <EmptyState
+        icon={SearchX}
+        title={c.searchTitle(filtered ?? items, query)}
+        description={c.elsewhere(elsewhere.count, elsewhere.scope)}
+        action={
+          <Button type="button" $variant="secondary" onClick={elsewhere.onShow}>
+            {c.showIn(elsewhere.scope)}
+            <Icon icon={ArrowRight} size={16} />
+          </Button>
+        }
+      />
+    );
+  }
+
+  if (query && filtered) {
+    return (
+      <EmptyState
+        icon={SearchX}
+        title={c.searchTitle(filtered, query)}
+        description={c.searchAndFiltersBody(searchedFields)}
+        action={
+          onClearSearchAndFilters && (
+            <Button type="button" $variant="secondary" onClick={onClearSearchAndFilters}>
+              <Icon icon={X} size={16} />
+              {c.clearSearchAndFilters}
+            </Button>
+          )
+        }
+      />
+    );
+  }
+
+  if (query) {
+    return (
+      <EmptyState
+        icon={SearchX}
+        title={c.searchTitle(items, query)}
+        description={c.searched(searchedFields)}
+        action={
+          onClearSearch && (
+            <Button type="button" $variant="secondary" onClick={onClearSearch}>
+              <Icon icon={X} size={16} />
+              {c.clearSearch}
+            </Button>
+          )
+        }
+      />
+    );
+  }
+
+  if (filtered) {
+    return (
+      <EmptyState
+        icon={FunnelX}
+        title={c.filtersTitle(filtered)}
+        description={c.filtersBody}
+        action={
+          onClearFilters && (
+            <Button type="button" $variant="secondary" onClick={onClearFilters}>
+              <Icon icon={FunnelX} size={16} />
+              {c.clearFilters}
+            </Button>
+          )
+        }
+      />
+    );
+  }
+
+  return <EmptyState icon={empty.icon} title={empty.title} description={empty.description} action={empty.action} />;
 }
 
 /**

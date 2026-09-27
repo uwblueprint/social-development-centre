@@ -5,6 +5,7 @@ import { styled } from "next-yak";
 import { RotateCw } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { ErrorIcon } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
 import type { SentEmail } from "../_data/types";
 import { communityCopy as copy } from "../_copy";
@@ -117,6 +118,23 @@ const StatusLine = styled.div`
   color: var(--color-text-muted);
 `;
 
+/** A load failure: icon and message in the danger color (never color alone), with Try again on its own line. */
+const ErrorBlock = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+`;
+
+const ErrorMessage = styled.p`
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-danger);
+`;
+
 /** The nearest scrolling ancestor, so bodies preload just before they scroll into the panel. */
 function scrollParent(el: HTMLElement): HTMLElement | null {
   for (let node = el.parentElement; node; node = node.parentElement) {
@@ -183,7 +201,7 @@ function EmailBody({ memberId, email }: { memberId: string; email: SentEmail }) 
  * first, all expanded. Each shows its subject, short sent date and (if it
  * not delivered) a Not delivered badge, then its body, which loads lazily.
  */
-export function MemberEmails({ memberId }: { memberId: string }) {
+export function MemberEmails({ memberId, subscribed }: { memberId: string; subscribed: boolean }) {
   const [emails, setEmails] = React.useState<SentEmail[] | null>(null);
   const [error, setError] = React.useState(false);
   const [attempt, setAttempt] = React.useState(0);
@@ -212,17 +230,20 @@ export function MemberEmails({ memberId }: { memberId: string }) {
       </SectionHeading>
 
       {error ? (
-        <StatusLine role="alert">
-          {copy.emails.loadError}
+        <ErrorBlock>
+          <ErrorMessage role="alert">
+            <ErrorIcon />
+            <span>{copy.emails.loadError}</span>
+          </ErrorMessage>
           <Button type="button" $variant="secondary" $size="sm" onClick={retry}>
             <Icon icon={RotateCw} size={16} />
             {copy.emails.retry}
           </Button>
-        </StatusLine>
+        </ErrorBlock>
       ) : emails === null ? (
         <StatusLine role="status">{copy.emails.loading}</StatusLine>
       ) : emails.length === 0 ? (
-        <StatusLine>{copy.emails.empty}</StatusLine>
+        <StatusLine>{subscribed ? copy.emails.empty : copy.emails.emptyUnsubscribed}</StatusLine>
       ) : (
         <List>
           {emails.map((email) => (
