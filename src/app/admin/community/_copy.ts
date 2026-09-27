@@ -157,10 +157,10 @@ export const communityCopy = {
     revokeBody: "Their paid benefits end now. They'll keep getting general emails, and we'll send them a notice.",
     revokeBodyUnsubscribed: "Their paid benefits end now. They're unsubscribed, so we won't email them.",
     revokeCancel: "Keep paying access",
-    revokeConfirm: "Yes, remove paying access",
+    revokeConfirm: "Remove paying access",
     unsubscribeTitle: (name: string) => `Unsubscribe ${name}?`,
     unsubscribeBodyPaying:
-      "This stops all emails to them and removes their paying access, now. Their record is kept, marked Unsubscribed.",
+      "This stops all emails to them now. They stay a paying member. Their record is kept, marked Unsubscribed.",
     unsubscribeBodyGeneral: "This stops all emails to them now. Their record is kept, marked Unsubscribed.",
     unsubscribeCancel: "Keep subscribed",
     unsubscribeConfirm: "Yes, unsubscribe",

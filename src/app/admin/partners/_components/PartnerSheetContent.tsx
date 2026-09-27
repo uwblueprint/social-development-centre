@@ -114,6 +114,7 @@ export function PartnerSheetContent({
   const [description, setDescription] = React.useState(org.description ?? "");
   const [confirmOpen, setConfirmOpen] = React.useState(false);
   const formRef = React.useRef<HTMLFormElement>(null);
+  const keepRef = React.useRef<HTMLButtonElement>(null);
   useFocusFirstInvalid(formRef, state);
 
   React.useEffect(() => {
@@ -229,12 +230,18 @@ export function PartnerSheetContent({
       </SheetFooter>
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent
+          onOpenAutoFocus={(event) => {
+            // Start on the safe choice (Keep access), not the dialog's close button.
+            event.preventDefault();
+            keepRef.current?.focus();
+          }}
+        >
           <AlertDialogTitle>{partnersCopy.removeAccess.title(org.name)}</AlertDialogTitle>
           <AlertDialogDescription>{partnersCopy.removeAccess.body(org.name)}</AlertDialogDescription>
           <AlertDialogActions>
             <AlertDialogCancel asChild>
-              <Button type="button" $variant="secondary">
+              <Button ref={keepRef} type="button" $variant="secondary">
                 {partnersCopy.removeAccess.keep}
               </Button>
             </AlertDialogCancel>

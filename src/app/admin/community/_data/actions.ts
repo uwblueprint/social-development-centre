@@ -193,7 +193,6 @@ export async function unsubscribeMember(id: string): Promise<ActionState> {
   const m = find(id);
   if (!m || !m.subscribed) return fail("This person is already unsubscribed.");
   m.subscribed = false;
-  m.tier = "general";
   m.unsubscribedAt = new Date().toISOString();
   m.unsubscribedBy = "admin";
   return done(`${m.name ?? m.email} was unsubscribed.`);

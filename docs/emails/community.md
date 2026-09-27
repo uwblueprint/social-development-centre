@@ -34,7 +34,7 @@ Welcome to the Social Development Centre. You're now a paying member, which mean
 **Get started:** [Access the member platform]({access link})
 {One line on how sign-in works, per the Authentication PRD.}
 
-You can unsubscribe from emails at any time with the link at the bottom of any email. Unsubscribing also ends your member access.
+You can unsubscribe from emails at any time with the link at the bottom of any email. Your membership stays active if you do.
 
 The Social Development Centre team
 

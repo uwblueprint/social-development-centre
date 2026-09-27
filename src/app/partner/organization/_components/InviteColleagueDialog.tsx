@@ -40,6 +40,16 @@ export function InviteColleagueDialog({ open, onOpenChange }: { open: boolean; o
   const formRef = React.useRef<HTMLFormElement>(null);
   useFocusFirstInvalid(formRef, state);
 
+  // Once someone is saved, the next invitation starts empty (derived at render time, not in an effect).
+  const [handledState, setHandledState] = React.useState(state);
+  if (state !== handledState) {
+    setHandledState(state);
+    if (state.status === "success" || state.data?.saved) {
+      setName("");
+      setEmail("");
+    }
+  }
+
   React.useEffect(() => {
     if (state.status === "idle" || state.fieldErrors) return;
     if (state.data?.blocked) {
@@ -47,11 +57,7 @@ export function InviteColleagueDialog({ open, onOpenChange }: { open: boolean; o
       reportBlocked(state.data.blocked);
       return;
     }
-    if (state.status === "success" || state.data?.saved) {
-      onOpenChange(false);
-      setName("");
-      setEmail("");
-    }
+    if (state.status === "success" || state.data?.saved) onOpenChange(false);
     if (state.message) toast({ title: state.message });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);

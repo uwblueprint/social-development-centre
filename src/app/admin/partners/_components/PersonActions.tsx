@@ -46,6 +46,7 @@ export function usePersonActions<D = undefined>(
 ) {
   const [confirm, setConfirm] = React.useState<Confirm | null>(null);
   const busy = React.useRef(false);
+  const keepRef = React.useRef<HTMLButtonElement>(null);
 
   // Keeps the dialog's copy stable while it plays its close animation (by then `confirm` is null).
   const [shown, setShown] = React.useState<Confirm>("cancel");
@@ -68,14 +69,20 @@ export function usePersonActions<D = undefined>(
 
   const dialog = (
     <AlertDialog open={confirm !== null} onOpenChange={(open) => !open && setConfirm(null)}>
-      <AlertDialogContent>
+      <AlertDialogContent
+        onOpenAutoFocus={(event) => {
+          // Start on the safe choice (Keep …), not the dialog's close button.
+          event.preventDefault();
+          keepRef.current?.focus();
+        }}
+      >
         <AlertDialogTitle>
           {shown === "cancel" ? invitationCopy.cancelConfirm.title : copy.removeTitle(contact.name)}
         </AlertDialogTitle>
         <AlertDialogDescription>{shown === "cancel" ? cancelBody : copy.removeBody(contact.name)}</AlertDialogDescription>
         <AlertDialogActions>
           <AlertDialogCancel asChild>
-            <Button type="button" $variant="secondary">
+            <Button ref={keepRef} type="button" $variant="secondary">
               {shown === "cancel" ? invitationCopy.cancelConfirm.keep : copy.removeKeep}
             </Button>
           </AlertDialogCancel>

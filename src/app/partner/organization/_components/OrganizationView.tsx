@@ -81,13 +81,17 @@ export function OrganizationView({ org, currentContactId }: { org: PartnerOrgani
   const formRef = React.useRef<HTMLFormElement>(null);
   useFocusFirstInvalid(formRef, state);
 
-  React.useEffect(() => {
-    // Field errors show inline only; signed out / access ended show a persistent message; success is a toast.
+  // Field errors show inline only; signed out / access ended show a persistent message; success is a toast.
+  // The message follows each result, derived at render time rather than mirrored in an effect.
+  const [handledState, setHandledState] = React.useState(state);
+  if (state !== handledState) {
+    setHandledState(state);
     if (state.data?.blocked) setBlocked(state.data.blocked);
-    else if (state.status === "success") {
-      setBlocked(null);
-      if (state.message) toast({ title: state.message });
-    }
+    else if (state.status === "success") setBlocked(null);
+  }
+
+  React.useEffect(() => {
+    if (state.status === "success" && state.message) toast({ title: state.message });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 

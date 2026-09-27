@@ -87,3 +87,8 @@ Assumptions made while building the UI from the Community PRD. Each can be revis
 
 ## 15. Forms show errors inline
 - **Decision (portal.md shared rules):** Add member, Import members and Edit details show errors beside the field, keep what was typed, and move focus to the first invalid field. No validation toast.
+
+## Unsubscribing doesn't end paying access
+- **Decision (27 Sep, follows owner decision 7 and docs/ux/portal.md "Email subscription is independent of paying access"):** **Unsubscribe** stops emails only. A paying member who unsubscribes stays a paying member. Paying access ends only through **Remove paying access**.
+- **Where:** Community, member ⋯ menu and panel; the unsubscribe confirmation says "They stay a paying member."
+- **Revisit when:** SDC says paid benefits depend on receiving emails.

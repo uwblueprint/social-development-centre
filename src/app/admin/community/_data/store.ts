@@ -32,11 +32,11 @@ function seed(): Member[] {
 }
 
 const g = globalThis as unknown as {
-  __communityStore?: Member[];
+  __communityStoreV2?: Member[];
   __communitySeq?: number;
   __communitySent?: Record<string, StoredEmail[]>;
 };
-export const members = (): Member[] => (g.__communityStore ??= seed());
+export const members = (): Member[] => (g.__communityStoreV2 ??= seed()); // V2: reseeds with unsubscribedBy
 export const nextMemberId = () => `m_${(g.__communitySeq = (g.__communitySeq ?? 5000) + 1)}`;
 export const findByEmail = (email: string) => members().find((m) => m.email.toLowerCase() === email.toLowerCase());
 

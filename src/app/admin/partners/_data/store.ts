@@ -59,8 +59,9 @@ function seed(): StoredOrg[] {
   ];
 }
 
-const globalStore = globalThis as unknown as { __partnersStoreV2?: StoredOrg[] };
-export const orgs = (): StoredOrg[] => (globalStore.__partnersStoreV2 ??= seed());
+// Bump the key when the seed or shape changes, so a running dev server picks up the new seed.
+const globalStore = globalThis as unknown as { __partnersStoreV4?: StoredOrg[] };
+export const orgs = (): StoredOrg[] => (globalStore.__partnersStoreV4 ??= seed());
 
 export function statusOf(org: StoredOrg): PartnerStatus {
   if (org.removedAt) return "removed";
