@@ -56,6 +56,9 @@ export const communityCopy = {
     generalItems: "members",
     payingItems: "paying members",
     searchedFields: "names and emails",
+    /** Paying search whose only matches are unsubscribed people (listed at the end of General members search results). */
+    unsubscribedElsewhere: (n: number) =>
+      `${n} unsubscribed ${n === 1 ? "person matches" : "people match"}. They appear at the end of General members.`,
     payingTitle: "No paying members yet",
     payingDescription: "Convert a general member to paying from their record, or add a paying member here.",
     generalTitle: "No members yet",

@@ -177,11 +177,19 @@ export function CommunityView({
                     query={q}
                     searchedFields={copy.empty.searchedFields}
                     onClearSearch={clearSearch}
-                    // General members includes paying members, so only a Paying search can match elsewhere.
+                    // General members includes paying members and, when searching, unsubscribed people at the
+                    // end, so only a Paying search can match elsewhere.
                     elsewhere={
-                      activeTab === "paying"
-                        ? { count: counts.general, scope: copy.tabs.general, onShow: () => showInOtherTab("general") }
-                        : undefined
+                      activeTab !== "paying"
+                        ? undefined
+                        : counts.general > 0
+                          ? { count: counts.general, scope: copy.tabs.general, onShow: () => showInOtherTab("general") }
+                          : {
+                              count: counts.unsubscribedMatches,
+                              scope: copy.tabs.general,
+                              onShow: () => showInOtherTab("general"),
+                              body: copy.empty.unsubscribedElsewhere(counts.unsubscribedMatches),
+                            }
                     }
                     empty={{
                       icon: UsersRound,

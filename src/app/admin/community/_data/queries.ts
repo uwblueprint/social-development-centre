@@ -33,12 +33,17 @@ export async function listMembers(tier: MemberTier, q = "", page = 1): Promise<M
   return { rows: slice, total: rows.length, page: current, pageCount };
 }
 
-/** Tab counts, narrowed by the search when one is given. Unsubscribed people are never counted. */
+/**
+ * Tab counts, narrowed by the search when one is given. Unsubscribed people are never in the tab counts;
+ * `unsubscribedMatches` counts the unsubscribed people a search matches (0 without a search).
+ */
 export async function getCommunityCounts(q = ""): Promise<CommunityCounts> {
-  const subscribed = members().filter((m) => m.subscribed && matcher(q)(m));
+  const matches = matcher(q);
+  const subscribed = members().filter((m) => m.subscribed && matches(m));
   return {
     general: subscribed.length,
     paying: subscribed.filter((m) => m.tier === "paying").length,
+    unsubscribedMatches: q.trim() ? members().filter((m) => !m.subscribed && matches(m)).length : 0,
   };
 }
 

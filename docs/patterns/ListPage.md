@@ -10,7 +10,7 @@ The layout for a portal section that is mostly one list: a compact header row, t
 ## API
 ```tsx
 import {
-  ListPage, ListPageHeader, ListPageToolbar, ListEmptyState, listEmptyCopy, useListParams, useListSearch,
+  ListPage, ListPageHeader, ListPageToolbar, ListEmptyState, listEmptyCopy, useListParams, useListSearch, useListSort,
 } from "@/components/patterns/ListPage";
 ```
 - `ListPage`: the page body. Full width, **no `max-width`**, so tables use wide monitors. Padding `--space-5`/`--space-6` (`--space-4` under 768px).
@@ -74,7 +74,7 @@ An empty or error state says what's empty, why, and the one action that fixes it
 Props:
 - `items`: what the list holds, plural and lowercase as it reads mid-sentence ("members", "paying members").
 - `query`: the server's current `q`. `searchedFields`: what search looks in ("names and emails").
-- `elsewhere?: { count, scope, onShow }`: the same search's matches in another tab or view. Use the per-tab counts the page already computes with the search; `scope` is the other tab's label.
+- `elsewhere?: { count, scope, onShow }`: the same search's matches in another tab or view. Use the per-tab counts the page already computes with the search; `scope` is the other tab's label. Optional `body` replaces "{n} matches in {scope}" when the page knows more: Community's Paying tab says when its only matches are unsubscribed people at the end of General members.
 - `filtered?`: the active filters described as the items they'd show, e.g. "closed jobs from Northside Food Bank". Omit it when no filter is on.
 - `onClearSearch`, `onClearFilters`, `onClearSearchAndFilters`: each clears in one URL update (`setParams({ q: undefined, page: undefined })` and so on). Clearing both needs its own handler, because two `setParams` calls in a row overwrite each other.
 - `empty: { icon, title, description?, action? }`: the truly empty state, in the caller's words.

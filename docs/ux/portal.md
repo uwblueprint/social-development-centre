@@ -471,6 +471,9 @@ An empty or error state says what's empty, why, and the one action that fixes it
 | Community: General members noun (`empty.generalItems`) | members (“No members match “zzz””) | New, needs approval |
 | Community: Paying members noun (`empty.payingItems`) | paying members | New, needs approval |
 | Community: searched fields (`empty.searchedFields`) | names and emails | New, needs approval |
+| Community: Paying members search matches only unsubscribed people, title | No paying members match “{query}” | New, needs approval |
+| Community: Paying members search matches only unsubscribed people, body (`empty.unsubscribedElsewhere`) | {n} unsubscribed person matches. / {n} unsubscribed people match. They appear at the end of General members. | New, needs approval |
+| Community: Paying members search matches only unsubscribed people, button | Show in General members | New, needs approval |
 | Member panel, Emails, none sent (`emails.empty`) | No emails sent to them yet. | New, needs approval. Replaces “No emails sent yet.” |
 | Member panel, Emails, none sent to an unsubscribed person (`emails.emptyUnsubscribed`) | No emails sent. They're unsubscribed, so none will be sent. | New, needs approval |
 | Member panel, Emails, failed to load (`emails.loadError`) | We couldn't load their emails. Nothing was changed; this is a loading problem. | New, needs approval. Replaces “Couldn't load this person's emails.” Button: Try again |

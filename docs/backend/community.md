@@ -10,7 +10,7 @@ UI contract: `src/app/admin/community/_data/{types,queries,actions}.ts`. `store.
 
 ## Queries
 - `listMembers(tier, q, page)`: 50 per page. General: every subscribed person, paying included. Paying: subscribed paying. Unsubscribed people are never listed, except that a General search also returns matching unsubscribed people after all subscribed matches. Search by name or email, server-side.
-- `getCommunityCounts(q?)`: subscribed people (paying included) and subscribed paying, narrowed by the search when given. Unsubscribed people are never counted.
+- `getCommunityCounts(q?)`: subscribed people (paying included) and subscribed paying, narrowed by the search when given. Unsubscribed people are never counted in those two. Also `unsubscribedMatches`: unsubscribed people matching the search (0 without one), so an empty Paying members search can say its only matches are unsubscribed people at the end of General members.
 
 ## Email history
 - `listMemberEmails(id)`: every email sent to the person, newest first: `kind` (`general-welcome`, `paying-welcome`, `paying-added` = "Paying membership added", `paying-removed` = "Paying access removed", `opportunities`), `subject`, `sentAt`, delivery `status` (`delivered` | `not-delivered`, from the email provider's send log). No bodies, so the panel opens fast.

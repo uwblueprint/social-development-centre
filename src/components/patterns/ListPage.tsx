@@ -205,8 +205,9 @@ export interface ListEmptyStateProps {
   /**
    * The same search's matches in another tab or view. When `count` > 0 and nothing matches here, the
    * state says so and offers a button to switch there. Use the per-tab counts computed with the search.
+   * `body` replaces the default "{n} matches in {scope}" when the page knows more (e.g. the matches are unsubscribed).
    */
-  elsewhere?: { count: number; scope: string; onShow: () => void };
+  elsewhere?: { count: number; scope: string; onShow: () => void; body?: string };
   /**
    * The active filters (beyond search), described as the items they'd show, e.g. "closed jobs from
    * Northside Food Bank". Omit when no filter is on.
@@ -244,7 +245,7 @@ export function ListEmptyState({
       <EmptyState
         icon={SearchX}
         title={c.searchTitle(filtered ?? items, query)}
-        description={c.elsewhere(elsewhere.count, elsewhere.scope)}
+        description={elsewhere.body ?? c.elsewhere(elsewhere.count, elsewhere.scope)}
         action={
           <Button type="button" $variant="secondary" onClick={elsewhere.onShow}>
             {c.showIn(elsewhere.scope)}

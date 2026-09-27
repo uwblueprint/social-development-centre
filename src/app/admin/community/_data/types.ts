@@ -48,6 +48,11 @@ export interface CommunityCounts {
   general: number;
   /** Subscribed paying members. */
   paying: number;
+  /**
+   * Unsubscribed people matching the search (0 when there's no search). They're listed only at the end of
+   * General members search results, so an empty Paying search uses this to say where its matches are.
+   */
+  unsubscribedMatches: number;
 }
 
 /** One address from the admin's input, with the name given for it (or the existing record's name). */
