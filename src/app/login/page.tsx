@@ -1,35 +1,27 @@
 import { styled } from "next-yak";
-import { signIn } from "./actions";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { SignInForm } from "./SignInForm";
 
 const Main = styled.main`
   display: grid;
   place-items: center;
   min-height: 100vh;
+  padding: var(--space-4);
 `;
 
-const Form = styled.form`
-  display: grid;
-  gap: 0.5rem;
-  width: 16rem;
+const Column = styled.div`
+  width: 100%;
+  max-width: 360px;
 `;
 
-export default async function LoginPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ sent?: string; error?: string }>;
-}) {
-  const { sent, error } = await searchParams;
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+  // `error` comes from a sign-in link that failed; its detail is logged by /auth/confirm, never shown.
+  const { error } = await searchParams;
 
   return (
     <Main>
-      <Form action={signIn}>
-        <Input type="email" name="email" placeholder="Email" aria-label="Email" required />
-        <Button type="submit">Send sign-in link</Button>
-        {sent && <p>Check your email for a sign-in link.</p>}
-        {error && <p>We couldn&apos;t send a sign-in link. Check the email address, wait a minute, then try again.</p>}
-      </Form>
+      <Column>
+        <SignInForm linkFailed={Boolean(error)} />
+      </Column>
     </Main>
   );
 }

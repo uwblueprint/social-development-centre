@@ -6,6 +6,7 @@ import { css, styled } from "next-yak";
 import { Field } from "@/components/ui/Field";
 import { Input, type InputProps } from "@/components/ui/Input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/ToggleGroup";
+import { fieldId } from "./formValues";
 
 /* Layout pieces shared by the form and its per-kind sections. Layout only; visuals come from the kit. */
 
@@ -106,7 +107,7 @@ export function ChoiceField({
   hint?: string;
 }) {
   return (
-    <Field label={label} hint={hint} error={error} required={required}>
+    <Field id={fieldId(name)} label={label} hint={hint} error={error} required={required}>
       {(p) => (
         <ToggleGroup
           type="single"

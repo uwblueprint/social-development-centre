@@ -587,7 +587,7 @@ export function SidebarLayout({
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const asideId = React.useId();
   const brandId = React.useId();
-  const asideRef = React.useRef<HTMLElement>(null);
+  const asideRef = React.useRef<HTMLDivElement>(null);
   const mainRef = React.useRef<HTMLElement>(null);
   const menuRef = React.useRef<HTMLButtonElement>(null);
   const closeRef = React.useRef<HTMLButtonElement>(null);
@@ -646,7 +646,7 @@ export function SidebarLayout({
 
   // Keep Tab and Shift+Tab inside the open drawer. The page behind is inert, but without this Tab would
   // leave the document for the browser's own controls.
-  function onAsideKeyDown(e: React.KeyboardEvent<HTMLElement>) {
+  function onAsideKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
     const aside = asideRef.current;
     if (!mobileOpen || e.key !== "Tab" || !aside || !aside.contains(e.target as Node)) return;
     const focusables = Array.from(aside.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(

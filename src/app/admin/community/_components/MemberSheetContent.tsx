@@ -18,7 +18,6 @@ import { Icon } from "@/components/ui/Icon";
 import { Input } from "@/components/ui/Input";
 import { SheetBody, SheetHeader, SheetTitle } from "@/components/ui/Sheet";
 import { SubmitButton } from "@/components/ui/SubmitButton";
-import { Tooltip } from "@/components/ui/Tooltip";
 import { useToast } from "@/components/ui/Toast";
 import { fieldError, idleState } from "@/lib/forms";
 import { updateMember } from "../_data/actions";
@@ -79,6 +78,12 @@ const MetaLine = styled.div`
   color: var(--color-text-muted);
 `;
 
+const UnsubscribedNote = styled.p`
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+`;
+
 const MenuTrigger = styled(Button)`
   flex-shrink: 0;
 `;
@@ -113,7 +118,7 @@ export function MemberSheetContent({ member, onClose }: { member: Member; onClos
   const [editing, setEditing] = React.useState(false);
   const [editState, editAction] = useActionState(updateMember.bind(null, member.id), idleState);
 
-  const { copyEmail, convert, confirm, setConfirm, shownConfirm, runConfirm } = useMemberActions(member, onClose);
+  const { copyEmail, convert, resubscribe, confirm, setConfirm, shownConfirm, runConfirm } = useMemberActions(member, onClose);
 
   // Exits edit mode once a save resolves without field errors; derived at
   // render time from the action state instead of mirrored in an effect.
@@ -123,6 +128,14 @@ export function MemberSheetContent({ member, onClose }: { member: Member; onClos
     if (editState.status !== "idle" && !editState.fieldErrors) setEditing(false);
   }
 
+  // Inline errors only: move focus to the first invalid field.
+  const nameRef = React.useRef<HTMLInputElement>(null);
+  const emailRef = React.useRef<HTMLInputElement>(null);
+  React.useEffect(() => {
+    if (editState.fieldErrors?.name) nameRef.current?.focus();
+    else if (editState.fieldErrors?.email) emailRef.current?.focus();
+  }, [editState]);
+
   React.useEffect(() => {
     if (editState.status !== "idle" && !editState.fieldErrors && editState.message) {
       toast({ title: editState.message });
@@ -131,11 +144,8 @@ export function MemberSheetContent({ member, onClose }: { member: Member; onClos
   }, [editState]);
 
   const displayName = member.name ?? member.email;
-  const status = !member.subscribed
-    ? copy.panel.statusUnsubscribed
-    : member.tier === "paying"
-      ? copy.panel.statusPaying
-      : copy.panel.statusGeneral;
+  const tierLabel = member.tier === "paying" ? copy.panel.statusPaying : copy.panel.statusGeneral;
+  const unsubscribedDate = member.unsubscribedAt ? formatDate(member.unsubscribedAt) : "";
 
   return (
     <>
@@ -158,9 +168,17 @@ export function MemberSheetContent({ member, onClose }: { member: Member; onClos
               </TitleWithCopy>
             )}
             <MetaLine>
-              <Badge>{status}</Badge>
+              <Badge>{tierLabel}</Badge>
+              {!member.subscribed && <Badge $variant="outline">{copy.panel.statusUnsubscribed}</Badge>}
               <span>{copy.panel.added(formatDate(member.addedAt))}</span>
             </MetaLine>
+            {!member.subscribed && (
+              <UnsubscribedNote>
+                {member.unsubscribedBy === "admin"
+                  ? copy.panel.unsubscribedAdmin(unsubscribedDate)
+                  : copy.panel.unsubscribedSelf(unsubscribedDate)}
+              </UnsubscribedNote>
+            )}
           </TitleBlock>
 
           <DropdownMenu>
@@ -178,41 +196,47 @@ export function MemberSheetContent({ member, onClose }: { member: Member; onClos
                 <Icon icon={Copy} size={16} />
                 {copy.panel.menuCopyEmail}
               </DropdownMenuItem>
-              {member.subscribed &&
-                (member.tier === "general" ? (
-                  <DropdownMenuItem onSelect={() => void convert()}>
-                    <Icon icon={BadgeCheck} size={16} />
-                    {copy.panel.menuConvert}
-                  </DropdownMenuItem>
-                ) : (
-                  <DropdownMenuItem
-                    onSelect={(event) => {
-                      event.preventDefault();
-                      setConfirm("revoke");
-                    }}
-                  >
-                    <Icon icon={BadgeMinus} size={16} />
-                    {copy.panel.menuRemove}
-                  </DropdownMenuItem>
-                ))}
-              <DropdownMenuSeparator />
-              {member.subscribed ? (
-                <DangerMenuItem
+              {member.tier === "general" ? (
+                <DropdownMenuItem onSelect={() => void convert()}>
+                  <Icon icon={BadgeCheck} size={16} />
+                  {copy.panel.menuConvert}
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem
                   onSelect={(event) => {
                     event.preventDefault();
-                    setConfirm("unsubscribe");
+                    setConfirm("revoke");
                   }}
                 >
-                  <Icon icon={MailX} size={16} />
-                  {copy.panel.menuUnsubscribe}
-                </DangerMenuItem>
+                  <Icon icon={BadgeMinus} size={16} />
+                  {copy.panel.menuRemove}
+                </DropdownMenuItem>
+              )}
+              {member.subscribed ? (
+                <>
+                  <DropdownMenuSeparator />
+                  <DangerMenuItem
+                    onSelect={(event) => {
+                      event.preventDefault();
+                      setConfirm("unsubscribe");
+                    }}
+                  >
+                    <Icon icon={MailX} size={16} />
+                    {copy.panel.menuUnsubscribe}
+                  </DangerMenuItem>
+                </>
               ) : (
-                <Tooltip content={copy.panel.restoreReason}>
-                  <DropdownMenuItem disabled>
-                    <Icon icon={MailPlus} size={16} />
-                    {copy.panel.menuRestore}
-                  </DropdownMenuItem>
-                </Tooltip>
+                // Owner decision 6: admins resubscribe only people an admin unsubscribed.
+                // Self-unsubscribed people get a statement in the header instead.
+                member.unsubscribedBy === "admin" && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={() => void resubscribe()}>
+                      <Icon icon={MailPlus} size={16} />
+                      {copy.panel.menuResubscribe}
+                    </DropdownMenuItem>
+                  </>
+                )
               )}
             </DropdownMenuContent>
           </DropdownMenu>
@@ -221,12 +245,12 @@ export function MemberSheetContent({ member, onClose }: { member: Member; onClos
 
       <SheetBody>
         {editing && (
-          <EditForm action={editAction} aria-label={copy.editForm.ariaLabel}>
+          <EditForm action={editAction} noValidate aria-label={copy.editForm.ariaLabel}>
             <Field label={copy.editForm.nameLabel} error={fieldError(editState, "name")}>
-              {(p) => <Input {...p} name="name" defaultValue={member.name ?? ""} autoComplete="name" />}
+              {(p) => <Input {...p} ref={nameRef} name="name" defaultValue={member.name ?? ""} autoComplete="name" />}
             </Field>
             <Field label={copy.editForm.emailLabel} error={fieldError(editState, "email")} required>
-              {(p) => <Input {...p} name="email" type="email" defaultValue={member.email} autoComplete="email" />}
+              {(p) => <Input {...p} ref={emailRef} name="email" type="email" defaultValue={member.email} autoComplete="email" />}
             </Field>
             <FormActions>
               <Button type="button" $variant="secondary" $size="sm" onClick={() => setEditing(false)}>

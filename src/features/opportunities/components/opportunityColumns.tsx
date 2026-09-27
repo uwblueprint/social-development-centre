@@ -69,21 +69,19 @@ export function formatUpdated(iso: string, now = new Date()): string {
 /** The text status for a listing: always a word, never color alone. */
 export function statusLabel(o: Opportunity): string {
   if (o.status === "draft") return copy.panel.statusDraft;
-  if (o.status === "live") return copy.panel.statusLive;
-  if (o.closedReason === "partner_removed") return copy.removedPartner.closedBadge;
-  return o.closedReason === "ended" ? copy.panel.statusEnded : copy.panel.statusClosed;
+  if (o.status === "published") return copy.panel.statusPublished;
+  return copy.panel.statusClosed;
 }
 
-/** The Closed tab's reason badge. */
-function closedBadge(o: Opportunity): string {
-  if (o.closedReason === "partner_removed") return copy.removedPartner.closedBadge;
-  return o.closedReason === "ended" ? copy.table.ended : copy.table.closed;
+/** Why a closed listing is closed: Ended, Closed or Partner access removed. */
+export function closedReasonLabel(o: Opportunity): string | undefined {
+  if (o.status !== "closed") return undefined;
+  return copy.panel.closedReason[o.closedReason ?? "closed"];
 }
 
 /**
- * Opportunity table columns. There is no status column (the tab is the status); the Closed tab shows an
- * Ended/Closed/Partner removed badge, since it mixes reasons, and Live flags a removed partner's listings
- * with "No longer emailed".
+ * Opportunity table columns. There is no status column (the tab is the status); the Closed tab shows the
+ * closed reason as a badge, since it mixes reasons.
  */
 export function opportunityColumns(scope: "admin" | "partner", tab: OpportunityTab): TableColumn<Opportunity>[] {
   const columns: TableColumn<Opportunity>[] = [
@@ -98,8 +96,7 @@ export function opportunityColumns(scope: "admin" | "partner", tab: OpportunityT
           <TitleText>
             <TitleLine>
               <Title title={o.title}>{o.title}</Title>
-              {tab === "closed" && <Badge $variant="outline">{closedBadge(o)}</Badge>}
-              {tab === "live" && o.emailsStopped && <Badge $variant="outline">{copy.removedPartner.badge}</Badge>}
+              {tab === "closed" && <Badge $variant="outline">{closedReasonLabel(o)}</Badge>}
             </TitleLine>
             <Muted>{KIND_LABEL[o.kind]}</Muted>
           </TitleText>

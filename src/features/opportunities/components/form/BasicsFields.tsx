@@ -9,7 +9,7 @@ import { LIMITS, TOPICS } from "../../catalog";
 import { copy } from "../../copy";
 import type { OpportunityKind, OrganizationRef, TopicId } from "../../types";
 import { CountedInput } from "./FormParts";
-import type { KindFieldsProps } from "./formValues";
+import { fieldId, type KindFieldsProps } from "./formValues";
 
 const t = copy.form;
 
@@ -37,7 +37,7 @@ export function BasicsFields({
   return (
     <>
       {scope === "admin" && (
-        <Field label={t.organization.label} hint={t.organization.hint} error={error("organizationId")} required>
+        <Field label={t.organization.label} hint={t.organization.hint} id={fieldId("organizationId")} error={error("organizationId")} required>
           {(p) => (
             <Select
               {...p}
@@ -50,19 +50,20 @@ export function BasicsFields({
           )}
         </Field>
       )}
-      <Field label={t.title.label} hint={t.title.hint} error={error("title")} required>
+      <Field label={t.title.label} hint={t.title.hint} id={fieldId("title")} error={error("title")} required>
         {(p) => <CountedInput {...p} name="title" max={LIMITS.title} value={values.title ?? ""} onChange={(e) => set("title", e.target.value)} />}
       </Field>
-      <Field label={t.summary.label} hint={t.summary.hint} error={error("summary")} required>
+      <Field label={t.summary.label} hint={t.summary.hint} id={fieldId("summary")} error={error("summary")} required>
         {(p) => (
           <Textarea {...p} name="summary" rows={3} maxLength={LIMITS.summary} value={values.summary ?? ""} onChange={(e) => set("summary", e.target.value)} />
         )}
       </Field>
-      <Field label={t.topics.label} hint={t.topics.hint} error={error("topics")} required>
+      <Field label={t.topics.label} hint={t.topics.hint} id={fieldId("topics")} error={error("topics")} required>
         {(p) => (
           <TagList
             id={p.id}
             role="group"
+            tabIndex={-1}
             aria-label={t.topics.label}
             aria-describedby={p["aria-describedby"]}
             data-invalid={error("topics") ? "" : undefined}
@@ -75,9 +76,9 @@ export function BasicsFields({
           </TagList>
         )}
       </Field>
-      <Field label={t.link.label[kind]} hint={t.link.hint} error={error("link")} required>
+      <Field label={t.link.label} hint={t.link.hint[kind]} id={fieldId("link")} error={error("link")} required>
         {(p) => (
-          <Input {...p} type="url" inputMode="url" autoComplete="url" name="link" value={values.link ?? ""} onChange={(e) => set("link", e.target.value)} />
+          <Input {...p} inputMode="url" autoComplete="url" spellCheck={false} name="link" value={values.link ?? ""} onChange={(e) => set("link", e.target.value)} />
         )}
       </Field>
     </>

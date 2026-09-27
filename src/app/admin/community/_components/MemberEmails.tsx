@@ -181,7 +181,7 @@ function EmailBody({ memberId, email }: { memberId: string; email: SentEmail }) 
 /**
  * The member panel's Emails section: every email sent to this person, newest
  * first, all expanded. Each shows its subject, short sent date and (if it
- * bounced) a Bounced badge, then its body, which loads lazily.
+ * not delivered) a Not delivered badge, then its body, which loads lazily.
  */
 export function MemberEmails({ memberId }: { memberId: string }) {
   const [emails, setEmails] = React.useState<SentEmail[] | null>(null);
@@ -229,7 +229,7 @@ export function MemberEmails({ memberId }: { memberId: string }) {
             <Item key={email.id}>
               <ItemHeader>
                 <Subject>{email.subject}</Subject>
-                {email.status === "bounced" && <Badge $variant="danger">{copy.emails.bouncedBadge}</Badge>}
+                {email.status === "not-delivered" && <Badge $variant="danger">{copy.emails.notDeliveredBadge}</Badge>}
                 <SentDate dateTime={email.sentAt} title={formatDate(email.sentAt)}>
                   {formatShortDate(email.sentAt)}
                 </SentDate>

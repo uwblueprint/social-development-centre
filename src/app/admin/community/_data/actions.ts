@@ -2,82 +2,146 @@
 
 import { revalidatePath } from "next/cache";
 import type { ActionState } from "@/lib/forms";
-import type { ExportScope, ImportPreview, Member, MemberTier } from "./types";
-import { findByEmail, members, nextMemberId } from "./store";
+import type { ExportScope, ImportPreview, Member } from "./types";
+import { findByEmail, members, nextMemberId, sendEmail } from "./store";
+import { EMAIL, parseInput } from "../_lib/import";
 
 /*
  * Backend: implement against the real audience store and email provider, keeping names,
  * FormData field names and ActionState results. Every action must verify the caller is an SDC admin.
- * Email sends (welcome, new-paying, upgrade, revoked) go through the existing provider so nobody
+ * Email sends (general welcome, paying welcome, Paying membership added, Paying access removed) go through the existing provider so nobody
  * gets duplicate welcomes.
  */
 
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const text = (fd: FormData, key: string) => String(fd.get(key) ?? "").trim();
+const checked = (fd: FormData, key: string) => fd.get(key) === "on";
 const done = (message: string): ActionState => {
   revalidatePath("/admin/community");
   return { status: "success", message };
 };
 const fail = (message: string, fieldErrors?: ActionState["fieldErrors"]): ActionState => ({ status: "error", message, fieldErrors });
 const find = (id: string) => members().find((m) => m.id === id);
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
-/** Splits on commas, semicolons, spaces and new lines. */
-function parse(raw: string) {
-  const tokens = raw.split(/[\s,;]+/).map((t) => t.trim()).filter(Boolean);
-  const seen = new Set<string>();
-  const valid: string[] = [];
-  const invalid: string[] = [];
-  let duplicatesRemoved = 0;
-  for (const t of tokens) {
-    const email = t.toLowerCase();
-    if (!EMAIL.test(email)) invalid.push(t);
-    else if (seen.has(email)) duplicatesRemoved++;
-    else {
-      seen.add(email);
-      valid.push(email);
-    }
+/** "single" is Add member (fields: name, email); "bulk" is Import members (field: emails). */
+export type AddMode = "single" | "bulk";
+
+/** Reads the input for either mode, or returns the field error to show beside it. */
+function readInput(mode: AddMode, fd: FormData): { raw: string } | { error: ActionState<ImportPreview> } {
+  if (mode === "bulk") {
+    const raw = text(fd, "emails");
+    if (!raw) return { error: { status: "error", fieldErrors: { emails: "Paste email addresses or upload a CSV file." } } };
+    return { raw };
   }
-  return { valid, invalid, duplicatesRemoved };
+  const email = text(fd, "email");
+  if (!email) return { error: { status: "error", fieldErrors: { email: "Enter an email address." } } };
+  const parsed = parseInput(email);
+  if (parsed.entries.length === 0) {
+    return { error: { status: "error", fieldErrors: { email: "Enter an email address like name@example.org." } } };
+  }
+  // A name only makes sense for one person; if several addresses were pasted, the preview shows them all.
+  const name = text(fd, "name").replace(/[<>,;]/g, " ").trim();
+  return { raw: name && parsed.entries.length === 1 ? `${name} <${parsed.entries[0].email}>` : email };
 }
 
-function analyse(tier: MemberTier, raw: string): ImportPreview {
-  const { valid, invalid, duplicatesRemoved } = parse(raw);
-  const preview: ImportPreview = { tier, toCreate: [], toUpgrade: [], toSkip: [], unsubscribed: [], invalid, duplicatesRemoved, emailsToSend: 0 };
-  for (const email of valid) {
-    const m = findByEmail(email);
-    if (!m) preview.toCreate.push(email);
-    else if (!m.subscribed) preview.unsubscribed.push(email);
-    else if (m.tier === "paying") preview.toSkip.push({ email, reason: tier === "paying" ? "already-paying" : "paying-not-downgraded" });
-    else if (tier === "paying") preview.toUpgrade.push(email);
-    else preview.toSkip.push({ email, reason: "already-general" });
+function analyse(raw: string, paying: boolean): ImportPreview {
+  const { entries, duplicates, invalid } = parseInput(raw);
+  const preview: ImportPreview = {
+    paying,
+    added: [],
+    converted: [],
+    alreadyPaying: [],
+    alreadyMembers: [],
+    duplicates,
+    invalid,
+    unsubscribedSelf: [],
+    unsubscribedAdmin: [],
+  };
+  for (const entry of entries) {
+    const m = findByEmail(entry.email);
+    if (!m) {
+      preview.added.push(entry);
+      continue;
+    }
+    const existing = { email: m.email, name: m.name };
+    if (!m.subscribed) {
+      const target = m.unsubscribedBy === "admin" ? preview.unsubscribedAdmin : preview.unsubscribedSelf;
+      target.push({ ...existing, willConvert: paying && m.tier === "general" });
+    } else if (m.tier === "paying") preview.alreadyPaying.push(existing); // never downgraded
+    else if (paying) preview.converted.push(existing);
+    else preview.alreadyMembers.push(existing);
   }
-  preview.emailsToSend = preview.toCreate.length + preview.toUpgrade.length;
   return preview;
 }
 
-/** Field: emails (text). Checks addresses without saving or sending anything. */
-export async function previewImport(tier: MemberTier, _prev: ActionState<ImportPreview>, fd: FormData): Promise<ActionState<ImportPreview>> {
-  const raw = text(fd, "emails");
-  if (!raw) return { status: "error", message: "Paste at least one email address.", fieldErrors: { emails: "Paste at least one email address." } };
-  const preview = analyse(tier, raw);
-  if (preview.toCreate.length + preview.toUpgrade.length === 0) {
-    return { status: "error", message: "Nothing to add: every address is invalid, already a member or unsubscribed.", data: preview };
-  }
-  return { status: "success", data: preview };
+/**
+ * Fields: name, email (single) or emails (bulk); paying ("on"). Checks the input without saving
+ * or sending anything, and groups every address by what confirming will do.
+ */
+export async function previewMembers(mode: AddMode, _prev: ActionState<ImportPreview>, fd: FormData): Promise<ActionState<ImportPreview>> {
+  const input = readInput(mode, fd);
+  if ("error" in input) return input.error;
+  return { status: "success", data: analyse(input.raw, checked(fd, "paying")) };
 }
 
 /**
- * Field: emails (same text as the preview). Re-checks on the server; never resubscribes unsubscribed
- * addresses or downgrades paying members. The initial backfill of SDC's list is a code-side migration, not this action.
+ * Same fields as the preview, plus resubscribe ("on") to resubscribe people an admin unsubscribed.
+ * Re-checks on the server, then applies. Never resubscribes people who unsubscribed themselves and
+ * never downgrades paying members. The initial backfill of SDC's list is a code-side migration, not this action.
  */
-export async function confirmImport(tier: MemberTier, _prev: ActionState, fd: FormData): Promise<ActionState> {
-  const preview = analyse(tier, text(fd, "emails"));
+export async function confirmMembers(mode: AddMode, _prev: ActionState, fd: FormData): Promise<ActionState> {
+  const input = readInput(mode, fd);
+  if ("error" in input) return fail("The list changed. Go back and check it again.");
+  const paying = checked(fd, "paying");
+  const resubscribe = checked(fd, "resubscribe");
+  const p = analyse(input.raw, paying);
   const now = new Date().toISOString();
-  for (const email of preview.toCreate) members().push({ id: nextMemberId(), email, tier, subscribed: true, addedAt: now });
-  for (const email of preview.toUpgrade) findByEmail(email)!.tier = "paying";
-  const added = preview.toCreate.length + preview.toUpgrade.length;
-  const sent = preview.emailsToSend;
-  return done(`${added} ${added === 1 ? "member" : "members"} added. ${sent} ${sent === 1 ? "email" : "emails"} sent.`);
+  let sent = 0;
+  let notDelivered = 0;
+  const send = (m: Member, kind: Parameters<typeof sendEmail>[1]) => (sendEmail(m, kind) === "delivered" ? sent++ : notDelivered++);
+
+  for (const { email, name } of p.added) {
+    const m: Member = { id: nextMemberId(), email, name, tier: paying ? "paying" : "general", subscribed: true, addedAt: now };
+    members().push(m);
+    send(m, paying ? "paying-welcome" : "general-welcome");
+  }
+  for (const { email } of p.converted) {
+    const m = findByEmail(email)!;
+    m.tier = "paying";
+    send(m, "paying-added");
+  }
+  let converted = p.converted.length;
+  for (const { email, willConvert } of p.unsubscribedSelf) {
+    if (!willConvert) continue;
+    findByEmail(email)!.tier = "paying"; // stays unsubscribed, so no email
+    converted++;
+  }
+  let resubscribed = 0;
+  for (const { email, willConvert } of p.unsubscribedAdmin) {
+    const m = findByEmail(email)!;
+    if (willConvert) {
+      m.tier = "paying";
+      converted++;
+    }
+    if (resubscribe) {
+      m.subscribed = true;
+      m.unsubscribedAt = undefined;
+      m.unsubscribedBy = undefined;
+      resubscribed++;
+      if (willConvert) send(m, "paying-added");
+    }
+  }
+
+  const parts = [
+    p.added.length && `${plural(p.added.length, "member", "members")} added`,
+    converted && `${converted} converted to paying`,
+    resubscribed && `${resubscribed} resubscribed`,
+  ].filter(Boolean);
+  if (parts.length === 0) return fail("Nothing changed.");
+  const summary = parts.join(", ");
+  const emails = sent ? ` ${plural(sent, "email", "emails")} sent.` : " No emails sent.";
+  const failed = notDelivered ? ` ${plural(notDelivered, "email wasn't", "emails weren't")} delivered.` : "";
+  return done(`${summary.charAt(0).toUpperCase()}${summary.slice(1)}.${emails}${failed}`);
 }
 
 /** Fields: name (optional), email. */
@@ -98,42 +162,55 @@ export async function updateMember(id: string, _prev: ActionState, fd: FormData)
   return done("Changes saved.");
 }
 
-/** Sends the upgrade email with the paid benefits and access link. */
+/**
+ * Makes the person a paying member. No email-subscription gate: an unsubscribed person gets paying
+ * access too, but no email. Sends the Paying membership added email to subscribed people.
+ */
 export async function grantPaidAccess(id: string): Promise<ActionState> {
   const m = find(id);
-  if (!m || !m.subscribed || m.tier !== "general") return fail("Only subscribed general members can be converted to paying members.");
+  if (!m) return fail("This person no longer exists.");
+  const who = m.name ?? m.email;
+  if (m.tier === "paying") return fail(`${who} is already a paying member.`);
   m.tier = "paying";
-  return done(`${m.name ?? m.email} is now a paying member. Upgrade email sent.`);
+  if (!m.subscribed) return done(`${who} is now a paying member. No email sent because they're unsubscribed.`);
+  return sendEmail(m, "paying-added") === "delivered"
+    ? done(`${who} is now a paying member. Paying member email sent.`)
+    : done(`${who} is now a paying member, but the email wasn't delivered. Check their email address.`);
 }
 
-/** Removes paid entitlement now and sends the revocation notice; general emails continue. */
+/** Removes paid entitlement now and, if they're subscribed, sends the Paying access removed email; general emails continue. */
 export async function revokePaidAccess(id: string): Promise<ActionState> {
   const m = find(id);
   if (!m || m.tier !== "paying") return fail("This person isn't a paying member.");
   m.tier = "general";
+  if (!m.subscribed) return done(`Paying access removed for ${m.name ?? m.email}.`);
+  sendEmail(m, "paying-removed");
   return done(`Paying access removed for ${m.name ?? m.email}. They'll keep getting general emails.`);
 }
 
-/** Stops all emails and removes paid access; the record stays, marked Unsubscribed. */
+/** Stops all emails and removes paid access; the record stays, marked Unsubscribed by an admin. */
 export async function unsubscribeMember(id: string): Promise<ActionState> {
   const m = find(id);
   if (!m || !m.subscribed) return fail("This person is already unsubscribed.");
   m.subscribed = false;
   m.tier = "general";
   m.unsubscribedAt = new Date().toISOString();
+  m.unsubscribedBy = "admin";
   return done(`${m.name ?? m.email} was unsubscribed.`);
 }
 
 /**
- * Restores an unsubscribed person as a general member (never paying). Disabled in the UI until
- * SDC confirms its consent rules and how the email provider handles resubscribes.
+ * Resubscribes someone an admin unsubscribed (owner decision 6). People who unsubscribed
+ * themselves can only resubscribe themselves. Keeps their tier; sends no welcome.
  */
-export async function restoreEmailEligibility(id: string): Promise<ActionState> {
+export async function resubscribeMember(id: string): Promise<ActionState> {
   const m = find(id);
   if (!m || m.subscribed) return fail("This person isn't unsubscribed.");
+  if (m.unsubscribedBy !== "admin") return fail("They unsubscribed themselves. Only they can resubscribe.");
   m.subscribed = true;
   m.unsubscribedAt = undefined;
-  return done(`${m.name ?? m.email} can receive general emails again.`);
+  m.unsubscribedBy = undefined;
+  return done(`${m.name ?? m.email} was resubscribed.`);
 }
 
 /** General: every subscribed person (paying included), plus unsubscribed people when asked. Paying: subscribed paying members. */

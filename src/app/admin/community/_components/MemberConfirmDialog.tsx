@@ -37,7 +37,9 @@ export function MemberConfirmDialog({
         </AlertDialogTitle>
         <AlertDialogDescription>
           {shownConfirm === "revoke"
-            ? copy.confirm.revokeBody
+            ? member.subscribed
+              ? copy.confirm.revokeBody
+              : copy.confirm.revokeBodyUnsubscribed
             : member.tier === "paying"
               ? copy.confirm.unsubscribeBodyPaying
               : copy.confirm.unsubscribeBodyGeneral}

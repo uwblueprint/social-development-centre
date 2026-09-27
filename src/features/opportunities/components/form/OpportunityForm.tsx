@@ -5,6 +5,7 @@ import { useActionState } from "react";
 import { useRouter } from "next/navigation";
 import { styled } from "next-yak";
 import { ArrowLeft, Check, FilePen, Send } from "lucide-react";
+import { ErrorSummary } from "@/components/ui/ErrorSummary";
 import { Icon } from "@/components/ui/Icon";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { useToast } from "@/components/ui/Toast";
@@ -15,7 +16,7 @@ import type { Opportunity, OpportunityActions, OpportunityKind, OrganizationRef,
 import { BasicsFields } from "./BasicsFields";
 import { EventFields } from "./EventFields";
 import { BackLink, GhostLink, Section } from "./FormParts";
-import { initialModel, type DetailRow, type KindFieldsProps } from "./formValues";
+import { initialModel, orderedErrors, type DetailRow, type KindFieldsProps } from "./formValues";
 import { JobFields } from "./JobFields";
 import { OtherFields } from "./OtherFields";
 import { PetitionFields } from "./PetitionFields";
@@ -77,12 +78,15 @@ const ButtonContent = styled.span`
 
 const initialState: ActionState<SaveResult> = { status: "idle" };
 
-/** First focusable control inside the first element marked invalid, in document order. */
-function firstInvalidControl(form: HTMLFormElement | null): HTMLElement | null {
-  const marked = form?.querySelector<HTMLElement>('[aria-invalid="true"], [data-invalid]');
-  if (!marked) return null;
-  if (marked.matches("input, textarea, button, [tabindex]")) return marked;
-  return marked.querySelector<HTMLElement>('[tabindex="0"], input:not([type="hidden"]), textarea, button');
+/** Focuses a field by id; for a group (topics, custom details), its first control. */
+function focusField(id: string) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const target = el.matches('[tabindex="-1"]')
+    ? (el.querySelector<HTMLElement>('button, input:not([type="hidden"]), textarea, [tabindex="0"]') ?? el)
+    : el;
+  target.scrollIntoView({ block: "center" });
+  target.focus({ preventScroll: true });
 }
 
 export interface OpportunityFormProps {
@@ -107,7 +111,6 @@ export function OpportunityForm({ scope, basePath, kind, opportunity, organizati
   const { toast } = useToast();
   const [state, formAction] = useActionState(save, initialState);
   const [model, setModel] = React.useState(() => initialModel(kind, opportunity));
-  const formRef = React.useRef<HTMLFormElement>(null);
 
   const status = opportunity?.status ?? "draft";
   const isDraft = status === "draft";
@@ -121,14 +124,16 @@ export function OpportunityForm({ scope, basePath, kind, opportunity, organizati
     setModel((m) => ({ ...m, topics: m.topics.includes(id) ? m.topics.filter((t) => t !== id) : [...m.topics, id] }));
   }, []);
   const error = (name: string) => fieldError(state, name);
+  // Field errors show inline and in a summary that stays until the next submit; never as a toast.
+  const summary = state.status === "error" ? orderedErrors(kind, state.fieldErrors) : [];
 
   React.useEffect(() => {
     if (state.status === "success") {
       if (state.message) toast({ title: state.message });
-      router.push(`${basePath}?tab=${state.data?.tab ?? "live"}`);
+      router.push(`${basePath}?tab=${state.data?.tab ?? "published"}`);
     } else if (state.status === "error") {
-      if (state.message) toast({ title: state.message });
-      firstInvalidControl(formRef.current)?.focus();
+      if (summary.length > 0) focusField(summary[0].fieldId);
+      else if (state.message) toast({ title: state.message });
     }
     // Runs once per submission result.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -154,7 +159,8 @@ export function OpportunityForm({ scope, basePath, kind, opportunity, organizati
         <Title>{opportunity ? copy.form.editTitle(noun) : copy.form.newTitle(noun)}</Title>
       </Header>
 
-      <Form ref={formRef} action={submit} noValidate>
+      <Form action={submit} noValidate>
+        {summary.length > 0 && <ErrorSummary title={state.message ?? ""} errors={summary} />}
         <Section title={copy.form.sections.basics}>
           <BasicsFields
             {...fieldProps}

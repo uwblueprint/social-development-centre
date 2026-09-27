@@ -3,44 +3,32 @@
 import * as React from "react";
 import { useActionState } from "react";
 import { styled } from "next-yak";
-import { CircleAlert, MailX, MoreVertical, Pencil, RotateCw, Save, Send, UserMinus, X } from "lucide-react";
-import { Badge } from "@/components/ui/Badge";
+import { MailX, MoreVertical, Pencil, RotateCw, UserMinus, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/DropdownMenu";
 import { Field } from "@/components/ui/Field";
-import { Input } from "@/components/ui/Input";
 import { Icon } from "@/components/ui/Icon";
+import { Input } from "@/components/ui/Input";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { useToast } from "@/components/ui/Toast";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/DropdownMenu";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogActions,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogTitle,
-} from "@/components/ui/AlertDialog";
 import { fieldError, idleState } from "@/lib/forms";
-import { partnersCopy as copy } from "../_copy";
+import { invitationCopy, partnersCopy } from "../_copy";
 import { cancelInvitation, removeContact, resendInvitation, updateContact } from "../_data/actions";
 import type { PartnerContact } from "../_data/types";
-import { formatDate } from "../_lib/format";
+import { useFocusFirstInvalid } from "../_lib/useFocusFirstInvalid";
 import {
-  ContactEmail as Email,
-  ContactErrorLine as ErrorLine,
-  ContactInfo as Info,
-  ContactMenuTrigger as MenuTrigger,
-  ContactMeta as Muted,
-  ContactName as NameLine,
-  ContactRowFrame as Row,
+  ContactEmail,
+  ContactInfo,
+  ContactMenuTrigger,
+  ContactName,
+  ContactRowFrame,
+  InvitationStatus,
+  resendLabel,
 } from "./ContactRowParts";
+import { usePersonActions, type PersonConfirmCopy } from "./PersonActions";
+
+const copy = partnersCopy.person;
 
 const EditForm = styled.form`
   display: flex;
@@ -67,193 +55,136 @@ const VisuallyHidden = styled.span`
   white-space: nowrap;
 `;
 
-type Confirm = "cancel" | "remove";
+export const adminPersonHandlers = { resend: resendInvitation, cancel: cancelInvitation, remove: removeContact };
 
+export const adminConfirmCopy = (organizationName: string): PersonConfirmCopy => ({
+  cancelNotSentBody: copy.cancelNotSentBody,
+  removeTitle: (name) => copy.removeConfirm.title(name, organizationName),
+  removeBody: (name) => copy.removeConfirm.body(name, organizationName),
+  removeKeep: copy.removeConfirm.keep,
+  removeConfirm: copy.removeConfirm.confirm,
+});
+
+/** Name + email edit form for one person (admin only). Controlled, so a failed save keeps what was typed. */
+export function PersonEditForm({ contact, onDone }: { contact: PartnerContact; onDone?: () => void }) {
+  const { toast } = useToast();
+  const [state, action] = useActionState(updateContact.bind(null, contact.id), idleState);
+  const [name, setName] = React.useState(contact.name);
+  const [email, setEmail] = React.useState(contact.email);
+  const formRef = React.useRef<HTMLFormElement>(null);
+  useFocusFirstInvalid(formRef, state);
+
+  React.useEffect(() => {
+    if (state.status === "idle" || state.fieldErrors) return;
+    if (state.message) toast({ title: state.message });
+    if (state.status === "success") onDone?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state]);
+
+  return (
+    <EditForm ref={formRef} action={action} noValidate aria-label={`${copy.edit} ${contact.name}`}>
+      <Field label={partnersCopy.personPanel.nameLabel} error={fieldError(state, "name")} required>
+        {(p) => <Input {...p} name="name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="off" />}
+      </Field>
+      <Field label={partnersCopy.personPanel.emailLabel} error={fieldError(state, "email")} required>
+        {(p) => (
+          <Input {...p} name="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="off" />
+        )}
+      </Field>
+      <EditActions>
+        {onDone && (
+          <Button type="button" $variant="secondary" $size="sm" onClick={onDone}>
+            <Icon icon={X} size={16} />
+            {copy.cancelEdit}
+          </Button>
+        )}
+        <SubmitButton $size="sm">{copy.saveEdit}</SubmitButton>
+      </EditActions>
+    </EditForm>
+  );
+}
+
+/** One person in the organization panel's People list. `readOnly` for a removed organization. */
 export function ContactRow({
   contact,
   organizationName,
-  onlyContact,
-  highlighted,
+  lastWithAccess,
+  readOnly,
 }: {
   contact: PartnerContact;
   organizationName: string;
-  onlyContact: boolean;
-  highlighted?: boolean;
+  /** The only person at the organization with access: they can't be removed on their own. */
+  lastWithAccess: boolean;
+  readOnly?: boolean;
 }) {
   const { toast } = useToast();
   const [editing, setEditing] = React.useState(false);
-  const [confirm, setConfirm] = React.useState<Confirm | null>(null);
-  const [editState, editAction] = useActionState(updateContact.bind(null, contact.id), idleState);
-  const rowRef = React.useRef<HTMLDivElement>(null);
+  const actions = usePersonActions(contact, adminPersonHandlers, adminConfirmCopy(organizationName), (result) => {
+    if (result.message) toast({ title: result.message });
+  });
 
-  // Keeps the alert dialog's copy stable while it plays its close animation
-  // (by then `confirm` is already null); updated during render, not an effect.
-  const [shownConfirm, setShownConfirm] = React.useState<Confirm>("cancel");
-  if (confirm && confirm !== shownConfirm) setShownConfirm(confirm);
+  if (editing) return <PersonEditForm contact={contact} onDone={() => setEditing(false)} />;
 
-  // Exits edit mode once a save resolves without field errors; derived at
-  // render time from the action state instead of mirrored in an effect.
-  const [handledEditState, setHandledEditState] = React.useState(editState);
-  if (editState !== handledEditState) {
-    setHandledEditState(editState);
-    if (editState.status !== "idle" && !editState.fieldErrors) setEditing(false);
-  }
-
-  React.useEffect(() => {
-    if (highlighted) rowRef.current?.focus();
-  }, [highlighted]);
-
-  React.useEffect(() => {
-    if (editState.status !== "idle" && !editState.fieldErrors && editState.message) {
-      toast({ title: editState.message });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editState]);
-
-  async function handleResend() {
-    const result = await resendInvitation(contact.id);
-    toast({ title: result.message ?? copy.invitationMenu.resentFallback });
-  }
-
-  async function handleConfirm(kind: Confirm) {
-    const result = kind === "cancel" ? await cancelInvitation(contact.id) : await removeContact(contact.id);
-    toast({ title: result.message ?? "Done." });
-  }
-
-  if (editing) {
-    return (
-      <EditForm action={editAction} aria-label={`Edit ${contact.name}`}>
-        <Field label="Name" error={fieldError(editState, "name")} required>
-          {(p) => <Input {...p} name="name" defaultValue={contact.name} autoComplete="name" />}
-        </Field>
-        <Field label="Email" error={fieldError(editState, "email")} required>
-          {(p) => <Input {...p} name="email" type="email" defaultValue={contact.email} autoComplete="email" />}
-        </Field>
-        <EditActions>
-          <Button type="button" $variant="secondary" $size="sm" onClick={() => setEditing(false)}>
-            <Icon icon={X} size={16} />
-            Cancel
-          </Button>
-          <SubmitButton $size="sm">
-            <Icon icon={Save} size={16} />
-            Save
-          </SubmitButton>
-        </EditActions>
-      </EditForm>
-    );
-  }
-
+  const state = contact.invitationState;
   const removeItem = (
     <DropdownMenuItem
-      disabled={onlyContact}
+      disabled={lastWithAccess}
       onSelect={(event) => {
-        if (onlyContact) {
-          event.preventDefault();
-          return;
-        }
-        setConfirm("remove");
+        event.preventDefault();
+        if (!lastWithAccess) actions.requestRemove();
       }}
     >
       <Icon icon={UserMinus} size={16} />
-      Remove from organization
-      {onlyContact && (
-        <VisuallyHidden>
-          {" "}
-          — This is the organization&apos;s only contact. Remove the organization&apos;s access instead.
-        </VisuallyHidden>
-      )}
+      {copy.remove}
+      {lastWithAccess && <VisuallyHidden> — {copy.lastPersonReason}</VisuallyHidden>}
     </DropdownMenuItem>
   );
 
   return (
-    <Row ref={rowRef} tabIndex={-1} $highlighted={highlighted}>
-      <Info>
-        <NameLine>
-          {contact.name}
-          {contact.status === "pending" && <Badge $variant="warning">{copy.badges.invitationPending}</Badge>}
-        </NameLine>
-        <Email>{contact.email}</Email>
-        {contact.status === "pending" &&
-          contact.invitation &&
-          (contact.invitation.sendError ? (
-            <ErrorLine>
-              <Icon icon={CircleAlert} size={13} />
-              <span>{contact.invitation.sendError}</span>
-              <Button type="button" $variant="ghost" $size="sm" onClick={handleResend}>
+    <ContactRowFrame>
+      <ContactInfo>
+        <ContactName>{contact.name}</ContactName>
+        <ContactEmail>{contact.email}</ContactEmail>
+        {!readOnly && <InvitationStatus contact={contact} onRetry={actions.resend} />}
+      </ContactInfo>
+
+      {!readOnly && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <ContactMenuTrigger type="button" $variant="ghost" $size="sm" aria-label={copy.rowActions(contact.name)}>
+              <Icon icon={MoreVertical} size={16} />
+            </ContactMenuTrigger>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={() => setEditing(true)}>
+              <Icon icon={Pencil} size={16} />
+              {copy.edit}
+            </DropdownMenuItem>
+            {state && (
+              <DropdownMenuItem onSelect={actions.resend}>
                 <Icon icon={RotateCw} size={16} />
-                Retry
-              </Button>
-            </ErrorLine>
-          ) : (
-            <Muted>Expires {formatDate(contact.invitation.expiresAt)}</Muted>
-          ))}
-      </Info>
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <MenuTrigger type="button" $variant="ghost" $size="sm" aria-label={`Actions for ${contact.name}`}>
-            <Icon icon={MoreVertical} size={16} />
-          </MenuTrigger>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={() => setEditing(true)}>
-            <Icon icon={Pencil} size={16} />
-            Edit
-          </DropdownMenuItem>
-          {contact.status === "pending" && (
-            <DropdownMenuItem onSelect={handleResend}>
-              <Icon icon={Send} size={16} />
-              {copy.invitationMenu.resend}
-            </DropdownMenuItem>
-          )}
-          {contact.status === "pending" ? (
-            <DropdownMenuItem
-              onSelect={(event) => {
-                event.preventDefault();
-                setConfirm("cancel");
-              }}
-            >
-              <Icon icon={MailX} size={16} />
-              {copy.invitationMenu.cancel}
-            </DropdownMenuItem>
-          ) : onlyContact ? (
-            <Tooltip content="This is the organization's only contact. Remove the organization's access instead.">
-              {removeItem}
-            </Tooltip>
-          ) : (
-            removeItem
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <AlertDialog open={confirm !== null} onOpenChange={(open) => !open && setConfirm(null)}>
-        <AlertDialogContent>
-          <AlertDialogTitle>
-            {shownConfirm === "cancel" ? copy.cancelInvitationConfirm.title : `Remove ${contact.name} from ${organizationName}?`}
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            {shownConfirm === "cancel"
-              ? copy.cancelInvitationConfirm.body(contact.name)
-              : `${contact.name} loses access to the partner portal now. Their record is kept for history, and their email can be invited under another organization.`}
-          </AlertDialogDescription>
-          <AlertDialogActions>
-            <AlertDialogCancel asChild>
-              <Button type="button" $variant="secondary">
-                {shownConfirm === "cancel" ? copy.cancelInvitationConfirm.keep : "Keep access"}
-              </Button>
-            </AlertDialogCancel>
-            <AlertDialogAction asChild>
-              <Button
-                type="button"
-                $variant="danger"
-                onClick={() => confirm && void handleConfirm(confirm)}
+                {resendLabel(state)}
+              </DropdownMenuItem>
+            )}
+            {state ? (
+              <DropdownMenuItem
+                onSelect={(event) => {
+                  event.preventDefault();
+                  actions.requestCancel();
+                }}
               >
-                {shownConfirm === "cancel" ? copy.cancelInvitationConfirm.confirm : "Yes, remove"}
-              </Button>
-            </AlertDialogAction>
-          </AlertDialogActions>
-        </AlertDialogContent>
-      </AlertDialog>
-    </Row>
+                <Icon icon={MailX} size={16} />
+                {invitationCopy.cancel}
+              </DropdownMenuItem>
+            ) : lastWithAccess ? (
+              <Tooltip content={copy.lastPersonReason}>{removeItem}</Tooltip>
+            ) : (
+              removeItem
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+      {actions.dialog}
+    </ContactRowFrame>
   );
 }

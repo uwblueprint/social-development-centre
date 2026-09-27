@@ -318,9 +318,8 @@ export function closeListingsForOrganization(organizationId: string) {
 }
 
 /** @deprecated Use closeListingsForOrganization; kept so Partners' reinvite keeps working until it switches over. */
-export function closeListingsPastRemovalCutoff(organizationId: string, _removedAt?: string) {
+export const closeListingsPastRemovalCutoff: (organizationId: string, removedAt?: string) => void = (organizationId) =>
   closeListingsForOrganization(organizationId);
-}
 
 /**
  * Reinstatement (owner decision 8): when someone accepts an invitation to a removed organization and its

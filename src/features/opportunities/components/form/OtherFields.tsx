@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/Input";
 import { LIMITS } from "../../catalog";
 import { copy } from "../../copy";
 import { FieldRow } from "./FormParts";
-import { newDetailRow, type DetailRow, type KindFieldsProps } from "./formValues";
+import { fieldId, newDetailRow, type DetailRow, type KindFieldsProps } from "./formValues";
 
 const t = copy.form.other;
 
@@ -54,17 +54,18 @@ export function OtherFields({
 
   return (
     <>
-      <Field label={t.callToAction.label} hint={t.callToAction.hint} error={error("callToAction")} required>
+      <Field label={t.callToAction.label} hint={t.callToAction.hint} id={fieldId("callToAction")} error={error("callToAction")} required>
         {(p) => <Input {...p} name="callToAction" value={values.callToAction ?? ""} onChange={(e) => set("callToAction", e.target.value)} />}
       </Field>
-      <Field label={t.deadline.label} hint={t.deadline.hint} error={error("deadline")}>
+      <Field label={t.deadline.label} hint={t.deadline.hint} id={fieldId("deadline")} error={error("deadline")}>
         {(p) => <DatePicker {...p} name="deadline" value={values.deadline ?? ""} onValueChange={(v) => set("deadline", v)} />}
       </Field>
-      <Field label={t.details.label} hint={t.details.hint} error={error("details")}>
+      <Field label={t.details.label} hint={t.details.hint} id={fieldId("details")} error={error("details")}>
         {(p) => (
           <Rows
             id={p.id}
             role="group"
+            tabIndex={-1}
             aria-label={t.details.label}
             aria-describedby={p["aria-describedby"]}
             data-invalid={error("details") ? "" : undefined}
@@ -72,12 +73,12 @@ export function OtherFields({
             {details.map((d, i) => (
               <Row key={d.key}>
                 <FieldRow>
-                  <Field label={t.detailLabel} error={error(`detailLabel.${i}`)}>
+                  <Field label={t.detailLabel} id={fieldId(`detailLabel.${i}`)} error={error(`detailLabel.${i}`)}>
                     {(lp) => (
                       <Input {...lp} name="detailLabel" maxLength={LIMITS.customLabel} value={d.label} onChange={(e) => update(i, { label: e.target.value })} />
                     )}
                   </Field>
-                  <Field label={t.detailValue} error={error(`detailValue.${i}`)}>
+                  <Field label={t.detailValue} id={fieldId(`detailValue.${i}`)} error={error(`detailValue.${i}`)}>
                     {(vp) => (
                       <Input {...vp} name="detailValue" maxLength={LIMITS.customValue} value={d.value} onChange={(e) => update(i, { value: e.target.value })} />
                     )}

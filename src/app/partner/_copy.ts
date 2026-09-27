@@ -1,8 +1,11 @@
 /**
  * User-facing strings for the partner portal shell, account and organization pages. Opportunities copy
  * lives in src/features/opportunities/copy.ts. Server-returned messages (ActionState.message and field
- * errors) live with the actions: src/app/admin/partners/_data/profile.ts and ../organization/_data/actions.ts.
+ * errors) live with the shared rules: src/app/admin/partners/_data/profile.ts and _data/contacts.ts.
+ * Invitation states are shared with the admin portal (`invitationCopy`).
  */
+import { invitationCopy } from "@/app/admin/partners/_copy";
+
 export const partnerCopy = {
   nav: {
     label: "Partner navigation",
@@ -10,7 +13,7 @@ export const partnerCopy = {
     organization: "Organization",
     /** Shown as a delayed tooltip on the sidebar item; replaces the old page descriptions. */
     opportunitiesDescription: "What your organization shares with the SDC community.",
-    organizationDescription: "Your organization's profile and team.",
+    organizationDescription: "How your organization appears to the SDC community.",
   },
 
   account: {
@@ -23,40 +26,38 @@ export const partnerCopy = {
     profileHeading: "Profile",
     nameLabel: "Organization name",
     websiteLabel: "Website",
-    websiteHint: "Starts with https://",
-    websitePlaceholder: "https://example.org",
+    websiteHint: "Example: sdckw.ca",
     descriptionLabel: "Short description",
     descriptionHint: "One or two sentences about what your organization does. Up to 280 characters.",
     save: "Save changes",
+    /** Persistent (not toasts): the person needs time to act on them. */
+    blocked: {
+      signedOut: "You've been signed out. Sign in again to save your changes.",
+      signIn: "Sign in",
+      accessEnded: "Your organization no longer has access. Contact SDC if you think this is a mistake.",
+      contactLabel: "SDC contact:",
+    },
     teamHeading: "Team",
-    pending: "Invitation pending",
     you: "(you)",
-    invitationExpires: (date: string) => `Expires ${date}`,
-    retry: "Retry",
+    invitation: invitationCopy,
     rowActions: (name: string) => `Actions for ${name}`,
-    resendInvitation: "Resend invitation",
-    cancelInvitation: "Cancel invitation",
     removeFromOrganization: "Remove from organization",
     inviteButton: "Invite colleague",
     invite: {
       title: "Invite colleague",
-      description: "We'll email them a link to join your organization's portal. The link works for 7 days.",
+      description: "We'll email them a link to join your organization's portal. The link expires after 7 days.",
       nameLabel: "Name",
       emailLabel: "Email",
       cancel: "Cancel",
       submit: "Send invitation",
     },
-    confirmCancel: {
-      title: "Cancel this invitation?",
-      body: (name: string) => `${name} won't be able to use the invitation link already sent.`,
-      keep: "Keep invitation",
-      confirm: "Yes, cancel invitation",
-    },
+    /** Cancelling an invitation that was never delivered. */
+    cancelNotSentBody: (name: string) => `${name} will be removed from your team list.`,
     confirmRemove: {
       title: (name: string) => `Remove ${name} from your organization?`,
-      body: (name: string) => `${name} loses access to the partner portal now. Your organization's opportunities stay as they are.`,
+      body: (name: string) => `${name} will lose access to the partner portal. Your organization's opportunities won't change.`,
       keep: "Keep access",
-      confirm: "Yes, remove",
+      confirm: "Remove access",
     },
   },
 } as const;

@@ -55,11 +55,11 @@ const FilterWrap = styled.div`
 `;
 
 const ALL = "all";
-const TABS: OpportunityTab[] = ["live", "drafts", "closed"];
-const EMPTY_ICON = { live: Megaphone, drafts: FilePen, closed: Archive } as const;
+const TABS: OpportunityTab[] = ["published", "drafts", "closed"];
+const EMPTY_ICON = { published: Megaphone, drafts: FilePen, closed: Archive } as const;
 
 function normalizeTab(value: string): OpportunityTab {
-  return value === "drafts" || value === "closed" ? value : "live";
+  return value === "drafts" || value === "closed" ? value : "published";
 }
 
 export interface OpportunitiesViewProps {
@@ -97,7 +97,7 @@ export function OpportunitiesView({ scope, basePath, tab, filters, items, counts
     const next = normalizeTab(value);
     setActiveTab(next);
     setSelectedId(null);
-    syncUrl({ tab: next === "live" ? undefined : next });
+    syncUrl({ tab: next === "published" ? undefined : next });
   }
 
   function clearFilters() {
@@ -113,7 +113,7 @@ export function OpportunitiesView({ scope, basePath, tab, filters, items, counts
     { value: ALL, label: copy.toolbar.allOrganizations },
     ...(organizations ?? []).map((o) => ({
       value: o.id,
-      label: o.removed ? copy.removedPartner.filterOption(o.name) : o.name,
+      label: o.removed ? copy.removedPartnerFilterOption(o.name) : o.name,
     })),
   ];
 

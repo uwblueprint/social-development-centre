@@ -1,38 +1,38 @@
 import type { Metadata } from "next";
-import { listOrganizationOptions, listPartnerPeople, listPartners, listPendingInvitations } from "./_data/queries";
-import { PartnersView, type PartnersTab } from "./_components/PartnersView";
+import { listOrganizationOptions, listPartnerPeople, listPartners } from "./_data/queries";
+import { PartnersView } from "./_components/PartnersView";
+import type { PartnerStatusFilter } from "./_data/types";
 
 export const metadata: Metadata = { title: "Partners" };
-
-function normalizeTab(value: string | undefined): PartnersTab {
-  return value === "people" || value === "invitations" || value === "removed" ? value : "organizations";
-}
 
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; q?: string }>;
+  searchParams: Promise<{ view?: string; status?: string; q?: string }>;
 }) {
   const params = await searchParams;
-  const tab = normalizeTab(params.tab);
+  const view = params.view === "people" ? "people" : "organizations";
+  const status: PartnerStatusFilter = params.status === "removed" ? "removed" : "active";
   const q = params.q?.trim() ?? "";
 
-  const [organizations, removedOrganizations, people, invitations, organizationOptions] = await Promise.all([
-    listPartners("current", q),
+  // Both statuses load so an open panel survives its row moving (e.g. after Remove access).
+  const [organizations, removedOrganizations, people, removedPeople, organizationOptions] = await Promise.all([
+    listPartners("active", q),
     listPartners("removed", q),
-    listPartnerPeople(q),
-    listPendingInvitations(q),
+    listPartnerPeople("active", q),
+    listPartnerPeople("removed", q),
     listOrganizationOptions(),
   ]);
 
   return (
     <PartnersView
-      tab={tab}
+      view={view}
+      status={status}
       q={q}
       organizations={organizations}
       removedOrganizations={removedOrganizations}
       people={people}
-      invitations={invitations}
+      removedPeople={removedPeople}
       organizationOptions={organizationOptions}
     />
   );

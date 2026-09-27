@@ -2,7 +2,7 @@
 
 import type { SyntheticEvent } from "react";
 import { styled } from "next-yak";
-import { BadgeCheck, BadgeMinus, Copy, MailX, MoreVertical } from "lucide-react";
+import { BadgeCheck, BadgeMinus, Copy, MailPlus, MailX, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/DropdownMenu";
 import { Icon } from "@/components/ui/Icon";
@@ -33,7 +33,7 @@ const stop = (event: SyntheticEvent) => event.stopPropagation();
  */
 export function MemberRowActions({ member }: { member: Member }) {
   const displayName = member.name ?? member.email;
-  const { copyEmail, convert, confirm, setConfirm, shownConfirm, runConfirm } = useMemberActions(member);
+  const { copyEmail, convert, resubscribe, confirm, setConfirm, shownConfirm, runConfirm } = useMemberActions(member);
 
   return (
     <RowEventBoundary role="presentation" onClick={stop} onKeyDown={stop}>
@@ -53,24 +53,24 @@ export function MemberRowActions({ member }: { member: Member }) {
             <Icon icon={Copy} size={16} />
             {copy.rowMenu.copyEmail}
           </DropdownMenuItem>
-          {member.subscribed && (
+          {member.tier === "general" ? (
+            <DropdownMenuItem onSelect={() => void convert()}>
+              <Icon icon={BadgeCheck} size={16} />
+              {copy.rowMenu.convert}
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem
+              onSelect={(event) => {
+                event.preventDefault();
+                setConfirm("revoke");
+              }}
+            >
+              <Icon icon={BadgeMinus} size={16} />
+              {copy.rowMenu.remove}
+            </DropdownMenuItem>
+          )}
+          {member.subscribed ? (
             <>
-              {member.tier === "general" ? (
-                <DropdownMenuItem onSelect={() => void convert()}>
-                  <Icon icon={BadgeCheck} size={16} />
-                  {copy.rowMenu.convert}
-                </DropdownMenuItem>
-              ) : (
-                <DropdownMenuItem
-                  onSelect={(event) => {
-                    event.preventDefault();
-                    setConfirm("revoke");
-                  }}
-                >
-                  <Icon icon={BadgeMinus} size={16} />
-                  {copy.rowMenu.remove}
-                </DropdownMenuItem>
-              )}
               <DropdownMenuSeparator />
               <DangerItem
                 onSelect={(event) => {
@@ -82,6 +82,16 @@ export function MemberRowActions({ member }: { member: Member }) {
                 {copy.rowMenu.unsubscribe}
               </DangerItem>
             </>
+          ) : (
+            member.unsubscribedBy === "admin" && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => void resubscribe()}>
+                  <Icon icon={MailPlus} size={16} />
+                  {copy.rowMenu.resubscribe}
+                </DropdownMenuItem>
+              </>
+            )
           )}
         </DropdownMenuContent>
       </DropdownMenu>

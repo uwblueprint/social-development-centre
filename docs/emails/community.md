@@ -5,7 +5,7 @@ Drafts for the four Community emails. Placeholders in `{braces}`. **Before sendi
 ---
 
 ## 1. General welcome
-**Sent when:** a new general member is added (not during the initial backfill).
+**Sent when:** a new general member is added with **Add member** or **Import members** (not during the initial backfill, and not when someone is resubscribed).
 **Subject:** Welcome to the Social Development Centre community
 
 Hi {name|there},
@@ -21,7 +21,7 @@ The Social Development Centre team
 ---
 
 ## 2. New paying-member welcome
-**Sent when:** someone who wasn't already a member is added as a paying member.
+**Sent when:** someone who wasn't already a member is added with **Make them paying members** (or **Make them a paying member**) checked.
 **Subject:** Welcome to the Social Development Centre: your membership is active
 
 Hi {name|there},
@@ -40,8 +40,8 @@ The Social Development Centre team
 
 ---
 
-## 3. Paid-access upgrade
-**Sent when:** an existing general member is given paying access.
+## 3. Paying membership added
+**Sent when:** an existing general member is converted to a paying member (**Convert to paying member**, or re-added with the paying checkbox checked). Not sent to someone who is unsubscribed; they get paying access without an email. After a successful send the admin sees "Paying member email sent."
 **Subject:** Your Social Development Centre membership is now active
 
 Hi {name|there},
@@ -56,8 +56,8 @@ The Social Development Centre team
 
 ---
 
-## 4. Paid access revoked
-**Sent when:** an admin removes a paying member's paid access (not when they unsubscribe).
+## 4. Paying access removed
+**Sent when:** an admin chooses **Remove paying access** (not when they unsubscribe). Not sent to someone who is unsubscribed.
 **Subject:** Your Social Development Centre membership has ended
 
 Hi {name|there},

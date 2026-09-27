@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/Textarea";
 import { COMMITMENT_LABEL, VOLUNTEER_FORMAT_LABEL } from "../../catalog";
 import { copy } from "../../copy";
 import { ChoiceField, FieldRow } from "./FormParts";
-import type { KindFieldsProps } from "./formValues";
+import { fieldId, type KindFieldsProps } from "./formValues";
 
 const t = copy.form.volunteer;
 
@@ -34,25 +34,25 @@ export function VolunteerFields({ values, set, error }: KindFieldsProps) {
         required
       />
       {values.format !== "remote" && (
-        <Field label={t.location.label} hint={t.location.hint} error={error("location")} required>
+        <Field label={t.location.label} hint={t.location.hint} id={fieldId("location")} error={error("location")} required>
           {(p) => <Input {...p} name="location" value={values.location ?? ""} onChange={(e) => set("location", e.target.value)} />}
         </Field>
       )}
-      <Field label={t.timeCommitment.label} hint={t.timeCommitment.hint} error={error("timeCommitment")}>
+      <Field label={t.timeCommitment.label} hint={t.timeCommitment.hint} id={fieldId("timeCommitment")} error={error("timeCommitment")}>
         {(p) => <Input {...p} name="timeCommitment" value={values.timeCommitment ?? ""} onChange={(e) => set("timeCommitment", e.target.value)} />}
       </Field>
       <FieldRow>
-        <Field label={t.startDate.label} hint={t.startDate.hint} error={error("startDate")}>
+        <Field label={t.startDate.label} hint={t.startDate.hint} id={fieldId("startDate")} error={error("startDate")}>
           {(p) => <DatePicker {...p} name="startDate" value={values.startDate ?? ""} onValueChange={(v) => set("startDate", v)} />}
         </Field>
-        <Field label={t.applyBy.label} hint={t.applyBy.hint} error={error("applyBy")}>
+        <Field label={t.applyBy.label} hint={t.applyBy.hint} id={fieldId("applyBy")} error={error("applyBy")}>
           {(p) => <DatePicker {...p} name="applyBy" value={values.applyBy ?? ""} onValueChange={(v) => set("applyBy", v)} />}
         </Field>
       </FieldRow>
-      <Field label={t.skills.label} hint={t.skills.hint} error={error("skills")}>
+      <Field label={t.skills.label} hint={t.skills.hint} id={fieldId("skills")} error={error("skills")}>
         {(p) => <Textarea {...p} name="skills" rows={3} value={values.skills ?? ""} onChange={(e) => set("skills", e.target.value)} />}
       </Field>
-      <Field label={t.minimumAge.label} hint={t.minimumAge.hint} error={error("minimumAge")}>
+      <Field label={t.minimumAge.label} hint={t.minimumAge.hint} id={fieldId("minimumAge")} error={error("minimumAge")}>
         {(p) => (
           <Input
             {...p}

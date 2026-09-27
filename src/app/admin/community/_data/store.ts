@@ -1,4 +1,4 @@
-import type { Member, SentEmail } from "./types";
+import type { EmailKind, Member, SentEmail } from "./types";
 
 /*
  * In-memory stand-in for the backend so the UI works end to end in development.
@@ -24,12 +24,18 @@ function seed(): Member[] {
       subscribed: !unsubscribed,
       addedAt: new Date(Date.now() - (i + 1) * day).toISOString(),
       unsubscribedAt: unsubscribed ? new Date(Date.now() - i * 3600_000).toISOString() : undefined,
+      // Most people unsubscribe themselves; a few were unsubscribed by an admin.
+      unsubscribedBy: unsubscribed ? (i % 75 === 7 ? "admin" : "self") : undefined,
     });
   }
   return out;
 }
 
-const g = globalThis as unknown as { __communityStore?: Member[]; __communitySeq?: number };
+const g = globalThis as unknown as {
+  __communityStore?: Member[];
+  __communitySeq?: number;
+  __communitySent?: Record<string, StoredEmail[]>;
+};
 export const members = (): Member[] => (g.__communityStore ??= seed());
 export const nextMemberId = () => `m_${(g.__communitySeq = (g.__communitySeq ?? 5000) + 1)}`;
 export const findByEmail = (email: string) => members().find((m) => m.email.toLowerCase() === email.toLowerCase());
@@ -45,7 +51,7 @@ function html(title: string, body: string) {
 /** A sent email as stored: the summary plus its rendered body. */
 export type StoredEmail = SentEmail & { html: string };
 
-/** Deterministic sample history: a welcome (plus upgrade for paying members) and weekly opportunity digests. */
+/** Deterministic sample history: a welcome (plus Paying membership added for some paying members) and weekly opportunity digests. */
 export function emailsFor(m: Member): StoredEmail[] {
   const added = new Date(m.addedAt).getTime();
   const end = m.unsubscribedAt ? new Date(m.unsubscribedAt).getTime() : Date.now();
@@ -62,7 +68,7 @@ export function emailsFor(m: Member): StoredEmail[] {
   if (m.tier === "paying" && welcome === "general-welcome") {
     out.push({
       id: `${m.id}_u`,
-      kind: "upgrade",
+      kind: "paying-added",
       subject: "Your Social Development Centre membership is now active",
       sentAt: new Date(added + 3 * DAY).toISOString(),
       status: "delivered",
@@ -77,9 +83,39 @@ export function emailsFor(m: Member): StoredEmail[] {
       kind: "opportunities",
       subject: "This week's opportunities",
       sentAt: d.toISOString(),
-      status: i === 4 && Number(m.id.slice(2)) % 11 === 0 ? "bounced" : "delivered",
+      status: i === 4 && Number(m.id.slice(2)) % 11 === 0 ? "not-delivered" : "delivered",
       html: html("This week's opportunities", "<ul><li><strong>Food bank volunteers</strong> · Northside Food Bank</li><li><strong>Youth mentor</strong> · Riverbend Youth Collective</li><li><strong>ESL conversation circle</strong> · Eastside Newcomer Services</li></ul>"),
     });
   }
+  out.push(...(g.__communitySent?.[m.id] ?? []));
   return out.sort((a, b) => b.sentAt.localeCompare(a.sentAt));
+}
+
+const TEMPLATES: Record<Exclude<EmailKind, "opportunities">, { subject: string; body: string }> = {
+  "general-welcome": {
+    subject: "Welcome to the Social Development Centre community",
+    body: "<p>You're now on the Social Development Centre community list.</p>",
+  },
+  "paying-welcome": {
+    subject: "Welcome to the Social Development Centre: your membership is active",
+    body: '<p>You\'re now a paying member.</p><p><a href="#">Access the member platform</a></p>',
+  },
+  "paying-added": {
+    subject: "Your Social Development Centre membership is now active",
+    body: '<p>Your account now includes paid membership.</p><p><a href="#">Access the member platform</a></p>',
+  },
+  "paying-removed": {
+    subject: "Your Social Development Centre membership has ended",
+    body: "<p>Your paid membership has ended. You'll still get our community emails.</p>",
+  },
+};
+
+/** Dev stand-in for the email provider: records the send and reports delivery. Always delivers here. */
+export function sendEmail(m: Member, kind: Exclude<EmailKind, "opportunities">): SentEmail["status"] {
+  const { subject, body } = TEMPLATES[kind];
+  const log = (g.__communitySent ??= {});
+  const list = (log[m.id] ??= []);
+  const status = "delivered" as const;
+  list.push({ id: `${m.id}_s${list.length}`, kind, subject, sentAt: new Date().toISOString(), status, html: html(subject, body) });
+  return status;
 }

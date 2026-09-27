@@ -38,10 +38,10 @@ import {
   WORKPLACE_LABEL,
 } from "../catalog";
 import { copy } from "../copy";
-import { formatDate, formatDay, formatTime } from "../format";
+import { formatDate, formatTime } from "../format";
 import type { Opportunity, OpportunityActions } from "../types";
 import { KindIcon } from "./KindIcon";
-import { formatUpdated, statusLabel } from "./opportunityColumns";
+import { closedReasonLabel, formatUpdated, statusLabel } from "./opportunityColumns";
 
 const Title = styled(SheetTitle)`
   overflow-wrap: anywhere;
@@ -108,14 +108,6 @@ const ExternalLink = styled.a`
     box-shadow: var(--focus-ring);
     border-radius: var(--radius-sm);
   }
-`;
-
-/* One line under the header: why a removed partner's listing is no longer emailed, and until when it shows. */
-const RemovedNote = styled.p`
-  margin: 0;
-  font-size: var(--text-sm);
-  line-height: var(--leading-body);
-  color: var(--color-text-muted);
 `;
 
 const Updated = styled.p`
@@ -197,7 +189,7 @@ function kindDetails(o: Opportunity): Detail[] {
 }
 
 function statusVariant(o: Opportunity) {
-  if (o.status === "live") return "success" as const;
+  if (o.status === "published") return "success" as const;
   if (o.status === "draft") return "neutral" as const;
   return "outline" as const;
 }
@@ -243,7 +235,7 @@ export function OpportunitySheetContent({
         <Title>{o.title}</Title>
         <MetaRow>
           <Badge $variant={statusVariant(o)}>{statusLabel(o)}</Badge>
-          {o.emailsStopped && <Badge $variant="outline">{copy.removedPartner.badge}</Badge>}
+          {o.status === "closed" && o.closedReason !== "closed" && <Badge $variant="outline">{closedReasonLabel(o)}</Badge>}
           <KindLine>
             <KindIcon kind={o.kind} size={14} />
             {KIND_LABEL[o.kind]}
@@ -253,9 +245,6 @@ export function OpportunitySheetContent({
 
       <SheetBody aria-busy={pending || undefined}>
         <Body>
-          {o.emailsStopped && o.visibleUntil && (
-            <RemovedNote>{copy.removedPartner.explanation(formatDay(o.visibleUntil))}</RemovedNote>
-          )}
           <DetailsList>
             <DetailRow>
               <DetailLabel>{copy.form.summary.label}</DetailLabel>
@@ -280,7 +269,7 @@ export function OpportunitySheetContent({
               )}
             </DetailRow>
             <DetailRow>
-              <DetailLabel>{copy.form.link.label[o.kind]}</DetailLabel>
+              <DetailLabel>{copy.form.link.label}</DetailLabel>
               {o.link ? (
                 <DetailValue>
                   <ExternalLink href={o.link} target="_blank" rel="noopener noreferrer">
@@ -329,7 +318,7 @@ export function OpportunitySheetContent({
               <Icon icon={Copy} size={16} />
               {copy.panel.duplicate}
             </DropdownMenuItem>
-            {o.status === "live" && (
+            {o.status === "published" && (
               <DropdownMenuItem onSelect={() => run(() => actions.close(o.id))}>
                 <Icon icon={CircleOff} size={16} />
                 {copy.panel.close}

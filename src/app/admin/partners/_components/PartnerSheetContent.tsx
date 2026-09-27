@@ -4,7 +4,7 @@ import * as React from "react";
 import { useActionState } from "react";
 import Link from "next/link";
 import { styled } from "next-yak";
-import { ArrowRight, Ban, Save, Send, UserPlus } from "lucide-react";
+import { ArrowRight, Ban, Send, UserPlus } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,33 +25,14 @@ import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Textarea } from "@/components/ui/Textarea";
 import { useToast } from "@/components/ui/Toast";
 import { fieldError, idleState } from "@/lib/forms";
-import { partnersCopy as copy } from "../_copy";
-import { reinvitePartner, removePartner, updateOrganization } from "../_data/actions";
+import { partnersCopy } from "../_copy";
+import { removePartner, updateOrganization } from "../_data/actions";
 import { ORGANIZATION_DESCRIPTION_MAX, type PartnerOrganization } from "../_data/types";
 import { formatDate } from "../_lib/format";
+import { useFocusFirstInvalid } from "../_lib/useFocusFirstInvalid";
 import { ContactRow } from "./ContactRow";
 
-const VisuallyHidden = styled.span`
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-`;
-
-const NameForm = styled.form`
-  display: flex;
-  align-items: flex-end;
-  gap: var(--space-2);
-`;
-
-const NameField = styled.div`
-  flex: 1;
-  min-width: 0;
-`;
+const copy = partnersCopy.organizationPanel;
 
 const MetaRow = styled.div`
   display: flex;
@@ -97,101 +78,102 @@ const ProfileForm = styled.form`
   gap: var(--space-4);
 `;
 
-const ContactsSection = styled.div`
+const Sections = styled.div`
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-6);
 `;
 
-function statusBadge(status: PartnerOrganization["status"]) {
-  if (status === "active") return null;
-  if (status === "removed") return <Badge $variant="outline">Removed</Badge>;
-  return <Badge $variant="warning">{copy.badges.invitationPending}</Badge>;
-}
+const PeopleSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+
+  & > * {
+    align-self: stretch;
+  }
+  & > button {
+    align-self: flex-start;
+  }
+`;
 
 export function PartnerSheetContent({
   org,
-  highlightContactId,
   onAddPerson,
 }: {
   org: PartnerOrganization;
-  highlightContactId?: string;
+  /** Opens Invite partner for this organization (also how a removed organization is reinvited). */
   onAddPerson: () => void;
 }) {
   const { toast } = useToast();
-  const [orgState, orgAction] = useActionState(updateOrganization.bind(null, org.id), idleState);
-  // Same action; this form sends only website and description, so the name is left as is.
-  const [profileState, profileAction] = useActionState(updateOrganization.bind(null, org.id), idleState);
+  const [state, action] = useActionState(updateOrganization.bind(null, org.id), idleState);
   // Controlled so a failed save keeps what was typed (React resets uncontrolled forms after an action).
+  const [name, setName] = React.useState(org.name);
   const [website, setWebsite] = React.useState(org.website ?? "");
   const [description, setDescription] = React.useState(org.description ?? "");
-  const [confirm, setConfirm] = React.useState<"remove" | "reinvite" | null>(null);
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
+  const formRef = React.useRef<HTMLFormElement>(null);
+  useFocusFirstInvalid(formRef, state);
 
   React.useEffect(() => {
-    if (orgState.status === "success" && orgState.message) toast({ title: orgState.message });
+    if (state.status !== "idle" && !state.fieldErrors && state.message) toast({ title: state.message });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orgState]);
+  }, [state]);
 
-  React.useEffect(() => {
-    if (profileState.status === "success" && profileState.message) toast({ title: profileState.message });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profileState]);
-
-  async function handleConfirm() {
-    const result = confirm === "remove" ? await removePartner(org.id) : await reinvitePartner(org.id);
-    toast({ title: result.message ?? "Done." });
+  async function handleRemove() {
+    const result = await removePartner(org.id);
+    if (result.message) toast({ title: result.message });
   }
+
+  const removed = org.status === "removed";
+  const activeCount = org.contacts.filter((c) => c.status === "active").length;
+  const profileId = `profile-${org.id}`;
+  const peopleId = `people-${org.id}`;
 
   return (
     <>
       <SheetHeader>
-        <VisuallyHidden>
-          <SheetTitle>{org.name}</SheetTitle>
-        </VisuallyHidden>
-        <NameForm action={orgAction} aria-label="Organization name">
-          <NameField>
-            <Field label="Organization name" error={fieldError(orgState, "name")} required>
-              {(p) => <Input {...p} name="name" defaultValue={org.name} />}
-            </Field>
-          </NameField>
-          <SubmitButton $variant="secondary" $size="sm">
-            <Icon icon={Save} size={16} />
-            Save
-          </SubmitButton>
-        </NameForm>
-        <MetaRow>
-          {statusBadge(org.status)}
-          {org.status === "removed" && org.removedAt && <span>Removed {formatDate(org.removedAt)}</span>}
-        </MetaRow>
+        <SheetTitle>{org.name}</SheetTitle>
+        {(removed || org.status === "pending") && (
+          <MetaRow>
+            {removed ? (
+              <>
+                <Badge $variant="outline">{partnersCopy.badges.removed}</Badge>
+                {org.removedAt && <span>{copy.removedOn(formatDate(org.removedAt))}</span>}
+              </>
+            ) : (
+              <Badge $variant="neutral">{partnersCopy.badges.awaitingResponse}</Badge>
+            )}
+          </MetaRow>
+        )}
         <OppsLink href={`/admin/opportunities?org=${org.id}`}>
-          View opportunities ({org.opportunityCount} live)
+          {copy.viewOpportunities(org.opportunityCount)}
           <Icon icon={ArrowRight} size={14} />
         </OppsLink>
       </SheetHeader>
 
       <SheetBody>
-        <ContactsSection>
-          <div>
-            <SectionTitle id="profile-heading">Profile</SectionTitle>
-            <ProfileForm action={profileAction} aria-labelledby="profile-heading" noValidate>
-              <Field label="Website" hint="Starts with https://" error={fieldError(profileState, "website")}>
+        <Sections>
+          <section aria-labelledby={profileId}>
+            <SectionTitle id={profileId}>{copy.profileHeading}</SectionTitle>
+            <ProfileForm ref={formRef} action={action} aria-labelledby={profileId} noValidate>
+              <Field label={copy.nameLabel} error={fieldError(state, "name")} required>
+                {(p) => <Input {...p} name="name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="off" />}
+              </Field>
+              <Field label={copy.websiteLabel} hint={copy.websiteHint} error={fieldError(state, "website")}>
                 {(p) => (
                   <Input
                     {...p}
                     name="website"
-                    type="url"
                     inputMode="url"
-                    placeholder="https://example.org"
+                    autoComplete="off"
                     value={website}
                     onChange={(e) => setWebsite(e.target.value)}
                   />
                 )}
               </Field>
-              <Field
-                label="Short description"
-                hint="Up to 280 characters. Partners can edit this too."
-                error={fieldError(profileState, "description")}
-              >
+              <Field label={copy.descriptionLabel} hint={copy.descriptionHint} error={fieldError(state, "description")}>
                 {(p) => (
                   <Textarea
                     {...p}
@@ -204,74 +186,61 @@ export function PartnerSheetContent({
                 )}
               </Field>
               <SubmitButton $variant="secondary" $size="sm">
-                <Icon icon={Save} size={16} />
-                Save profile
+                {copy.save}
               </SubmitButton>
             </ProfileForm>
-          </div>
-          <div>
-            <SectionTitle>Contacts</SectionTitle>
+          </section>
+
+          <PeopleSection aria-labelledby={peopleId} role="region">
+            <SectionTitle id={peopleId}>{copy.peopleHeading}</SectionTitle>
             <List>
               {org.contacts.map((contact) => (
                 <ContactRow
                   key={contact.id}
                   contact={contact}
                   organizationName={org.name}
-                  onlyContact={org.contacts.length === 1}
-                  highlighted={contact.id === highlightContactId}
+                  lastWithAccess={contact.status === "active" && activeCount === 1}
+                  readOnly={removed}
                 />
               ))}
             </List>
-          </div>
-          {org.status !== "removed" && (
-            <Button type="button" $variant="secondary" $size="sm" onClick={onAddPerson} style={{ alignSelf: "flex-start" }}>
-              <Icon icon={UserPlus} size={16} />
-              Add person
-            </Button>
-          )}
-        </ContactsSection>
+            {!removed && (
+              <Button type="button" $variant="secondary" $size="sm" onClick={onAddPerson}>
+                <Icon icon={UserPlus} size={16} />
+                {copy.addPerson}
+              </Button>
+            )}
+          </PeopleSection>
+        </Sections>
       </SheetBody>
 
       <SheetFooter>
-        {org.status === "removed" ? (
-          <Button type="button" $variant="secondary" onClick={() => setConfirm("reinvite")}>
+        {removed ? (
+          <Button type="button" $variant="secondary" onClick={onAddPerson}>
             <Icon icon={Send} size={16} />
-            Reinvite
+            {copy.reinvite}
           </Button>
         ) : (
-          <Button type="button" $variant="danger" onClick={() => setConfirm("remove")}>
+          <Button type="button" $variant="danger" onClick={() => setConfirmOpen(true)}>
             <Icon icon={Ban} size={16} />
-            Remove access
+            {partnersCopy.removeAccess.action}
           </Button>
         )}
       </SheetFooter>
 
-      <AlertDialog open={confirm !== null} onOpenChange={(open) => !open && setConfirm(null)}>
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
-          <AlertDialogTitle>
-            {confirm === "reinvite" ? "Reinvite this partner?" : `Remove ${org.name}'s access?`}
-          </AlertDialogTitle>
-          {confirm === "reinvite" ? (
-            <AlertDialogDescription>
-              Sends a fresh invitation to each saved contact and returns {org.name} to the current list,
-              marked Invitation pending. Opportunities that already expired are not republished.
-            </AlertDialogDescription>
-          ) : (
-            <AlertDialogDescription>
-              Immediately: portal access ends now, and their opportunities stop being recommended and leave
-              future emails. Over the next month: each opportunity expires at its own end date or in one
-              month, whichever is first. Already-sent emails can&apos;t be recalled.
-            </AlertDialogDescription>
-          )}
+          <AlertDialogTitle>{partnersCopy.removeAccess.title(org.name)}</AlertDialogTitle>
+          <AlertDialogDescription>{partnersCopy.removeAccess.body(org.name)}</AlertDialogDescription>
           <AlertDialogActions>
             <AlertDialogCancel asChild>
               <Button type="button" $variant="secondary">
-                {confirm === "reinvite" ? "Cancel" : "Keep access"}
+                {partnersCopy.removeAccess.keep}
               </Button>
             </AlertDialogCancel>
             <AlertDialogAction asChild>
-              <Button type="button" $variant={confirm === "reinvite" ? "primary" : "danger"} onClick={() => void handleConfirm()}>
-                {confirm === "reinvite" ? "Yes, reinvite" : "Yes, remove access"}
+              <Button type="button" $variant="danger" onClick={() => void handleRemove()}>
+                {partnersCopy.removeAccess.confirm}
               </Button>
             </AlertDialogAction>
           </AlertDialogActions>

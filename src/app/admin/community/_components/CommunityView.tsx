@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { styled } from "next-yak";
-import { Download, Search as SearchIcon, UserPlus, UsersRound } from "lucide-react";
+import { Download, FileUp, Search as SearchIcon, UserPlus, UsersRound } from "lucide-react";
 import { ListPage, ListPageHeader, ListPageToolbar, useListParams, useListSearch } from "@/components/patterns/ListPage";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
@@ -14,6 +14,7 @@ import { Table } from "@/components/ui/Table";
 import { Tabs, TabsContent, TabsCount, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { AppToastProvider } from "@/components/ui/Toast";
 import { Tooltip } from "@/components/ui/Tooltip";
+import type { AddMode } from "../_data/actions";
 import type { CommunityCounts, Member, MemberPage, MemberTier } from "../_data/types";
 import { communityCopy as copy } from "../_copy";
 import { AddMembersDialog } from "./AddMembersDialog";
@@ -59,7 +60,8 @@ export function CommunityView({
   }
 
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
-  const [addOpen, setAddOpen] = React.useState(false);
+  const [addMode, setAddMode] = React.useState<AddMode | null>(null);
+  const [shownAddMode, setShownAddMode] = React.useState<AddMode>("single");
   const [addKey, setAddKey] = React.useState(0);
   const [exportOpen, setExportOpen] = React.useState(false);
   const [exportKey, setExportKey] = React.useState(0);
@@ -74,9 +76,11 @@ export function CommunityView({
     setParams({ page: page > 1 ? String(page) : undefined });
   }
 
-  function openAdd() {
+  // The dialog keeps its mode while it plays its close animation.
+  function openAdd(mode: AddMode) {
     setAddKey((k) => k + 1);
-    setAddOpen(true);
+    setShownAddMode(mode);
+    setAddMode(mode);
   }
 
   function openExport() {
@@ -97,9 +101,13 @@ export function CommunityView({
                 <Icon icon={Download} size={16} />
                 {copy.toolbar.export}
               </Button>
-              <Button type="button" onClick={openAdd}>
+              <Button type="button" $variant="secondary" onClick={() => openAdd("bulk")}>
+                <Icon icon={FileUp} size={16} />
+                {copy.toolbar.importMembers}
+              </Button>
+              <Button type="button" onClick={() => openAdd("single")}>
                 <Icon icon={UserPlus} size={16} />
-                {copy.toolbar.addMembers}
+                {copy.toolbar.addMember}
               </Button>
             </>
           }
@@ -151,9 +159,9 @@ export function CommunityView({
                       title={activeTab === "paying" ? copy.empty.payingTitle : copy.empty.generalTitle}
                       description={activeTab === "paying" ? copy.empty.payingDescription : copy.empty.generalDescription}
                       action={
-                        <Button type="button" onClick={openAdd}>
+                        <Button type="button" onClick={() => openAdd("single")}>
                           <Icon icon={UserPlus} size={16} />
-                          {copy.toolbar.addMembers}
+                          {copy.toolbar.addMember}
                         </Button>
                       }
                     />
@@ -181,7 +189,12 @@ export function CommunityView({
           </SheetContent>
         </Sheet>
 
-        <AddMembersDialog key={`add-${addKey}`} open={addOpen} onOpenChange={setAddOpen} tab={activeTab} />
+        <AddMembersDialog
+          key={`add-${addKey}`}
+          open={addMode !== null}
+          onOpenChange={(open) => !open && setAddMode(null)}
+          mode={shownAddMode}
+        />
         <ExportDialog key={`export-${exportKey}`} open={exportOpen} onOpenChange={setExportOpen} tab={activeTab} />
       </ListPage>
     </AppToastProvider>

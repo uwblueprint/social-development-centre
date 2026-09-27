@@ -1,117 +1,183 @@
 "use client";
 
 import * as React from "react";
-import { Archive, Building2, MailCheck, Search as SearchIcon, UserPlus, UserRound } from "lucide-react";
+import { styled } from "next-yak";
+import { Archive, Building2, Search as SearchIcon, UserPlus, UserRound, UserX } from "lucide-react";
 import { ListPage, ListPageHeader, ListPageToolbar, useListParams, useListSearch } from "@/components/patterns/ListPage";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Icon } from "@/components/ui/Icon";
+import { Label } from "@/components/ui/Label";
 import { SearchField } from "@/components/ui/SearchField";
+import { Select } from "@/components/ui/Select";
 import { Sheet, SheetContent } from "@/components/ui/Sheet";
 import { Table } from "@/components/ui/Table";
 import { Tabs, TabsContent, TabsCount, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { AppToastProvider } from "@/components/ui/Toast";
 import { partnersCopy as copy } from "../_copy";
-import type { OrganizationOption, PartnerOrganization, PartnerPerson, PendingInvitation } from "../_data/types";
-import { InviteDialog } from "./InviteDialog";
-import { invitationColumns, organizationColumns, personColumns, removedColumns } from "./PartnerRows";
+import type { OrganizationOption, PartnerOrganization, PartnerPerson, PartnerStatusFilter } from "../_data/types";
+import { InviteDialog, type InvitePreset } from "./InviteDialog";
+import { organizationColumns, personColumns, removedOrganizationColumns, removedPersonColumns } from "./PartnerRows";
 import { PartnerSheetContent } from "./PartnerSheetContent";
+import { PersonSheetContent } from "./PersonSheetContent";
 
-export type PartnersTab = "organizations" | "people" | "invitations" | "removed";
+export type PartnersViewName = "organizations" | "people";
 
-function normalizeTab(value: string): PartnersTab {
-  return value === "people" || value === "invitations" || value === "removed" ? value : "organizations";
-}
+type Panel = { kind: "organization"; id: string } | { kind: "person"; id: string };
+
+const TabsAndFilter = styled.div`
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+`;
+
+const StatusFilter = styled.div`
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+
+  & > label {
+    margin: 0;
+  }
+`;
+
+const StatusSelect = styled.div`
+  width: 140px;
+`;
 
 export function PartnersView({
-  tab,
+  view,
+  status,
   q,
   organizations,
   removedOrganizations,
   people,
-  invitations,
+  removedPeople,
   organizationOptions,
 }: {
-  tab: PartnersTab;
+  view: PartnersViewName;
+  status: PartnerStatusFilter;
   q: string;
   organizations: PartnerOrganization[];
   removedOrganizations: PartnerOrganization[];
   people: PartnerPerson[];
-  invitations: PendingInvitation[];
+  removedPeople: PartnerPerson[];
   organizationOptions: OrganizationOption[];
 }) {
   const { setParams } = useListParams();
   const searchState = useListSearch(q);
+  const statusId = React.useId();
 
-  const [activeTab, setActiveTab] = React.useState<PartnersTab>(tab);
-
-  // Keeps local UI state in step with the URL (e.g. browser back/forward)
-  // without an effect: derived at render time from the server-provided props.
-  const [prevTab, setPrevTab] = React.useState(tab);
-  if (tab !== prevTab) {
-    setPrevTab(tab);
-    setActiveTab(tab);
+  const [activeView, setActiveView] = React.useState<PartnersViewName>(view);
+  const [activeStatus, setActiveStatus] = React.useState<PartnerStatusFilter>(status);
+  // Keeps local UI state in step with the URL (e.g. back/forward), derived at render time.
+  const [prev, setPrev] = React.useState({ view, status });
+  if (view !== prev.view || status !== prev.status) {
+    setPrev({ view, status });
+    setActiveView(view);
+    setActiveStatus(status);
   }
 
-  const [panel, setPanel] = React.useState<{ orgId: string; highlightContactId?: string } | null>(null);
+  const [panel, setPanel] = React.useState<Panel | null>(null);
   const [inviteOpen, setInviteOpen] = React.useState(false);
-  const [invitePreset, setInvitePreset] = React.useState<{ id: string; name: string } | undefined>(undefined);
+  const [invitePreset, setInvitePreset] = React.useState<InvitePreset | undefined>(undefined);
   const [inviteKey, setInviteKey] = React.useState(0);
 
-  function handleTabChange(value: string) {
-    const next = normalizeTab(value);
-    setActiveTab(next);
-    setParams({ tab: next === "organizations" ? undefined : next });
+  function handleViewChange(value: string) {
+    const next: PartnersViewName = value === "people" ? "people" : "organizations";
+    setActiveView(next);
+    setParams({ view: next === "organizations" ? undefined : next });
   }
 
-  function openInvite(preset?: { id: string; name: string }) {
+  function handleStatusChange(value: string) {
+    const next: PartnerStatusFilter = value === "removed" ? "removed" : "active";
+    setActiveStatus(next);
+    setParams({ status: next === "active" ? undefined : next });
+  }
+
+  function openInvite(preset?: InvitePreset) {
     setInvitePreset(preset);
     setInviteKey((k) => k + 1);
     setInviteOpen(true);
   }
 
-  const noMatches = (
-    <EmptyState icon={SearchIcon} title={copy.search.noMatchesTitle(q)} description={copy.search.noMatchesDescription} />
+  const removed = activeStatus === "removed";
+  const orgRows = removed ? removedOrganizations : organizations;
+  const personRows = removed ? removedPeople : people;
+
+  const allOrganizations = [...organizations, ...removedOrganizations];
+  const selectedOrg = panel?.kind === "organization" ? allOrganizations.find((o) => o.id === panel.id) : undefined;
+  const selectedPerson =
+    panel?.kind === "person" ? (people.find((p) => p.id === panel.id) ?? removedPeople.find((p) => p.id === panel.id)) : undefined;
+  const personOrg = selectedPerson && allOrganizations.find((o) => o.id === selectedPerson.organization.id);
+  const lastWithAccess =
+    !!selectedPerson &&
+    selectedPerson.status === "active" &&
+    (personOrg?.contacts.filter((c) => c.status === "active").length ?? 0) <= 1;
+
+  const inviteButton = (
+    <Button type="button" onClick={() => openInvite()}>
+      <Icon icon={UserPlus} size={16} />
+      {copy.invite.button}
+    </Button>
   );
 
-  const selectedOrg =
-    organizations.find((o) => o.id === panel?.orgId) ??
-    removedOrganizations.find((o) => o.id === panel?.orgId);
+  const noMatches = <EmptyState icon={SearchIcon} title={copy.search.noMatchesTitle} description={copy.search.noMatchesDescription} />;
+
+  const organizationsEmpty = q ? (
+    noMatches
+  ) : removed ? (
+    <EmptyState icon={Archive} title={copy.empty.removedOrganizationsTitle} description={copy.empty.removedOrganizationsDescription} />
+  ) : (
+    <EmptyState icon={Building2} title={copy.empty.organizationsTitle} description={copy.empty.organizationsDescription} action={inviteButton} />
+  );
+
+  const peopleEmpty = q ? (
+    noMatches
+  ) : removed ? (
+    <EmptyState icon={UserX} title={copy.empty.removedPeopleTitle} description={copy.empty.removedPeopleDescription} />
+  ) : (
+    <EmptyState icon={UserRound} title={copy.empty.peopleTitle} description={copy.empty.peopleDescription} action={inviteButton} />
+  );
+
+  const panelOpen = !!(selectedOrg || selectedPerson);
 
   return (
     <AppToastProvider>
       <ListPage>
-        <ListPageHeader
-          title="Partners"
-          actions={
-            <Button type="button" onClick={() => openInvite()}>
-              <Icon icon={UserPlus} size={16} />
-              Invite partner
-            </Button>
-          }
-        />
+        <ListPageHeader title={copy.title} actions={inviteButton} />
 
-        <Tabs value={activeTab} onValueChange={handleTabChange}>
+        <Tabs value={activeView} onValueChange={handleViewChange}>
           <ListPageToolbar
             tabs={
-              <TabsList aria-label={copy.tabs.ariaLabel}>
-                <TabsTrigger value="organizations">
-                  {copy.tabs.organizations}
-                  <TabsCount>{copy.tabs.count(organizations.length)}</TabsCount>
-                </TabsTrigger>
-                <TabsTrigger value="people">
-                  {copy.tabs.people}
-                  <TabsCount>{copy.tabs.count(people.length)}</TabsCount>
-                </TabsTrigger>
-                <TabsTrigger value="invitations">
-                  {copy.tabs.invitations}
-                  <TabsCount>{copy.tabs.count(invitations.length)}</TabsCount>
-                </TabsTrigger>
-                <TabsTrigger value="removed">
-                  {copy.tabs.removed}
-                  <TabsCount>{copy.tabs.count(removedOrganizations.length)}</TabsCount>
-                </TabsTrigger>
-              </TabsList>
+              <TabsAndFilter>
+                <TabsList aria-label={copy.views.ariaLabel}>
+                  <TabsTrigger value="organizations">
+                    {copy.views.organizations}
+                    <TabsCount>{copy.views.count(orgRows.length)}</TabsCount>
+                  </TabsTrigger>
+                  <TabsTrigger value="people">
+                    {copy.views.people}
+                    <TabsCount>{copy.views.count(personRows.length)}</TabsCount>
+                  </TabsTrigger>
+                </TabsList>
+                <StatusFilter>
+                  <Label htmlFor={statusId}>{copy.status.label}</Label>
+                  <StatusSelect>
+                    <Select
+                      id={statusId}
+                      value={activeStatus}
+                      onValueChange={handleStatusChange}
+                      options={[
+                        { value: "active", label: copy.status.active },
+                        { value: "removed", label: copy.status.removed },
+                      ]}
+                    />
+                  </StatusSelect>
+                </StatusFilter>
+              </TabsAndFilter>
             }
             search={
               <SearchField
@@ -128,113 +194,49 @@ export function PartnersView({
 
           <TabsContent value="organizations">
             <Table
-              columns={organizationColumns}
-              rows={organizations}
+              columns={removed ? removedOrganizationColumns : organizationColumns}
+              rows={orgRows}
               getRowId={(org) => org.id}
-              onRowClick={(org) => setPanel({ orgId: org.id })}
-              aria-label="Organizations"
-              empty={
-                q ? (
-                  noMatches
-                ) : (
-                  <EmptyState
-                    icon={Building2}
-                    title="No partners yet"
-                    description="Invite an organization to give them access to their opportunities."
-                    action={
-                      <Button type="button" onClick={() => openInvite()}>
-                        <Icon icon={UserPlus} size={16} />
-                        Invite partner
-                      </Button>
-                    }
-                  />
-                )
-              }
+              onRowClick={(org) => setPanel({ kind: "organization", id: org.id })}
+              aria-label={copy.views.organizations}
+              empty={organizationsEmpty}
             />
           </TabsContent>
 
           <TabsContent value="people">
             <Table
-              columns={personColumns}
-              rows={people}
-              getRowId={(person) => person.id}
-              onRowClick={(person) => setPanel({ orgId: person.organization.id, highlightContactId: person.id })}
-              aria-label="People"
-              empty={
-                q ? (
-                  noMatches
-                ) : (
-                  <EmptyState
-                    icon={UserRound}
-                    title="No people yet"
-                    description="Invite a partner to add their first contact."
-                    action={
-                      <Button type="button" onClick={() => openInvite()}>
-                        <Icon icon={UserPlus} size={16} />
-                        Invite partner
-                      </Button>
-                    }
-                  />
-                )
-              }
-            />
-          </TabsContent>
-
-          <TabsContent value="invitations">
-            <Table
-              columns={invitationColumns}
-              rows={invitations}
-              getRowId={(invitation) => invitation.id}
-              onRowClick={(invitation) =>
-                setPanel({ orgId: invitation.organization.id, highlightContactId: invitation.id })
-              }
-              aria-label={copy.tabs.invitations}
-              empty={
-                q ? (
-                  noMatches
-                ) : (
-                  <EmptyState
-                    icon={MailCheck}
-                    title={copy.empty.invitationsTitle}
-                    description={copy.empty.invitationsDescription}
-                    action={
-                      <Button type="button" onClick={() => openInvite()}>
-                        <Icon icon={UserPlus} size={16} />
-                        Invite partner
-                      </Button>
-                    }
-                  />
-                )
-              }
-            />
-          </TabsContent>
-
-          <TabsContent value="removed">
-            <Table
-              columns={removedColumns}
-              rows={removedOrganizations}
-              getRowId={(org) => org.id}
-              onRowClick={(org) => setPanel({ orgId: org.id })}
-              aria-label="Removed partners"
-              empty={
-                q ? (
-                  noMatches
-                ) : (
-                  <EmptyState icon={Archive} title="No removed partners" description="Partners whose access you remove appear here." />
-                )
-              }
+              columns={removed ? removedPersonColumns : personColumns}
+              rows={personRows}
+              getRowId={(person) => `${person.id}-${person.organization.id}`}
+              onRowClick={(person) => setPanel({ kind: "person", id: person.id })}
+              aria-label={copy.views.people}
+              empty={peopleEmpty}
             />
           </TabsContent>
         </Tabs>
 
-        <Sheet open={panel !== null} onOpenChange={(open) => !open && setPanel(null)}>
+        <Sheet open={panelOpen} onOpenChange={(open) => !open && setPanel(null)}>
           <SheetContent>
             {selectedOrg && (
               <PartnerSheetContent
                 key={selectedOrg.id}
                 org={selectedOrg}
-                highlightContactId={panel?.highlightContactId}
-                onAddPerson={() => openInvite({ id: selectedOrg.id, name: selectedOrg.name })}
+                onAddPerson={() => openInvite({ organization: { id: selectedOrg.id, name: selectedOrg.name } })}
+              />
+            )}
+            {selectedPerson && (
+              <PersonSheetContent
+                key={selectedPerson.id}
+                person={selectedPerson}
+                lastWithAccess={lastWithAccess}
+                onOpenOrganization={() => setPanel({ kind: "organization", id: selectedPerson.organization.id })}
+                onInviteAgain={() =>
+                  openInvite({
+                    name: selectedPerson.name,
+                    email: selectedPerson.email,
+                    organization: { id: selectedPerson.organization.id, name: selectedPerson.organization.name },
+                  })
+                }
               />
             )}
           </SheetContent>
@@ -245,7 +247,7 @@ export function PartnersView({
           open={inviteOpen}
           onOpenChange={setInviteOpen}
           organizationOptions={organizationOptions}
-          presetOrganization={invitePreset}
+          preset={invitePreset}
         />
       </ListPage>
     </AppToastProvider>

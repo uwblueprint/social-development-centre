@@ -8,7 +8,7 @@ export const copy = {
     newButton: "New opportunity",
     newMenuLabel: "Choose a type",
   },
-  tabs: { live: "Live", drafts: "Drafts", closed: "Closed" },
+  tabs: { published: "Published", drafts: "Drafts", closed: "Closed" },
   toolbar: {
     searchLabel: "Search opportunities",
     searchPlaceholder: "Search by title or organization",
@@ -23,12 +23,9 @@ export const copy = {
     organization: "Organization",
     date: "Date",
     updated: "Updated",
-    ended: "Ended",
-    closed: "Closed",
-    draft: "Draft",
   },
   empty: {
-    live: { title: "Nothing live right now", body: "Publish an opportunity and it will show up here." },
+    published: { title: "Nothing published right now", body: "Publish an opportunity and it will show up here." },
     drafts: { title: "No drafts", body: "Drafts you save show up here. Only people who can edit see them." },
     closed: { title: "Nothing closed yet", body: "Opportunities move here when their date passes or someone closes them." },
     noResults: { title: "No matches", body: "Try a different search or clear the filters.", clear: "Clear filters" },
@@ -45,16 +42,17 @@ export const copy = {
     topics: "Topics",
     link: "Link",
     lastUpdated: (when: string, who: string) => `Updated ${when} by ${who}`,
-    statusLive: "Live",
+    statusPublished: "Published",
     statusDraft: "Draft",
-    statusEnded: "Ended",
     statusClosed: "Closed",
+    /** Why a listing is closed; shown beside the Closed status. */
+    closedReason: { ended: "Ended", closed: "Closed", partner_removed: "Partner access removed" },
     noDescription: "No description yet.",
     notSet: "Not set",
   },
   confirmDelete: {
     title: (noun: string) => `Delete this ${noun}?`,
-    body: "It will be removed for everyone and can't be restored. To take it out of emails but keep the record, close it instead.",
+    body: "It will be removed for everyone and can't be restored. To stop recommending and emailing it but keep the record, close it instead.",
     confirm: "Delete",
     cancel: "Cancel",
   },
@@ -81,14 +79,14 @@ export const copy = {
     summary: { label: "Short description", hint: "One or two sentences for the email. Full details stay on your page." },
     topics: { label: "Topics", hint: "Choose up to 3. We send it to people who care about these." },
     link: {
-      label: {
-        event: "Registration link",
-        petition: "Petition link",
-        volunteer: "Sign-up link",
-        job: "Application link",
-        other: "Link",
+      label: "Link",
+      hint: {
+        event: "Where people register, like your Eventbrite or Luma page.",
+        petition: "Where people sign the petition.",
+        volunteer: "Where people sign up to volunteer.",
+        job: "Where people apply.",
+        other: "Where people take part.",
       },
-      hint: "Where people go to take part. Starts with https://",
     },
     event: {
       date: "Date",
@@ -135,13 +133,8 @@ export const copy = {
       removeDetail: (n: number) => `Remove detail ${n}`,
     },
   },
-  /** A listing whose partner organization was removed (derived `emailsStopped` / closedReason `partner_removed`). */
-  removedPartner: {
-    badge: "No longer emailed",
-    explanation: (date: string) => `The partner was removed. People who already got it can see it until ${date}.`,
-    closedBadge: "Partner removed",
-    filterOption: (name: string) => `${name} (removed)`,
-  },
+  /** Admin Organization filter label for a removed partner. It names the organization, not a listing status. */
+  removedPartnerFilterOption: (name: string) => `${name} (removed)`,
   notFound: {
     title: "Opportunity not found",
     body: "It may have been deleted, or it belongs to another organization.",

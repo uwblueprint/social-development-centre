@@ -11,7 +11,7 @@ export function parseListParams(
   { allowOrganization = true }: { allowOrganization?: boolean } = {},
 ): { tab: OpportunityTab; filters: Omit<OpportunityFilters, "tab"> } {
   const rawTab = first(params.tab);
-  const tab: OpportunityTab = rawTab === "drafts" || rawTab === "closed" ? rawTab : "live";
+  const tab: OpportunityTab = rawTab === "drafts" || rawTab === "closed" ? rawTab : "published";
   const rawKind = first(params.kind);
   const kind = KINDS.includes(rawKind as OpportunityKind) ? (rawKind as OpportunityKind) : undefined;
   const org = allowOrganization ? first(params.org) : undefined;

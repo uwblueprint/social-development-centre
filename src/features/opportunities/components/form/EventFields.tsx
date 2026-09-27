@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/Textarea";
 import { EVENT_FORMAT_LABEL } from "../../catalog";
 import { copy } from "../../copy";
 import { ChoiceField, FieldRow } from "./FormParts";
-import type { KindFieldsProps } from "./formValues";
+import { fieldId, type KindFieldsProps } from "./formValues";
 
 const t = copy.form.event;
 
@@ -17,14 +17,14 @@ export function EventFields({ values, set, error }: KindFieldsProps) {
   const paid = values.cost === "paid";
   return (
     <>
-      <Field label={t.date} error={error("date")} required>
+      <Field label={t.date} id={fieldId("date")} error={error("date")} required>
         {(p) => <DatePicker {...p} name="date" value={values.date ?? ""} onValueChange={(v) => set("date", v)} />}
       </Field>
       <FieldRow>
-        <Field label={t.startTime} error={error("startTime")} required>
+        <Field label={t.startTime} id={fieldId("startTime")} error={error("startTime")} required>
           {(p) => <Input {...p} type="time" name="startTime" value={values.startTime ?? ""} onChange={(e) => set("startTime", e.target.value)} />}
         </Field>
-        <Field label={t.endTime} error={error("endTime")}>
+        <Field label={t.endTime} id={fieldId("endTime")} error={error("endTime")}>
           {(p) => <Input {...p} type="time" name="endTime" value={values.endTime ?? ""} onChange={(e) => set("endTime", e.target.value)} />}
         </Field>
       </FieldRow>
@@ -38,7 +38,7 @@ export function EventFields({ values, set, error }: KindFieldsProps) {
         required
       />
       {showLocation && (
-        <Field label={t.location.label} hint={t.location.hint} error={error("location")} required>
+        <Field label={t.location.label} hint={t.location.hint} id={fieldId("location")} error={error("location")} required>
           {(p) => <Input {...p} name="location" value={values.location ?? ""} onChange={(e) => set("location", e.target.value)} />}
         </Field>
       )}
@@ -51,11 +51,11 @@ export function EventFields({ values, set, error }: KindFieldsProps) {
         error={error("cost")}
       />
       {paid && (
-        <Field label={t.costDetails.label} hint={t.costDetails.hint} error={error("costDetails")} required>
+        <Field label={t.costDetails.label} hint={t.costDetails.hint} id={fieldId("costDetails")} error={error("costDetails")} required>
           {(p) => <Input {...p} name="costDetails" value={values.costDetails ?? ""} onChange={(e) => set("costDetails", e.target.value)} />}
         </Field>
       )}
-      <Field label={t.accessibility.label} hint={t.accessibility.hint} error={error("accessibility")}>
+      <Field label={t.accessibility.label} hint={t.accessibility.hint} id={fieldId("accessibility")} error={error("accessibility")}>
         {(p) => (
           <Textarea {...p} name="accessibility" rows={3} value={values.accessibility ?? ""} onChange={(e) => set("accessibility", e.target.value)} />
         )}

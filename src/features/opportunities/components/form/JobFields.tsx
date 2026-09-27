@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/Textarea";
 import { EMPLOYMENT_TYPE_LABEL, WORKPLACE_LABEL } from "../../catalog";
 import { copy } from "../../copy";
 import { ChoiceField } from "./FormParts";
-import type { KindFieldsProps } from "./formValues";
+import { fieldId, type KindFieldsProps } from "./formValues";
 
 const t = copy.form.job;
 const EMPLOYMENT_OPTIONS = Object.entries(EMPLOYMENT_TYPE_LABEL).map(([value, label]) => ({ value, label }));
@@ -17,7 +17,7 @@ const EMPLOYMENT_OPTIONS = Object.entries(EMPLOYMENT_TYPE_LABEL).map(([value, la
 export function JobFields({ values, set, error }: KindFieldsProps) {
   return (
     <>
-      <Field label={t.employmentType} error={error("employmentType")} required>
+      <Field label={t.employmentType} id={fieldId("employmentType")} error={error("employmentType")} required>
         {(p) => (
           <Select
             {...p}
@@ -39,17 +39,17 @@ export function JobFields({ values, set, error }: KindFieldsProps) {
         required
       />
       {values.workplace !== "remote" && (
-        <Field label={t.location.label} hint={t.location.hint} error={error("location")} required>
+        <Field label={t.location.label} hint={t.location.hint} id={fieldId("location")} error={error("location")} required>
           {(p) => <Input {...p} name="location" value={values.location ?? ""} onChange={(e) => set("location", e.target.value)} />}
         </Field>
       )}
-      <Field label={t.pay.label} hint={t.pay.hint} error={error("pay")}>
+      <Field label={t.pay.label} hint={t.pay.hint} id={fieldId("pay")} error={error("pay")}>
         {(p) => <Input {...p} name="pay" value={values.pay ?? ""} onChange={(e) => set("pay", e.target.value)} />}
       </Field>
-      <Field label={t.applyBy.label} hint={t.applyBy.hint} error={error("applyBy")}>
+      <Field label={t.applyBy.label} hint={t.applyBy.hint} id={fieldId("applyBy")} error={error("applyBy")}>
         {(p) => <DatePicker {...p} name="applyBy" value={values.applyBy ?? ""} onValueChange={(v) => set("applyBy", v)} />}
       </Field>
-      <Field label={t.qualifications.label} hint={t.qualifications.hint} error={error("qualifications")}>
+      <Field label={t.qualifications.label} hint={t.qualifications.hint} id={fieldId("qualifications")} error={error("qualifications")}>
         {(p) => (
           <Textarea {...p} name="qualifications" rows={3} value={values.qualifications ?? ""} onChange={(e) => set("qualifications", e.target.value)} />
         )}

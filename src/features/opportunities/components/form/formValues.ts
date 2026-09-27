@@ -47,6 +47,34 @@ export function initialModel(kind: OpportunityKind, opportunity?: Opportunity): 
   return { values, topics: [...opportunity.topics], details };
 }
 
+/** The control id for a FormData field (or error key like `detailLabel.0`), so the error summary can link to it. */
+export const fieldId = (name: string) => `opportunity-${name.replace(/\./g, "-")}`;
+
+/** Error keys in form order, per kind, so the error summary lists them top to bottom. */
+const BASICS = ["organizationId", "title", "summary", "topics", "link"];
+const KIND_ORDER: Record<OpportunityKind, string[]> = {
+  event: ["date", "startTime", "endTime", "format", "location", "cost", "costDetails", "accessibility"],
+  petition: ["target", "deadline", "signatureGoal"],
+  volunteer: ["commitment", "format", "location", "timeCommitment", "startDate", "applyBy", "skills", "minimumAge"],
+  job: ["employmentType", "workplace", "location", "pay", "applyBy", "qualifications"],
+  other: ["callToAction", "deadline", "details"],
+};
+
+/** Orders field errors as the form shows them; custom detail rows (`detailLabel.<i>`, `detailValue.<i>`) come last, row by row. */
+export function orderedErrors(kind: OpportunityKind, fieldErrors: Partial<Record<string, string>> = {}) {
+  const order = [...BASICS, ...KIND_ORDER[kind]];
+  const rank = (key: string) => {
+    const known = order.indexOf(key);
+    if (known >= 0) return known;
+    const [base, row] = key.split(".");
+    return order.length + Number(row ?? 0) * 2 + (base === "detailValue" ? 1 : 0);
+  };
+  return Object.entries(fieldErrors)
+    .filter((entry): entry is [string, string] => !!entry[1])
+    .sort(([a], [b]) => rank(a) - rank(b))
+    .map(([key, message]) => ({ fieldId: fieldId(key), message }));
+}
+
 /** Props every per-kind section receives. */
 export interface KindFieldsProps {
   values: FormValues;

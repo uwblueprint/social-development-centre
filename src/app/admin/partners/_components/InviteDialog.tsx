@@ -5,78 +5,80 @@ import { useActionState } from "react";
 import { styled } from "next-yak";
 import { Button } from "@/components/ui/Button";
 import { CreatableCombobox, type CreatableComboboxValue } from "@/components/ui/CreatableCombobox";
-import {
-  Dialog,
-  DialogActions,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "@/components/ui/Dialog";
+import { Dialog, DialogActions, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/Dialog";
 import { Field } from "@/components/ui/Field";
 import { Input } from "@/components/ui/Input";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { useToast } from "@/components/ui/Toast";
-import { fieldError, idleState } from "@/lib/forms";
+import { fieldError, idleState, type ActionState } from "@/lib/forms";
+import { partnersCopy } from "../_copy";
 import { invitePartner } from "../_data/actions";
+import type { InviteResult } from "../_data/contacts";
 import type { OrganizationOption } from "../_data/types";
+import { useFocusFirstInvalid } from "../_lib/useFocusFirstInvalid";
+
+const copy = partnersCopy.invite;
 
 const Form = styled.form`
   display: grid;
   gap: var(--space-4);
 `;
 
+export interface InvitePreset {
+  organization?: { id: string; name: string };
+  name?: string;
+  email?: string;
+}
+
+/**
+ * Invite partner: Contact name, Email, Organization (pick one, or add a new one). Inviting someone to a
+ * removed organization reinvites it. Field errors keep the dialog open with its values and focus the first
+ * invalid field; a saved person closes it (sent, or Invitation not sent with Retry); nothing saved keeps it open.
+ */
 export function InviteDialog({
   open,
   onOpenChange,
   organizationOptions,
-  presetOrganization,
+  preset,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   organizationOptions: OrganizationOption[];
-  presetOrganization?: { id: string; name: string };
+  preset?: InvitePreset;
 }) {
-  const [state, action] = useActionState(invitePartner, idleState);
+  const [state, action] = useActionState(invitePartner, idleState as ActionState<InviteResult>);
   const { toast } = useToast();
+  const [name, setName] = React.useState(preset?.name ?? "");
+  const [email, setEmail] = React.useState(preset?.email ?? "");
+  const formRef = React.useRef<HTMLFormElement>(null);
+  useFocusFirstInvalid(formRef, state);
 
   React.useEffect(() => {
-    if (state.status === "success") {
-      onOpenChange(false);
-      toast({ title: state.message ?? "Invitation sent." });
-    } else if (state.status === "error" && !state.fieldErrors) {
-      onOpenChange(false);
-      toast({ title: state.message ?? "The invitation wasn't sent." });
-    }
+    if (state.status === "idle" || state.fieldErrors) return;
+    if (state.status === "success" || state.data?.saved) onOpenChange(false);
+    if (state.message) toast({ title: state.message });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 
-  const defaultOrganization: CreatableComboboxValue | undefined = presetOrganization
-    ? { kind: "existing", value: presetOrganization.id, label: presetOrganization.name }
+  const defaultOrganization: CreatableComboboxValue | undefined = preset?.organization
+    ? { kind: "existing", value: preset.organization.id, label: preset.organization.name }
     : undefined;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
-        <DialogTitle>Invite partner</DialogTitle>
-        <DialogDescription>
-          Add a contact and give them access to their organization&apos;s opportunities.
-        </DialogDescription>
-        <Form action={action} noValidate>
-          <Field label="Name" error={fieldError(state, "name")} required>
-            {(p) => <Input {...p} name="name" placeholder="Ada Lovelace" autoComplete="name" />}
+        <DialogTitle>{copy.title}</DialogTitle>
+        <DialogDescription>{copy.description}</DialogDescription>
+        <Form ref={formRef} action={action} noValidate>
+          <Field label={copy.nameLabel} error={fieldError(state, "name")} required>
+            {(p) => <Input {...p} name="name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="off" />}
           </Field>
-          <Field label="Email" error={fieldError(state, "email")} required>
+          <Field label={copy.emailLabel} error={fieldError(state, "email")} required>
             {(p) => (
-              <Input {...p} name="email" type="email" placeholder="ada@example.org" autoComplete="email" />
+              <Input {...p} name="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="off" />
             )}
           </Field>
-          <Field
-            label="Organization"
-            error={fieldError(state, "organization")}
-            required
-            hint="Search existing organizations, or create a new one"
-          >
+          <Field label={copy.organizationLabel} error={fieldError(state, "organization")} required hint={copy.organizationHint}>
             {(p) => (
               <CreatableCombobox
                 {...p}
@@ -84,17 +86,19 @@ export function InviteDialog({
                 existingFieldName="organizationId"
                 createFieldName="organizationName"
                 defaultValue={defaultOrganization}
-                placeholder="Search or create an organization…"
+                placeholder={copy.organizationPlaceholder}
+                searchPlaceholder={copy.organizationSearchPlaceholder}
+                createLabel={copy.newOrganization}
               />
             )}
           </Field>
           <DialogActions>
             <DialogClose asChild>
               <Button type="button" $variant="secondary">
-                Cancel
+                {copy.cancel}
               </Button>
             </DialogClose>
-            <SubmitButton>Send invitation</SubmitButton>
+            <SubmitButton>{copy.submit}</SubmitButton>
           </DialogActions>
         </Form>
       </DialogContent>

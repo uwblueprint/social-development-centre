@@ -9,10 +9,10 @@ New here? Start with [Getting started with the partner portal](./partner-getting
 ## Find your opportunities
 1. Go to **Opportunities** in the sidebar.
 2. Choose a tab:
-   - **Live:** people can see it now. Sorted by date, soonest first.
+   - **Published:** members can see it now. Sorted by date, soonest first.
    - **Drafts:** not published yet. Only people at your organization, and SDC, see drafts.
-   - **Closed:** you closed it, or its date passed. It shows **Ended** if the date passed, or **Closed** if someone closed it.
-3. To narrow the list, type in **Search opportunities** and press Enter, or choose a **Type**.
+   - **Closed:** members aren't recommended or emailed it. Each one shows why: **Ended** (its date passed) or **Closed** (someone closed it).
+3. To narrow the list, type in the search box (results update as you type), or choose a **Type**.
 4. Click a row to see its details on the right.
 
 If nothing matches, you'll see **No matches**. Click **Clear filters** to start over.
@@ -26,13 +26,13 @@ It takes about two minutes. Have your link ready.
    - **Title:** say what it is in a few words. This is the email headline.
    - **Short description:** one or two sentences for the email. Full details stay on your page.
    - **Topics:** choose up to 3. SDC sends it to people who care about these.
-   - Your link, starting with `https://`. Depending on the type it's called **Registration link**, **Petition link**, **Sign-up link**, **Application link** or **Link**.
+   - **Link:** your page where people take part, like `yourorg.ca/events`. You don't need to type `https://`.
 4. Fill in the section for your type (see [What each type asks for](#what-each-type-asks-for)).
 5. Click **Publish**.
 
-It's live right away. You'll see "Published. The event is now live." (or petition, volunteer role, and so on).
+It's published right away. You'll see "Published. Members can now see this event." (or petition, volunteer role, and so on).
 
-**If something is missing,** you'll see "Fix the highlighted fields to publish." Each field with a problem says what to fix.
+**If something is missing or wrong,** a box at the top of the form lists each problem, for example "Fix 2 fields to publish this event", and the cursor moves to the first field to fix. Click a problem in the box to jump to its field. What you typed is kept.
 
 ## Save a draft and finish it later
 Not ready to publish? For example, you don't have the registration link yet.
@@ -59,7 +59,7 @@ To leave without saving, click **Cancel**. Nothing you changed is kept.
 1. Open the opportunity.
 2. Click **More actions** (⋯) and choose **Close**.
 
-It stops appearing in SDC's emails, and moves to **Closed**. You'll see "Closed. It won't appear in emails or the feed."
+There's no confirmation. It moves to **Closed**. You'll see "Closed. This opportunity won't be recommended to members or included in emails."
 
 You don't need to close things when their date passes. An **event** closes by itself at its start time. Anything with a **Deadline** or **Apply by** date closes at the end of that day. These show **Ended**.
 
@@ -67,14 +67,14 @@ You don't need to close things when their date passes. An **event** closes by it
 1. Go to **Closed** and open the opportunity.
 2. Click **More actions** (⋯) and choose **Reopen**.
 
-It's live again. If its date has passed, you'll see "This event has already ended. Edit its date to reopen it." Click **Edit**, choose a new date, click **Save changes**, then **Reopen** it.
+It's back on **Published**. You'll see "Reopened. Members can see this opportunity again." If its date has passed, you'll see "This event has already ended. Edit its date to reopen it." Click **Edit**, choose a new date, click **Save changes**, then **Reopen** it.
 
 ## Delete an opportunity you posted by mistake
 1. Open the opportunity.
 2. Click **More actions** (⋯) and choose **Delete**.
 3. Click **Delete** to confirm.
 
-It's gone for good. If it was real but is now full or cancelled, **Close** it instead so SDC keeps the record.
+It's gone for good. You'll see "Deleted “{title}”." If it was real but is now full or cancelled, **Close** it instead so SDC keeps the record.
 
 ## Check your link
 1. Open the opportunity.
@@ -93,6 +93,7 @@ You need the required fields to publish. Everything else is optional; leave it b
 
 ## If something goes wrong
 - **"Opportunity not found":** it was deleted, or it belongs to another organization. Click **Back to opportunities**.
-- **"This opportunity no longer exists, or you can't edit it":** someone deleted it while you had it open. Go back to the list.
+- **"This opportunity no longer exists.":** someone deleted it while you had it open. Go back to the list.
+- **"Enter a web address, like sdckw.ca.":** check the **Link** for typos or spaces.
 - **"This date has passed":** you can't publish with a past date. Choose a future date, or clear an optional deadline.
 - **You need help, or something looks wrong:** contact your SDC Civic Hub coordinator.
