@@ -63,7 +63,7 @@ Each entry: the decision, which page it's on, what it affects, and when someone 
   - The last person with access can't be removed on its own (server-enforced). In the admin portal the option is disabled with the reason "This is the only person with access to this organization. Remove the organization's access instead." A partner who somehow tries it is told "This is the only person with access to this organization. Contact SDC for help."
   - A person who hasn't accepted can't be removed ("This person doesn't have access yet. Cancel their invitation instead.").
 - **Page:** Admin → Partners → side panel (contact menu; Remove access).
-- **Affects:** Portal access for one person or for everyone at the organization; the Removed tab (organizations only).
+- **Affects:** Portal access for one person or for everyone at the organization; Status → Removed (organizations and people).
 - **When encountered:** When a partner contact leaves, or a partnership ends.
 
 ## 10. Partners manage their own team

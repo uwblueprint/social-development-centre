@@ -1,4 +1,4 @@
-import { countLiveOpportunities } from "@/features/opportunities/queries";
+import { countPublishedOpportunities } from "@/features/opportunities/queries";
 import type { Invitation, PartnerContact, PartnerOrganization, PartnerStatus } from "./types";
 
 /*
@@ -78,7 +78,7 @@ export function toPublic(org: StoredOrg): Omit<PartnerOrganization, "contacts"> 
     name: org.name,
     website: org.website,
     description: org.description,
-    opportunityCount: countLiveOpportunities(org.id),
+    opportunityCount: countPublishedOpportunities(org.id),
     createdAt: org.createdAt,
     removedAt: org.removedAt,
     status: statusOf(org),

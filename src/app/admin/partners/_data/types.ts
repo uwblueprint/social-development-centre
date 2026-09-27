@@ -55,7 +55,7 @@ export interface PartnerOrganization {
   status: PartnerStatus;
   /** Current people (active or invited); people removed from the organization are listed on People → Removed. */
   contacts: PartnerContact[];
-  /** Live (published, not ended or closed) opportunities; derived from Opportunities. */
+  /** Published (not ended or closed) opportunities; derived from Opportunities (countPublishedOpportunities). */
   opportunityCount: number;
   createdAt: string;
   removedAt?: string;

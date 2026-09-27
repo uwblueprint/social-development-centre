@@ -101,7 +101,7 @@ export const partnersCopy = {
     peopleHeading: "People",
     addPerson: "Add person",
     removedOn: (date: string) => `Removed ${date}`,
-    viewOpportunities: (n: number) => `View opportunities (${n} live)`,
+    viewOpportunities: (n: number) => `View opportunities (${n} published)`,
     reinvite: "Reinvite",
   },
 
