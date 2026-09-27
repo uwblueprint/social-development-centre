@@ -18,7 +18,7 @@ import { SearchField } from "@/components/ui/SearchField";
 import { Sheet, SheetContent } from "@/components/ui/Sheet";
 import { Table, type TableSort } from "@/components/ui/Table";
 import { Tabs, TabsContent, TabsCount, TabsList, TabsTrigger } from "@/components/ui/Tabs";
-import { AppToastProvider, useToast } from "@/components/ui/Toast";
+import { useToast } from "@/components/ui/Toast";
 import { partnersCopy as copy } from "../_copy";
 import {
   DEFAULT_ORGANIZATION_SORT,
@@ -84,7 +84,7 @@ const CalloutText = styled.p`
 
 const sameSet = (a: readonly string[], b: readonly string[]) => a.length === b.length && a.every((v) => b.includes(v));
 
-export function PartnersView(props: {
+export interface PartnersViewProps {
   view: PartnersViewName;
   q: string;
   organizations: {
@@ -103,15 +103,10 @@ export function PartnersView(props: {
   organizationOptions: OrganizationOption[];
   /** The server's render time (ISO), so relative times match between server and client. */
   now: string;
-}) {
-  return (
-    <AppToastProvider>
-      <PartnersViewInner {...props} />
-    </AppToastProvider>
-  );
 }
 
-function PartnersViewInner({
+/** Partners. Toasts come from the admin shell's provider (no page-level provider, so none end up under a sheet). */
+export function PartnersView({
   view,
   q,
   organizations,
@@ -123,7 +118,7 @@ function PartnersViewInner({
   activeEmails,
   organizationOptions,
   now,
-}: React.ComponentProps<typeof PartnersView>) {
+}: PartnersViewProps) {
   const { toast } = useToast();
   const { setParams, pending: paramsPending } = useListParams();
   const searchState = useListSearch(q);

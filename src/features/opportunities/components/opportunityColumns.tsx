@@ -2,7 +2,7 @@
 
 import { styled } from "next-yak";
 import { Badge } from "@/components/ui/Badge";
-import type { TableColumn } from "@/components/ui/Table";
+import type { TableColumn, TableColumnFilter } from "@/components/ui/Table";
 import { KIND_LABEL } from "../catalog";
 import { copy } from "../copy";
 import { formatWhen } from "../format";
@@ -83,11 +83,17 @@ export function closedReasonLabel(o: Opportunity): string | undefined {
  * Opportunity table columns. There is no status column (the tab is the status); the Closed tab shows the
  * closed reason as a badge, since it mixes reasons.
  */
-export function opportunityColumns(scope: "admin" | "partner", tab: OpportunityTab): TableColumn<Opportunity>[] {
+export function opportunityColumns(
+  scope: "admin" | "partner",
+  tab: OpportunityTab,
+  filters: { type?: TableColumnFilter; organization?: TableColumnFilter } = {},
+): TableColumn<Opportunity>[] {
   const columns: TableColumn<Opportunity>[] = [
     {
       key: "opportunity",
       header: copy.table.opportunity,
+      sortKey: "title",
+      filter: filters.type,
       render: (o) => (
         <TitleCell>
           <IconSlot>
@@ -105,11 +111,23 @@ export function opportunityColumns(scope: "admin" | "partner", tab: OpportunityT
     },
   ];
   if (scope === "admin") {
-    columns.push({ key: "organization", header: copy.table.organization, render: (o) => <Nowrap>{o.organization.name}</Nowrap> });
+    columns.push({
+      key: "organization",
+      header: copy.table.organization,
+      sortKey: "organization",
+      filter: filters.organization,
+      render: (o) => <Nowrap>{o.organization.name}</Nowrap>,
+    });
   }
   columns.push(
-    { key: "date", header: copy.table.date, render: (o) => <Nowrap>{formatWhen(o)}</Nowrap> },
-    { key: "updated", header: copy.table.updated, render: (o) => <Nowrap>{formatUpdated(o.updatedAt)}</Nowrap> },
+    { key: "date", header: copy.table.date, sortKey: "date", render: (o) => <Nowrap>{formatWhen(o)}</Nowrap> },
+    {
+      key: "updated",
+      header: copy.table.updated,
+      sortKey: "updated",
+      defaultSortDirection: "desc",
+      render: (o) => <Nowrap>{formatUpdated(o.updatedAt)}</Nowrap>,
+    },
   );
   return columns;
 }

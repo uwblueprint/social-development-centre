@@ -148,12 +148,29 @@ export type Opportunity = {
 
 export type OpportunityOf<K extends OpportunityKind> = Extract<Opportunity, { kind: K }>;
 
+/** Sortable list columns; the URL's `sort` param. */
+export type OpportunitySortKey = "title" | "organization" | "date" | "updated";
+
+export interface OpportunitySort {
+  key: OpportunitySortKey;
+  direction: "asc" | "desc";
+}
+
 export interface OpportunityFilters {
   tab: OpportunityTab;
-  kind?: OpportunityKind;
-  /** Admin only; ignored for partners. */
-  organizationId?: string;
+  /** Any of these types; empty or missing means all. */
+  kinds?: OpportunityKind[];
+  /** Admin only; ignored for partners. Any of these organizations; empty or missing means all. */
+  organizationIds?: string[];
   q?: string;
+  /** Missing: the tab's default order (published: soonest date first; drafts and closed: most recently updated first). */
+  sort?: OpportunitySort;
+}
+
+/** How many listings in the current tab have each value, for the column filters' counts. */
+export interface OpportunityFilterCounts {
+  kinds: Partial<Record<OpportunityKind, number>>;
+  organizations: Record<string, number>;
 }
 
 export interface SaveResult {

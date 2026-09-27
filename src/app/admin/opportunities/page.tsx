@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { OpportunitiesView } from "@/features/opportunities/components/OpportunitiesView";
 import { copy } from "@/features/opportunities/copy";
 import { parseListParams } from "@/features/opportunities/components/listParams";
-import { getOpportunityCounts, listOpportunities, listOrganizationFilterOptions } from "@/features/opportunities/queries";
+import { getFilterCounts, getOpportunityCounts, listOpportunities, listOrganizationFilterOptions } from "@/features/opportunities/queries";
 import type { Actor } from "@/features/opportunities/types";
 import { getCurrentAdmin } from "../_data/session";
 import {
@@ -22,9 +22,10 @@ export default async function Page({ searchParams }: PageProps<"/admin/opportuni
   const actor: Actor = { role: "admin", name: admin.name };
 
   const { tab, filters } = parseListParams(await searchParams);
-  const [items, counts, organizations] = await Promise.all([
+  const [items, counts, filterCounts, organizations] = await Promise.all([
     listOpportunities(actor, { tab, ...filters }),
     getOpportunityCounts(actor, filters),
+    getFilterCounts(actor, { tab, ...filters }),
     listOrganizationFilterOptions(),
   ]);
 
@@ -36,6 +37,7 @@ export default async function Page({ searchParams }: PageProps<"/admin/opportuni
       filters={filters}
       items={items}
       counts={counts}
+      filterCounts={filterCounts}
       organizations={organizations}
       actions={{
         save: saveOpportunity,

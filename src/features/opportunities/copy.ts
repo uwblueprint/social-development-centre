@@ -11,10 +11,9 @@ export const copy = {
   toolbar: {
     searchLabel: "Search opportunities",
     searchPlaceholder: "Search by title or organization",
+    /** Column filter names: "Filter Type", "Show type". */
     typeLabel: "Type",
-    allTypes: "All types",
     organizationLabel: "Organization",
-    allOrganizations: "All organizations",
   },
   table: {
     caption: "Opportunities",

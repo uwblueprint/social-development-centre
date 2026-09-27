@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { OpportunitiesView } from "@/features/opportunities/components/OpportunitiesView";
 import { copy } from "@/features/opportunities/copy";
 import { parseListParams } from "@/features/opportunities/components/listParams";
-import { getOpportunityCounts, listOpportunities } from "@/features/opportunities/queries";
+import { getFilterCounts, getOpportunityCounts, listOpportunities } from "@/features/opportunities/queries";
 import type { Actor } from "@/features/opportunities/types";
 import { getCurrentPartner } from "../_data/session";
 import {
@@ -23,7 +23,11 @@ export default async function Page({ searchParams }: PageProps<"/partner/opportu
 
   // Partners only ever see their own organization; an org param is ignored.
   const { tab, filters } = parseListParams(await searchParams, { allowOrganization: false });
-  const [items, counts] = await Promise.all([listOpportunities(actor, { tab, ...filters }), getOpportunityCounts(actor, filters)]);
+  const [items, counts, filterCounts] = await Promise.all([
+    listOpportunities(actor, { tab, ...filters }),
+    getOpportunityCounts(actor, filters),
+    getFilterCounts(actor, { tab, ...filters }),
+  ]);
 
   return (
     <OpportunitiesView
@@ -33,6 +37,7 @@ export default async function Page({ searchParams }: PageProps<"/partner/opportu
       filters={filters}
       items={items}
       counts={counts}
+      filterCounts={filterCounts}
       actions={{
         save: saveOpportunity,
         close: closeOpportunity,

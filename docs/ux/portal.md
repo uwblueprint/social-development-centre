@@ -289,16 +289,16 @@ Confirm whether reinviting automatically reopens any listings. The wording above
 
 | Element | Current text | Notes |
 |---|---|---|
-| General members tab tooltip (`tabs.generalTabTooltip`) | Subscribed people who aren't paying members. | New, needs approval. The tabs are exclusive |
-| Header button (`toolbar.addMembers`) | Add members | New, needs approval. Replaces Add member and Import members |
+| General members tab tooltip (`tabs.generalTabTooltip`) | People who aren't paying members. | New, needs approval. Changed 27 Sep: unsubscribed people show when the Status filter includes them |
+| Header button (`toolbar.addMembers`) | Add members | New, needs approval. Replaces Add member and Import members. Secondary since 27 Sep |
 | Add dialog title (`addDialog.title`) | Add members | New, needs approval |
-| Add dialog hint (`addDialog.tagsHint`) | Press Enter, comma or space after each address, or paste a list. | New, needs approval |
-| Add dialog placeholder (`addDialog.tagsPlaceholder`) | name@example.org | New, needs approval |
-| Tag list name, screen readers only (`addDialog.tagsListLabel`) | Email addresses entered | New, needs approval |
-| Invalid address tooltip (`addDialog.invalidEmail`) | This isn't an email address. Check for a missing @ or a typo. | New, needs approval |
+| Add dialog hint (`addDialog.tagsHint`) | Press Enter, comma or space after each address, or paste a list. | New, needs approval. Removed 27 Sep: the dialog no longer has a tag input |
+| Add dialog placeholder (`addDialog.tagsPlaceholder`) | name@example.org | New, needs approval. Removed 27 Sep: the dialog no longer has a tag input |
+| Tag list name, screen readers only (`addDialog.tagsListLabel`) | Email addresses entered | New, needs approval. Removed 27 Sep: the dialog no longer has a tag input |
+| Invalid address tooltip (`addDialog.invalidEmail`) | This isn't an email address. Check for a missing @ or a typo. | New, needs approval. Removed 27 Sep: the dialog no longer has a tag input |
 | Link to file view (`addDialog.importFromFile`) | Import from a file | New, needs approval |
 | Link back to the add view (`addDialog.backToAdd`) | Back | New, needs approval |
-| File view hint (`addDialog.fileHint`) | Upload a CSV file, then check the addresses. Names are optional, e.g. Ada Lovelace <ada@example.org>. | New, needs approval |
+| File view hint (`addDialog.fileHint`) | Upload a CSV file with name and email columns, then check the rows. You can edit them here. | New, needs approval. Changed 27 Sep |
 | Preview button, only additions (`addDialog.confirmAdd`) | Add {n} person / Add {n} people | New, needs approval |
 | Preview button, only conversions (`addDialog.confirmConvert`) | Make {n} person paying / Make {n} people paying | New, needs approval |
 | Preview button, only resubscribes (`addDialog.confirmResubscribe`) | Resubscribe {n} person / Resubscribe {n} people | New, needs approval |
@@ -306,6 +306,50 @@ Confirm whether reinviting automatically reopens any listings. The wording above
 | Preview button, nothing will change (`addDialog.editList`) | Edit list | New, needs approval. Primary; Close is secondary |
 | Export option (`exportDialog.scopeBoth`) | Both | New, needs approval. Include unsubscribed members applies to any option |
 | Tag input screen-reader announcements (`tagInputCopy`, kit) | {tag} added / {n} added / {tag} removed / {tag} is already in the list / Remove {tag} | New, needs approval |
+
+#### Community journey (27 Sep)
+
+Status model, filter, panel actions, delete and export: see decisions 16 to 27 in [decisions/community.md](../decisions/community.md). Code IDs are key paths in `src/app/admin/community/_copy.ts`.
+
+| Element | Current text | Notes |
+|---|---|---|
+| Statuses (`status.*`) | Unsubscribed; Invited; Onboarding incomplete; Never clicked; Active; Inactive | New, needs approval. One per person, in this precedence |
+| Status column header (`table.headerStatus`) | Status | New, needs approval. Holds the Status filter |
+| Clicks column header (`table.headerClicks`) | Clicks | New, needs approval. Primary-action clicks |
+| Email copy control, screen readers (`table.copyEmailLabel`) | Copy {email} | New, needs approval |
+| Copy confirmation (`copyButton.copied`) | Copied | Existing |
+| Copy toast (`toast.emailCopied`) | Copied {name}'s email / Copied {email} | New, needs approval. Only where there's no in-place confirmation |
+| Kiosk button (`toolbar.openKiosk`) | Open sign-up kiosk | New, needs approval. Secondary |
+| Kiosk popover label (`kiosk.locationLabel`) | Where are you? | New, needs approval |
+| Kiosk popover hint (`kiosk.locationHint`) | For example, Kitchener Market. | New, needs approval |
+| Kiosk location missing (`kiosk.locationRequired`) | Enter where you are, like Kitchener Market. | New, needs approval |
+| Kiosk popover button (`kiosk.open`) | Open kiosk | New, needs approval. Opens /kiosk?location=… in a new tab |
+| Empty, filter hides everything (`empty.filtered`) | No {members} with these statuses | New, needs approval. Body and **Clear filters** from the list pattern |
+| Empty, search matches hidden (`empty.hiddenByFilter`) | {n} match has / matches have a status the Status filter hides. | New, needs approval |
+| Empty, hidden matches in other tab (`empty.hiddenElsewhere`) | {n} matches in {tab}, with a status the Status filter hides. | New, needs approval |
+| Empty, button (`empty.showAllStatuses`) | Show all statuses | New, needs approval |
+| Panel meta line (`panel.*`) | {Status} · General member / Paying member · Added {date} | New, needs approval. Replaces the badges |
+| Panel actions group, screen readers (`panel.actionsLabel`) | Actions for {name} | New, needs approval |
+| Panel buttons (`panel.edit`, `panel.unsubscribe`, `panel.resubscribe`) | Edit details; Unsubscribe; Resubscribe | Existing labels, now visible buttons |
+| Panel icon buttons, tooltips (`panel.convert`, `panel.remove`, `panel.delete`) | Convert to paying member; Remove paying access; Delete member | Delete member is new, needs approval |
+| Convert title (`confirm.convertTitle`) | Make {name} a paying member? | New, needs approval |
+| Convert body (`confirm.convertBody`) | They'll get the members-only feed and {paid benefit}. We'll email them to let them know. / …They're unsubscribed, so we won't email them. | New, needs approval. `{paid benefit}` until SDC confirms it |
+| Convert buttons (`confirm.convertCancel`, `confirm.convertConfirm`) | Cancel; Make paying member | New, needs approval |
+| Delete title (`confirm.deleteTitle`) | Delete {name} permanently? | New, needs approval |
+| Delete body (`confirm.deleteBody`) | They'll be removed from Community and every export, and this can't be undone. To only stop emails, unsubscribe them instead. | New, needs approval |
+| Delete buttons (`confirm.deleteCancel`, `confirm.deleteConfirm`) | Cancel; Delete member | New, needs approval. Danger |
+| Delete toast (server) | {name} was deleted. | New, needs approval |
+| Email activity (`emails.*`) | Signed up: {opportunity} · Took action: {opportunity} · Shared: {opportunity}; No clicks | New, needs approval. "Took action" is for petitions and similar |
+| Add dialog fields (`addDialog.nameLabel`, `addDialog.emailLabel`) | Name; Email | New, needs approval |
+| Add dialog checkbox (`addDialog.paying`) | Make them a paying member | Existing (owner decision 7) |
+| Add dialog button (`addDialog.add`) | Add member | New, needs approval |
+| File view field (`addDialog.emailsLabel`) | Rows to add | New, needs approval. Was "Email addresses" |
+| File view template (`addDialog.downloadTemplate`) | Download template | New, needs approval. Downloads `name,email` |
+| Preview group, deleted (`addDialog.groups.deleted`, `deletedDetail`) | {n} deleted earlier, skipped / They were deleted from Community. Only they can sign up again. | New, needs approval |
+| Export description (`exportDialog.description`) | Download a CSV to analyse in a spreadsheet. | New, needs approval |
+| Export choice (`exportDialog.kindLabel`, `kindMembers`, `kindActivity`) | What to export; Members (one row per person); Activity (one row per click) | New, needs approval |
+| Export count, activity (`exportDialog.countLine`) | {n} clicks will be exported | New, needs approval |
+| Export values (`exportCopy`) | Plain-word values in the CSVs, e.g. Legacy import, Added by an admin, Not started, Themselves / An admin | New, needs approval |
 
 ## Partner portal
 

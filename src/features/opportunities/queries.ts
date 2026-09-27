@@ -6,7 +6,9 @@ import type {
   Actor,
   Opportunity,
   OpportunityCounts,
+  OpportunityFilterCounts,
   OpportunityFilters,
+  OpportunitySort,
   OpportunityTab,
   OrganizationFilterOption,
   OrganizationRef,
@@ -33,9 +35,11 @@ function visibleTo(actor: Actor) {
 
 function matches(filters: Omit<OpportunityFilters, "tab">, actor: Actor) {
   const q = filters.q?.trim().toLowerCase();
+  const kinds = filters.kinds ?? [];
+  const orgIds = actor.role === "admin" ? (filters.organizationIds ?? []) : [];
   return (o: Opportunity) =>
-    (!filters.kind || o.kind === filters.kind) &&
-    (actor.role !== "admin" || !filters.organizationId || o.organization.id === filters.organizationId) &&
+    (kinds.length === 0 || kinds.includes(o.kind)) &&
+    (orgIds.length === 0 || orgIds.includes(o.organization.id)) &&
     (!q || o.title.toLowerCase().includes(q) || o.organization.name.toLowerCase().includes(q));
 }
 
@@ -43,22 +47,50 @@ function scoped(actor: Actor, filters: Omit<OpportunityFilters, "tab">) {
   return opportunities().filter(visibleTo(actor)).map(withEffectiveStatus).filter(matches(filters, actor));
 }
 
-/** Published: soonest date first, undated last. Drafts and closed: most recently updated first. */
-function sortFor(tab: OpportunityTab) {
+/**
+ * Default order: published by soonest date first; drafts and closed by most recently updated first.
+ * A chosen sort (a column header) replaces it. Undated listings go last either way; ties fall back to
+ * most recently updated.
+ */
+function sortFor(tab: OpportunityTab, sort?: OpportunitySort) {
+  const chosen: OpportunitySort = sort ?? (tab === "published" ? { key: "date", direction: "asc" } : { key: "updated", direction: "desc" });
+  const sign = chosen.direction === "asc" ? 1 : -1;
   return (a: Opportunity, b: Opportunity) => {
-    if (tab === "published") {
-      const ka = keyDate(a) ?? "9999";
-      const kb = keyDate(b) ?? "9999";
-      if (ka !== kb) return ka < kb ? -1 : 1;
+    let order = 0;
+    if (chosen.key === "title") order = sign * a.title.localeCompare(b.title);
+    else if (chosen.key === "organization") order = sign * a.organization.name.localeCompare(b.organization.name);
+    else if (chosen.key === "updated") order = sign * a.updatedAt.localeCompare(b.updatedAt);
+    else {
+      const ka = keyDate(a);
+      const kb = keyDate(b);
+      if (!ka || !kb) order = ka ? -1 : kb ? 1 : 0;
+      else order = sign * ka.localeCompare(kb);
     }
-    return b.updatedAt.localeCompare(a.updatedAt);
+    return order || b.updatedAt.localeCompare(a.updatedAt);
   };
 }
 
 export async function listOpportunities(actor: Actor, filters: OpportunityFilters): Promise<Opportunity[]> {
   return scoped(actor, filters)
     .filter((o) => TAB_OF[o.status] === filters.tab)
-    .sort(sortFor(filters.tab));
+    .sort(sortFor(filters.tab, filters.sort));
+}
+
+/**
+ * Counts for the column filters in one tab: per type (with the search and organization filter applied)
+ * and per organization (with the search and type filter applied), so each filter shows what choosing
+ * a value would add.
+ */
+export async function getFilterCounts(actor: Actor, filters: OpportunityFilters): Promise<OpportunityFilterCounts> {
+  const inTab = (f: Omit<OpportunityFilters, "tab">) => scoped(actor, f).filter((o) => TAB_OF[o.status] === filters.tab);
+  const counts: OpportunityFilterCounts = { kinds: {}, organizations: {} };
+  for (const o of inTab({ ...filters, kinds: [] })) counts.kinds[o.kind] = (counts.kinds[o.kind] ?? 0) + 1;
+  if (actor.role === "admin") {
+    for (const o of inTab({ ...filters, organizationIds: [] })) {
+      counts.organizations[o.organization.id] = (counts.organizations[o.organization.id] ?? 0) + 1;
+    }
+  }
+  return counts;
 }
 
 /** Counts per tab for the same filters (search, type, organization). */
