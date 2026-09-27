@@ -54,9 +54,9 @@ export interface MemberPage {
   pageCount: number;
 }
 
-/** Subscribed people only; unsubscribed people are never counted. */
+/** Subscribed people only; unsubscribed people are never counted. The two counts never overlap. */
 export interface CommunityCounts {
-  /** Every subscribed person, paying members included. */
+  /** Subscribed people who aren't paying members. */
   general: number;
   /** Subscribed paying members. */
   paying: number;
@@ -106,4 +106,5 @@ export interface ImportPreview {
 }
 
 /** "general" is every subscribed person (paying included), matching the General members tab. */
-export type ExportScope = "general" | "paying";
+/** Which tab to export; "both" is General members plus Paying members. */
+export type ExportScope = "general" | "paying" | "both";

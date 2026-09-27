@@ -296,6 +296,44 @@ function SheetDemo() {
   );
 }
 
+/** `size="wide"` and a header with `actions`: the title, the ⋯ menu and the close button share one row. */
+function WideSheetDemo() {
+  return (
+    <Sheet>
+      <SheetTrigger asChild>
+        <Button $variant="secondary">View member</Button>
+      </SheetTrigger>
+      <SheetContent size="wide">
+        <SheetHeader
+          actions={
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button $variant="ghost" $size="sm" aria-label="Actions for Amara Okafor" style={{ aspectRatio: 1, padding: 0 }}>
+                  <Icon icon={MoreHorizontal} size={16} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem>
+                  <Icon icon={Copy} size={16} />
+                  Copy email
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          }
+        >
+          <SheetTitle>Amara Okafor</SheetTitle>
+          <SheetDescription>amara@example.org</SheetDescription>
+        </SheetHeader>
+        <SheetBody>
+          <p style={{ margin: 0, fontSize: "var(--text-sm)", color: "var(--color-text-muted)" }}>
+            Wide sheets fit content with its own width, such as a 600px email.
+          </p>
+        </SheetBody>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
 function ToastDemo() {
   const { toast } = useToast();
   return (
@@ -330,6 +368,7 @@ export function OverlayDemos() {
           <HoverCardDemo />
           <ToastDemo />
           <SheetDemo />
+          <WideSheetDemo />
         </Row>
       </AppToastProvider>
     </TooltipProvider>

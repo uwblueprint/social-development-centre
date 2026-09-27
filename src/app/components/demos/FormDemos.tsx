@@ -11,6 +11,7 @@ import { CreatableCombobox } from "@/components/ui/CreatableCombobox";
 import { SearchField } from "@/components/ui/SearchField";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { ErrorSummary } from "@/components/ui/ErrorSummary";
+import { TagInput } from "@/components/ui/TagInput";
 
 const Section = styled.div`
   display: flex;
@@ -273,5 +274,26 @@ export function ErrorSummaryDemo() {
         {(props) => <Input {...props} defaultValue="sdckw" />}
       </Field>
     </Section>
+  );
+}
+
+const DEMO_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+export function TagInputDemo() {
+  const [tags, setTags] = React.useState(["amara@example.org", "grace@example", "luis@example.org"]);
+  return (
+    <Field label="Email addresses" hint="Press Enter, comma or space after each address, or paste a list.">
+      {(p) => (
+        <TagInput
+          {...p}
+          value={tags}
+          onValueChange={setTags}
+          normalize={(text) => text.trim().toLowerCase()}
+          validate={(tag) => (DEMO_EMAIL.test(tag) ? undefined : "This isn't an email address. Check for a missing @ or a typo.")}
+          placeholder="name@example.org"
+          copy={{ tagsLabel: "Email addresses entered" }}
+        />
+      )}
+    </Field>
   );
 }

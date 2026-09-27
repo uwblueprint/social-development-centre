@@ -16,17 +16,17 @@ export const communityCopy = {
     ariaLabel: "Community views",
     general: "General members",
     paying: "Paying members",
-    /** Counts cover subscribed people only; unsubscribed people are never counted. */
+    /** Counts cover subscribed people only; the tabs are exclusive, so nobody is counted twice. */
     generalCount: (general: number) => `(${general})`,
-    generalTabTooltip: "Includes paying members. Doesn't include people who unsubscribed.",
+    generalTabTooltip: "Subscribed people who aren't paying members.",
     payingCount: (paying: number) => `(${paying})`,
   },
 
   toolbar: {
     searchPlaceholder: "Search by name or email",
     export: "Export members",
-    importMembers: "Import members",
-    addMember: "Add member",
+    /** One button for one person or many; the dialog also imports a file. */
+    addMembers: "Add members",
   },
 
   table: {
@@ -67,24 +67,32 @@ export const communityCopy = {
   },
 
   addDialog: {
-    titleSingle: "Add member",
-    titleBulk: "Import members",
-    nameLabel: "Name",
-    emailLabel: "Email",
+    title: "Add members",
     emailsLabel: "Email addresses",
-    emailsHint: "Separate with commas or new lines. Names are optional, e.g. Ada Lovelace <ada@example.org>.",
+    /** Add view (tag input). */
+    tagsHint: "Press Enter, comma or space after each address, or paste a list.",
+    tagsPlaceholder: "name@example.org",
+    tagsListLabel: "Email addresses entered",
+    invalidEmail: "This isn't an email address. Check for a missing @ or a typo.",
+    importFromFile: "Import from a file",
+    /** File view (CSV upload, then the rows to check). */
+    fileHint: "Upload a CSV file, then check the addresses. Names are optional, e.g. Ada Lovelace <ada@example.org>.",
+    backToAdd: "Back",
     emailsPlaceholder: "ada@example.org, grace@example.org",
     uploadCsv: "Upload CSV",
     csvLoaded: (n: number, file: string) => `Added ${n} ${n === 1 ? "row" : "rows"} from ${file}. Check them before you continue.`,
     csvEmpty: (file: string) => `${file} has no email addresses. Check the file and try again.`,
     csvUnreadable: (file: string) => `${file} couldn't be read. Upload a CSV file.`,
-    payingSingle: "Make them a paying member",
     payingBulk: "Make them paying members",
     cancel: "Cancel",
     continue: "Continue",
     back: "Back",
     close: "Close",
     applying: "Saving…",
+    /** The preview's main button names what it does: adds, converts or resubscribes, or a mix. */
+    confirmAdd: (n: number) => `Add ${n} ${n === 1 ? "person" : "people"}`,
+    confirmConvert: (n: number) => `Make ${n} ${n === 1 ? "person" : "people"} paying`,
+    confirmResubscribe: (n: number) => `Resubscribe ${n} ${n === 1 ? "person" : "people"}`,
     confirm: (n: number) => `Confirm ${n} ${n === 1 ? "change" : "changes"}`,
     emailsLine: (n: number) => (n === 0 ? "No emails will be sent." : `${n} ${n === 1 ? "email" : "emails"} will be sent.`),
     nothingToChange: "Nothing will change. Go back to edit the list.",
@@ -93,7 +101,8 @@ export const communityCopy = {
     /** Every address is already a subscribed member and nothing else would change. */
     allAlreadyMembers: (n: number) =>
       n === 1 ? "They're already a member, so nothing will change." : `All ${n} are already members, so nothing will change.`,
-    editList: "Edit the list",
+    /** Nothing will change: the main button goes back to the list. */
+    editList: "Edit list",
     toggleAddresses: (label: string, open: boolean) => `${label}. ${open ? "Hide" : "Show"} addresses`,
     groups: {
       added: (n: number, paying: boolean) => `${n} new ${paying ? "paying" : "general"} ${n === 1 ? "member" : "members"}`,
@@ -125,6 +134,8 @@ export const communityCopy = {
     whoLabel: "Who to export",
     scopeGeneral: "General members",
     scopePaying: "Paying members",
+    scopeBoth: "Both",
+    /** Applies to whichever scope is chosen. */
     includeUnsubscribed: "Include unsubscribed members",
     counting: "Counting…",
     countLine: (n: number) => `${n} ${n === 1 ? "person" : "people"} will be exported`,

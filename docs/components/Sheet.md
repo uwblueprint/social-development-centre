@@ -16,8 +16,8 @@ import {
 ```
 - `Sheet` (Root): `open`/`onOpenChange`.
 - `SheetTrigger asChild` — wrap your own `Button`.
-- `SheetContent` — overlay, right-anchored panel (~420px, full width below 640px), and a built-in labeled close (×) button.
-- `SheetHeader` — top section with a bottom hairline; put `SheetTitle` (required) and `SheetDescription` (optional) here, or any custom heading content (e.g. an editable name field).
+- `SheetContent` — overlay, right-anchored panel (~420px, full width below 640px), and a built-in labeled close (×) button. `size?: "default" | "wide"`: `wide` is `min(720px, 100vw)`, for content with its own width, such as a 600px email. Set it per sheet; don't widen every sheet.
+- `SheetHeader` — top section with a bottom hairline; put `SheetTitle` (required) and `SheetDescription` (optional) here, or any custom heading content (e.g. an editable name field). `actions?`: controls for the whole panel, such as a ⋯ menu trigger (a `$variant="ghost" $size="sm"` icon `Button`, made square). With `actions`, the first child (usually `SheetTitle`), the actions and the close button share one row, vertically centred, and the close button moves into that row; the other children sit below.
 - `SheetBody` — scrollable middle section.
 - `SheetFooter` — bottom section with a top hairline, right-aligned actions.
 - `SheetClose asChild` — wrap your own `Button` for a text "Close"/"Done" action, in addition to the built-in ×.
@@ -37,6 +37,8 @@ import {
   </SheetContent>
 </Sheet>
 ```
+
+Header, body and footer share one inset (`--space-4` top and bottom, `--space-5` sides), so edges line up down the panel.
 
 ## Content rules
 `SheetTitle` names the record ("Northside Food Bank"), not the action. If the visible heading is an editable field rather than plain text, still render a `SheetTitle` for the accessible name (visually hidden if it would otherwise duplicate the field).

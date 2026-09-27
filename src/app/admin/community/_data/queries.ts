@@ -37,7 +37,8 @@ const matcher = (q: string) => {
 };
 
 /**
- * General tab: every subscribed person, paying members included. Paying tab: subscribed paying members.
+ * The tabs are exclusive (owner, 27 Sep). General tab: subscribed people who aren't paying members.
+ * Paying tab: subscribed paying members.
  * Unsubscribed people are never listed, except that a search on the General tab also returns
  * matching unsubscribed people, after every subscribed match (the UI badges them "Unsubscribed").
  * Search matches name or email. `sort` orders each group (subscribed, then unsubscribed) on its own,
@@ -47,7 +48,7 @@ export async function listMembers(tier: MemberTier, q = "", page = 1, sort: Memb
   const matches = matcher(q);
   const byChosenSort = comparator(sort);
   const all = members().map(withLastEmail);
-  const subscribed = all.filter((m) => m.subscribed && (tier === "general" || m.tier === "paying") && matches(m)).sort(byChosenSort);
+  const subscribed = all.filter((m) => m.subscribed && m.tier === tier && matches(m)).sort(byChosenSort);
   const unsubscribed = tier === "general" && q.trim() ? all.filter((m) => !m.subscribed && matches(m)).sort(byChosenSort) : [];
   const rows = [...subscribed, ...unsubscribed];
   const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
@@ -64,7 +65,7 @@ export async function getCommunityCounts(q = ""): Promise<CommunityCounts> {
   const matches = matcher(q);
   const subscribed = members().filter((m) => m.subscribed && matches(m));
   return {
-    general: subscribed.length,
+    general: subscribed.filter((m) => m.tier === "general").length,
     paying: subscribed.filter((m) => m.tier === "paying").length,
     unsubscribedMatches: q.trim() ? members().filter((m) => !m.subscribed && matches(m)).length : 0,
   };

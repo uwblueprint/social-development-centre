@@ -1,6 +1,6 @@
 # Button
 
-A clickable control for a single action, styled with five variants and three sizes.
+A clickable control for a single action, styled with six variants and three sizes.
 
 ## Use when / Don't use when
 - Triggering an action: submit a form, open a `Dialog`, confirm a change.
@@ -12,7 +12,7 @@ A clickable control for a single action, styled with five variants and three siz
 ```tsx
 import { Button } from "@/components/ui/Button";
 ```
-- `$variant?: "primary" | "secondary" | "outline" | "ghost" | "danger"` — default `primary`.
+- `$variant?: "primary" | "secondary" | "outline" | "ghost" | "danger" | "link"` — default `primary`. `link` is an underlined text action with no box, for a secondary route inside content ("Import from a file", "Back"); it ignores `$size`'s height and padding. Don't use it for navigation to another page (use a link) or as a dialog's main action.
 - `$size?: "sm" | "md" | "lg"` — default `md`.
 - All native `<button>` props (`type`, `disabled`, `onClick`, …).
 - Icon-only buttons need `aria-label` (hard rule #3); disabled buttons need `disabledReason` via `DisabledReason`.

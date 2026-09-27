@@ -2,15 +2,17 @@
 
 Assumptions made while building the UI from the Community PRD. Each can be revisited.
 
-## 1. General members means subscribed people; unsubscribed people only appear in search
-- **Decision (owner, 26 Sep):** **General members** lists and counts every subscribed person, paying members included. The Paying tab shows only subscribed paying members. Unsubscribed people are left out of both lists and every count; "N unsubscribed" is no longer shown. The General tab's tooltip says: "Includes paying members. Doesn't include people who unsubscribed."
+## 1. General members and Paying members are exclusive; unsubscribed people only appear in search
+- **Decision (owner, 27 Sep, replaces 26 Sep):** **General members** lists and counts subscribed people who aren't paying members. **Paying members** lists and counts subscribed paying members. Nobody is in both. Unsubscribed people are left out of both lists and every count. The General tab's tooltip says: "Subscribed people who aren't paying members." An empty search on either tab offers the other tab when it has matches.
+- **Before (26 Sep):** General members included paying members.
 - **Search fallback (assumption):** a search on **General members** still returns matching unsubscribed people, after every subscribed match, dimmed and marked with an **Unsubscribed** badge, so admins can answer "why isn't X getting emails?" Search on **Paying members** doesn't include them.
 - **Page:** Admin → Community → General members tab.
 - **Affects:** List contents, tab counts, search results, export (see 7).
 - **When encountered:** Every visit (the count); looking up someone who unsubscribed.
 
 ## 2. Add member and Import members; a checkbox decides paying
-- **Decision (owner, 26 Sep, decision 7):** The header has **Add member** (primary, one person), **Import members** (paste many addresses or **Upload CSV**) and **Export members**. Both add flows have an unchecked checkbox, **Make them a paying member** / **Make them paying members**. The current tab no longer decides the tier. Re-adding an existing general member with it checked converts them. Paying members are never downgraded.
+- **Decision (owner, 27 Sep, replaces the two buttons):** The header has **Export members** and one primary **Add members** button (UserPlus). The dialog opens on a tag input: each typed or pasted address becomes a tag, invalid ones are marked with an icon and a reason. **Import from a file** switches the same dialog to CSV upload (with **Back**); both lead to the same preview. The add view takes addresses only; names come from a file or **Edit details**.
+- **Before (26 Sep, decision 7):** The header had **Add member** (primary, one person), **Import members** (paste many addresses or **Upload CSV**) and **Export members**. Both add flows have an unchecked checkbox, **Make them a paying member** / **Make them paying members**. The current tab no longer decides the tier. Re-adding an existing general member with it checked converts them. Paying members are never downgraded.
 - **Page:** Admin → Community header; Add member and Import members dialogs.
 - **Affects:** Which email each person receives.
 - **When encountered:** Every manual add or import.
@@ -41,7 +43,7 @@ Assumptions made while building the UI from the Community PRD. Each can be revis
 - **When encountered:** An unsubscribed person asks to be added back.
 
 ## 7. Export follows the tab unless changed
-- **Decision:** **Export members** defaults to the current tab, excludes unsubscribed people unless "Include unsubscribed members" is checked, and shows the record count before download. CSV columns: name, email. Since General members now includes paying members (see 1), the "Everyone" option was removed: it was identical to General members with unsubscribed people included.
+- **Decision (owner, 27 Sep):** **Export members** offers **General members**, **Paying members** or **Both**, and defaults to the current tab. "Include unsubscribed members" applies to any choice (unsubscribing stops emails, not paying access). It shows the record count before download. CSV columns: name, email.
 - **Page:** Admin → Community → Export members.
 - **Affects:** Contact lists leaving the platform.
 - **When encountered:** Pulling a list for an outside tool or report.
@@ -97,3 +99,15 @@ Assumptions made while building the UI from the Community PRD. Each can be revis
 - **Decision (27 Sep, owner asked for sortable headers):** **Name**, **Email**, **Sent** and **Added** sort on the server; select a header to sort, select it again to reverse. Name and Email start A to Z; Sent and Added start newest first. With no choice made, the list is newest **Added** first, shown as the active column. People with no name or no email sent come last either way, and unsubscribed search matches stay at the end.
 - **Last email** now shows only the subject; the new **Sent** column shows the relative time ("1w ago"), with the full date on hover, so the list can be sorted by when someone was last emailed.
 - **Where:** Community table headers. The sort lives in the URL (`sort`, `dir`) and survives search, tab and page changes; changing it returns to page 1.
+
+## Import preview: the main button achieves the intent
+- **Decision (owner, 27 Sep):** When the preview has changes, the primary button names them ("Add 3 people", "Make 2 people paying", "Resubscribe 1 person", or "Confirm 4 changes" for a mix) and **Back** is secondary. When nothing will change, the primary button is **Edit list** (back to the list) and **Close** is secondary. No divider under the dialog title.
+- **Where:** Add members dialog, preview step.
+
+## Wider person panel with one header row
+- **Decision (owner, 27 Sep):** The person panel is `min(720px, 100vw)` wide so a 600px email fits without scrolling sideways. Its header has one row (name, then the ⋯ menu and close button, the same size, vertically centred), then the email with its copy button, then the status badge and "Added {date}" on one line.
+- **Where:** Community, person panel (kit: `SheetContent size="wide"`, `SheetHeader actions`).
+
+## Loading while sorting, searching or paging
+- **Decision (owner, 27 Sep):** While the next rows load, the current rows stay in place, dimmed; the active sort arrow becomes a spinner and a thin line runs under the header. Nothing jumps.
+- **Where:** Community table (kit: `Table busy`).

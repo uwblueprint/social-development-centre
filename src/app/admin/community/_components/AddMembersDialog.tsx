@@ -4,11 +4,13 @@ import * as React from "react";
 import { startTransition, useActionState } from "react";
 import { styled } from "next-yak";
 import {
+  ArrowLeft,
   BadgeCheck,
   ChevronRight,
   CircleAlert,
   CircleCheck,
   Copy,
+  FileUp,
   MailQuestion,
   MailX,
   Upload,
@@ -21,14 +23,14 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Dialog, DialogActions, DialogClose, DialogContent, DialogTitle } from "@/components/ui/Dialog";
 import { ErrorIcon, Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
-import { Input } from "@/components/ui/Input";
 import { SubmitButton } from "@/components/ui/SubmitButton";
+import { TagInput } from "@/components/ui/TagInput";
 import { Textarea } from "@/components/ui/Textarea";
 import { useToast } from "@/components/ui/Toast";
 import { fieldError, idleState, type ActionState } from "@/lib/forms";
-import { confirmMembers, previewMembers, type AddMode } from "../_data/actions";
+import { confirmMembers, previewMembers } from "../_data/actions";
 import type { ImportEntry, ImportPreview } from "../_data/types";
-import { csvToLines, summarizePreview } from "../_lib/import";
+import { cleanAddress, csvToLines, EMAIL, summarizePreview } from "../_lib/import";
 import { communityCopy as copy } from "../_copy";
 
 const idlePreviewState: ActionState<ImportPreview> = { status: "idle" };
@@ -49,6 +51,10 @@ const UploadRow = styled.div`
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2) var(--space-3);
+`;
+
+const LinkRow = styled.div`
+  display: flex;
 `;
 
 const Note = styled.p`
@@ -72,18 +78,21 @@ const ErrorNote = styled.p`
   color: var(--color-danger);
 `;
 
+/* Dividers only between groups: no line under the dialog title. */
 const GroupList = styled.ul`
   margin: 0;
   padding: 0;
   list-style: none;
-  border-top: 1px solid var(--color-border);
 `;
 
 const GroupItem = styled.li`
   display: grid;
   gap: var(--space-1);
   padding: var(--space-2) 0;
-  border-bottom: 1px solid var(--color-border);
+
+  & + & {
+    border-top: 1px solid var(--color-border);
+  }
 `;
 
 const GroupTrigger = styled(Button)`
@@ -191,35 +200,31 @@ function Group({
   );
 }
 
+type View = "add" | "file";
+
 /**
- * Add member (mode "single": one person) and Import members (mode "bulk": pasted addresses or a CSV).
- * Two steps: enter, then a preview that groups every address by what will happen. Nothing is
- * saved or sent until the admin confirms, and nothing changes that the preview doesn't show.
+ * Add members: one dialog for one person or many. The add view is a tag input (type or paste
+ * addresses); "Import from a file" switches to the file view (upload a CSV, then check the rows).
+ * Both lead to the same preview, which groups every address by what will happen. Nothing is saved
+ * or sent until the admin confirms, and nothing changes that the preview doesn't show.
  */
-export function AddMembersDialog({
-  open,
-  onOpenChange,
-  mode,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  mode: AddMode;
-}) {
+export function AddMembersDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { toast } = useToast();
-  const single = mode === "single";
+  const [view, setView] = React.useState<View>("add");
   const [step, setStep] = React.useState<"input" | "preview">("input");
-  const [name, setName] = React.useState("");
-  const [email, setEmail] = React.useState("");
-  const [emailsText, setEmailsText] = React.useState("");
+  const [tags, setTags] = React.useState<string[]>([]);
+  const [fileText, setFileText] = React.useState("");
   const [paying, setPaying] = React.useState(false);
   const [resubscribe, setResubscribe] = React.useState(false);
   const [csvNote, setCsvNote] = React.useState<string | null>(null);
   const [csvError, setCsvError] = React.useState<string | null>(null);
-  const emailRef = React.useRef<HTMLInputElement>(null);
-  const emailsRef = React.useRef<HTMLTextAreaElement>(null);
+  const tagsRef = React.useRef<HTMLInputElement>(null);
+  const fileTextRef = React.useRef<HTMLTextAreaElement>(null);
+  const uploadRef = React.useRef<HTMLButtonElement>(null);
+  const importLinkRef = React.useRef<HTMLButtonElement>(null);
 
-  const [previewState, previewAction] = useActionState(previewMembers.bind(null, mode), idlePreviewState);
-  const [confirmState, confirmAction, confirmPending] = useActionState(confirmMembers.bind(null, mode), idleState);
+  const [previewState, previewAction] = useActionState(previewMembers.bind(null, "bulk"), idlePreviewState);
+  const [confirmState, confirmAction, confirmPending] = useActionState(confirmMembers.bind(null, "bulk"), idleState);
 
   // Moves to the preview once a check returns one; derived at render time instead of in an effect.
   const [handledPreview, setHandledPreview] = React.useState(previewState);
@@ -231,10 +236,10 @@ export function AddMembersDialog({
     }
   }
 
-  // Inline errors only: move focus to the first invalid field.
+  // Inline errors only: move focus to the invalid field.
   React.useEffect(() => {
-    if (previewState.fieldErrors?.email) emailRef.current?.focus();
-    else if (previewState.fieldErrors?.emails) emailsRef.current?.focus();
+    if (previewState.fieldErrors?.emails) (view === "add" ? tagsRef : fileTextRef).current?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [previewState]);
 
   React.useEffect(() => {
@@ -247,10 +252,7 @@ export function AddMembersDialog({
 
   function formData() {
     const fd = new FormData();
-    if (single) {
-      fd.set("name", name);
-      fd.set("email", email);
-    } else fd.set("emails", emailsText);
+    fd.set("emails", view === "add" ? tags.join("\n") : fileText);
     if (paying) fd.set("paying", "on");
     return fd;
   }
@@ -262,11 +264,16 @@ export function AddMembersDialog({
     startTransition(() => confirmAction(fd));
   }
 
-  /** Back to the input step, with focus on the field to edit (the preview's buttons disappear). */
+  /** Back to the view the list came from, with focus in the list (the preview's buttons disappear). */
   function backToInput() {
     if (confirmPending) return;
     setStep("input");
-    requestAnimationFrame(() => (single ? emailRef : emailsRef).current?.focus());
+    requestAnimationFrame(() => (view === "add" ? tagsRef : fileTextRef).current?.focus());
+  }
+
+  function switchView(next: View) {
+    setView(next);
+    requestAnimationFrame(() => (next === "file" ? uploadRef : importLinkRef).current?.focus());
   }
 
   function pickCsv() {
@@ -284,20 +291,20 @@ export function AddMembersDialog({
         if (!lines.some((l) => l.includes("@"))) {
           setCsvError(copy.addDialog.csvEmpty(file.name));
         } else {
-          setEmailsText((prev) => (prev.trim() ? `${prev.trimEnd()}\n${lines.join("\n")}` : lines.join("\n")));
+          setFileText((prev) => (prev.trim() ? `${prev.trimEnd()}\n${lines.join("\n")}` : lines.join("\n")));
           setCsvNote(copy.addDialog.csvLoaded(lines.length, file.name));
         }
       } catch {
         setCsvError(copy.addDialog.csvUnreadable(file.name));
       }
-      emailsRef.current?.focus();
+      fileTextRef.current?.focus();
     };
     picker.click();
   }
 
   const preview = previewState.data;
   const summary = preview ? summarizePreview(preview, resubscribe) : null;
-  const payingLabel = single ? copy.addDialog.payingSingle : copy.addDialog.payingBulk;
+  const payingLabel = copy.addDialog.payingBulk;
   const selfConverting = preview?.unsubscribedSelf.filter((e) => e.willConvert).length ?? 0;
   const adminConverting = preview?.unsubscribedAdmin.filter((e) => e.willConvert).length ?? 0;
   // Edge cases where the generic "Nothing will change" doesn't say why.
@@ -308,70 +315,101 @@ export function AddMembersDialog({
   const noValid = preview !== undefined && existing + others === 0;
   const allExisting = preview !== undefined && existing > 0 && others === 0 && preview.invalid.length === 0;
 
+  /** The main button names what confirming does, when it does one kind of thing. */
+  function confirmLabel(p: ImportPreview, changes: number) {
+    const converts = p.converted.length + selfConverting + adminConverting;
+    if (changes === p.added.length && !resubscribe) return copy.addDialog.confirmAdd(changes);
+    if (p.added.length === 0 && !resubscribe && changes === converts) return copy.addDialog.confirmConvert(changes);
+    if (resubscribe && p.added.length + converts === 0) return copy.addDialog.confirmResubscribe(changes);
+    return copy.addDialog.confirm(changes);
+  }
+
+  const payingCheckbox = (
+    <Checkbox name="paying" checked={paying} onCheckedChange={(v) => setPaying(v === true)} label={payingLabel} />
+  );
+  const inputActions = (
+    <DialogActions>
+      <DialogClose asChild>
+        <Button type="button" $variant="secondary">
+          {copy.addDialog.cancel}
+        </Button>
+      </DialogClose>
+      <SubmitButton>{copy.addDialog.continue}</SubmitButton>
+    </DialogActions>
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
-        <DialogTitle>{single ? copy.addDialog.titleSingle : copy.addDialog.titleBulk}</DialogTitle>
+        <DialogTitle>{copy.addDialog.title}</DialogTitle>
 
         {step === "input" || !preview || !summary ? (
           <Form action={() => previewAction(formData())} noValidate>
-            {single ? (
-              <>
-                <Field label={copy.addDialog.nameLabel}>
-                  {(p) => <Input {...p} name="name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="off" />}
-                </Field>
-                <Field label={copy.addDialog.emailLabel} error={fieldError(previewState, "email")} required>
-                  {(p) => (
-                    <Input
-                      {...p}
-                      ref={emailRef}
-                      name="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      autoComplete="off"
-                    />
-                  )}
-                </Field>
-              </>
-            ) : (
+            {view === "add" ? (
               <>
                 <Field
                   label={copy.addDialog.emailsLabel}
-                  hint={copy.addDialog.emailsHint}
+                  hint={copy.addDialog.tagsHint}
+                  error={fieldError(previewState, "emails")}
+                  required
+                >
+                  {(p) => (
+                    <TagInput
+                      {...p}
+                      ref={tagsRef}
+                      value={tags}
+                      onValueChange={setTags}
+                      normalize={cleanAddress}
+                      validate={(tag) => (EMAIL.test(tag) ? undefined : copy.addDialog.invalidEmail)}
+                      placeholder={copy.addDialog.tagsPlaceholder}
+                      copy={{ tagsLabel: copy.addDialog.tagsListLabel }}
+                    />
+                  )}
+                </Field>
+                <LinkRow>
+                  <Button ref={importLinkRef} type="button" $variant="link" onClick={() => switchView("file")}>
+                    <Icon icon={FileUp} size={16} />
+                    {copy.addDialog.importFromFile}
+                  </Button>
+                </LinkRow>
+                {payingCheckbox}
+              </>
+            ) : (
+              <>
+                <LinkRow>
+                  <Button type="button" $variant="link" onClick={() => switchView("add")}>
+                    <Icon icon={ArrowLeft} size={16} />
+                    {copy.addDialog.backToAdd}
+                  </Button>
+                </LinkRow>
+                <UploadRow>
+                  <Button ref={uploadRef} type="button" $variant="secondary" $size="sm" onClick={pickCsv}>
+                    <Icon icon={Upload} size={16} />
+                    {copy.addDialog.uploadCsv}
+                  </Button>
+                  <Note role="status">{csvNote}</Note>
+                </UploadRow>
+                <Field
+                  label={copy.addDialog.emailsLabel}
+                  hint={copy.addDialog.fileHint}
                   error={fieldError(previewState, "emails") ?? csvError ?? undefined}
                   required
                 >
                   {(p) => (
                     <Textarea
                       {...p}
-                      ref={emailsRef}
+                      ref={fileTextRef}
                       name="emails"
-                      value={emailsText}
-                      onChange={(e) => setEmailsText(e.target.value)}
-                      placeholder={copy.addDialog.emailsPlaceholder}
+                      value={fileText}
+                      onChange={(e) => setFileText(e.target.value)}
                       rows={7}
                     />
                   )}
                 </Field>
-                <UploadRow>
-                  <Button type="button" $variant="secondary" $size="sm" onClick={pickCsv}>
-                    <Icon icon={Upload} size={16} />
-                    {copy.addDialog.uploadCsv}
-                  </Button>
-                  <Note role="status">{csvNote}</Note>
-                </UploadRow>
+                {payingCheckbox}
               </>
             )}
-            <Checkbox name="paying" checked={paying} onCheckedChange={(v) => setPaying(v === true)} label={payingLabel} />
-            <DialogActions>
-              <DialogClose asChild>
-                <Button type="button" $variant="secondary">
-                  {copy.addDialog.cancel}
-                </Button>
-              </DialogClose>
-              <SubmitButton>{copy.addDialog.continue}</SubmitButton>
-            </DialogActions>
+            {inputActions}
           </Form>
         ) : (
           <Step>
@@ -455,30 +493,32 @@ export function AddMembersDialog({
             )}
 
             <DialogActions>
-              {noValid ? (
+              {summary.changes > 0 ? (
+                <>
+                  <Button type="button" $variant="secondary" onClick={backToInput}>
+                    {copy.addDialog.back}
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleConfirm}
+                    aria-busy={confirmPending || undefined}
+                    aria-disabled={confirmPending || undefined}
+                  >
+                    {confirmPending ? copy.addDialog.applying : confirmLabel(preview, summary.changes)}
+                  </Button>
+                </>
+              ) : (
+                // Nothing will change: the useful next step is fixing the list, so that's the main button.
                 <>
                   <DialogClose asChild>
                     <Button type="button" $variant="secondary">
-                      {copy.addDialog.cancel}
+                      {copy.addDialog.close}
                     </Button>
                   </DialogClose>
                   <Button type="button" onClick={backToInput}>
                     {copy.addDialog.editList}
                   </Button>
                 </>
-              ) : (
-                <Button type="button" $variant="secondary" onClick={backToInput}>
-                  {copy.addDialog.back}
-                </Button>
-              )}
-              {noValid ? null : summary.changes > 0 ? (
-                <Button type="button" onClick={handleConfirm} aria-busy={confirmPending || undefined} aria-disabled={confirmPending || undefined}>
-                  {confirmPending ? copy.addDialog.applying : copy.addDialog.confirm(summary.changes)}
-                </Button>
-              ) : (
-                <DialogClose asChild>
-                  <Button type="button">{copy.addDialog.close}</Button>
-                </DialogClose>
               )}
             </DialogActions>
           </Step>

@@ -25,6 +25,7 @@ export function ButtonDemos() {
         <Button $variant="secondary">Secondary</Button>
         <Button $variant="outline">Outline</Button>
         <Button $variant="ghost">Ghost</Button>
+        <Button $variant="link">Import from a file</Button>
         <Button $variant="danger">Delete</Button>
       </Row>
       <Row>

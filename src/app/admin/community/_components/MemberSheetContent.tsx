@@ -29,25 +29,7 @@ import { MemberConfirmDialog } from "./MemberConfirmDialog";
 import { MemberEmails } from "./MemberEmails";
 import { useMemberActions } from "./useMemberActions";
 
-const TitleRow = styled.div`
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  /* Clears the Sheet's built-in top-right close (×) button. */
-  padding-right: var(--space-6);
-`;
-
-const TitleBlock = styled.div`
-  min-width: 0;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-`;
-
-// TitleRow already reserves the close button's space for the whole row.
 const Title = styled(SheetTitle)`
-  padding-right: 0;
   overflow-wrap: anywhere;
 `;
 
@@ -73,7 +55,6 @@ const MetaLine = styled.div`
   align-items: center;
   flex-wrap: wrap;
   gap: var(--space-2);
-  margin-top: var(--space-1);
   font-size: var(--text-xs);
   color: var(--color-text-muted);
 `;
@@ -84,8 +65,11 @@ const UnsubscribedNote = styled.p`
   color: var(--color-text-muted);
 `;
 
+/* A 32px square, the same size as the sheet's close button beside it. */
 const MenuTrigger = styled(Button)`
   flex-shrink: 0;
+  aspect-ratio: 1;
+  padding: 0;
 `;
 
 const EditForm = styled.form`
@@ -145,38 +129,8 @@ export function MemberSheetContent({ member, onClose }: { member: Member; onClos
 
   return (
     <>
-      <SheetHeader>
-        <TitleRow>
-          <TitleBlock>
-            {member.name ? (
-              <>
-                <Title>{member.name}</Title>
-                <EmailLine>
-                  {member.email}
-                  <CopyEmailButton email={member.email} />
-                </EmailLine>
-              </>
-            ) : (
-              // No name: the email is the title, so it isn't repeated below.
-              <TitleWithCopy>
-                <Title>{member.email}</Title>
-                <CopyEmailButton email={member.email} />
-              </TitleWithCopy>
-            )}
-            <MetaLine>
-              <Badge>{tierLabel}</Badge>
-              {!member.subscribed && <Badge $variant="outline">{copy.panel.statusUnsubscribed}</Badge>}
-              <span>{copy.panel.added(formatDate(member.addedAt))}</span>
-            </MetaLine>
-            {!member.subscribed && (
-              <UnsubscribedNote>
-                {member.unsubscribedBy === "admin"
-                  ? copy.panel.unsubscribedAdmin(unsubscribedDate)
-                  : copy.panel.unsubscribedSelf(unsubscribedDate)}
-              </UnsubscribedNote>
-            )}
-          </TitleBlock>
-
+      <SheetHeader
+        actions={
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <MenuTrigger type="button" $variant="ghost" $size="sm" aria-label={copy.panel.menuLabel(displayName)}>
@@ -237,7 +191,35 @@ export function MemberSheetContent({ member, onClose }: { member: Member; onClos
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-        </TitleRow>
+        }
+      >
+        {member.name ? (
+          <Title>{member.name}</Title>
+        ) : (
+          // No name: the email is the title, so it isn't repeated below.
+          <TitleWithCopy>
+            <Title>{member.email}</Title>
+            <CopyEmailButton email={member.email} />
+          </TitleWithCopy>
+        )}
+        {member.name && (
+          <EmailLine>
+            {member.email}
+            <CopyEmailButton email={member.email} />
+          </EmailLine>
+        )}
+        <MetaLine>
+          <Badge>{tierLabel}</Badge>
+          {!member.subscribed && <Badge $variant="outline">{copy.panel.statusUnsubscribed}</Badge>}
+          <span>{copy.panel.added(formatDate(member.addedAt))}</span>
+        </MetaLine>
+        {!member.subscribed && (
+          <UnsubscribedNote>
+            {member.unsubscribedBy === "admin"
+              ? copy.panel.unsubscribedAdmin(unsubscribedDate)
+              : copy.panel.unsubscribedSelf(unsubscribedDate)}
+          </UnsubscribedNote>
+        )}
       </SheetHeader>
 
       <SheetBody>

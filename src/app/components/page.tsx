@@ -8,6 +8,7 @@ import {
   SearchFieldDemo,
   SelectDemo,
   CreatableComboboxDemo,
+  TagInputDemo,
   ErrorSummaryDemo,
   TextareaDemo,
 } from "./demos/FormDemos";
@@ -29,7 +30,7 @@ export const metadata: Metadata = {
 
 const sections: { id: string; title: string; description: string; demo: ReactNode }[] = [
   { id: "colors", title: "Colors", description: "Stone neutrals, one accent, and status colors. Tokens live in tokens.ts.", demo: <ColorDemos /> },
-  { id: "buttons", title: "Buttons", description: "Primary, secondary, outline, ghost and danger actions in three sizes.", demo: <ButtonDemos /> },
+  { id: "buttons", title: "Buttons", description: "Primary, secondary, outline, ghost, link and danger actions in three sizes.", demo: <ButtonDemos /> },
   { id: "field", title: "Field", description: "Label, hint and error wired to any control for screen readers.", demo: <FieldDemo /> },
   { id: "input", title: "Input", description: "Single-line text entry.", demo: <InputDemo /> },
   { id: "search-field", title: "Search field", description: "Instant search for a list: results update 300ms after typing stops, Enter searches now, × clears.", demo: <SearchFieldDemo /> },
@@ -37,6 +38,7 @@ const sections: { id: string; title: string; description: string; demo: ReactNod
   { id: "date-picker", title: "Date picker", description: "Type a date or pick one from a calendar.", demo: <DatePickerDemo /> },
   { id: "select", title: "Select", description: "Pick one option from a list.", demo: <SelectDemo /> },
   { id: "creatable-combobox", title: "Creatable combobox", description: "Pick an existing option or create one inline.", demo: <CreatableComboboxDemo /> },
+  { id: "tag-input", title: "Tag input", description: "Type or paste many entries, such as email addresses; each becomes a removable tag. Invalid entries are marked with an icon and a reason.", demo: <TagInputDemo /> },
   { id: "error-summary", title: "Error summary", description: "A persistent list of a long form's errors, each linking to its field.", demo: <ErrorSummaryDemo /> },
   { id: "checkbox", title: "Checkbox", description: "Independent on/off choices, including indeterminate.", demo: <CheckboxDemo /> },
   { id: "radio", title: "Radio group", description: "One choice from a small set.", demo: <RadioGroupDemo /> },
@@ -48,7 +50,7 @@ const sections: { id: string; title: string; description: string; demo: ReactNod
   { id: "display", title: "Display & navigation", description: "Card, badge, avatar, progress, tabs, accordion, scroll area and collapsible.", demo: <DisplayDemos /> },
   { id: "list-row", title: "List row", description: "A dense, clickable row for lists and simple tables.", demo: <ListRowDemo /> },
   { id: "table", title: "Table", description: "A semantic data table with column headers, row dividers and a clickable row.", demo: <TableDemo /> },
-  { id: "table-sortable", title: "Table, sortable", description: "Select a column header to sort by it; select it again to reverse. The active column shows an arrow; others show a hint on hover or focus.", demo: <SortableTableDemo /> },
+  { id: "table-sortable", title: "Table, sortable", description: "Select a column header to sort by it; select it again to reverse. The active column shows an arrow; others show a hint on hover or focus. While the next rows load (busy), rows dim in place, the arrow becomes a spinner and a line runs under the header.", demo: <SortableTableDemo /> },
   { id: "empty-state", title: "Empty state", description: "An empty list, section or no-results placeholder. Lists use ListEmptyState, which picks the variant: matches elsewhere, no matches, filters, search plus filters, truly empty.", demo: <EmptyStateDemo /> },
   { id: "pagination", title: "Pagination", description: "Page summary, Previous/Next and page numbers for a paged list.", demo: <PaginationDemo /> },
 ];

@@ -20,6 +20,7 @@ import type { TableColumn, TableSort } from "@/components/ui/Table";
 - `empty?`: rendered in place of the table when `rows` is empty (e.g. an `EmptyState`).
 - `sort?`: `{ key, direction: "asc" | "desc" }`, the active sort. Controlled.
 - `onSortChange?`: `(next: TableSort) => void`. Without it, every header renders as plain text, even with a `sortKey`.
+- `busy?`: the next rows are loading. See Loading.
 - `aria-label?`: accessible name for the table, when no visible heading already names it.
 
 Paginate below the table with `Pagination`, outside `Table` itself.
@@ -63,6 +64,15 @@ const columns: TableColumn<Member>[] = [
 
 <Table columns={columns} rows={members} getRowId={(m) => m.id} sort={sort} onSortChange={setSort} />
 ```
+
+## Loading
+Pass `busy` while a sort, search, tab or page change is in flight (on a list page: the `pending` from `useListSort`, `useListSearch` and `useListParams`). The table:
+- keeps the current rows in place at reduced opacity (a `--duration` fade, no layout shift), so people keep their place;
+- turns the active column's arrow into a small spinner, so a sort shows where it's working;
+- runs a thin indeterminate line along the bottom edge of the header row;
+- sets `aria-busy` on the table.
+
+Show the chosen sort at once (`useListSort` does this optimistically) so the spinner appears on the column that was selected. Don't replace the rows with a skeleton for a re-sort: the table is already on screen. For the first load, use the page's loading state instead.
 
 ## Content rules
 Header labels are short nouns in sentence case ("Date added", not "DATE ADDED"). A cell with no value reads as muted placeholder text ("No name"), never a blank cell — a blank cell reads as missing data, not "not set".

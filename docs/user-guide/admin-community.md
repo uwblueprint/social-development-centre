@@ -1,6 +1,6 @@
 # Community
 
-For SDC admins. Community holds everyone who gets SDC emails. **General members** is everyone subscribed, paying members included. **Paying members** is the subset who also get paid benefits. Each email address is one person. People who unsubscribed aren't listed or counted.
+For SDC admins. Community holds everyone who gets SDC emails. **General members** is everyone subscribed who isn't a paying member. **Paying members** is everyone subscribed who gets paid benefits. Each person is in one tab, never both. Each email address is one person. People who unsubscribed aren't listed or counted.
 
 ## Find someone
 1. Go to **Community** and choose **General members** or **Paying members**.
@@ -10,6 +10,7 @@ For SDC admins. Community holds everyone who gets SDC emails. **General members*
 1. To sort: select a column header: **Name**, **Email**, **Sent** or **Added**. The list is sorted newest **Added** first until you choose another.
 2. Select the same header again to reverse the order. An arrow beside the header shows the current order.
 3. The order stays while you search, switch between **General members** and **Paying members**, and change pages. Changing the order takes you back to the first page.
+4. While the list reloads, the current rows stay dimmed and the arrow turns into a spinner.
 
 **Last email** shows the subject of the most recent email the person was sent, and **Sent** shows how long ago it went out. Point at the time to see the full date.
 
@@ -17,21 +18,21 @@ For SDC admins. Community holds everyone who gets SDC emails. **General members*
 1. On **General members**, search for their name or email.
 2. Matching people who unsubscribed appear after everyone else, dimmed, with an **Unsubscribed** badge.
 
-## Add one person
-1. Go to **Community** and click **Add member**.
-2. Enter their **Email**. **Name** is optional; you can add it later.
-3. To give them paid benefits, check **Make them a paying member**.
-4. Click **Continue** and read the preview (see [Check the preview](#check-the-preview)).
-5. Click **Confirm 1 change**, or **Back** to change what you entered.
+## Add people
+1. Go to **Community** and click **Add members**.
+2. Type an email address in **Email addresses**, then press Enter, comma or space. It becomes a tag. Add as many as you like, or paste a list: it's split into tags at once.
+3. An address that isn't valid shows in red with a warning icon; point at it to see why. Click its **×** to remove it, or leave it and it's skipped. To remove the last tag, press Backspace in the empty field.
+4. To give them paid benefits, check **Make them paying members**.
+5. Click **Continue** and read the preview (see [Check the preview](#check-the-preview)).
+6. Click the main button, such as **Add 3 people**, or **Back** to change the list.
 
-If the email is missing or isn't an email address, the message appears under **Email** and nothing is saved.
+To add names, import a file (below) or add them later with **Edit details**.
 
-## Import a list
-1. Go to **Community** and click **Import members**.
-2. Paste addresses into **Email addresses**, separated by commas or new lines. You can include names, like `Ada Lovelace <ada@example.org>`. Or click **Upload CSV** and choose a file: its rows are added to the box so you can check them.
-3. To make everyone on the list paying members, check **Make them paying members**. Leave it unchecked to add general members.
-4. Click **Continue** and read the preview.
-5. Click **Confirm N changes**, or **Back** to edit the list.
+## Import from a file
+1. Go to **Community**, click **Add members**, then click **Import from a file**.
+2. Click **Upload CSV** and choose a file. Its rows appear in **Email addresses** so you can check and edit them. You can include names, like `Ada Lovelace <ada@example.org>`.
+3. To make everyone on the list paying members, check **Make them paying members**.
+4. Click **Continue** and read the preview. To go back to typing addresses, click **Back**.
 
 ## Check the preview
 Nothing is saved or sent until you confirm. The preview groups every address by what will happen; click a group to see its addresses:
@@ -44,7 +45,7 @@ Nothing is saved or sent until you confirm. The preview groups every address by 
 - **unsubscribed themselves, not resubscribed**: only they can resubscribe. If you checked the paying box, they still become paying members, without an email.
 - **unsubscribed by an admin**: they stay unsubscribed unless you check **Resubscribe N people an admin unsubscribed**.
 
-Below the groups you'll see how many emails will be sent. If nothing would change, click **Close**. After you confirm, a message says how many people were added, converted and resubscribed, and how many emails were sent.
+Below the groups you'll see how many emails will be sent. The main button says what it does: **Add N people**, **Make N people paying**, **Resubscribe N people**, or **Confirm N changes** for a mix. If nothing would change, click **Edit list** to fix the list, or **Close**. After you confirm, a message says how many people were added, converted and resubscribed, and how many emails were sent.
 
 ## Edit someone's name or email
 1. Click the person's row.
@@ -66,7 +67,7 @@ They also appear in **Paying members** and get the Paying membership added email
 
 If they're unsubscribed, they get paying access but no email, and the message says so.
 
-You can also convert people by adding them again with **Add member** or **Import members** and the paying box checked.
+You can also convert people by adding them again with **Add members** and the paying box checked.
 
 ## Remove someone's paying access
 1. Open the person's row **⋯** menu, or click the person and open the **⋯** menu at the top of their panel.
@@ -95,7 +96,7 @@ They get SDC emails again and return to the lists. No welcome email is sent.
 
 ## Export contacts
 1. Click **Export members**.
-2. Under **Who to export**, choose **General members** (everyone subscribed, paying included) or **Paying members**. It starts on the tab you're on. Check **Include unsubscribed members** to add people who unsubscribed.
+2. Under **Who to export**, choose **General members**, **Paying members** or **Both**. It starts on the tab you're on. Check **Include unsubscribed members** to add people who unsubscribed, whichever you chose.
 3. Check the number of people shown, then click **Download CSV**.
 
 The file has two columns: name and email.

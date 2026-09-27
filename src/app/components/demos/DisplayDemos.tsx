@@ -210,16 +210,23 @@ function sortMembers(rows: DemoMember[], sort: TableSort) {
   return sort.direction === "asc" ? sorted : sorted.reverse();
 }
 
+/** Shows `busy` the way a server sort does: the chosen column is active at once, the rows follow. */
 export function SortableTableDemo() {
   const [sort, setSort] = useState<TableSort>({ key: "added", direction: "desc" });
+  const [rowsSort, setRowsSort] = useState<TableSort>(sort);
+  const busy = sort !== rowsSort;
   return (
     <Table
       columns={SORTABLE_COLUMNS}
-      rows={sortMembers(TABLE_ROWS, sort)}
+      rows={sortMembers(TABLE_ROWS, rowsSort)}
       getRowId={(m) => m.id}
       onRowClick={() => {}}
       sort={sort}
-      onSortChange={setSort}
+      onSortChange={(next) => {
+        setSort(next);
+        setTimeout(() => setRowsSort(next), 900); // a pretend server round trip
+      }}
+      busy={busy}
       aria-label="Members, sortable"
     />
   );

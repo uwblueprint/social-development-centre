@@ -22,6 +22,7 @@ import { communityCopy as copy } from "../_copy";
 const SCOPE_OPTIONS: { value: ExportScope; label: string }[] = [
   { value: "general", label: copy.exportDialog.scopeGeneral },
   { value: "paying", label: copy.exportDialog.scopePaying },
+  { value: "both", label: copy.exportDialog.scopeBoth },
 ];
 
 const Body = styled.div`
@@ -99,14 +100,12 @@ export function ExportDialog({
               />
             )}
           </Field>
-          {/* Unsubscribing ends paid access, so the option only applies to general members. */}
-          {scope === "general" && (
-            <Checkbox
-              label={copy.exportDialog.includeUnsubscribed}
-              checked={includeUnsubscribed}
-              onCheckedChange={(value) => setIncludeUnsubscribed(value === true)}
-            />
-          )}
+          {/* Applies to any scope: unsubscribing stops emails, not paying access. */}
+          <Checkbox
+            label={copy.exportDialog.includeUnsubscribed}
+            checked={includeUnsubscribed}
+            onCheckedChange={(value) => setIncludeUnsubscribed(value === true)}
+          />
           <CountLine>{count === null ? copy.exportDialog.counting : copy.exportDialog.countLine(count)}</CountLine>
         </Body>
         <DialogActions>

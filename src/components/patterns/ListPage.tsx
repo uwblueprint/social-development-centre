@@ -316,7 +316,7 @@ export function ListEmptyState({
 /**
  * Updates the list's URL params with `router.replace` (no history entry per keystroke), keeping every
  * param it isn't told to change. `undefined` or "" removes a param. `pending` is true until the new
- * page has rendered.
+ * page has rendered. `inTransition` runs inside the same transition (for `useOptimistic` updates).
  */
 export function useListParams() {
   const router = useRouter();
@@ -325,14 +325,17 @@ export function useListParams() {
   const [pending, startTransition] = React.useTransition();
 
   const setParams = React.useCallback(
-    (next: Record<string, string | undefined>) => {
+    (next: Record<string, string | undefined>, inTransition?: () => void) => {
       const params = new URLSearchParams(searchParams.toString());
       for (const [key, value] of Object.entries(next)) {
         if (value) params.set(key, value);
         else params.delete(key);
       }
       const qs = params.toString();
-      startTransition(() => router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false }));
+      startTransition(() => {
+        inTransition?.(); // e.g. an optimistic update that lasts until the new page renders
+        router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+      });
     },
     [router, pathname, searchParams],
   );
@@ -375,28 +378,34 @@ export function useListSearch(q: string) {
  * `setSort` writes both params with `router.replace`, resets to page 1 and keeps the rest. `fallback`
  * is the server's default order: it shows as the active column when the URL has no sort, and choosing
  * it removes the params. The server validates `sort` against its own list of sortable columns.
+ * `sort` switches to the chosen column at once (optimistic); pass `pending` to the table's `busy`.
  */
 export function useListSort(fallback?: TableSort) {
   const searchParams = useSearchParams();
   const { setParams, pending } = useListParams();
   const key = searchParams.get("sort");
   const dir = searchParams.get("dir");
-  const sort: TableSort | undefined = key
+  const current: TableSort | undefined = key
     ? { key, direction: dir === "desc" ? "desc" : "asc" }
     : fallback;
+  // Shows the chosen column as active (with the table's busy spinner) until the sorted page arrives.
+  const [sort, setOptimisticSort] = React.useOptimistic(current);
 
   const fallbackKey = fallback?.key;
   const fallbackDirection = fallback?.direction;
   const setSort = React.useCallback(
     (next: TableSort) => {
       const isFallback = next.key === fallbackKey && next.direction === fallbackDirection;
-      setParams({
-        sort: isFallback ? undefined : next.key,
-        dir: isFallback ? undefined : next.direction,
-        page: undefined,
-      });
+      setParams(
+        {
+          sort: isFallback ? undefined : next.key,
+          dir: isFallback ? undefined : next.direction,
+          page: undefined,
+        },
+        () => setOptimisticSort(next),
+      );
     },
-    [setParams, fallbackKey, fallbackDirection],
+    [setParams, fallbackKey, fallbackDirection, setOptimisticSort],
   );
 
   return { sort, setSort, pending };

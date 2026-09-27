@@ -212,11 +212,9 @@ export async function resubscribeMember(id: string): Promise<ActionState> {
   return done(`${m.name ?? m.email} was resubscribed.`);
 }
 
-/** General: every subscribed person (paying included), plus unsubscribed people when asked. Paying: subscribed paying members. */
+/** General members (not paying), Paying members, or both; unsubscribed people of the same tiers only when asked. */
 function exportRows(scope: ExportScope, includeUnsubscribed: boolean): Member[] {
-  return members().filter((m) =>
-    scope === "paying" ? m.subscribed && m.tier === "paying" : m.subscribed || includeUnsubscribed, // includeUnsubscribed is ignored for paying: unsubscribing ends paid access
-  );
+  return members().filter((m) => (scope === "both" || m.tier === scope) && (m.subscribed || includeUnsubscribed));
 }
 
 export async function countExport(scope: ExportScope, includeUnsubscribed: boolean): Promise<number> {
@@ -229,5 +227,5 @@ export async function exportMembers(scope: ExportScope, includeUnsubscribed: boo
   const cell = (v = "") => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
   const csv = ["name,email", ...rows.map((m) => `${cell(m.name)},${cell(m.email)}`)].join("\n");
   const date = new Date().toISOString().slice(0, 10);
-  return { filename: `sdc-${scope}-members-${date}.csv`, csv, count: rows.length };
+  return { filename: `sdc-${scope === "both" ? "general-and-paying" : scope}-members-${date}.csv`, csv, count: rows.length };
 }

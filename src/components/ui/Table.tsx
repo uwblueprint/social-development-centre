@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { styled } from "next-yak";
-import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
+import { keyframes, styled } from "next-yak";
+import { ArrowDown, ArrowUp, ChevronsUpDown, LoaderCircle } from "lucide-react";
 import { Icon } from "./Icon";
 
 export type SortDirection = "asc" | "desc";
@@ -64,6 +64,12 @@ export interface TableProps<T> {
   sort?: TableSort;
   /** Called with the next sort when a sortable header is selected. Without it, headers render as plain text. */
   onSortChange?: (next: TableSort) => void;
+  /**
+   * The next rows are loading (a sort, search or page change in flight). The current rows stay in
+   * place, dimmed; the active sort icon becomes a spinner, a thin line runs under the header, and the
+   * table is `aria-busy`.
+   */
+  busy?: boolean;
   "aria-label"?: string;
 }
 
@@ -174,10 +180,12 @@ function SortableHeader<T>({
   column,
   sort,
   onSortChange,
+  busy,
 }: {
   column: TableColumn<T> & { sortKey: string };
   sort?: TableSort;
   onSortChange: (next: TableSort) => void;
+  busy?: boolean;
 }) {
   const active = sort?.key === column.sortKey ? sort.direction : undefined;
   const next = nextTableSort(sort, column);
@@ -196,7 +204,13 @@ function SortableHeader<T>({
       <span>{column.header}</span>
       {active ? (
         <SortIndicator>
-          <Icon icon={active === "asc" ? ArrowUp : ArrowDown} size={SORT_ICON_SIZE} />
+          {busy ? (
+            <Spinner>
+              <Icon icon={LoaderCircle} size={SORT_ICON_SIZE} />
+            </Spinner>
+          ) : (
+            <Icon icon={active === "asc" ? ArrowUp : ArrowDown} size={SORT_ICON_SIZE} />
+          )}
         </SortIndicator>
       ) : (
         <SortHint>
@@ -207,6 +221,60 @@ function SortableHeader<T>({
     </SortButton>
   );
 }
+
+const spin = keyframes`
+  to { transform: rotate(360deg); }
+`;
+
+const indeterminate = keyframes`
+  from { transform: translateX(-100%); }
+  to { transform: translateX(340%); }
+`;
+
+const Spinner = styled.span`
+  display: inline-flex;
+  animation: ${spin} calc(var(--duration-slow) * 3) linear infinite;
+`;
+
+/*
+ * The loading line sits in a zero-height row right under the header, so it spans every column and
+ * never shifts the layout. It overlaps the header's bottom border.
+ */
+const ProgressRow = styled.tr`
+  height: 0;
+`;
+
+const ProgressCell = styled.td`
+  position: relative;
+  height: 0;
+  padding: 0;
+  border: 0;
+`;
+
+const ProgressTrack = styled.div`
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -1px;
+  height: calc(var(--space-1) / 2);
+  overflow: hidden;
+  pointer-events: none;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 30%;
+    background: var(--color-primary);
+    animation: ${indeterminate} calc(var(--duration-slow) * 5) var(--ease) infinite;
+  }
+`;
+
+/* Stale rows while the next ones load: dimmed in place (no layout shift) and not clickable twice. */
+const Body = styled.tbody<{ $busy?: boolean }>`
+  transition: opacity var(--duration) var(--ease);
+  opacity: ${({ $busy }) => ($busy ? 0.6 : 1)};
+`;
 
 const Td = styled.td<{ $align?: "left" | "right" }>`
   padding: var(--space-2) var(--space-3);
@@ -255,13 +323,14 @@ export function Table<T>({
   empty,
   sort,
   onSortChange,
+  busy = false,
   "aria-label": ariaLabel,
 }: TableProps<T>) {
   if (rows.length === 0) return <>{empty}</>;
 
   return (
     <Wrapper>
-      <StyledTable aria-label={ariaLabel}>
+      <StyledTable aria-label={ariaLabel} aria-busy={busy || undefined}>
         <thead>
           <tr>
             {columns.map((col) => {
@@ -277,7 +346,7 @@ export function Table<T>({
               return (
                 <Th key={col.key} scope="col" aria-sort={ariaSort} $align={col.align} $sticky={sticky}>
                   {sortKey !== undefined && onSortChange ? (
-                    <SortableHeader column={{ ...col, sortKey }} sort={sort} onSortChange={onSortChange} />
+                    <SortableHeader column={{ ...col, sortKey }} sort={sort} onSortChange={onSortChange} busy={busy} />
                   ) : (
                     col.header
                   )}
@@ -285,8 +354,15 @@ export function Table<T>({
               );
             })}
           </tr>
+          {busy && (
+            <ProgressRow aria-hidden="true">
+              <ProgressCell colSpan={columns.length}>
+                <ProgressTrack />
+              </ProgressCell>
+            </ProgressRow>
+          )}
         </thead>
-        <tbody>
+        <Body $busy={busy}>
           {rows.map((row) => {
             const id = getRowId(row);
             const clickable = !!onRowClick;
@@ -315,7 +391,7 @@ export function Table<T>({
               </Row>
             );
           })}
-        </tbody>
+        </Body>
       </StyledTable>
     </Wrapper>
   );

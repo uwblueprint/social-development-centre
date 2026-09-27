@@ -19,7 +19,7 @@ export interface ParsedInput {
 }
 
 /** Strips "mailto:", wrapping quotes/brackets and trailing punctuation, and lowercases. */
-function cleanAddress(token: string): string {
+export function cleanAddress(token: string): string {
   return token
     .trim()
     .replace(/^mailto:/i, "")

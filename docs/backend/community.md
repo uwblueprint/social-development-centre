@@ -9,13 +9,13 @@ UI contract: `src/app/admin/community/_data/{types,queries,actions}.ts`. `store.
 - No source, payments, dates of access or admin edit history.
 
 ## Queries
-- `listMembers(tier, q, page, sort)`: 50 per page. General: every subscribed person, paying included. Paying: subscribed paying. Unsubscribed people are never listed, except that a General search also returns matching unsubscribed people after all subscribed matches. Search by name or email, server-side.
+- `listMembers(tier, q, page, sort)`: 50 per page. The tiers are exclusive (owner, 27 Sep). General: subscribed and not paying (`tier = general`). Paying: subscribed and paying. Unsubscribed people are never listed, except that a General search also returns matching unsubscribed people after all subscribed matches. Search by name or email, server-side.
 - Sorting is server-side, before paginating. `sort` is `{ key, direction }` from the `sort` and `dir` URL params: `key` is one of `MEMBER_SORT_KEYS` (`name`, `email`, `sent` = the latest email's `sentAt`, `added` = `addedAt`), `direction` is `asc` or `desc`. Unknown or missing keys use the default, `added` `desc` (`DEFAULT_MEMBER_SORT`); any `dir` other than `desc` is `asc`.
   - Name and email compare case-insensitively. People with no name (for `name`) or no email sent (for `sent`) come last in either direction.
   - Ties break on `id` ascending, so a person never appears on two pages.
   - Subscribed and unsubscribed matches are sorted separately: unsubscribed matches stay after every subscribed match whatever the sort.
   - SQL sketch: `ORDER BY subscribed DESC, <column> <dir> NULLS LAST, id ASC`, with `sent` from the latest row of the send log per person (a lateral join or a denormalized `last_email_sent_at`, indexed).
-- `getCommunityCounts(q?)`: subscribed people (paying included) and subscribed paying, narrowed by the search when given. Unsubscribed people are never counted in those two. Also `unsubscribedMatches`: unsubscribed people matching the search (0 without one), so an empty Paying members search can say its only matches are unsubscribed people at the end of General members.
+- `getCommunityCounts(q?)`: subscribed general (not paying) and subscribed paying, which never overlap, narrowed by the search when given. Unsubscribed people are never counted in those two. Also `unsubscribedMatches`: unsubscribed people matching the search (0 without one), so an empty Paying members search can say its only matches are unsubscribed people at the end of General members.
 
 ## Email history
 - `listMemberEmails(id)`: every email sent to the person, newest first: `kind` (`general-welcome`, `paying-welcome`, `paying-added` = "Paying membership added", `paying-removed` = "Paying access removed", `opportunities`), `subject`, `sentAt`, delivery `status` (`delivered` | `not-delivered`, from the email provider's send log). No bodies, so the panel opens fast.
@@ -32,7 +32,7 @@ UI contract: `src/app/admin/community/_data/{types,queries,actions}.ts`. `store.
 | `revokePaidAccess(id)` | Paying → general; entitlement removed immediately. | Paying access removed (subscribed only) |
 | `unsubscribeMember(id)` | Stop all sends; remove paid entitlement; keep record; set `unsubscribedBy = admin`. | none |
 | `resubscribeMember(id)` | Only when `unsubscribedBy = admin` (owner decision 6); otherwise refuse. Subscribed again, tier kept, clear `unsubscribedAt`/`unsubscribedBy`. Must also resubscribe in the email provider. | none (no automatic welcome) |
-| `countExport` / `exportMembers(scope, includeUnsubscribed)` | CSV `name,email`. Scope `general` = every subscribed person (paying included), plus unsubscribed people only when asked; `paying` = subscribed paying. The old `all` scope is gone (it equalled `general` with unsubscribed). | none |
+| `countExport` / `exportMembers(scope, includeUnsubscribed)` | CSV `name,email`. Scope `general` = general (not paying), `paying` = paying, `both` = either tier. `includeUnsubscribed` adds unsubscribed people of the chosen tiers, for any scope; otherwise only subscribed people. | none |
 
 ## Integrations and dependencies
 - **Signup sync:** new signups from SDC's current collection tool flow in automatically as general members (provider and mechanism TBC). Imports are the fallback.

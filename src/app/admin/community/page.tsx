@@ -29,5 +29,5 @@ export default async function Page({
 
   const [memberPage, counts] = await Promise.all([listMembers(tab, q, page, sort), getCommunityCounts(q)]);
 
-  return <CommunityView tab={tab} q={q} memberPage={memberPage} counts={counts} sort={sort} pageSize={PAGE_SIZE} />;
+  return <CommunityView tab={tab} q={q} memberPage={memberPage} counts={counts} pageSize={PAGE_SIZE} />;
 }

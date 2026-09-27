@@ -2,7 +2,7 @@
 
 > **Owner decisions, 26 Sep 2026. These override the text below where they conflict.**
 > 1. **Search stays search-as-you-type:** results 300ms after typing stops, Enter searches immediately, × clears, and the only text is a placeholder. The doc's Search button, visible search label and "Clear search" button do not apply.
-> 2. **General members includes paying members.** The two tabs are not exclusive, and the General members tab tooltip says so.
+> 2. **General members and Paying members are exclusive (owner, 27 Sep).** General members are subscribed people who aren't paying members; the General members tab tooltip says so.
 > 3. **Partners:** two views (Organizations, People) plus a **Status** filter (Active, Removed), as this doc proposes. Invitation states show on people rows.
 > 4. **No page descriptions.** Section descriptions are sidebar tooltips.
 > 5. **SDC contact path:** a placeholder, `{SDC contact email}`, until SDC confirms one.
@@ -34,7 +34,7 @@ The copy audit caught genuine drift: **subscribers** versus **general members**,
   - In sentences, use **person**, **they**, or **them** where that sounds natural. Avoid showing the internal term **contact**.
 - **Community classifications:**
   - Use **general member** and **paying member** as the two classifications. Do not call general members **subscribers**.
-  - A person occupies one classification at a time; conversion changes that classification, while email subscription is a separate state. *(Owner decision 2: the General members tab lists paying members too.)*
+  - A person occupies one classification at a time; conversion changes that classification, while email subscription is a separate state.
 - **Invitation states:**
   - Use **Invitation pending** only when an email was sent and the link has not been accepted or expired.
   - Use **Invitation not sent** when delivery failed, and **Invitation expired** after its expiry.
@@ -205,7 +205,7 @@ Confirm whether reinviting automatically reopens any listings. The wording above
 
 **Classifications:**
 - Admins see **General members** and **Paying members**.
-- These are exclusive classifications. A paying member keeps the benefits of a general member, but does not appear in both classifications. *(Owner decision 2: the General members tab includes paying members.)*
+- These are exclusive classifications. A paying member keeps the benefits of a general member, but does not appear in both classifications.
 - Email subscription is independent of paying access.
 
 **Adding people:**
@@ -223,9 +223,8 @@ Confirm whether reinviting automatically reopens any listings. The wording above
 | Element | Current text | Notes |
 |---|---|---|
 | Page description | View general and paying members, add people and manage their access. | Accept audit change #8 *(Owner decision 4: shown as the sidebar tooltip, not on the page.)* |
-| Member views | General members; Paying members | One person in one classification *(Owner decision 2: General includes paying.)* |
-| Add action | Add member | For one person |
-| Bulk action | Import members | Can include paste and file routes if both exist |
+| Member views | General members; Paying members | One person in one classification |
+| Add action | Add members | One button for one person or many; the dialog also imports a file |
 | Paying action | Convert to paying member | Conversion changes classification |
 | Paying error | Only general members who are subscribed to emails can be converted to paying members. | Use only if email subscription really is a business requirement *(Owner decision 7: it isn't; remove.)* |
 | Paying removal action | Remove paying access | |
@@ -240,6 +239,28 @@ Confirm whether reinviting automatically reopens any listings. The wording above
   - If it does, the proposed message states the condition in ordinary words.
   - If it does not, remove that gate rather than copying an old rule into new text.
 - The current Community source has many other strings not included here; preserve their IDs and review the complete `_copy.ts` table before a code writeback.
+
+#### Community rows (27 Sep)
+
+| Element | Current text | Notes |
+|---|---|---|
+| General members tab tooltip (`tabs.generalTabTooltip`) | Subscribed people who aren't paying members. | New, needs approval. The tabs are exclusive |
+| Header button (`toolbar.addMembers`) | Add members | New, needs approval. Replaces Add member and Import members |
+| Add dialog title (`addDialog.title`) | Add members | New, needs approval |
+| Add dialog hint (`addDialog.tagsHint`) | Press Enter, comma or space after each address, or paste a list. | New, needs approval |
+| Add dialog placeholder (`addDialog.tagsPlaceholder`) | name@example.org | New, needs approval |
+| Tag list name, screen readers only (`addDialog.tagsListLabel`) | Email addresses entered | New, needs approval |
+| Invalid address tooltip (`addDialog.invalidEmail`) | This isn't an email address. Check for a missing @ or a typo. | New, needs approval |
+| Link to file view (`addDialog.importFromFile`) | Import from a file | New, needs approval |
+| Link back to the add view (`addDialog.backToAdd`) | Back | New, needs approval |
+| File view hint (`addDialog.fileHint`) | Upload a CSV file, then check the addresses. Names are optional, e.g. Ada Lovelace <ada@example.org>. | New, needs approval |
+| Preview button, only additions (`addDialog.confirmAdd`) | Add {n} person / Add {n} people | New, needs approval |
+| Preview button, only conversions (`addDialog.confirmConvert`) | Make {n} person paying / Make {n} people paying | New, needs approval |
+| Preview button, only resubscribes (`addDialog.confirmResubscribe`) | Resubscribe {n} person / Resubscribe {n} people | New, needs approval |
+| Preview button, a mix (`addDialog.confirm`) | Confirm {n} change / Confirm {n} changes | Existing |
+| Preview button, nothing will change (`addDialog.editList`) | Edit list | New, needs approval. Primary; Close is secondary |
+| Export option (`exportDialog.scopeBoth`) | Both | New, needs approval. Include unsubscribed members applies to any option |
+| Tag input screen-reader announcements (`tagInputCopy`, kit) | {tag} added / {n} added / {tag} removed / {tag} is already in the list / Remove {tag} | New, needs approval |
 
 ## Partner portal
 
@@ -477,9 +498,9 @@ An empty or error state says what's empty, why, and the one action that fixes it
 | Member panel, Emails, none sent (`emails.empty`) | No emails sent to them yet. | New, needs approval. Replaces “No emails sent yet.” |
 | Member panel, Emails, none sent to an unsubscribed person (`emails.emptyUnsubscribed`) | No emails sent. They're unsubscribed, so none will be sent. | New, needs approval |
 | Member panel, Emails, failed to load (`emails.loadError`) | We couldn't load their emails. Nothing was changed; this is a loading problem. | New, needs approval. Replaces “Couldn't load this person's emails.” Button: Try again |
-| Import members preview, nothing valid pasted (`addDialog.noValidAddresses`) | None of these are email addresses, so nothing will change. Edit the list so each entry looks like name@example.org. | New, needs approval |
-| Import members preview, nothing valid pasted, button (`addDialog.editList`) | Edit the list | New, needs approval. Goes back to the list with focus in it; Cancel closes |
-| Add member / Import members preview, everyone already a member (`addDialog.allAlreadyMembers`) | They're already a member, so nothing will change. / All {n} are already members, so nothing will change. | New, needs approval |
+| Add members preview, nothing valid entered (`addDialog.noValidAddresses`) | None of these are email addresses, so nothing will change. Edit the list so each entry looks like name@example.org. | New, needs approval |
+| Add members preview, nothing valid entered, button (`addDialog.editList`) | Edit list | New, needs approval. Goes back to the list with focus in it; Close is secondary |
+| Add members preview, everyone already a member (`addDialog.allAlreadyMembers`) | They're already a member, so nothing will change. / All {n} are already members, so nothing will change. | New, needs approval |
 | Community fails to load (`communityCopy.loadError.title`) | We couldn't load Community. | New, needs approval |
 | Admin Opportunities fails to load (`errorCopy.admin.opportunities.title`) | We couldn't load Opportunities. | New, needs approval |
 | Admin Partners fails to load (`errorCopy.admin.partners.title`) | We couldn't load Partners. | New, needs approval |

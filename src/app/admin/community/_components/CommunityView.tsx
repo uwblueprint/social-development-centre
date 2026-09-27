@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { styled } from "next-yak";
-import { Download, FileUp, UserPlus, UsersRound } from "lucide-react";
+import { Download, UserPlus, UsersRound } from "lucide-react";
 import {
   ListEmptyState,
   ListPage,
@@ -21,9 +21,8 @@ import { Table } from "@/components/ui/Table";
 import { Tabs, TabsContent, TabsCount, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { AppToastProvider } from "@/components/ui/Toast";
 import { Tooltip } from "@/components/ui/Tooltip";
-import type { AddMode } from "../_data/actions";
-import { DEFAULT_MEMBER_SORT } from "../_data/types";
-import type { CommunityCounts, Member, MemberPage, MemberSort, MemberTier } from "../_data/types";
+import { DEFAULT_MEMBER_SORT, MEMBER_SORT_KEYS } from "../_data/types";
+import type { CommunityCounts, Member, MemberPage, MemberTier } from "../_data/types";
 import { communityCopy as copy } from "../_copy";
 import { AddMembersDialog } from "./AddMembersDialog";
 import { ExportDialog } from "./ExportDialog";
@@ -46,20 +45,22 @@ export function CommunityView({
   q,
   memberPage,
   counts,
-  sort,
   pageSize,
 }: {
   tab: MemberTier;
   q: string;
   memberPage: MemberPage;
   counts: CommunityCounts;
-  /** The server's sort, after it dropped unknown keys; `useListSort` writes the next one to the URL. */
-  sort: MemberSort;
   pageSize: number;
 }) {
-  const { setParams } = useListParams();
+  const { setParams, pending: paramsPending } = useListParams();
   const searchState = useListSearch(q);
-  const { setSort } = useListSort(DEFAULT_MEMBER_SORT);
+  const { sort: requestedSort, setSort, pending: sortPending } = useListSort(DEFAULT_MEMBER_SORT);
+  // The server ignores unknown sort keys and uses the default; show the same.
+  const sort =
+    requestedSort && (MEMBER_SORT_KEYS as readonly string[]).includes(requestedSort.key) ? requestedSort : DEFAULT_MEMBER_SORT;
+  // Page, tab, search and sort changes keep the current rows on screen, dimmed, until the next ones arrive.
+  const busy = paramsPending || sortPending || searchState.pending;
   const searchRef = React.useRef<HTMLInputElement>(null);
 
   const [activeTab, setActiveTab] = React.useState<MemberTier>(tab);
@@ -73,8 +74,7 @@ export function CommunityView({
   }
 
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
-  const [addMode, setAddMode] = React.useState<AddMode | null>(null);
-  const [shownAddMode, setShownAddMode] = React.useState<AddMode>("single");
+  const [addOpen, setAddOpen] = React.useState(false);
   const [addKey, setAddKey] = React.useState(0);
   const [exportOpen, setExportOpen] = React.useState(false);
   const [exportKey, setExportKey] = React.useState(0);
@@ -101,11 +101,10 @@ export function CommunityView({
     setParams({ page: page > 1 ? String(page) : undefined });
   }
 
-  // The dialog keeps its mode while it plays its close animation.
-  function openAdd(mode: AddMode) {
+  // A fresh dialog each time; the key changes on open so it keeps its content while it animates closed.
+  function openAdd() {
     setAddKey((k) => k + 1);
-    setShownAddMode(mode);
-    setAddMode(mode);
+    setAddOpen(true);
   }
 
   function openExport() {
@@ -126,13 +125,9 @@ export function CommunityView({
                 <Icon icon={Download} size={16} />
                 {copy.toolbar.export}
               </Button>
-              <Button type="button" $variant="secondary" onClick={() => openAdd("bulk")}>
-                <Icon icon={FileUp} size={16} />
-                {copy.toolbar.importMembers}
-              </Button>
-              <Button type="button" onClick={() => openAdd("single")}>
+              <Button type="button" onClick={openAdd}>
                 <Icon icon={UserPlus} size={16} />
-                {copy.toolbar.addMember}
+                {copy.toolbar.addMembers}
               </Button>
             </>
           }
@@ -178,6 +173,7 @@ export function CommunityView({
                 onRowClick={(m) => setSelectedId(m.id)}
                 sort={sort}
                 onSortChange={setSort}
+                busy={busy}
                 aria-label={activeTab === "paying" ? copy.tabs.paying : copy.tabs.general}
                 empty={
                   <ListEmptyState
@@ -185,11 +181,11 @@ export function CommunityView({
                     query={q}
                     searchedFields={copy.empty.searchedFields}
                     onClearSearch={clearSearch}
-                    // General members includes paying members and, when searching, unsubscribed people at the
-                    // end, so only a Paying search can match elsewhere.
+                    // The tabs are exclusive: an empty search can match in the other tab. A General search also
+                    // lists unsubscribed matches at the end, so an empty Paying search can point there too.
                     elsewhere={
-                      activeTab !== "paying"
-                        ? undefined
+                      activeTab === "general"
+                        ? { count: counts.paying, scope: copy.tabs.paying, onShow: () => showInOtherTab("paying") }
                         : counts.general > 0
                           ? { count: counts.general, scope: copy.tabs.general, onShow: () => showInOtherTab("general") }
                           : {
@@ -204,9 +200,9 @@ export function CommunityView({
                       title: activeTab === "paying" ? copy.empty.payingTitle : copy.empty.generalTitle,
                       description: activeTab === "paying" ? copy.empty.payingDescription : copy.empty.generalDescription,
                       action: (
-                        <Button type="button" onClick={() => openAdd("single")}>
+                        <Button type="button" onClick={openAdd}>
                           <Icon icon={UserPlus} size={16} />
-                          {copy.toolbar.addMember}
+                          {copy.toolbar.addMembers}
                         </Button>
                       ),
                     }}
@@ -227,19 +223,14 @@ export function CommunityView({
         </Tabs>
 
         <Sheet open={selectedMember !== undefined} onOpenChange={(open) => !open && setSelectedId(null)}>
-          <SheetContent>
+          <SheetContent size="wide">
             {selectedMember && (
               <MemberSheetContent key={selectedMember.id} member={selectedMember} onClose={() => setSelectedId(null)} />
             )}
           </SheetContent>
         </Sheet>
 
-        <AddMembersDialog
-          key={`add-${addKey}`}
-          open={addMode !== null}
-          onOpenChange={(open) => !open && setAddMode(null)}
-          mode={shownAddMode}
-        />
+        <AddMembersDialog key={`add-${addKey}`} open={addOpen} onOpenChange={setAddOpen} />
         <ExportDialog key={`export-${exportKey}`} open={exportOpen} onOpenChange={setExportOpen} tab={activeTab} />
       </ListPage>
     </AppToastProvider>
