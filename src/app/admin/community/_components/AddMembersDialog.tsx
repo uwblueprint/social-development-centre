@@ -6,6 +6,7 @@ import { styled } from "next-yak";
 import {
   ArrowLeft,
   BadgeCheck,
+  Download,
   ChevronRight,
   CircleAlert,
   CircleCheck,
@@ -15,6 +16,7 @@ import {
   MailX,
   Upload,
   UserPlus,
+  UserX,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -23,22 +25,37 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Dialog, DialogActions, DialogClose, DialogContent, DialogTitle } from "@/components/ui/Dialog";
 import { ErrorIcon, Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
+import { Input } from "@/components/ui/Input";
 import { SubmitButton } from "@/components/ui/SubmitButton";
-import { TagInput } from "@/components/ui/TagInput";
 import { Textarea } from "@/components/ui/Textarea";
 import { useToast } from "@/components/ui/Toast";
 import { fieldError, idleState, type ActionState } from "@/lib/forms";
-import { confirmMembers, previewMembers } from "../_data/actions";
+import { confirmMembers, previewMembers, type AddMode } from "../_data/actions";
 import type { ImportEntry, ImportPreview } from "../_data/types";
-import { cleanAddress, csvToLines, EMAIL, summarizePreview } from "../_lib/import";
+import { csvToLines, summarizePreview } from "../_lib/import";
 import { communityCopy as copy } from "../_copy";
 
-const idlePreviewState: ActionState<ImportPreview> = { status: "idle" };
+/** A check, plus (for one clear new person) the result of adding them straight away. */
+type PreviewState = ActionState<ImportPreview> & { applied?: ActionState };
+const idlePreviewState: PreviewState = { status: "idle" };
+
+/** One new person and nothing else to decide: the single form adds them without a preview. */
+function isPlainAdd(p: ImportPreview) {
+  return (
+    p.added.length === 1 &&
+    p.converted.length + p.alreadyPaying.length + p.alreadyMembers.length + p.duplicates.length + p.invalid.length === 0 &&
+    p.unsubscribedSelf.length + p.unsubscribedAdmin.length + p.deleted.length === 0
+  );
+}
+
+const modeOf = (fd: FormData): AddMode => (fd.get("mode") === "single" ? "single" : "bulk");
 const g = copy.addDialog.groups;
 
+/* The title has no description under it, so the form keeps its own distance from it. */
 const Form = styled.form`
   display: grid;
   gap: var(--space-4);
+  padding-top: var(--space-3);
 `;
 
 const Step = styled.div`
@@ -53,8 +70,21 @@ const UploadRow = styled.div`
   gap: var(--space-2) var(--space-3);
 `;
 
-const LinkRow = styled.div`
+/* Import from a file / Back on the left; Cancel and the main button on the right. */
+const Footer = styled.div`
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-4);
+  margin-top: var(--space-1);
+`;
+
+const FooterEnd = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-left: auto;
 `;
 
 const Note = styled.p`
@@ -200,37 +230,49 @@ function Group({
   );
 }
 
-type View = "add" | "file";
+type View = "single" | "file";
 
 /**
- * Add members: one dialog for one person or many. The add view is a tag input (type or paste
- * addresses); "Import from a file" switches to the file view (upload a CSV, then check the rows).
- * Both lead to the same preview, which groups every address by what will happen. Nothing is saved
- * or sent until the admin confirms, and nothing changes that the preview doesn't show.
+ * Add members: one dialog for one person or many. The single view adds one person (Name, Email,
+ * "Make them a paying member"); a clear new person is added at once, and anything that needs a look
+ * (already a member, unsubscribed, deleted) goes to the preview. "Import from a file" switches to the
+ * file view: upload a CSV with name and email columns (a template is offered), check the rows, then
+ * the same preview, which groups every row by what will happen. Nothing is saved or sent until then.
  */
 export function AddMembersDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { toast } = useToast();
-  const [view, setView] = React.useState<View>("add");
+  const [view, setView] = React.useState<View>("single");
   const [step, setStep] = React.useState<"input" | "preview">("input");
-  const [tags, setTags] = React.useState<string[]>([]);
+  const [name, setName] = React.useState("");
+  const [email, setEmail] = React.useState("");
   const [fileText, setFileText] = React.useState("");
   const [paying, setPaying] = React.useState(false);
   const [resubscribe, setResubscribe] = React.useState(false);
   const [csvNote, setCsvNote] = React.useState<string | null>(null);
   const [csvError, setCsvError] = React.useState<string | null>(null);
-  const tagsRef = React.useRef<HTMLInputElement>(null);
+  const emailRef = React.useRef<HTMLInputElement>(null);
   const fileTextRef = React.useRef<HTMLTextAreaElement>(null);
   const uploadRef = React.useRef<HTMLButtonElement>(null);
   const importLinkRef = React.useRef<HTMLButtonElement>(null);
 
-  const [previewState, previewAction] = useActionState(previewMembers.bind(null, "bulk"), idlePreviewState);
-  const [confirmState, confirmAction, confirmPending] = useActionState(confirmMembers.bind(null, "bulk"), idleState);
+  const [previewState, previewAction] = useActionState(async (_prev: PreviewState, fd: FormData): Promise<PreviewState> => {
+    const mode = modeOf(fd);
+    const result = await previewMembers(mode, idlePreviewState, fd);
+    if (mode === "single" && result.data && isPlainAdd(result.data)) {
+      return { ...result, applied: await confirmMembers(mode, idleState, fd) };
+    }
+    return result;
+  }, idlePreviewState);
+  const [confirmState, confirmAction, confirmPending] = useActionState(
+    (prev: ActionState, fd: FormData) => confirmMembers(modeOf(fd), prev, fd),
+    idleState,
+  );
 
   // Moves to the preview once a check returns one; derived at render time instead of in an effect.
   const [handledPreview, setHandledPreview] = React.useState(previewState);
   if (previewState !== handledPreview) {
     setHandledPreview(previewState);
-    if (previewState.data) {
+    if (previewState.data && !previewState.applied) {
       setStep("preview");
       setResubscribe(false);
     }
@@ -238,21 +280,30 @@ export function AddMembersDialog({ open, onOpenChange }: { open: boolean; onOpen
 
   // Inline errors only: move focus to the invalid field.
   React.useEffect(() => {
-    if (previewState.fieldErrors?.emails) (view === "add" ? tagsRef : fileTextRef).current?.focus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (previewState.fieldErrors?.email) emailRef.current?.focus();
+    if (previewState.fieldErrors?.emails) fileTextRef.current?.focus();
   }, [previewState]);
 
+  // Done: close and say what happened, whether it was added straight away or confirmed from the preview.
+  const applied = previewState.applied?.status === "success" ? previewState.applied : confirmState.status === "success" ? confirmState : null;
   React.useEffect(() => {
-    if (confirmState.status === "success") {
+    if (applied) {
       onOpenChange(false);
-      toast({ title: confirmState.message ?? copy.addDialog.addedFallback });
+      toast({ title: applied.message ?? copy.addDialog.addedFallback });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [confirmState]);
+  }, [applied]);
 
   function formData() {
     const fd = new FormData();
-    fd.set("emails", view === "add" ? tags.join("\n") : fileText);
+    if (view === "single") {
+      fd.set("mode", "single");
+      fd.set("name", name);
+      fd.set("email", email);
+    } else {
+      fd.set("mode", "bulk");
+      fd.set("emails", fileText);
+    }
     if (paying) fd.set("paying", "on");
     return fd;
   }
@@ -264,16 +315,28 @@ export function AddMembersDialog({ open, onOpenChange }: { open: boolean; onOpen
     startTransition(() => confirmAction(fd));
   }
 
-  /** Back to the view the list came from, with focus in the list (the preview's buttons disappear). */
+  /** Back to the view the list came from, with focus in its field (the preview's buttons disappear). */
   function backToInput() {
     if (confirmPending) return;
     setStep("input");
-    requestAnimationFrame(() => (view === "add" ? tagsRef : fileTextRef).current?.focus());
+    requestAnimationFrame(() => (view === "single" ? emailRef : fileTextRef).current?.focus());
   }
 
   function switchView(next: View) {
     setView(next);
     requestAnimationFrame(() => (next === "file" ? uploadRef : importLinkRef).current?.focus());
+  }
+
+  /** A CSV with just the header row, so the columns are right first time. */
+  function downloadTemplate() {
+    const url = URL.createObjectURL(new Blob(["name,email\n"], { type: "text/csv;charset=utf-8;" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = copy.addDialog.templateFilename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
   }
 
   function pickCsv() {
@@ -304,7 +367,7 @@ export function AddMembersDialog({ open, onOpenChange }: { open: boolean; onOpen
 
   const preview = previewState.data;
   const summary = preview ? summarizePreview(preview, resubscribe) : null;
-  const payingLabel = copy.addDialog.payingBulk;
+  const payingLabel = view === "single" ? copy.addDialog.paying : copy.addDialog.payingBulk;
   const selfConverting = preview?.unsubscribedSelf.filter((e) => e.willConvert).length ?? 0;
   const adminConverting = preview?.unsubscribedAdmin.filter((e) => e.willConvert).length ?? 0;
   // Edge cases where the generic "Nothing will change" doesn't say why.
@@ -312,7 +375,7 @@ export function AddMembersDialog({ open, onOpenChange }: { open: boolean; onOpen
   const others = preview
     ? preview.added.length + preview.converted.length + preview.unsubscribedSelf.length + preview.unsubscribedAdmin.length
     : 0;
-  const noValid = preview !== undefined && existing + others === 0;
+  const noValid = preview !== undefined && existing + others + preview.deleted.length === 0;
   const allExisting = preview !== undefined && existing > 0 && others === 0 && preview.invalid.length === 0;
 
   /** The main button names what confirming does, when it does one kind of thing. */
@@ -327,16 +390,14 @@ export function AddMembersDialog({ open, onOpenChange }: { open: boolean; onOpen
   const payingCheckbox = (
     <Checkbox name="paying" checked={paying} onCheckedChange={(v) => setPaying(v === true)} label={payingLabel} />
   );
-  const inputActions = (
-    <DialogActions>
-      <DialogClose asChild>
-        <Button type="button" $variant="secondary">
-          {copy.addDialog.cancel}
-        </Button>
-      </DialogClose>
-      <SubmitButton>{copy.addDialog.continue}</SubmitButton>
-    </DialogActions>
+  const cancel = (
+    <DialogClose asChild>
+      <Button type="button" $variant="secondary">
+        {copy.addDialog.cancel}
+      </Button>
+    </DialogClose>
   );
+  const appliedError = previewState.applied?.status === "error" ? previewState.applied.message : undefined;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -345,47 +406,55 @@ export function AddMembersDialog({ open, onOpenChange }: { open: boolean; onOpen
 
         {step === "input" || !preview || !summary ? (
           <Form action={() => previewAction(formData())} noValidate>
-            {view === "add" ? (
+            {view === "single" ? (
               <>
-                <Field
-                  label={copy.addDialog.emailsLabel}
-                  hint={copy.addDialog.tagsHint}
-                  error={fieldError(previewState, "emails")}
-                  required
-                >
+                <Field label={copy.addDialog.nameLabel}>
+                  {(p) => <Input {...p} name="name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="off" />}
+                </Field>
+                <Field label={copy.addDialog.emailLabel} error={fieldError(previewState, "email")} required>
                   {(p) => (
-                    <TagInput
+                    <Input
                       {...p}
-                      ref={tagsRef}
-                      value={tags}
-                      onValueChange={setTags}
-                      normalize={cleanAddress}
-                      validate={(tag) => (EMAIL.test(tag) ? undefined : copy.addDialog.invalidEmail)}
-                      placeholder={copy.addDialog.tagsPlaceholder}
-                      copy={{ tagsLabel: copy.addDialog.tagsListLabel }}
+                      ref={emailRef}
+                      name="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      autoComplete="off"
                     />
                   )}
                 </Field>
-                <LinkRow>
+                {payingCheckbox}
+                {appliedError && (
+                  <ErrorNote role="alert">
+                    <ErrorIcon />
+                    <span>{appliedError}</span>
+                  </ErrorNote>
+                )}
+                <Footer>
                   <Button ref={importLinkRef} type="button" $variant="link" onClick={() => switchView("file")}>
                     <Icon icon={FileUp} size={16} />
                     {copy.addDialog.importFromFile}
                   </Button>
-                </LinkRow>
-                {payingCheckbox}
+                  <FooterEnd>
+                    {cancel}
+                    <SubmitButton>
+                      <Icon icon={UserPlus} size={16} />
+                      {copy.addDialog.add}
+                    </SubmitButton>
+                  </FooterEnd>
+                </Footer>
               </>
             ) : (
               <>
-                <LinkRow>
-                  <Button type="button" $variant="link" onClick={() => switchView("add")}>
-                    <Icon icon={ArrowLeft} size={16} />
-                    {copy.addDialog.backToAdd}
-                  </Button>
-                </LinkRow>
                 <UploadRow>
                   <Button ref={uploadRef} type="button" $variant="secondary" $size="sm" onClick={pickCsv}>
                     <Icon icon={Upload} size={16} />
                     {copy.addDialog.uploadCsv}
+                  </Button>
+                  <Button type="button" $variant="link" onClick={downloadTemplate}>
+                    <Icon icon={Download} size={16} />
+                    {copy.addDialog.downloadTemplate}
                   </Button>
                   <Note role="status">{csvNote}</Note>
                 </UploadRow>
@@ -407,9 +476,18 @@ export function AddMembersDialog({ open, onOpenChange }: { open: boolean; onOpen
                   )}
                 </Field>
                 {payingCheckbox}
+                <Footer>
+                  <Button type="button" $variant="link" onClick={() => switchView("single")}>
+                    <Icon icon={ArrowLeft} size={16} />
+                    {copy.addDialog.backToAdd}
+                  </Button>
+                  <FooterEnd>
+                    {cancel}
+                    <SubmitButton>{copy.addDialog.continue}</SubmitButton>
+                  </FooterEnd>
+                </Footer>
               </>
             )}
-            {inputActions}
           </Form>
         ) : (
           <Step>
@@ -473,6 +551,7 @@ export function AddMembersDialog({ open, onOpenChange }: { open: boolean; onOpen
                   />
                 </ResubscribeRow>
               </Group>
+              <Group icon={UserX} tone="muted" label={g.deleted(preview.deleted.length)} detail={g.deletedDetail} people={preview.deleted} />
             </GroupList>
 
             <Summary role="status">

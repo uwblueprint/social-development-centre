@@ -66,8 +66,23 @@ export async function signIn(_prev: SignInResult, formData: FormData): Promise<S
   return { status: "sent", email };
 }
 
-export async function signOut() {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
-  redirect("/login");
+/**
+ * Signs out and lands on the sign-in page with a goodbye ("You're signed out. See you soon, Amara.").
+ * `firstName` comes from the shell; a form posting here (FormData) gets the message without a name.
+ */
+export async function signOut(firstName?: string | FormData) {
+  // Local development without Supabase has no session to end (see src/lib/supabase/proxy.ts).
+  if (process.env.NODE_ENV === "production" || process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    const supabase = await createClient();
+    await supabase.auth.signOut();
+  }
+  redirect(signedOutUrl(typeof firstName === "string" ? firstName : undefined));
+}
+
+/** The sign-in page after signing out; the name is trimmed and capped because it's shown back. */
+function signedOutUrl(firstName?: string) {
+  const params = new URLSearchParams({ signedOut: "1" });
+  const name = firstName?.trim().slice(0, 40);
+  if (name) params.set("name", name);
+  return `/login?${params}`;
 }

@@ -1,9 +1,11 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { BriefcaseBusiness, Building, ChartColumnIncreasing, UsersRound } from "lucide-react";
 import { AppToastProvider } from "@/components/ui/Toast";
+import { AccountDialog, accountDialogCopy } from "@/components/patterns/AccountDialog";
 import { SidebarLayout, type SidebarNavItem } from "@/components/patterns/Sidebar";
+import { deleteAccount, updateAccount } from "@/features/account/actions";
 import type { AdminSection, AdminUser } from "../_data/types";
 import { signOut } from "@/app/login/actions";
 
@@ -28,19 +30,36 @@ export function AdminShell({ user, children }: { user: AdminUser; children: Reac
     description: s.description,
     icon: s.icon,
   }));
+  const [accountOpen, setAccountOpen] = useState(false);
+  const actions = useMemo(
+    () => ({ update: updateAccount.bind(null, "admin"), remove: deleteAccount.bind(null, "admin") }),
+    [],
+  );
+  const profile = { name: user.name, email: user.email, initials: user.initials, avatarSrc: user.avatarUrl };
   return (
-    <SidebarLayout
-      config={{
-        product: { name: "SDC Admin", initials: "SDC" },
-        navLabel: "Admin navigation",
-        items,
-        user: { ...user, avatarSrc: user.avatarUrl },
-        accountHref: "/admin/account",
-        onSignOut: () => void signOut(),
-      }}
-    >
-      {/* One provider for the whole portal so a toast survives navigating from a form back to its list. */}
-      <AppToastProvider>{children}</AppToastProvider>
-    </SidebarLayout>
+    // One provider for the whole portal so a toast survives navigating from a form back to its list,
+    // and the account dialog can confirm a save.
+    <AppToastProvider>
+      <SidebarLayout
+        config={{
+          product: { name: "SDC Admin", initials: "SDC" },
+          navLabel: "Admin navigation",
+          items,
+          user: profile,
+          onOpenAccount: () => setAccountOpen(true),
+          onSignOut: () => void signOut(user.name.split(/\s+/)[0]),
+        }}
+      >
+        {children}
+      </SidebarLayout>
+      <AccountDialog
+        open={accountOpen}
+        onOpenChange={setAccountOpen}
+        user={profile}
+        updateAction={actions.update}
+        deleteAction={actions.remove}
+        deleteDescription={accountDialogCopy.deleteAdmin}
+      />
+    </AppToastProvider>
   );
 }

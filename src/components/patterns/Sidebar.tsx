@@ -59,7 +59,8 @@ export interface SidebarConfig {
   items: SidebarNavItem[];
   recent?: { label: string; items: SidebarRecentItem[] };
   user: { name: string; email: string; initials: string; avatarSrc?: string };
-  accountHref: string;
+  /** Opens the My account dialog (`AccountDialog`), rendered by the portal's shell. */
+  onOpenAccount: () => void;
   onSignOut?: () => void;
 }
 
@@ -429,11 +430,6 @@ const ProfileEmail = styled.span`
   color: var(--color-text-muted);
 `;
 
-const MenuLink = styled(Link)`
-  color: inherit;
-  text-decoration: none;
-`;
-
 const Muted = styled.span`
   display: inline-flex;
   color: var(--color-text-muted);
@@ -458,6 +454,9 @@ function SidebarContent({
   closeRef: React.Ref<HTMLButtonElement>;
 }) {
   const pathname = usePathname();
+  const profileRef = React.useRef<HTMLButtonElement>(null);
+  /** Set when "My account" is chosen: the dialog opens once the menu has closed and focus is back on the profile button, so closing the dialog returns focus there. */
+  const accountRequested = React.useRef(false);
 
   return (
     <>
@@ -528,7 +527,7 @@ function SidebarContent({
       <Footer>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <ProfileButton type="button" aria-label={`Open account menu for ${config.user.name}`}>
+            <ProfileButton ref={profileRef} type="button" aria-label={`Open account menu for ${config.user.name}`}>
               <Avatar initials={config.user.initials} src={config.user.avatarSrc} size="sm" />
               <ProfileText>
                 <ProfileName>{config.user.name}</ProfileName>
@@ -539,12 +538,21 @@ function SidebarContent({
               </Muted>
             </ProfileButton>
           </DropdownMenuTrigger>
-          <DropdownMenuContent side="top" align="start" style={{ minWidth: 220 }}>
-            <DropdownMenuItem asChild>
-              <MenuLink href={config.accountHref} onClick={() => onNavigate(config.accountHref)}>
-                <Icon icon={UserRound} size={16} />
-                My account
-              </MenuLink>
+          <DropdownMenuContent
+            side="top"
+            align="start"
+            style={{ minWidth: 220 }}
+            onCloseAutoFocus={(event) => {
+              if (!accountRequested.current) return;
+              accountRequested.current = false;
+              event.preventDefault();
+              profileRef.current?.focus();
+              config.onOpenAccount();
+            }}
+          >
+            <DropdownMenuItem onSelect={() => (accountRequested.current = true)}>
+              <Icon icon={UserRound} size={16} />
+              My account
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={config.onSignOut}>

@@ -404,6 +404,36 @@ The **Organization** page contains **Profile** and **Team**. An SDC admin can ed
 - The audit's proposed message, **“Check the email address, wait a minute, then try again,”** should not be used for every provider failure. It combines three guesses and is false when sign-in is disabled for the address.
 - Map known errors by cause; keep an intentionally generic message only when the cause cannot safely be disclosed.
 
+## Account and sign-out
+
+**New, needs approval.** My account is a dialog, not a page, opened from the sidebar profile menu in both portals. It holds a profile picture, the person's name and a danger zone; nothing else (sign-in is by email link, so there's no password). Signing out has no confirmation. Copy lives in `accountDialogCopy` (`src/components/patterns/AccountDialog.tsx`), `accountServerCopy` (`src/features/account/copy.ts`) and `goodbyeCopy` (`src/app/login/page.tsx`).
+
+| Situation | Text | Status |
+|---|---|---|
+| Account menu item | My account | Opens the dialog |
+| Dialog title | My account | New, needs approval |
+| Dialog description | Signed in as {email} | New, needs approval |
+| Picture label | Profile picture | New, needs approval |
+| Picture hint | JPG, PNG or WebP. We crop it to a square. | New, needs approval |
+| Picture buttons | Upload photo · Change photo · Remove photo | New, needs approval. "Change" when a picture is set |
+| Picture: wrong file type | Choose a JPG, PNG or WebP image. | New, needs approval |
+| Picture: unreadable file | We couldn't read that image. Choose a JPG, PNG or WebP file. | New, needs approval |
+| Picture: too large (server check) | Choose a smaller image, up to 1 MB. | New, needs approval. Photos are resized in the browser first, so people rarely see it |
+| Name label | Name (required) | New, needs approval |
+| Name empty | Enter your name. | New, needs approval |
+| Name too long | Use 80 characters or fewer. | New, needs approval |
+| Buttons | Cancel · Save changes | New, needs approval |
+| Saved (toast) | Changes saved | New, needs approval |
+| Danger zone heading | Danger zone | New, needs approval |
+| Danger zone body | Delete your account and sign out. | New, needs approval |
+| Danger zone button | Delete account | New, needs approval |
+| Confirm title | Delete your account? | New, needs approval |
+| Confirm body, admin | You'll be signed out and lose access to SDC Admin. What you did here stays in SDC's records, shown as "Former admin". This can't be undone. | New, needs approval |
+| Confirm body, partner | You'll be signed out and lose access to {organization} in the SDC partner portal. This can't be undone. | New, needs approval |
+| Confirm buttons | Keep account · Delete account | New, needs approval. Delete is the danger button |
+| Signed out (sign-in page, above the form) | You're signed out. See you soon, {first name}. | New, needs approval. Without a name: "You're signed out. See you soon." Muted text, no banner |
+| Account deleted (sign-in page) | Your account is deleted and you're signed out. | New, needs approval |
+
 ## Copy audit: disposition
 
 This table reviews the supplied audit as a proposed change set:

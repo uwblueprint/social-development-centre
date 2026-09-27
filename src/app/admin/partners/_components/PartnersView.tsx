@@ -2,22 +2,46 @@
 
 import * as React from "react";
 import { styled } from "next-yak";
-import { Archive, Building2, Search as SearchIcon, UserPlus, UserRound, UserX } from "lucide-react";
-import { ListPage, ListPageHeader, ListPageToolbar, useListParams, useListSearch } from "@/components/patterns/ListPage";
+import { Building2, Copy, LifeBuoy, UserPlus, UserRound } from "lucide-react";
+import {
+  ListEmptyState,
+  ListPage,
+  ListPageHeader,
+  ListPageToolbar,
+  useListParams,
+  useListSearch,
+  useListSort,
+} from "@/components/patterns/ListPage";
 import { Button } from "@/components/ui/Button";
-import { EmptyState } from "@/components/ui/EmptyState";
 import { Icon } from "@/components/ui/Icon";
-import { Label } from "@/components/ui/Label";
 import { SearchField } from "@/components/ui/SearchField";
-import { Select } from "@/components/ui/Select";
 import { Sheet, SheetContent } from "@/components/ui/Sheet";
-import { Table } from "@/components/ui/Table";
+import { Table, type TableSort } from "@/components/ui/Table";
 import { Tabs, TabsContent, TabsCount, TabsList, TabsTrigger } from "@/components/ui/Tabs";
-import { AppToastProvider } from "@/components/ui/Toast";
+import { AppToastProvider, useToast } from "@/components/ui/Toast";
 import { partnersCopy as copy } from "../_copy";
-import type { OrganizationOption, PartnerOrganization, PartnerPerson, PartnerStatusFilter } from "../_data/types";
+import {
+  DEFAULT_ORGANIZATION_SORT,
+  DEFAULT_PERSON_SORT,
+  DEFAULT_PERSON_TAGS,
+  ORGANIZATION_SORT_KEYS,
+  PARTNER_HEALTH,
+  PERSON_SORT_KEYS,
+  type AdminPartnerOrganization,
+  type FacetOption,
+  type ListSort,
+  type OrganizationOption,
+  type OrganizationSortKey,
+  type PartnerHealth,
+  type PartnerPerson,
+  type PartnerStatusFilter,
+  type PersonSortKey,
+  type PersonTagFilter,
+} from "../_data/types";
+import { filterParam } from "../_lib/params";
+import { copyEmails } from "./CopyableEmail";
 import { InviteDialog, type InvitePreset } from "./InviteDialog";
-import { organizationColumns, personColumns, removedOrganizationColumns, removedPersonColumns } from "./PartnerRows";
+import { organizationColumns, personColumns, type HeaderFilter } from "./PartnerRows";
 import { PartnerSheetContent } from "./PartnerSheetContent";
 import { PersonSheetContent } from "./PersonSheetContent";
 
@@ -25,59 +49,99 @@ export type PartnersViewName = "organizations" | "people";
 
 type Panel = { kind: "organization"; id: string } | { kind: "person"; id: string };
 
-const TabsAndFilter = styled.div`
-  display: flex;
-  align-items: flex-end;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-5);
-`;
+export interface PartnersFilters {
+  status: PartnerStatusFilter[];
+  health: PartnerHealth[];
+  organizations: string[];
+  tags: PersonTagFilter[];
+}
 
-const StatusFilter = styled.div`
+/* A calm, informational note above the table: text and an icon, not colour alone. */
+const SupportCallout = styled.div`
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  margin-bottom: var(--space-2);
-
-  & > label {
-    margin: 0;
-  }
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-info-border);
+  border-radius: var(--radius-md);
+  background: var(--color-info-subtle);
+  font-size: var(--text-sm);
+  color: var(--color-text);
 `;
 
-const StatusSelect = styled.div`
-  width: 140px;
+const CalloutIcon = styled.span`
+  display: inline-flex;
+  color: var(--color-info);
 `;
 
-export function PartnersView({
+const CalloutText = styled.p`
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+`;
+
+const sameSet = (a: readonly string[], b: readonly string[]) => a.length === b.length && a.every((v) => b.includes(v));
+
+export function PartnersView(props: {
+  view: PartnersViewName;
+  q: string;
+  organizations: {
+    rows: AdminPartnerOrganization[];
+    facets: { status: FacetOption<PartnerStatusFilter>[]; health: FacetOption<PartnerHealth>[] };
+  };
+  people: {
+    rows: PartnerPerson[];
+    facets: { organizations: (FacetOption & { label: string })[]; tags: FacetOption<PersonTagFilter>[] };
+  };
+  filters: PartnersFilters;
+  sorts: { organizations: ListSort<OrganizationSortKey>; people: ListSort<PersonSortKey> };
+  directory: { organizations: AdminPartnerOrganization[]; people: PartnerPerson[] };
+  needSupport: number;
+  activeEmails: string[];
+  organizationOptions: OrganizationOption[];
+  /** The server's render time (ISO), so relative times match between server and client. */
+  now: string;
+}) {
+  return (
+    <AppToastProvider>
+      <PartnersViewInner {...props} />
+    </AppToastProvider>
+  );
+}
+
+function PartnersViewInner({
   view,
-  status,
   q,
   organizations,
-  removedOrganizations,
   people,
-  removedPeople,
+  filters,
+  sorts,
+  directory,
+  needSupport,
+  activeEmails,
   organizationOptions,
-}: {
-  view: PartnersViewName;
-  status: PartnerStatusFilter;
-  q: string;
-  organizations: PartnerOrganization[];
-  removedOrganizations: PartnerOrganization[];
-  people: PartnerPerson[];
-  removedPeople: PartnerPerson[];
-  organizationOptions: OrganizationOption[];
-}) {
-  const { setParams } = useListParams();
+  now,
+}: React.ComponentProps<typeof PartnersView>) {
+  const { toast } = useToast();
+  const { setParams, pending: paramsPending } = useListParams();
   const searchState = useListSearch(q);
-  const statusId = React.useId();
+  const serverSort = view === "organizations" ? sorts.organizations : sorts.people;
+  const { sort: requestedSort, setSort, pending: sortPending } = useListSort(
+    view === "organizations" ? DEFAULT_ORGANIZATION_SORT : DEFAULT_PERSON_SORT,
+  );
+  const validKeys: readonly string[] = view === "organizations" ? ORGANIZATION_SORT_KEYS : PERSON_SORT_KEYS;
+  // The server ignores sort keys that aren't this view's and uses its default; show the same.
+  const sort: TableSort = requestedSort && validKeys.includes(requestedSort.key) ? requestedSort : serverSort;
+  const busy = paramsPending || sortPending || searchState.pending;
 
   const [activeView, setActiveView] = React.useState<PartnersViewName>(view);
-  const [activeStatus, setActiveStatus] = React.useState<PartnerStatusFilter>(status);
-  // Keeps local UI state in step with the URL (e.g. back/forward), derived at render time.
-  const [prev, setPrev] = React.useState({ view, status });
-  if (view !== prev.view || status !== prev.status) {
-    setPrev({ view, status });
+  // Keeps the tab in step with the URL (e.g. back/forward), derived at render time.
+  const [prevView, setPrevView] = React.useState(view);
+  if (view !== prevView) {
+    setPrevView(view);
     setActiveView(view);
-    setActiveStatus(status);
   }
 
   const [panel, setPanel] = React.useState<Panel | null>(null);
@@ -88,13 +152,8 @@ export function PartnersView({
   function handleViewChange(value: string) {
     const next: PartnersViewName = value === "people" ? "people" : "organizations";
     setActiveView(next);
-    setParams({ view: next === "organizations" ? undefined : next });
-  }
-
-  function handleStatusChange(value: string) {
-    const next: PartnerStatusFilter = value === "removed" ? "removed" : "active";
-    setActiveStatus(next);
-    setParams({ status: next === "active" ? undefined : next });
+    // Sorts are per view.
+    setParams({ view: next === "organizations" ? undefined : next, sort: undefined, dir: undefined });
   }
 
   function openInvite(preset?: InvitePreset) {
@@ -103,18 +162,54 @@ export function PartnersView({
     setInviteOpen(true);
   }
 
-  const removed = activeStatus === "removed";
-  const orgRows = removed ? removedOrganizations : organizations;
-  const personRows = removed ? removedPeople : people;
+  async function handleCopyAll() {
+    toast({ title: await copyEmails(activeEmails) });
+  }
 
-  const allOrganizations = [...organizations, ...removedOrganizations];
-  const selectedOrg = panel?.kind === "organization" ? allOrganizations.find((o) => o.id === panel.id) : undefined;
-  const selectedPerson =
-    panel?.kind === "person" ? (people.find((p) => p.id === panel.id) ?? removedPeople.find((p) => p.id === panel.id)) : undefined;
-  const personOrg = selectedPerson && allOrganizations.find((o) => o.id === selectedPerson.organization.id);
+  const clearSearch = () => {
+    searchState.setValue("");
+    setParams({ q: undefined });
+  };
+  const orgFilterParams = { status: undefined, health: undefined };
+  const personFilterParams = { orgs: undefined, tags: undefined };
+
+  // Header filters.
+  const statusFilter: HeaderFilter = {
+    label: copy.status.label,
+    options: organizations.facets.status.map((f) => ({ value: f.value, label: copy.status[f.value], count: f.count })),
+    selected: filters.status,
+    onChange: (selected) => setParams({ status: filterParam(selected, ["active"]) }),
+  };
+  const healthFilter: HeaderFilter = {
+    label: copy.health.label,
+    options: organizations.facets.health.map((f) => ({ value: f.value, label: copy.health.tags[f.value], count: f.count })),
+    selected: filters.health,
+    onChange: (selected) => setParams({ health: filterParam(selected, []) }),
+  };
+  const organizationFilter: HeaderFilter = {
+    label: copy.table.headerOrganization,
+    options: people.facets.organizations.map((f) => ({ value: f.value, label: f.label, count: f.count })),
+    selected: filters.organizations,
+    onChange: (selected) => setParams({ orgs: selected.length ? selected.join(",") : undefined }),
+  };
+  const tagsFilter: HeaderFilter = {
+    label: copy.tags.label,
+    options: people.facets.tags.map((f) => ({ value: f.value, label: copy.tags.options[f.value], count: f.count })),
+    selected: filters.tags,
+    onChange: (selected) => setParams({ tags: filterParam(selected, DEFAULT_PERSON_TAGS) }),
+  };
+
+  const orgsFiltered = !sameSet(filters.status, ["active"]) || filters.health.length > 0;
+  const peopleFiltered = filters.organizations.length > 0 || !sameSet(filters.tags, DEFAULT_PERSON_TAGS);
+  const showSupport = needSupport > 0 && filters.health.length === 0;
+
+  const selectedOrg = panel?.kind === "organization" ? directory.organizations.find((o) => o.id === panel.id) : undefined;
+  const selectedPerson = panel?.kind === "person" ? directory.people.find((p) => p.id === panel.id) : undefined;
+  const personOrg = selectedPerson && directory.organizations.find((o) => o.id === selectedPerson.organization.id);
   const lastWithAccess =
     !!selectedPerson &&
     selectedPerson.status === "active" &&
+    !selectedPerson.removal &&
     (personOrg?.contacts.filter((c) => c.status === "active").length ?? 0) <= 1;
 
   const inviteButton = (
@@ -124,132 +219,175 @@ export function PartnersView({
     </Button>
   );
 
-  const noMatches = <EmptyState icon={SearchIcon} title={copy.search.noMatchesTitle} description={copy.search.noMatchesDescription} />;
-
-  const organizationsEmpty = q ? (
-    noMatches
-  ) : removed ? (
-    <EmptyState icon={Archive} title={copy.empty.removedOrganizationsTitle} description={copy.empty.removedOrganizationsDescription} />
-  ) : (
-    <EmptyState icon={Building2} title={copy.empty.organizationsTitle} description={copy.empty.organizationsDescription} action={inviteButton} />
-  );
-
-  const peopleEmpty = q ? (
-    noMatches
-  ) : removed ? (
-    <EmptyState icon={UserX} title={copy.empty.removedPeopleTitle} description={copy.empty.removedPeopleDescription} />
-  ) : (
-    <EmptyState icon={UserRound} title={copy.empty.peopleTitle} description={copy.empty.peopleDescription} action={inviteButton} />
+  const headerActions = (
+    <>
+      {activeEmails.length > 0 && (
+        <Button type="button" $variant="secondary" onClick={() => void handleCopyAll()}>
+          <Icon icon={Copy} size={16} />
+          {copy.emails.copyAll}
+        </Button>
+      )}
+      {inviteButton}
+    </>
   );
 
   const panelOpen = !!(selectedOrg || selectedPerson);
 
   return (
-    <AppToastProvider>
-      <ListPage>
-        <ListPageHeader title={copy.title} actions={inviteButton} />
+    <ListPage>
+      <ListPageHeader title={copy.title} actions={headerActions} />
 
-        <Tabs value={activeView} onValueChange={handleViewChange}>
-          <ListPageToolbar
-            tabs={
-              <TabsAndFilter>
-                <TabsList aria-label={copy.views.ariaLabel}>
-                  <TabsTrigger value="organizations">
-                    {copy.views.organizations}
-                    <TabsCount>{copy.views.count(orgRows.length)}</TabsCount>
-                  </TabsTrigger>
-                  <TabsTrigger value="people">
-                    {copy.views.people}
-                    <TabsCount>{copy.views.count(personRows.length)}</TabsCount>
-                  </TabsTrigger>
-                </TabsList>
-                <StatusFilter>
-                  <Label htmlFor={statusId}>{copy.status.label}</Label>
-                  <StatusSelect>
-                    <Select
-                      id={statusId}
-                      value={activeStatus}
-                      onValueChange={handleStatusChange}
-                      options={[
-                        { value: "active", label: copy.status.active },
-                        { value: "removed", label: copy.status.removed },
-                      ]}
-                    />
-                  </StatusSelect>
-                </StatusFilter>
-              </TabsAndFilter>
-            }
-            search={
-              <SearchField
-                name="q"
-                aria-label={copy.search.placeholder}
-                placeholder={copy.search.placeholder}
-                value={searchState.value}
-                onChange={(event) => searchState.setValue(event.target.value)}
-                onSearch={searchState.search}
-                pending={searchState.pending}
+      <Tabs value={activeView} onValueChange={handleViewChange}>
+        <ListPageToolbar
+          tabs={
+            <TabsList aria-label={copy.views.ariaLabel}>
+              <TabsTrigger value="organizations">
+                {copy.views.organizations}
+                <TabsCount>{copy.views.count(organizations.rows.length)}</TabsCount>
+              </TabsTrigger>
+              <TabsTrigger value="people">
+                {copy.views.people}
+                <TabsCount>{copy.views.count(people.rows.length)}</TabsCount>
+              </TabsTrigger>
+            </TabsList>
+          }
+          search={
+            <SearchField
+              name="q"
+              aria-label={copy.search.placeholder}
+              placeholder={copy.search.placeholder}
+              value={searchState.value}
+              onChange={(event) => searchState.setValue(event.target.value)}
+              onSearch={searchState.search}
+              pending={searchState.pending}
+            />
+          }
+          results={{
+            query: q,
+            count: activeView === "organizations" ? organizations.rows.length : people.rows.length,
+            pending: searchState.pending,
+          }}
+        />
+
+        <TabsContent value="organizations">
+          {showSupport && (
+            <SupportCallout>
+              <CalloutIcon aria-hidden="true">
+                <Icon icon={LifeBuoy} size={16} />
+              </CalloutIcon>
+              <CalloutText>{copy.health.callout(needSupport)}</CalloutText>
+              <Button
+                type="button"
+                $variant="secondary"
+                $size="sm"
+                onClick={() => setParams({ health: PARTNER_HEALTH.join(","), status: undefined })}
+              >
+                {copy.health.showThem}
+              </Button>
+            </SupportCallout>
+          )}
+          <Table
+            columns={organizationColumns({ status: statusFilter, health: healthFilter }, now)}
+            rows={organizations.rows}
+            getRowId={(org) => org.id}
+            onRowClick={(org) => setPanel({ kind: "organization", id: org.id })}
+            aria-label={copy.views.organizations}
+            sort={view === "organizations" ? sort : sorts.organizations}
+            onSortChange={setSort}
+            busy={busy}
+            empty={
+              <ListEmptyState
+                items={copy.empty.organizationItems}
+                query={q}
+                searchedFields={copy.empty.searchedOrganizations}
+                onClearSearch={clearSearch}
+                filtered={orgsFiltered ? copy.empty.filteredOrganizations : undefined}
+                onClearFilters={() => setParams(orgFilterParams)}
+                onClearSearchAndFilters={() => {
+                  searchState.setValue("");
+                  setParams({ q: undefined, ...orgFilterParams });
+                }}
+                empty={{
+                  icon: Building2,
+                  title: copy.empty.organizationsTitle,
+                  description: copy.empty.organizationsDescription,
+                  action: inviteButton,
+                }}
               />
             }
           />
+        </TabsContent>
 
-          <TabsContent value="organizations">
-            <Table
-              columns={removed ? removedOrganizationColumns : organizationColumns}
-              rows={orgRows}
-              getRowId={(org) => org.id}
-              onRowClick={(org) => setPanel({ kind: "organization", id: org.id })}
-              aria-label={copy.views.organizations}
-              empty={organizationsEmpty}
-            />
-          </TabsContent>
-
-          <TabsContent value="people">
-            <Table
-              columns={removed ? removedPersonColumns : personColumns}
-              rows={personRows}
-              getRowId={(person) => `${person.id}-${person.organization.id}`}
-              onRowClick={(person) => setPanel({ kind: "person", id: person.id })}
-              aria-label={copy.views.people}
-              empty={peopleEmpty}
-            />
-          </TabsContent>
-        </Tabs>
-
-        <Sheet open={panelOpen} onOpenChange={(open) => !open && setPanel(null)}>
-          <SheetContent>
-            {selectedOrg && (
-              <PartnerSheetContent
-                key={selectedOrg.id}
-                org={selectedOrg}
-                onAddPerson={() => openInvite({ organization: { id: selectedOrg.id, name: selectedOrg.name } })}
+        <TabsContent value="people">
+          <Table
+            columns={personColumns({ organization: organizationFilter, tags: tagsFilter })}
+            rows={people.rows}
+            getRowId={(person) => `${person.id}-${person.organization.id}`}
+            onRowClick={(person) => setPanel({ kind: "person", id: person.id })}
+            aria-label={copy.views.people}
+            stickyColumns={1}
+            sort={view === "people" ? sort : sorts.people}
+            onSortChange={setSort}
+            busy={busy}
+            empty={
+              <ListEmptyState
+                items={copy.empty.peopleItems}
+                query={q}
+                searchedFields={copy.empty.searchedPeople}
+                onClearSearch={clearSearch}
+                filtered={peopleFiltered ? copy.empty.filteredPeople : undefined}
+                onClearFilters={() => setParams(personFilterParams)}
+                onClearSearchAndFilters={() => {
+                  searchState.setValue("");
+                  setParams({ q: undefined, ...personFilterParams });
+                }}
+                empty={{
+                  icon: UserRound,
+                  title: copy.empty.peopleTitle,
+                  description: copy.empty.peopleDescription,
+                  action: inviteButton,
+                }}
               />
-            )}
-            {selectedPerson && (
-              <PersonSheetContent
-                key={selectedPerson.id}
-                person={selectedPerson}
-                lastWithAccess={lastWithAccess}
-                onOpenOrganization={() => setPanel({ kind: "organization", id: selectedPerson.organization.id })}
-                onInviteAgain={() =>
-                  openInvite({
-                    name: selectedPerson.name,
-                    email: selectedPerson.email,
-                    organization: { id: selectedPerson.organization.id, name: selectedPerson.organization.name },
-                  })
-                }
-              />
-            )}
-          </SheetContent>
-        </Sheet>
+            }
+          />
+        </TabsContent>
+      </Tabs>
 
-        <InviteDialog
-          key={inviteKey}
-          open={inviteOpen}
-          onOpenChange={setInviteOpen}
-          organizationOptions={organizationOptions}
-          preset={invitePreset}
-        />
-      </ListPage>
-    </AppToastProvider>
+      <Sheet open={panelOpen} onOpenChange={(open) => !open && setPanel(null)}>
+        <SheetContent>
+          {selectedOrg && (
+            <PartnerSheetContent
+              key={selectedOrg.id}
+              org={selectedOrg}
+              now={now}
+              onAddPerson={() => openInvite({ organization: { id: selectedOrg.id, name: selectedOrg.name } })}
+            />
+          )}
+          {selectedPerson && (
+            <PersonSheetContent
+              key={selectedPerson.id}
+              person={selectedPerson}
+              lastWithAccess={lastWithAccess}
+              onOpenOrganization={() => setPanel({ kind: "organization", id: selectedPerson.organization.id })}
+              onInviteAgain={() =>
+                openInvite({
+                  name: selectedPerson.name,
+                  email: selectedPerson.email,
+                  organization: { id: selectedPerson.organization.id, name: selectedPerson.organization.name },
+                })
+              }
+            />
+          )}
+        </SheetContent>
+      </Sheet>
+
+      <InviteDialog
+        key={inviteKey}
+        open={inviteOpen}
+        onOpenChange={setInviteOpen}
+        organizationOptions={organizationOptions}
+        preset={invitePreset}
+      />
+    </ListPage>
   );
 }

@@ -1,16 +1,21 @@
 "use client";
 
 import { styled } from "next-yak";
-import { ChevronRight } from "lucide-react";
+import { Archive, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Icon } from "@/components/ui/Icon";
-import type { TableColumn } from "@/components/ui/Table";
+import type { TableColumn, TableColumnFilter } from "@/components/ui/Table";
 import { partnersCopy } from "../_copy";
-import type { PartnerOrganization, PartnerPerson } from "../_data/types";
-import { formatDate, summarizeNames } from "../_lib/format";
+import type { AdminPartnerOrganization, PartnerPerson } from "../_data/types";
+import { formatDate, formatDateTimeTitle, formatRelativeCell } from "../_lib/format";
 import { InvitationBadge, invitationDateText } from "./ContactRowParts";
+import { CopyableEmail } from "./CopyableEmail";
+import { HealthBadge } from "./HealthBadge";
 
 const copy = partnersCopy.table;
+
+/** A header filter (the Table column's `filter`). */
+export type HeaderFilter = TableColumnFilter;
 
 const NameLine = styled.span`
   display: inline-flex;
@@ -22,13 +27,14 @@ const NameLine = styled.span`
 const Stack = styled.span`
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 2px;
 `;
 
 const Muted = styled.span`
   font-size: var(--text-xs);
   color: var(--color-text-muted);
-  overflow-wrap: anywhere;
+  white-space: nowrap;
 `;
 
 const Chevron = styled.span`
@@ -48,71 +54,115 @@ const chevronColumn = <T,>(): TableColumn<T> => ({
   ),
 });
 
-const peopleColumn: TableColumn<PartnerOrganization> = {
-  key: "people",
-  header: copy.headerPeople,
-  render: (org) => summarizeNames(org.contacts.map((c) => c.name)),
-};
+const RemovedBadge = () => (
+  <Badge $variant="outline">
+    <Icon icon={Archive} size={12} />
+    {partnersCopy.badges.removed}
+  </Badge>
+);
 
-/** Organizations, Active: Organization (+ Awaiting response until anyone accepts), People, Email, Opportunities. */
-export const organizationColumns: TableColumn<PartnerOrganization>[] = [
-  {
-    key: "organization",
-    header: copy.headerOrganization,
-    render: (org) => (
-      <NameLine>
-        {org.name}
-        {org.status === "pending" && <Badge $variant="neutral">{partnersCopy.badges.awaitingResponse}</Badge>}
-      </NameLine>
-    ),
-  },
-  peopleColumn,
-  { key: "email", header: copy.headerEmail, render: (org) => org.contacts[0]?.email },
-  {
-    key: "opportunities",
-    header: copy.headerOpportunities,
-    align: "right",
-    render: (org) => copy.opportunities(org.opportunityCount),
-  },
-  chevronColumn(),
-];
-
-/** Organizations, Removed: Organization, People, Removed. */
-export const removedOrganizationColumns: TableColumn<PartnerOrganization>[] = [
-  { key: "organization", header: copy.headerOrganization, render: (org) => org.name },
-  peopleColumn,
-  { key: "removed", header: copy.headerRemoved, render: (org) => (org.removedAt ? formatDate(org.removedAt) : null) },
-  chevronColumn(),
-];
-
-/** People, Active: Name (+ invitation state and date), Email, Organization. */
-export const personColumns: TableColumn<PartnerPerson>[] = [
-  {
-    key: "name",
-    header: copy.headerName,
-    render: (person) => {
-      const date = invitationDateText(person);
-      return (
-        <Stack>
-          <NameLine>
-            {person.name}
-            <InvitationBadge state={person.invitationState} />
-          </NameLine>
-          {date && <Muted>{date}</Muted>}
-        </Stack>
-      );
+/**
+ * Organizations: Organization (Status filter; removed ones say so), Health (filter; hidden when no row has a
+ * tag), People, Published, Last posted. Every column sorts on the server; `sortKey`s match ORGANIZATION_SORT_KEYS.
+ */
+export function organizationColumns(
+  filters: { status: HeaderFilter; health: HeaderFilter },
+  now: string,
+): TableColumn<AdminPartnerOrganization>[] {
+  return [
+    {
+      key: "organization",
+      header: copy.headerOrganization,
+      sortKey: "name",
+      filter: filters.status,
+      render: (org) => (
+        <NameLine>
+          {org.name}
+          {org.status === "removed" && <RemovedBadge />}
+        </NameLine>
+      ),
     },
-  },
-  { key: "email", header: copy.headerEmail, render: (person) => person.email },
-  { key: "organization", header: copy.headerOrganization, render: (person) => person.organization.name },
-  chevronColumn(),
-];
+    {
+      key: "health",
+      header: copy.headerHealth,
+      sortKey: "health",
+      filter: filters.health,
+      isEmpty: (org) => !org.health,
+      render: (org) => (org.health ? <HealthBadge tag={org.health.tag} /> : null),
+    },
+    {
+      key: "people",
+      header: copy.headerPeople,
+      sortKey: "people",
+      defaultSortDirection: "desc",
+      align: "right",
+      render: (org) => org.contacts.length,
+    },
+    {
+      key: "published",
+      header: copy.headerPublished,
+      sortKey: "published",
+      defaultSortDirection: "desc",
+      align: "right",
+      render: (org) => org.opportunityCount,
+    },
+    {
+      key: "lastPosted",
+      header: copy.headerLastPosted,
+      sortKey: "lastPosted",
+      defaultSortDirection: "desc",
+      render: (org) =>
+        org.lastPostedAt ? (
+          <time dateTime={org.lastPostedAt} title={formatDateTimeTitle(org.lastPostedAt)}>
+            {formatRelativeCell(org.lastPostedAt, now)}
+          </time>
+        ) : (
+          <Muted>{copy.never}</Muted>
+        ),
+    },
+    chevronColumn(),
+  ];
+}
 
-/** People, Removed: Name, Email, Organization, Removed. */
-export const removedPersonColumns: TableColumn<PartnerPerson>[] = [
-  { key: "name", header: copy.headerName, render: (person) => person.name },
-  { key: "email", header: copy.headerEmail, render: (person) => person.email },
-  { key: "organization", header: copy.headerOrganization, render: (person) => person.organization.name },
-  { key: "removed", header: copy.headerRemoved, render: (person) => (person.removedAt ? formatDate(person.removedAt) : null) },
-  chevronColumn(),
-];
+/**
+ * People: Name (sticky), Email (click to copy), Organization (filter), Tags (filter; hidden when no row has
+ * one): an invitation state with its date, or Removed with its date. Sort keys match PERSON_SORT_KEYS.
+ */
+export function personColumns(filters: { organization: HeaderFilter; tags: HeaderFilter }): TableColumn<PartnerPerson>[] {
+  return [
+    { key: "name", header: copy.headerName, sortKey: "name", render: (person) => person.name },
+    { key: "email", header: copy.headerEmail, sortKey: "email", render: (person) => <CopyableEmail email={person.email} /> },
+    {
+      key: "organization",
+      header: copy.headerOrganization,
+      sortKey: "organization",
+      filter: filters.organization,
+      render: (person) => person.organization.name,
+    },
+    {
+      key: "tags",
+      header: copy.headerTags,
+      sortKey: "tags",
+      filter: filters.tags,
+      isEmpty: (person) => !person.tag,
+      render: (person) => {
+        if (person.tag === "removed") {
+          return (
+            <Stack>
+              <RemovedBadge />
+              {person.removedAt && <Muted>{formatDate(person.removedAt)}</Muted>}
+            </Stack>
+          );
+        }
+        const date = invitationDateText(person);
+        return (
+          <Stack>
+            <InvitationBadge state={person.invitationState} />
+            {date && <Muted>{date}</Muted>}
+          </Stack>
+        );
+      },
+    },
+    chevronColumn(),
+  ];
+}

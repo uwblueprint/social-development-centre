@@ -1,12 +1,16 @@
 "use server";
 
 /**
- * Thin server-action bridge to the (fixed) data contract in `_data/queries.ts`,
- * so the member panel's Emails section can call it directly. Not part of the contract itself.
+ * Thin server-action bridge to the data contract in `_data/queries.ts`, so the member panel can call
+ * it directly: the person after an action, and their Emails section. Not part of the contract itself.
  */
 
-import { getSentEmailHtml, listMemberEmails } from "../_data/queries";
-import type { SentEmail } from "../_data/types";
+import { getMember, getSentEmailHtml, listMemberEmails } from "../_data/queries";
+import type { Member, SentEmail } from "../_data/types";
+
+export async function getMemberById(id: string): Promise<Member | null> {
+  return getMember(id);
+}
 
 export async function getMemberEmails(id: string): Promise<SentEmail[]> {
   return listMemberEmails(id);

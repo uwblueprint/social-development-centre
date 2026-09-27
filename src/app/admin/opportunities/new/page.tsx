@@ -19,10 +19,24 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   return { title: copy.form.newTitle(KIND_NOUN[kind]) };
 }
 
-/** /admin/opportunities/new, optionally ?kind=job to preselect a type. */
+/**
+ * /admin/opportunities/new, optionally ?kind=job to preselect a type and ?org={id} to preselect who it's
+ * posted as (Partners → "Post an opportunity for them"). Only an organization admins can post as is used.
+ */
 export default async function NewOpportunityPage({ searchParams }: Props) {
+  const params = await searchParams;
   // No or unknown ?kind starts as an event; Type is the form's first field and can be changed there.
-  const kind = parseKind((await searchParams).kind) ?? "event";
+  const kind = parseKind(params.kind) ?? "event";
   const organizations = await listPublisherOptions();
-  return <OpportunityForm scope="admin" basePath={BASE} kind={kind} organizations={organizations} save={saveOpportunity} />;
+  const org = typeof params.org === "string" ? organizations.find((o) => o.id === params.org)?.id : undefined;
+  return (
+    <OpportunityForm
+      scope="admin"
+      basePath={BASE}
+      kind={kind}
+      organizations={organizations}
+      initialOrganizationId={org}
+      save={saveOpportunity}
+    />
+  );
 }

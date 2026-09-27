@@ -2,7 +2,9 @@
 
 import * as React from "react";
 import { styled } from "next-yak";
+import { Download } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { Icon } from "@/components/ui/Icon";
 import { Checkbox } from "@/components/ui/Checkbox";
 import {
   Dialog,
@@ -13,10 +15,12 @@ import {
   DialogTitle,
 } from "@/components/ui/Dialog";
 import { Field } from "@/components/ui/Field";
+import { Label } from "@/components/ui/Label";
+import { RadioGroup, RadioGroupOption } from "@/components/ui/RadioGroup";
 import { Select } from "@/components/ui/Select";
 import { useToast } from "@/components/ui/Toast";
 import { countExport, exportMembers } from "../_data/actions";
-import type { ExportScope, MemberTier } from "../_data/types";
+import type { ExportKind, ExportScope, MemberTier } from "../_data/types";
 import { communityCopy as copy } from "../_copy";
 
 const SCOPE_OPTIONS: { value: ExportScope; label: string }[] = [
@@ -28,6 +32,11 @@ const SCOPE_OPTIONS: { value: ExportScope; label: string }[] = [
 const Body = styled.div`
   display: grid;
   gap: var(--space-4);
+`;
+
+const Group = styled.div`
+  display: grid;
+  gap: var(--space-2);
 `;
 
 const CountLine = styled.p`
@@ -46,6 +55,7 @@ export function ExportDialog({
   tab: MemberTier;
 }) {
   const { toast } = useToast();
+  const [kind, setKind] = React.useState<ExportKind>("members");
   const [scope, setScope] = React.useState<ExportScope>(tab);
   const [includeUnsubscribed, setIncludeUnsubscribed] = React.useState(false);
   const [count, setCount] = React.useState<number | null>(null);
@@ -54,18 +64,18 @@ export function ExportDialog({
   React.useEffect(() => {
     if (!open) return;
     let cancelled = false;
-    countExport(scope, includeUnsubscribed).then((n) => {
+    countExport(kind, scope, includeUnsubscribed).then((n) => {
       if (!cancelled) setCount(n);
     });
     return () => {
       cancelled = true;
     };
-  }, [open, scope, includeUnsubscribed]);
+  }, [open, kind, scope, includeUnsubscribed]);
 
   async function handleDownload() {
     setDownloading(true);
     try {
-      const { filename, csv } = await exportMembers(scope, includeUnsubscribed);
+      const { filename, csv } = await exportMembers(kind, scope, includeUnsubscribed);
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -90,6 +100,13 @@ export function ExportDialog({
         <DialogTitle>{copy.exportDialog.title}</DialogTitle>
         <DialogDescription>{copy.exportDialog.description}</DialogDescription>
         <Body>
+          <Group>
+            <Label id="export-kind-label">{copy.exportDialog.kindLabel}</Label>
+            <RadioGroup value={kind} onValueChange={(value) => setKind(value as ExportKind)} aria-labelledby="export-kind-label">
+              <RadioGroupOption value="members" label={copy.exportDialog.kindMembers} />
+              <RadioGroupOption value="activity" label={copy.exportDialog.kindActivity} />
+            </RadioGroup>
+          </Group>
           <Field label={copy.exportDialog.whoLabel}>
             {(p) => (
               <Select
@@ -106,7 +123,7 @@ export function ExportDialog({
             checked={includeUnsubscribed}
             onCheckedChange={(value) => setIncludeUnsubscribed(value === true)}
           />
-          <CountLine>{count === null ? copy.exportDialog.counting : copy.exportDialog.countLine(count)}</CountLine>
+          <CountLine>{count === null ? copy.exportDialog.counting : copy.exportDialog.countLine(kind, count)}</CountLine>
         </Body>
         <DialogActions>
           <DialogClose asChild>
@@ -115,6 +132,7 @@ export function ExportDialog({
             </Button>
           </DialogClose>
           <Button type="button" onClick={() => void handleDownload()} disabled={downloading || count === 0}>
+            <Icon icon={Download} size={16} />
             {downloading ? copy.exportDialog.preparing : copy.exportDialog.download}
           </Button>
         </DialogActions>

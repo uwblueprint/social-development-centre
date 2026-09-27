@@ -7,6 +7,24 @@
  * Server-returned strings (`ActionState.message`, from `_data/actions.ts`)
  * are backend copy, not covered here — that contract is fixed.
  */
+import type { MemberStatus } from "./_data/types";
+
+/**
+ * The paid benefit beyond the members-only feed, until SDC decides it (docs/users/paying-member.md).
+ * TODO: replace once SDC confirms. Import this constant; never hard-code the benefit elsewhere.
+ */
+export const PAID_BENEFIT = "{paid benefit}";
+
+/** One label per status, used by the Status column, its filter, the panel and the export. */
+const statusLabels: Record<MemberStatus, string> = {
+  unsubscribed: "Unsubscribed",
+  invited: "Invited",
+  onboarding_incomplete: "Onboarding incomplete",
+  never_clicked: "Never clicked",
+  active: "Active",
+  inactive: "Inactive",
+};
+
 export const communityCopy = {
   page: {
     title: "Community",
@@ -16,9 +34,9 @@ export const communityCopy = {
     ariaLabel: "Community views",
     general: "General members",
     paying: "Paying members",
-    /** Counts cover subscribed people only; the tabs are exclusive, so nobody is counted twice. */
+    /** Counts follow the search and the Status filter; the tabs are exclusive, so nobody is counted twice. */
     generalCount: (general: number) => `(${general})`,
-    generalTabTooltip: "Subscribed people who aren't paying members.",
+    generalTabTooltip: "People who aren't paying members.",
     payingCount: (paying: number) => `(${paying})`,
   },
 
@@ -27,24 +45,35 @@ export const communityCopy = {
     export: "Export members",
     /** One button for one person or many; the dialog also imports a file. */
     addMembers: "Add members",
+    openKiosk: "Open sign-up kiosk",
   },
+
+  /** The popover behind Open sign-up kiosk. The location is saved with each sign-up (export only). */
+  kiosk: {
+    locationLabel: "Where are you?",
+    locationHint: "For example, Kitchener Market.",
+    locationRequired: "Enter where you are, like Kitchener Market.",
+    open: "Open kiosk",
+  },
+
+  status: statusLabels,
 
   table: {
     headerName: "Name",
     headerEmail: "Email",
+    headerStatus: "Status",
+    headerClicks: "Clicks",
     headerLastEmail: "Last email",
     headerSent: "Sent",
-    headerAdded: "Added",
     headerActions: "Actions",
     noName: "No name",
     noLastEmail: "—",
-    copyEmailLabel: "Copy email",
-    unsubscribedLabel: "Unsubscribed",
+    /** The whole email is the copy control; its name starts with the visible text's purpose. */
+    copyEmailLabel: (email: string) => `Copy ${email}`,
     rowActionsLabel: (name: string) => `Actions for ${name}`,
   },
 
   rowMenu: {
-    copyEmail: "Copy email",
     convert: "Convert to paying member",
     remove: "Remove paying access",
     unsubscribe: "Unsubscribe",
@@ -57,9 +86,14 @@ export const communityCopy = {
     generalItems: "members",
     payingItems: "paying members",
     searchedFields: "names and emails",
-    /** Paying search whose only matches are unsubscribed people (listed at the end of General members search results). */
-    unsubscribedElsewhere: (n: number) =>
-      `${n} unsubscribed ${n === 1 ? "person matches" : "people match"}. They appear at the end of General members.`,
+    /** The Status filter hides everything: "No paying members with these statuses". */
+    filtered: (items: string) => `${items} with these statuses`,
+    /** A search whose only matches in this tab have a status the filter hides. */
+    hiddenByFilter: (n: number) => `${n} ${n === 1 ? "match has" : "matches have"} a status the Status filter hides.`,
+    /** A search whose only matches are in the other tab, with a status the filter hides. */
+    hiddenElsewhere: (n: number, scope: string) =>
+      `${n} ${n === 1 ? "match" : "matches"} in ${scope}, with a status the Status filter hides.`,
+    showAllStatuses: "Show all statuses",
     payingTitle: "No paying members yet",
     payingDescription: "Convert a general member to paying from their record, or add a paying member here.",
     generalTitle: "No members yet",
@@ -68,17 +102,18 @@ export const communityCopy = {
 
   addDialog: {
     title: "Add members",
-    emailsLabel: "Email addresses",
-    /** Add view (tag input). */
-    tagsHint: "Press Enter, comma or space after each address, or paste a list.",
-    tagsPlaceholder: "name@example.org",
-    tagsListLabel: "Email addresses entered",
-    invalidEmail: "This isn't an email address. Check for a missing @ or a typo.",
+    /** Single-person view. */
+    nameLabel: "Name",
+    emailLabel: "Email",
+    paying: "Make them a paying member",
+    add: "Add member",
     importFromFile: "Import from a file",
     /** File view (CSV upload, then the rows to check). */
-    fileHint: "Upload a CSV file, then check the addresses. Names are optional, e.g. Ada Lovelace <ada@example.org>.",
+    fileHint: "Upload a CSV file with name and email columns, then check the rows. You can edit them here.",
+    downloadTemplate: "Download template",
+    templateFilename: "sdc-members-template.csv",
     backToAdd: "Back",
-    emailsPlaceholder: "ada@example.org, grace@example.org",
+    emailsLabel: "Rows to add",
     uploadCsv: "Upload CSV",
     csvLoaded: (n: number, file: string) => `Added ${n} ${n === 1 ? "row" : "rows"} from ${file}. Check them before you continue.`,
     csvEmpty: (file: string) => `${file} has no email addresses. Check the file and try again.`,
@@ -124,13 +159,18 @@ export const communityCopy = {
       unsubscribedAdminDetail: (converting: number) =>
         `They stay unsubscribed unless you resubscribe them.${converting ? ` ${converting} will become paying either way.` : ""}`,
       resubscribe: (n: number) => `Resubscribe ${n} ${n === 1 ? "person" : "people"} an admin unsubscribed`,
+      deleted: (n: number) => `${n} deleted earlier, skipped`,
+      deletedDetail: "They were deleted from Community. Only they can sign up again.",
     },
     addedFallback: "Changes saved.",
   },
 
   exportDialog: {
     title: "Export members",
-    description: "Download a CSV of member names and emails.",
+    description: "Download a CSV to analyse in a spreadsheet.",
+    kindLabel: "What to export",
+    kindMembers: "Members (one row per person)",
+    kindActivity: "Activity (one row per click)",
     whoLabel: "Who to export",
     scopeGeneral: "General members",
     scopePaying: "Paying members",
@@ -138,7 +178,10 @@ export const communityCopy = {
     /** Applies to whichever scope is chosen. */
     includeUnsubscribed: "Include unsubscribed members",
     counting: "Counting…",
-    countLine: (n: number) => `${n} ${n === 1 ? "person" : "people"} will be exported`,
+    countLine: (kind: "members" | "activity", n: number) =>
+      kind === "members"
+        ? `${n} ${n === 1 ? "person" : "people"} will be exported`
+        : `${n} ${n === 1 ? "click" : "clicks"} will be exported`,
     cancel: "Cancel",
     download: "Download CSV",
     preparing: "Preparing…",
@@ -149,21 +192,21 @@ export const communityCopy = {
   panel: {
     statusGeneral: "General member",
     statusPaying: "Paying member",
-    statusUnsubscribed: "Unsubscribed",
     added: (date: string) => `Added ${date}`,
+    /** "Active · General member · Added Apr 11, 2026". */
+    metaSeparator: " · ",
     unsubscribedSelf: (date: string) => `Unsubscribed themselves on ${date}. Only they can resubscribe.`,
     unsubscribedAdmin: (date: string) => `Unsubscribed by an admin on ${date}.`,
-    menuLabel: (name: string) => `Actions for ${name}`,
-    menuEdit: "Edit details",
-    menuCopyEmail: "Copy email",
-    menuConvert: "Convert to paying member",
-    menuRemove: "Remove paying access",
-    menuUnsubscribe: "Unsubscribe",
-    menuResubscribe: "Resubscribe",
+    actionsLabel: (name: string) => `Actions for ${name}`,
+    edit: "Edit details",
+    unsubscribe: "Unsubscribe",
+    resubscribe: "Resubscribe",
+    convert: "Convert to paying member",
+    remove: "Remove paying access",
+    delete: "Delete member",
   },
 
   copyButton: {
-    label: "Copy email",
     copied: "Copied",
     failed: "Couldn't copy. Select the email to copy it.",
   },
@@ -188,6 +231,16 @@ export const communityCopy = {
     unsubscribeBodyGeneral: "This stops all emails to them now. Their record is kept, marked Unsubscribed.",
     unsubscribeCancel: "Keep subscribed",
     unsubscribeConfirm: "Yes, unsubscribe",
+    convertTitle: (name: string) => `Make ${name} a paying member?`,
+    convertBody: (subscribed: boolean) =>
+      `They'll get the members-only feed and ${PAID_BENEFIT}. ${subscribed ? "We'll email them to let them know." : "They're unsubscribed, so we won't email them."}`,
+    convertCancel: "Cancel",
+    convertConfirm: "Make paying member",
+    deleteTitle: (name: string) => `Delete ${name} permanently?`,
+    deleteBody:
+      "They'll be removed from Community and every export, and this can't be undone. To only stop emails, unsubscribe them instead.",
+    deleteCancel: "Cancel",
+    deleteConfirm: "Delete member",
   },
 
   emails: {
@@ -203,6 +256,13 @@ export const communityCopy = {
     bodyError: "Couldn't load this email.",
     retry: "Try again",
     previewTitle: (subject: string) => `Email preview: ${subject}`,
+    /** What they did with an opportunities email: "Signed up: Film night · Shared: Tenant workshop". */
+    signedUp: "Signed up",
+    tookAction: "Took action",
+    shared: "Shared",
+    actionItem: (action: string, title: string) => `${action}: ${title}`,
+    actionSeparator: " · ",
+    noClicks: "No clicks",
   },
 
   /** The page's error boundary (error.tsx), shown when the page fails to load. */
@@ -213,7 +273,28 @@ export const communityCopy = {
   },
 
   toast: {
-    emailCopied: "Email copied",
+    /** Only where the copy has no in-place confirmation. */
+    emailCopied: (name: string | undefined, email: string) => (name ? `Copied ${name}'s email` : `Copied ${email}`),
     done: "Done.",
   },
+} as const;
+
+/** Values in the exported CSVs. Plain words, so the file reads well in a spreadsheet. */
+export const exportCopy = {
+  status: statusLabels,
+  tier: { general: "General member", paying: "Paying member" },
+  yes: "Yes",
+  no: "No",
+  unsubscribedBy: { self: "Themselves", admin: "An admin" },
+  onboarding: { not_started: "Not started", in_progress: "In progress", completed: "Completed" },
+  source: {
+    legacy_import: "Legacy import",
+    booth: "Booth",
+    website: "Website",
+    partner_event: "Partner event",
+    referral: "Referral",
+    admin_added: "Added by an admin",
+    file_import: "File import",
+  },
+  action: { sign_up: "Signed up", take_action: "Took action", shared: "Shared" },
 } as const;

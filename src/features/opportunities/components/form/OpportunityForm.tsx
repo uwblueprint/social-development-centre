@@ -101,6 +101,8 @@ export interface OpportunityFormProps {
   opportunity?: Opportunity;
   /** Admin only: who the listing can be posted as (listPublisherOptions). */
   organizations?: OrganizationRef[];
+  /** Admin, new listings only: preselects who it's posted as (one of `organizations`). */
+  initialOrganizationId?: string;
   save: OpportunityActions["save"];
 }
 
@@ -109,11 +111,19 @@ export interface OpportunityFormProps {
  * `id` and `kind` (and each selected topic) are appended in the action wrapper, since
  * native hidden inputs are off-limits in feature code; `intent` comes from the clicked button.
  */
-export function OpportunityForm({ scope, basePath, kind: initialKind, opportunity, organizations, save }: OpportunityFormProps) {
+export function OpportunityForm({
+  scope,
+  basePath,
+  kind: initialKind,
+  opportunity,
+  organizations,
+  initialOrganizationId,
+  save,
+}: OpportunityFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [state, formAction] = useActionState(save, initialState);
-  const [model, setModel] = React.useState(() => initialModel(initialKind, opportunity));
+  const [model, setModel] = React.useState(() => initialModel(initialKind, opportunity, initialOrganizationId));
 
   const status = opportunity?.status ?? "draft";
   const isDraft = status === "draft";

@@ -32,9 +32,10 @@ const str = (v: unknown) => (v === undefined || v === null ? "" : String(v));
 /** A type's starting values the first time it's chosen. */
 export const emptyKindValues = (kind: OpportunityKind): FormValues => (kind === "event" ? { cost: "free" } : {});
 
-export function initialModel(kind: OpportunityKind, opportunity?: Opportunity): FormModel {
+/** `organizationId` preselects who a new listing is posted as (admin, e.g. from Partners' "Post an opportunity for them"). */
+export function initialModel(kind: OpportunityKind, opportunity?: Opportunity, organizationId?: string): FormModel {
   const values: FormValues = {
-    organizationId: opportunity?.organization.id ?? SDC_ORG.id,
+    organizationId: opportunity?.organization.id ?? organizationId ?? SDC_ORG.id,
     title: opportunity?.title ?? "",
     summary: opportunity?.summary ?? "",
     link: opportunity?.link ?? "",

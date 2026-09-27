@@ -1,3 +1,4 @@
+import { withDevAccount } from "@/features/account/devAccount";
 import type { AdminUser } from "./types";
 
 /**
@@ -8,6 +9,7 @@ export async function getCurrentAdmin(): Promise<AdminUser | null> {
   if (process.env.NODE_ENV === "production") {
     throw new Error("getCurrentAdmin is not implemented: add the admin role check before shipping.");
   }
-  return { name: "Admin User", email: "admin@sdc.example", initials: "AU" };
+  // Dev: name and picture changes from My account apply on top (in memory).
+  return withDevAccount({ name: "Admin User", email: "admin@sdc.example", initials: "AU" });
 }
 

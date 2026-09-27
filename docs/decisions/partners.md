@@ -27,7 +27,7 @@ Each entry: the decision, which page it's on, what it affects, and when someone 
 - **When encountered:** Every new invitation, and when an admin looks for a person rather than an organization.
 
 ## 5. An organization is awaiting a response until anyone accepts
-- **Status:** Revised 27 Sep 2026 to match the invitation-state model in `docs/ux/portal.md`. Replaces the organization-level "Pending" badge.
+- **Status:** Revised 27 Sep 2026 to match the invitation-state model in `docs/ux/portal.md`. Replaces the organization-level "Pending" badge. **Revised again 27 Sep 2026:** in the admin table and panels the organization-level badge is now the **Not onboarded** health tag (decision 14), which has the same rule. "{organization} is awaiting a response." stays as the reinvite result.
 - **Decision:** **Invitation pending** describes a person, never an organization. An organization nobody has accepted an invitation to yet shows **Awaiting response**. Once anyone accepts it's active (no badge), even if others haven't; each of those people shows their own invitation state (decision 12).
 - **Page:** Admin → Partners → Organizations (Active) and the organization's panel.
 - **Affects:** The organization badge, when the partner can start managing opportunities.
@@ -75,7 +75,7 @@ Each entry: the decision, which page it's on, what it affects, and when someone 
 - **When encountered:** A new colleague needs access, or someone leaves the organization.
 
 ## 11. Two views and a Status filter
-- **Status:** Decided by owner, 26 Sep 2026 (docs/ux/portal.md, owner decision 3). Replaces the Organizations · People · Invitations · Removed tabs.
+- **Status:** Decided by owner, 26 Sep 2026 (docs/ux/portal.md, owner decision 3). Replaces the Organizations · People · Invitations · Removed tabs. **Revised by owner, 27 Sep 2026:** the toolbar Status select is replaced by header filters (decision 17). Active and Removed are now the Status filter on the Organization column; on People, removed people are a **Removed** option in the Tags filter.
 - **Decision:** Partners has two views, **Organizations** and **People** (tabs labelled "Partner views"), and a visibly labelled **Status** filter: **Active** or **Removed**. Each view's count follows the filter and the search.
   - **Removed → Organizations:** organizations whose access was removed. Restore one by inviting someone to it (decision 13).
   - **Removed → People:** people removed from their organization, and people at an organization whose access was removed. Restore one by inviting them again (**Invite again** in their panel).
@@ -110,3 +110,65 @@ Each entry: the decision, which page it's on, what it affects, and when someone 
 - **Page:** Admin → Partners → organization panel → Remove access / Reinvite; Invite partner dialog.
 - **Affects:** Portal access, the organization's listings (Closed, Partner access removed), People → Removed.
 - **When encountered:** When a partnership ends, and if it resumes.
+
+## 14. One health tag per organization
+- **Status:** Decided by owner, 27 Sep 2026. Thresholds are the owner's; the reasons and next steps are new copy that needs approval.
+- **Decision:** Partners is simple user management that also shows which organizations might need SDC's support. Each organization with access gets at most one tag, derived on the server; the first rule that matches wins:
+
+  | Order | Tag | Rule | Reason shown in the panel | Suggested next step |
+  |---|---|---|---|---|
+  | 1 | **Not onboarded** | Nobody has accepted an invitation. | Nobody at {organization} has accepted an invitation yet. | Check their invitation under People, then resend it or reach out to confirm the email address. |
+  | 2 | **No recent posts** | No opportunity published in the 60 days since joining (first acceptance), or since the last post. | {organization} hasn't posted an opportunity in the 60 days since joining. / …since their last post. | Reach out to see if they need help posting. |
+  | 3 | **Not emailed** | A currently published opportunity wasn't in any SDC email within 14 days of posting (checked once those 14 days have passed). | A published opportunity from {organization} wasn't in any email within 14 days of posting. | Check the listing's topics and dates so it can go out in the next email. |
+  | 4 | **No clicks** | It has emailed opportunities and none of them got a click from an email. | Nobody has clicked an opportunity from {organization} in SDC's emails yet. | Reach out to help them write a clearer title and summary. |
+
+  - No match: no tag. Removed organizations have no tag.
+  - The tag is text with an icon (never colour alone): **Not onboarded** is neutral, the others use the warning colour.
+  - Opportunities SDC posts on a partner's behalf count as the partner's posts.
+  - When any organization has a tag, a calm note above the Organizations table says "{n} partners might need support" with **Show them**, which turns on the Health filter (all four tags). It's hidden while the Health filter is on.
+- **Page:** Admin → Partners → Organizations (Health column, filter and callout) and the organization panel (tag, reason, next step).
+- **Affects:** Which partners SDC contacts; depends on email inclusion and click data (docs/backend/partners.md).
+- **When encountered:** Every visit to Partners.
+
+## 15. SDC notes on an organization
+- **Status:** Decided by owner, 27 Sep 2026.
+- **Decision:** The organization panel has **SDC notes (only admins see these)**: one free-text note per organization (up to 2,000 characters), saved with **Save notes**. It shows "Last edited by {name}, {relative time}" (full date and time on hover). Saving an empty note clears it. Partners never see notes: the partner portal's organization query doesn't return them.
+- **Page:** Admin → Partners → organization panel.
+- **Affects:** Admin-only data on the organization; the partner portal (never exposed).
+- **When encountered:** When an admin wants to remember context about a partner (preferred contact, seasonal programs).
+
+## 16. Copy emails
+- **Status:** Decided by owner, 27 Sep 2026.
+- **Decision:** Admins reach partners from their own email client:
+  - **Copy all emails** (page header, beside **Invite partner**) copies the email of every person who isn't removed (people at organizations with access, including those whose invitation is pending), comma-separated, A–Z, without duplicates, and toasts "Copied {n} email addresses".
+  - **Copy emails** in the organization panel copies that organization's people the same way.
+  - Clicking an email in the People table copies it: a checkmark replaces the copy icon in place and a "Copied" tooltip shows for 1.5 seconds, as in Community. The row doesn't open.
+- **Page:** Admin → Partners.
+- **Affects:** Clipboard only; nothing is sent from the product.
+- **When encountered:** When SDC wants to email some or all partners.
+
+## 17. Header filters and sorting
+- **Status:** Decided by owner, 27 Sep 2026. Replaces the toolbar Status select (decision 11).
+- **Decision:** Filters live in the column headers (a filter icon opens a checkbox list with counts); every column sorts. Filters, sort and search are in the URL and run on the server.
+  - **Organizations:** Organization (sort by name; **Status** filter: Active, Removed; default Active), Health (sort in rule order, untagged last; filter by tag; the column hides when no row has a tag and the filter is off), People (count), Published (count), Last posted (relative time, full date on hover; "Never" if none).
+  - **People:** Name (frozen when the table scrolls sideways), Email, Organization (filter), Tags (Invitation pending, Invitation not sent, Invitation expired, Removed; filter adds **Has access** for people with no tag). Removed people are hidden by default because the Tags filter starts with everything except **Removed**; so that filter is always on and the Tags column always shows.
+  - **Clear filter** in a header shows every option (for Status, Active and Removed together). Switching views resets the sort.
+- **Page:** Admin → Partners.
+- **Affects:** URL params `status`, `health`, `orgs`, `tags`, `sort`, `dir`; counts beside each view follow the filters and search.
+- **When encountered:** Every visit to Partners.
+
+## 18. An organization always has at least one person
+- **Status:** Decided by owner, 27 Sep 2026.
+- **Decision:** An organization is only ever created by inviting its first person (**Invite partner**), and it never ends up with nobody:
+  - The last person with access can't be removed (decision 9); the disabled option points to **Remove access** for the organization.
+  - Cancelling the only invitation at an organization that was never active deletes the organization too (decision 1). At an organization that was active before (a reinvited one), it goes back to Removed.
+- **Page:** Admin → Partners (Invite partner, organization panel, person panel).
+- **Affects:** Organization lifecycle, `cancelInvitation`.
+- **When encountered:** When removing people or cancelling invitations.
+
+## 19. Organization panel: actions up top, summary, post for them
+- **Status:** Decided by owner, 27 Sep 2026.
+- **Decision:** The organization panel shows its actions under the title, not beside the close button: **Edit details** (opens the profile form in place), **Add person** (or **Reinvite** when removed), **Copy emails** and **Remove access**. Below: Health (decision 14), Summary (**Published**, **Total clicks** from emails, **Last posted**, **View opportunities**, **Post an opportunity for them**), People, SDC notes and Profile. **Post an opportunity for them** opens New opportunity with that organization preselected (`/admin/opportunities/new?org={id}`); an unknown or removed organization is ignored and the form starts with SDC.
+- **Page:** Admin → Partners → organization panel; Admin → Opportunities → New.
+- **Affects:** Panel layout; the new-opportunity form's initial organization.
+- **When encountered:** Whenever an admin opens an organization.

@@ -22,6 +22,17 @@ Each admin page (`src/app/admin/<section>/page.tsx`) is a Server Component. Fetc
 ## 4. Local development
 Without Supabase credentials, `next dev` skips the sign-in redirect (`src/lib/supabase/proxy.ts`) and `getCurrentAdmin()` returns a placeholder admin. Production always requires both.
 
+## 5. Accounts
+My account (a dialog in both portals; see `docs/patterns/AccountDialog.md`) and sign-out need these. Actions live in `src/features/account/actions.ts`; each throws in production until implemented. In development they change an in-memory override (`src/features/account/devAccount.ts`) that `getCurrentAdmin()` and `getCurrentPartner()` apply on top of the dev user.
+
+- **Profile picture storage.** `updateAccount` receives `avatar`: a JPG, PNG or WebP file the browser has already scaled (shorter side 512px, well under 1 MB). Store it (e.g. a Supabase Storage bucket, one object per user, replaced on upload), and return its URL as `avatarUrl` on `AdminUser` / `PartnerUser`. `removeAvatar=1` deletes it; the UI falls back to initials. Re-check type and size on the server (the action already does). The avatar crops to a square in CSS, so store the image uncropped.
+- **Name.** `name` is required, trimmed, up to 80 characters. It's the person's own display name: for a partner contact it's the same `name` admins see and edit in Partners, so both must write one field.
+- **Delete account.** `deleteAccount(portal)` must, for the signed-in user only: remove their sign-in (Supabase auth user) and their access (admin role, or their partner contact), end every session, then redirect to `/login?accountDeleted=1`.
+  - **Admins:** keep their past actions (audit entries, created or edited records) and show the actor as "Former admin" instead of their name. Don't cascade-delete their rows; null or anonymize the person reference.
+  - **Partners:** remove the contact from their organization's team. Open question for the owner: what happens when they're the organization's last active contact.
+- **No email or password changes.** Sign-in is by email link, so there's no password. Email changes aren't offered yet (docs/decisions/platform.md, decision 3).
+- **Sign-out.** `signOut(firstName?)` ends the Supabase session and redirects to `/login?signedOut=1&name={first name}`. Nothing else is needed from the backend.
+
 ## Feature requirements
 - [Partners](./partners.md)
 - [Opportunities](./opportunities.md) (both portals, plus the partner session)

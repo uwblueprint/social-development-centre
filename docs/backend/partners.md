@@ -21,18 +21,40 @@ A dev-only in-memory store (`_data/store.ts`) makes the UI work end to end. Repl
   | `expired` | delivered, `expiresAt` passed | Invitation expired; Expired {date} |
 
 ## Data the UI needs
-- Organization: `id`, `name`, `website?` (stored as https://), `description?` (up to 280 characters), `status`, `contacts[]` (current people with `invitationState`), `opportunityCount` (`countPublishedOpportunities(organizationId)` from `src/features/opportunities/queries.ts`), `createdAt`, `removedAt?`.
-- Lists (in `_data/queries.ts`; server-side search once lists grow, and each view's count uses the same `q` and status):
-  - `listPartners(status, q)`: organizations. `active` = not removed; `removed` = access removed. Matches organization name and its people's names and emails (a matching person returns their organization).
-  - `listPartnerPeople(status, q)`: `active` = everyone at current organizations, with their invitation state. `removed` = people removed from their organization (`removal: "person"`) plus people at removed organizations (`removal: "organization"`, `removedAt` = the organization's). Matches name, email and organization name.
+- Organization (`PartnerOrganization`, both portals): `id`, `name`, `website?` (stored as https://), `description?` (up to 280 characters), `status`, `contacts[]` (current people with `invitationState`), `opportunityCount` (`countPublishedOpportunities(organizationId)` from `src/features/opportunities/queries.ts`), `createdAt`, `removedAt?`.
+- Admin only (`AdminPartnerOrganization`): `health?` (below), `joinedAt?` (first acceptance), `lastPostedAt?` (latest `publishedAt` of any of its opportunities), `totalClicks` (clicks from SDC emails on its opportunities, all time), `notes?` (`{ text, editedBy, editedAt }`). **Never return these to the partner portal:** `getPartner` (used by `/partner/organization`) returns the partner shape only.
+- Lists (in `_data/queries.ts`). Search, filters and sort all run on the server from URL params; each view's count uses the same `q` and filters. Each header filter returns its options with counts (search and the *other* filters applied).
+  - `listPartners({ q, status[], health[], sort })` → `{ rows, facets: { status, health } }`. `status`: `active` (not removed) and/or `removed`; default `["active"]`; empty = both. `health`: tags; empty = off. Sort keys `name`, `health` (rule order), `people` (current people), `published` (`opportunityCount`), `lastPosted`; empty values sort last in either direction, ties by name. Search matches the organization's name and its people's names and emails.
+  - `listPartnerPeople({ q, organizations[], tags[], sort })` → `{ rows, facets: { organizations, tags } }`. One row per person, each with `tag`: their invitation state (`pending`, `notSent`, `expired`), `removed` (removed from their organization, `removal: "person"`, or at a removed organization, `removal: "organization"` with the organization's `removedAt`), or none (has access). Tags filter values add `access` for no tag; default is every value except `removed`; empty = all. Sort keys `name`, `email`, `organization`, `tags` (labels A–Z, no tag last). Search matches name, email and organization name.
+  - `listPartnerDirectory()`: every organization (admin shape) and person, unfiltered, so an open panel survives its row being filtered out. Fine at ~50 partners; fetch one by id instead once this grows.
+  - `countPartnersNeedingSupport()`: organizations with access that have a health tag (the callout), ignoring search and filters.
+  - `listActivePartnerEmails()`: **Copy all emails**. Emails of every current person at an organization with access (invited or accepted), A–Z, deduplicated.
   - `listOrganizationOptions()`: every organization, including removed ones (inviting someone to a removed organization reinvites it).
+
+## Partner health
+Derived on the server for each organization with access (`_data/health.ts`); removed organizations have none. **One tag, first match wins:**
+
+| Order | `health.tag` | Rule |
+|---|---|---|
+| 1 | `notOnboarded` | No current person has accepted an invitation. |
+| 2 | `noRecentPosts` | `now − (lastPostedAt ?? joinedAt ?? createdAt) > 60 days`. `health.since` is `lastPost` or `joined` (the reason's wording). |
+| 3 | `notEmailed` | Some opportunity whose effective status is **published** and that was published more than 14 days ago was not in any SDC email within 14 days of `publishedAt`. |
+| 4 | `noClicks` | At least one of its opportunities was emailed, and its emailed opportunities have zero clicks in total. |
+
+- Thresholds: `NO_RECENT_POSTS_DAYS = 60`, `EMAIL_WITHIN_DAYS = 14` in `_data/types.ts` (the UI's reasons quote them).
+- Inputs: `listPublishedHistory(organizationId)` (read-only, `src/features/opportunities/queries.ts`: every opportunity with a `publishedAt`, and its effective status) and, per opportunity, the first email it was in and its clicks from emails (`emailStatsFor` in `_data/emailStats.ts`, a dev stand-in seeded so every case appears). **Needed from the email/insights backend:** a record of which opportunities each sent email included (`opportunity_id`, `sent_at`) and click counts per opportunity per email.
+- `joinedAt`: set when the organization's first person accepts (the acceptance handler). Dev seed only; falls back to `createdAt`.
+- Compute at query time for now; a nightly job is fine once click data is large. The tag must match what the filter, sort and callout use.
+
+## SDC notes
+- `saveOrganizationNotes(orgId, _prev, fd)`: field `notes`, up to 2,000 characters (`ORGANIZATION_NOTES_MAX`; error "Shorten the notes to 2,000 characters or fewer."). Stores `{ text, editedBy: <admin's name from the session>, editedAt: now }`; empty text clears the note. Success: "Notes saved." Admin only; never readable from the partner portal. Keep history in the audit trail if SDC wants it later (the UI shows the latest edit only).
 
 ## Admin actions
 | Action | Rules |
 |---|---|
 | `invitePartner` | Fields `name`, `email`, and `organizationId` or `organizationName` (new). Field errors only (no message): name missing, invalid email, email already has access somewhere ("This person already has access to {organization}."), no organization, duplicate new organization name. **Save first, then send.** Saved but not delivered → `status: "error"`, `data.saved: true`, "{name} was added, but we couldn't send the invitation. Select Retry to try again." Nothing saved → `data.saved: false`, "We couldn't send the invitation. Try again." If the email belonged to someone previously at that organization, restore their record instead of duplicating it. **If the organization is removed, this is a reinvite** (below). |
 | `resendInvitation(contactId)` | Resend (pending), Retry (not sent) or Send new invitation (expired). On success: new single-use link, 7-day expiry, previous link invalidated. On failure: **change nothing**; a still-valid earlier link keeps working and the state stays as it was. Messages in `contactMessages`. |
-| `cancelInvitation(contactId)` | Any invitation state. **Deletes** the person. Deletes the organization too if nobody remains and it was never active. Refuses an active person ("This invitation is no longer open. Refresh the team list."). |
+| `cancelInvitation(contactId)` | Any invitation state. **Deletes** the person. An organization always has at least one person: if nobody remains, delete the organization when it was never active, or return it to removed (`removedAt` = now) when it was (a reinvited organization). Refuses an active person ("This invitation is no longer open. Refresh the team list."). |
 | `updateContact(contactId)` | Fields `name`, `email`. Changing the email sends a fresh invitation to the new address first; if that send fails, nothing is saved. An active person stays active until the new address accepts. |
 | `updateOrganization(orgId)` | Fields `name`, `website`, `description`; only fields present change. Name required and unique ("Enter the organization's name.", "Another organization already has this name."); website optional, normalized with `normalizeWebAddress` (`src/lib/url.ts`) so `sdckw.ca` is fine ("Enter a valid website, like sdckw.ca."); description up to 280 characters. Field errors only, no summary message. |
 | `removeContact(contactId)` | Active people only ("This person doesn't have access yet. Cancel their invitation instead."). Refuses the organization's last person with access ("This is the only person with access to this organization. Remove the organization's access instead."). Ends that person's access now, keeps the record (`removedAt`). |
@@ -75,6 +97,7 @@ Partners manage their own team (decision 10). Each action re-checks `getCurrentP
 
 ## Also needed
 - Opportunities list filter by partner: `/admin/opportunities?org=<organizationId>`, used by "View opportunities".
+- New opportunity for a partner: `/admin/opportunities/new?org=<organizationId>` preselects who it's posted as ("Post an opportunity for them"). Only an organization from `listPublisherOptions()` is used; anything else starts with SDC.
 - Audit trail: who invited, cancelled, removed or reinvited, and when; delivery failures with their provider reason (never shown in the UI).
 - A person belongs to one organization at a time. Moving = `removeContact` at the old organization, then `invitePartner` at the new one. Key everything on stable IDs; names and emails change.
 

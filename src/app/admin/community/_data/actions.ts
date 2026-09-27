@@ -245,9 +245,10 @@ export async function deleteMember(id: string): Promise<ActionState> {
  * onboarding not started, and sends the general welcome. Returns the same success whether or not the
  * email already exists, and never changes an existing member (no resubscribe, no rename), so the kiosk
  * can't reveal who's on the list. Only an invalid email returns an error, on the `email` field.
- * A deleted person signing up again is fresh consent, so they're added. No admin check: the kiosk is public.
+ * A deleted person signing up again is fresh consent, so they're added. Requires an SDC admin session,
+ * like every action here: the kiosk runs on an admin's tablet. `location` is optional, at most 80 characters.
  */
-export async function addBoothSignup(name: string, email: string, location: string): Promise<ActionState> {
+export async function addBoothSignup(name: string, email: string, location: string | null): Promise<ActionState> {
   const address = email.trim().toLowerCase();
   if (!EMAIL.test(address)) return { status: "error", fieldErrors: { email: "Enter an email address like name@example.org." } };
   if (!findByEmail(address)) {
@@ -261,7 +262,7 @@ export async function addBoothSignup(name: string, email: string, location: stri
       addedAt: new Date().toISOString(),
       onboarding: "not_started",
       source: "booth",
-      sourceDetail: location.trim() || undefined,
+      sourceDetail: location?.trim().slice(0, 80) || undefined,
     };
     members().push(m);
     sendEmail(m, "general-welcome");

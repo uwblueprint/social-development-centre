@@ -1,3 +1,5 @@
+import { EMAIL_WITHIN_DAYS, NO_RECENT_POSTS_DAYS, type PartnerHealth, type PersonTagFilter } from "./_data/types";
+
 /**
  * User-facing strings for the admin Partners page (docs/ux/portal.md → Partners). Invitation-state
  * strings are shared with the partner portal's Team list through `invitationCopy`.
@@ -42,6 +44,7 @@ export const partnersCopy = {
     count: (n: number) => `(${n})`,
   },
 
+  /** Organization column → Status header filter (replaces the toolbar Status select). */
   status: {
     label: "Status",
     active: "Active",
@@ -49,19 +52,70 @@ export const partnersCopy = {
   },
 
   badges: {
-    /** An organization nobody has accepted an invitation to yet (not "Invitation pending": that's a person). */
-    awaitingResponse: "Awaiting response",
     removed: "Removed",
+  },
+
+  /** New, needs approval (docs/ux/portal.md → Partners → Partner health). */
+  health: {
+    label: "Health",
+    tags: {
+      notOnboarded: "Not onboarded",
+      noRecentPosts: "No recent posts",
+      notEmailed: "Not emailed",
+      noClicks: "No clicks",
+    } satisfies Record<PartnerHealth, string>,
+    reasons: {
+      notOnboarded: (org: string) => `Nobody at ${org} has accepted an invitation yet.`,
+      noRecentPostsJoined: (org: string) => `${org} hasn't posted an opportunity in the ${NO_RECENT_POSTS_DAYS} days since joining.`,
+      noRecentPostsLastPost: (org: string) => `${org} hasn't posted an opportunity in the ${NO_RECENT_POSTS_DAYS} days since their last post.`,
+      notEmailed: (org: string) => `A published opportunity from ${org} wasn't in any email within ${EMAIL_WITHIN_DAYS} days of posting.`,
+      noClicks: (org: string) => `Nobody has clicked an opportunity from ${org} in SDC's emails yet.`,
+    },
+    nextSteps: {
+      notOnboarded: "Check their invitation under People, then resend it or reach out to confirm the email address.",
+      noRecentPosts: "Reach out to see if they need help posting.",
+      notEmailed: "Check the listing's topics and dates so it can go out in the next email.",
+      noClicks: "Reach out to help them write a clearer title and summary.",
+    } satisfies Record<PartnerHealth, string>,
+    nextStepLabel: "Suggested next step",
+    callout: (n: number) => (n === 1 ? "1 partner might need support" : `${n} partners might need support`),
+    showThem: "Show them",
+  },
+
+  /** People → Tags. `access` is the filter option for people with no tag. New, needs approval: header, `access`. */
+  tags: {
+    label: "Tags",
+    options: {
+      access: "Has access",
+      pending: invitationCopy.pending,
+      notSent: invitationCopy.notSent,
+      expired: invitationCopy.expired,
+      removed: "Removed",
+    } satisfies Record<PersonTagFilter, string>,
+  },
+
+  /** New, needs approval. */
+  emails: {
+    copyAll: "Copy all emails",
+    copyOrganization: "Copy emails",
+    copied: (n: number) => (n === 1 ? "Copied 1 email address" : `Copied ${n} email addresses`),
+    copyFailed: "Couldn't copy the email addresses. Try again.",
+    /** A table email is a button: its name is "Copy {email}"; the tooltip confirms. */
+    copyOne: (email: string) => `Copy ${email}`,
+    copiedOne: "Copied",
+    copyOneFailed: "Couldn't copy",
   },
 
   table: {
     headerOrganization: "Organization",
+    headerHealth: "Health",
     headerPeople: "People",
-    headerEmail: "Email",
-    headerOpportunities: "Opportunities",
+    headerPublished: "Published",
+    headerLastPosted: "Last posted",
     headerName: "Name",
-    headerRemoved: "Removed",
-    opportunities: (n: number) => (n === 1 ? "1 opportunity" : `${n} opportunities`),
+    headerEmail: "Email",
+    headerTags: "Tags",
+    never: "Never",
   },
 
   empty: {
@@ -69,10 +123,12 @@ export const partnersCopy = {
     organizationsDescription: "Invite an organization to give them access to their opportunities.",
     peopleTitle: "No people yet",
     peopleDescription: "Invite a partner to add the first person.",
-    removedOrganizationsTitle: "No removed organizations",
-    removedOrganizationsDescription: "Organizations whose access you remove appear here.",
-    removedPeopleTitle: "No removed people",
-    removedPeopleDescription: "People removed from an organization appear here.",
+    organizationItems: "organizations",
+    peopleItems: "people",
+    filteredOrganizations: "organizations match these filters",
+    filteredPeople: "people match these filters",
+    searchedOrganizations: "organization names and their people's names and emails",
+    searchedPeople: "names, emails and organization names",
   },
 
   invite: {
@@ -91,18 +147,33 @@ export const partnersCopy = {
   },
 
   organizationPanel: {
+    /** Visible actions under the title. New, needs approval: Edit details. */
+    actionsLabel: "Organization actions",
+    editDetails: "Edit details",
+    addPerson: "Add person",
+    reinvite: "Reinvite",
     profileHeading: "Profile",
     nameLabel: "Organization name",
     websiteLabel: "Website",
     websiteHint: "Example: sdckw.ca",
     descriptionLabel: "Short description",
     descriptionHint: "One or two sentences about what your organization does. Up to 280 characters.",
+    notAdded: "Not added",
     save: "Save changes",
+    cancel: "Cancel",
     peopleHeading: "People",
-    addPerson: "Add person",
     removedOn: (date: string) => `Removed ${date}`,
     viewOpportunities: (n: number) => `View opportunities (${n} published)`,
-    reinvite: "Reinvite",
+    /** New, needs approval. */
+    healthHeading: "Health",
+    summaryHeading: "Summary",
+    published: "Published",
+    totalClicks: "Total clicks",
+    lastPosted: "Last posted",
+    postForThem: "Post an opportunity for them",
+    notesLabel: "SDC notes (only admins see these)",
+    notesSave: "Save notes",
+    notesEdited: (name: string, when: string) => `Last edited by ${name}, ${when}`,
   },
 
   personPanel: {

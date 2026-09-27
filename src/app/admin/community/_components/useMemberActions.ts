@@ -3,57 +3,54 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/Toast";
-import { grantPaidAccess, resubscribeMember, revokePaidAccess, unsubscribeMember } from "../_data/actions";
+import { deleteMember, grantPaidAccess, resubscribeMember, revokePaidAccess, unsubscribeMember } from "../_data/actions";
+import type { ActionState } from "@/lib/forms";
 import type { Member } from "../_data/types";
 import { communityCopy as copy } from "../_copy";
+import { getMemberById } from "../_lib/emailHistoryAction";
 
-export type MemberConfirmKind = "revoke" | "unsubscribe";
+/** Actions that ask first. Convert asks too: it grants paid benefits and emails the person. */
+export type MemberConfirmKind = "convert" | "revoke" | "unsubscribe" | "delete";
+
+const RUN: Record<MemberConfirmKind, (id: string) => Promise<ActionState>> = {
+  convert: grantPaidAccess,
+  revoke: revokePaidAccess,
+  unsubscribe: unsubscribeMember,
+  delete: deleteMember,
+};
 
 /**
- * Shared behavior behind every member action surface (table row menu, panel
- * header + menu): copy email, convert/remove paying access, resubscribe, and the
- * unsubscribe/remove confirmation. Each caller renders its own trigger UI and
- * passes the confirm state into a shared `<MemberConfirmDialog>`.
+ * Shared behavior behind every member action surface (table row menu, panel action row): resubscribe,
+ * and the convert / remove paying access / unsubscribe / delete confirmations. Each caller renders its
+ * own triggers and passes the confirm state into a shared `<MemberConfirmDialog>`.
+ * `onChange` gets the person as they are after the action, or `null` once they're deleted.
  */
-export function useMemberActions(member: Member, onDone?: () => void) {
+export function useMemberActions(member: Member, onChange?: (member: Member | null) => void) {
   const { toast } = useToast();
   const router = useRouter();
   const [confirm, setConfirm] = React.useState<MemberConfirmKind | null>(null);
 
-  // Keeps the alert dialog's copy stable while it plays its close animation
+  // Keeps the dialog's copy stable while it plays its close animation
   // (by then `confirm` is already null); updated during render, not an effect.
   const [shownConfirm, setShownConfirm] = React.useState<MemberConfirmKind>("unsubscribe");
   if (confirm && confirm !== shownConfirm) setShownConfirm(confirm);
 
-  function copyEmail() {
-    void navigator.clipboard.writeText(member.email).then(
-      () => toast({ title: copy.toast.emailCopied }),
-      () => toast({ title: copy.copyButton.failed }),
-    );
-  }
-
-  async function convert() {
-    const result = await grantPaidAccess(member.id);
+  async function finish(result: ActionState) {
     toast({ title: result.message ?? copy.toast.done });
     router.refresh();
-    onDone?.();
+    if (onChange) onChange(await getMemberById(member.id));
   }
 
   /** Only offered for people an admin unsubscribed (owner decision 6). No confirmation: it restores emails. */
   async function resubscribe() {
-    const result = await resubscribeMember(member.id);
-    toast({ title: result.message ?? copy.toast.done });
-    router.refresh();
-    onDone?.();
+    await finish(await resubscribeMember(member.id));
   }
 
   async function runConfirm(kind: MemberConfirmKind) {
-    const result = kind === "revoke" ? await revokePaidAccess(member.id) : await unsubscribeMember(member.id);
-    toast({ title: result.message ?? copy.toast.done });
+    const result = await RUN[kind](member.id);
     setConfirm(null);
-    router.refresh();
-    onDone?.();
+    await finish(result);
   }
 
-  return { copyEmail, convert, resubscribe, confirm, setConfirm, shownConfirm, runConfirm };
+  return { resubscribe, confirm, setConfirm, shownConfirm, runConfirm };
 }

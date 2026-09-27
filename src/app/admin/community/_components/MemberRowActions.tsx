@@ -2,7 +2,7 @@
 
 import type { SyntheticEvent } from "react";
 import { styled } from "next-yak";
-import { BadgeCheck, BadgeMinus, Copy, MailPlus, MailX, MoreVertical } from "lucide-react";
+import { BadgeCheck, BadgeMinus, MailPlus, MailX, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/DropdownMenu";
 import { Icon } from "@/components/ui/Icon";
@@ -29,7 +29,7 @@ const stop = (event: SyntheticEvent) => event.stopPropagation();
  */
 export function MemberRowActions({ member }: { member: Member }) {
   const displayName = member.name ?? member.email;
-  const { copyEmail, convert, resubscribe, confirm, setConfirm, shownConfirm, runConfirm } = useMemberActions(member);
+  const { resubscribe, confirm, setConfirm, shownConfirm, runConfirm } = useMemberActions(member);
 
   return (
     <RowEventBoundary role="presentation" onClick={stop} onKeyDown={stop}>
@@ -45,12 +45,13 @@ export function MemberRowActions({ member }: { member: Member }) {
           </Trigger>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={copyEmail}>
-            <Icon icon={Copy} size={16} />
-            {copy.rowMenu.copyEmail}
-          </DropdownMenuItem>
           {member.tier === "general" ? (
-            <DropdownMenuItem onSelect={() => void convert()}>
+            <DropdownMenuItem
+              onSelect={(event) => {
+                event.preventDefault();
+                setConfirm("convert");
+              }}
+            >
               <Icon icon={BadgeCheck} size={16} />
               {copy.rowMenu.convert}
             </DropdownMenuItem>

@@ -2,11 +2,11 @@
 
 import { styled } from "next-yak";
 import { Badge } from "@/components/ui/Badge";
-import type { TableColumn } from "@/components/ui/Table";
-import type { Member } from "../_data/types";
+import type { TableColumn, TableColumnFilter } from "@/components/ui/Table";
+import { formatDateTime, formatRelative } from "@/lib/date";
+import type { Member, MemberStatus } from "../_data/types";
 import { communityCopy as copy } from "../_copy";
-import { formatDate, formatDateTime, formatRelative } from "../_lib/format";
-import { CopyEmailButton } from "./CopyEmailButton";
+import { CopyEmail } from "./CopyEmail";
 import { MemberRowActions } from "./MemberRowActions";
 
 const VisuallyHidden = styled.span`
@@ -20,34 +20,9 @@ const VisuallyHidden = styled.span`
   white-space: nowrap;
 `;
 
-const NameLine = styled.span<{ $muted?: boolean }>`
-  display: inline-flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  color: ${({ $muted }) => ($muted ? "var(--color-text-muted)" : "var(--color-text)")};
-`;
-
-const EmailCell = styled.span<{ $muted?: boolean }>`
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  overflow-wrap: anywhere;
+const Dimmable = styled.span<{ $muted?: boolean }>`
+  white-space: nowrap;
   color: ${({ $muted }) => ($muted ? "var(--color-text-muted)" : "inherit")};
-
-  button {
-    opacity: 0;
-  }
-  &:hover button,
-  &:focus-within button {
-    opacity: 1;
-  }
-  /* No hover on touch screens: keep the copy button visible. */
-  @media (hover: none) {
-    button {
-      opacity: 1;
-    }
-  }
 `;
 
 const Muted = styled.span`
@@ -62,75 +37,97 @@ const Subject = styled.span`
   white-space: nowrap;
 `;
 
-const SentAt = styled.time`
+const Nowrap = styled.time`
   white-space: nowrap;
 `;
 
+const Clicks = styled.span`
+  font-variant-numeric: tabular-nums;
+`;
+
+/** Every status is a text label; the color only supports it. */
+const STATUS_VARIANT: Record<MemberStatus, "success" | "warning" | "info" | "neutral"> = {
+  active: "success",
+  inactive: "warning",
+  never_clicked: "neutral",
+  onboarding_incomplete: "info",
+  invited: "info",
+  unsubscribed: "neutral",
+};
+
+export function StatusBadge({ status }: { status: MemberStatus }) {
+  return <Badge $variant={STATUS_VARIANT[status]}>{copy.status[status]}</Badge>;
+}
+
 /**
- * Community table columns: Name (dimmed + an "Unsubscribed" badge for unsubscribed
- * people, who only appear in General search results),
- * Email (hover-reveal copy button), Last email (subject, or "—"), Sent (relative time, full date
- * on hover, or "—"), Added, and a trailing row-actions ⋯ menu. Name, Email, Sent and Added sort
- * (server-side); their `sortKey`s match `MEMBER_SORT_KEYS`.
+ * Community table columns: Name (sticky), Email (sticky; click to copy), Status (one badge, with the
+ * Status filter in its header), Clicks (primary-action clicks), Last email, Sent (relative time, full
+ * date on hover) and a trailing ⋯ menu. Unsubscribed people's name and email are dimmed.
+ * `now` is the server's render time, so relative dates match on server and client.
  */
-export const memberColumns: TableColumn<Member>[] = [
-  {
-    key: "name",
-    header: copy.table.headerName,
-    sortKey: "name",
-    render: (member) => (
-      <NameLine $muted={!member.subscribed}>
-        {member.name ?? copy.table.noName}
-        {!member.subscribed && <Badge>{copy.table.unsubscribedLabel}</Badge>}
-      </NameLine>
-    ),
-  },
-  {
-    key: "email",
-    header: copy.table.headerEmail,
-    sortKey: "email",
-    render: (member) => (
-      <EmailCell $muted={!member.subscribed}>
-        {member.email}
-        <CopyEmailButton email={member.email} />
-      </EmailCell>
-    ),
-  },
-  {
-    key: "lastEmail",
-    header: copy.table.headerLastEmail,
-    render: (member) =>
-      member.lastEmail ? (
-        <Subject title={member.lastEmail.subject}>{member.lastEmail.subject}</Subject>
-      ) : (
-        <Muted>{copy.table.noLastEmail}</Muted>
+export function memberColumns(now: string, statusFilter: TableColumnFilter): TableColumn<Member>[] {
+  return [
+    {
+      key: "name",
+      header: copy.table.headerName,
+      sortKey: "name",
+      render: (member) => <Dimmable $muted={!member.subscribed}>{member.name ?? copy.table.noName}</Dimmable>,
+    },
+    {
+      key: "email",
+      header: copy.table.headerEmail,
+      sortKey: "email",
+      render: (member) => (
+        <Dimmable $muted={!member.subscribed}>
+          <CopyEmail email={member.email} />
+        </Dimmable>
       ),
-  },
-  {
-    key: "sent",
-    header: copy.table.headerSent,
-    sortKey: "sent",
-    defaultSortDirection: "desc",
-    render: (member) =>
-      member.lastEmail ? (
-        <SentAt dateTime={member.lastEmail.sentAt} title={formatDateTime(member.lastEmail.sentAt)}>
-          {formatRelative(member.lastEmail.sentAt)}
-        </SentAt>
-      ) : (
-        <Muted>{copy.table.noLastEmail}</Muted>
-      ),
-  },
-  {
-    key: "added",
-    header: copy.table.headerAdded,
-    sortKey: "added",
-    defaultSortDirection: "desc",
-    render: (member) => formatDate(member.addedAt),
-  },
-  {
-    key: "actions",
-    header: <VisuallyHidden>{copy.table.headerActions}</VisuallyHidden>,
-    align: "right",
-    render: (member) => <MemberRowActions member={member} />,
-  },
-];
+    },
+    {
+      key: "status",
+      header: copy.table.headerStatus,
+      filter: statusFilter,
+      render: (member) => <StatusBadge status={member.status} />,
+    },
+    {
+      key: "clicks",
+      header: copy.table.headerClicks,
+      sortKey: "clicks",
+      defaultSortDirection: "desc",
+      align: "right",
+      render: (member) => <Clicks>{member.ctaClicks}</Clicks>,
+    },
+    {
+      key: "lastEmail",
+      header: copy.table.headerLastEmail,
+      isEmpty: (member) => !member.lastEmail,
+      render: (member) =>
+        member.lastEmail ? (
+          <Subject title={member.lastEmail.subject}>{member.lastEmail.subject}</Subject>
+        ) : (
+          <Muted>{copy.table.noLastEmail}</Muted>
+        ),
+    },
+    {
+      key: "sent",
+      header: copy.table.headerSent,
+      sortKey: "sent",
+      defaultSortDirection: "desc",
+      isEmpty: (member) => !member.lastEmail,
+      render: (member) =>
+        member.lastEmail ? (
+          <Nowrap dateTime={member.lastEmail.sentAt} title={formatDateTime(member.lastEmail.sentAt)}>
+            {formatRelative(member.lastEmail.sentAt, now)}
+          </Nowrap>
+        ) : (
+          <Muted>{copy.table.noLastEmail}</Muted>
+        ),
+    },
+    {
+      key: "actions",
+      header: <VisuallyHidden>{copy.table.headerActions}</VisuallyHidden>,
+      align: "right",
+      render: (member) => <MemberRowActions member={member} />,
+    },
+  ];
+}

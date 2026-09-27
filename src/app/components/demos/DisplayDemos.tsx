@@ -493,6 +493,8 @@ export function DisplayDemos() {
         <Badge $variant="success">Active</Badge>
         <Badge $variant="warning">Invitation pending</Badge>
         <Badge $variant="danger">Bounced</Badge>
+        <Badge $variant="info">Draft</Badge>
+        <Badge>Volunteer</Badge>
         <Badge $variant="outline">11 members</Badge>
       </BadgeRow>
 

@@ -7,9 +7,9 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { ErrorIcon } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
-import type { SentEmail } from "../_data/types";
+import type { EmailOpportunity, SentEmail } from "../_data/types";
 import { communityCopy as copy } from "../_copy";
-import { formatDate, formatShortDate } from "../_lib/format";
+import { formatDate, formatShortDate } from "@/lib/date";
 import { getMemberEmailHtml, getMemberEmails } from "../_lib/emailHistoryAction";
 
 /*
@@ -135,6 +135,30 @@ const ErrorMessage = styled.p`
   color: var(--color-danger);
 `;
 
+const Activity = styled.p`
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+`;
+
+const NoClicks = styled.p`
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+`;
+
+/** "Signed up: Film night · Shared: Tenant workshop", in the order the email listed them. */
+function activityLine(opportunities: EmailOpportunity[]): string {
+  const e = copy.emails;
+  const items: string[] = [];
+  for (const o of opportunities) {
+    if (o.actions.some((a) => a.type === "cta")) items.push(e.actionItem(o.cta === "sign_up" ? e.signedUp : e.tookAction, o.title));
+    if (o.actions.some((a) => a.type === "share")) items.push(e.actionItem(e.shared, o.title));
+  }
+  return items.join(e.actionSeparator);
+}
+
 /** The nearest scrolling ancestor, so bodies preload just before they scroll into the panel. */
 function scrollParent(el: HTMLElement): HTMLElement | null {
   for (let node = el.parentElement; node; node = node.parentElement) {
@@ -199,9 +223,10 @@ function EmailBody({ memberId, email }: { memberId: string; email: SentEmail }) 
 /**
  * The member panel's Emails section: every email sent to this person, newest
  * first, all expanded. Each shows its subject, short sent date and (if it
- * not delivered) a Not delivered badge, then its body, which loads lazily.
+ * not delivered) a Not delivered badge, what they did with its opportunities
+ * ("Signed up: Film night · Shared: Tenant workshop", or "No clicks"), then its body, which loads lazily.
  */
-export function MemberEmails({ memberId, subscribed }: { memberId: string; subscribed: boolean }) {
+export function MemberEmails({ memberId, subscribed, now }: { memberId: string; subscribed: boolean; now: string }) {
   const [emails, setEmails] = React.useState<SentEmail[] | null>(null);
   const [error, setError] = React.useState(false);
   const [attempt, setAttempt] = React.useState(0);
@@ -252,9 +277,16 @@ export function MemberEmails({ memberId, subscribed }: { memberId: string; subsc
                 <Subject>{email.subject}</Subject>
                 {email.status === "not-delivered" && <Badge $variant="danger">{copy.emails.notDeliveredBadge}</Badge>}
                 <SentDate dateTime={email.sentAt} title={formatDate(email.sentAt)}>
-                  {formatShortDate(email.sentAt)}
+                  {formatShortDate(email.sentAt, now)}
                 </SentDate>
               </ItemHeader>
+              {/* Only opportunities emails have something to click. Opens never count. */}
+              {email.opportunities.length > 0 &&
+                (activityLine(email.opportunities) ? (
+                  <Activity>{activityLine(email.opportunities)}</Activity>
+                ) : (
+                  <NoClicks>{copy.emails.noClicks}</NoClicks>
+                ))}
               <EmailBody memberId={memberId} email={email} />
             </Item>
           ))}

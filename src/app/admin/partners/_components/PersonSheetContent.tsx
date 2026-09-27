@@ -13,6 +13,7 @@ import type { PartnerPerson } from "../_data/types";
 import { formatDate } from "../_lib/format";
 import { adminConfirmCopy, adminPersonHandlers, PersonEditForm } from "./ContactRow";
 import { ContactMeta, InvitationStatus, resendLabel } from "./ContactRowParts";
+import { HealthBadge } from "./HealthBadge";
 import { usePersonActions } from "./PersonActions";
 
 const copy = partnersCopy.personPanel;
@@ -89,7 +90,7 @@ export function PersonSheetContent({
                 <Icon icon={ChevronRight} size={16} />
               </Button>
               {orgStatus === "removed" && <Badge $variant="outline">{partnersCopy.badges.removed}</Badge>}
-              {orgStatus === "pending" && <Badge $variant="neutral">{partnersCopy.badges.awaitingResponse}</Badge>}
+              {orgStatus === "pending" && <HealthBadge tag="notOnboarded" />}
             </OrganizationLine>
           </section>
           {!removed && (

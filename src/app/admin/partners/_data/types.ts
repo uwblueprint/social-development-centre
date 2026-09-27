@@ -19,6 +19,11 @@ export const PARTNER_STATUSES = ["active", "removed"] as const satisfies readonl
  * One health tag per organization with access, derived on the server (_data/health.ts). First match wins,
  * in this order; no match means no tag. Removed organizations have none. Rules: docs/backend/partners.md.
  */
+/** No post for this many days, since joining or since the last post: No recent posts. */
+export const NO_RECENT_POSTS_DAYS = 60;
+/** A published opportunity should be in an email within this many days of posting: Not emailed. */
+export const EMAIL_WITHIN_DAYS = 14;
+
 export const PARTNER_HEALTH = ["notOnboarded", "noRecentPosts", "notEmailed", "noClicks"] as const;
 export type PartnerHealth = (typeof PARTNER_HEALTH)[number];
 

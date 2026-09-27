@@ -5,7 +5,8 @@ Drafts for the four Community emails. Placeholders in `{braces}`. **Before sendi
 ---
 
 ## 1. General welcome
-**Sent when:** a new general member is added with **Add member** or **Import members** (not during the initial backfill, and not when someone is resubscribed).
+**Sent when:** a new general member is added with **Add members** (one person or a file), or signs up at a booth with the sign-up kiosk (not during the initial backfill, not when someone is resubscribed, and not when an existing email signs up at the kiosk again).
+**Open question (27 Sep):** booth and legacy sign-ups start as **Invited** (onboarding not started), so this email should also invite them to finish setting up their preferences. Add a {finish setting up link} once onboarding exists.
 **Subject:** Welcome to the Social Development Centre community
 
 Hi {name|there},
@@ -69,3 +70,8 @@ You'll still get our community emails about opportunities. If you'd rather not, 
 Questions? Reply to this email or contact {SDC contact}.
 
 The Social Development Centre team
+
+---
+
+## No email: deleting someone
+**Delete member** (for data-removal requests) sends nothing. The person is also deleted from the email provider, so no later email can reach them. Unsubscribing sends nothing either.

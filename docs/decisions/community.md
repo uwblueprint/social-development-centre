@@ -3,6 +3,7 @@
 Assumptions made while building the UI from the Community PRD. Each can be revisited.
 
 ## 1. General members and Paying members are exclusive; unsubscribed people only appear in search
+- **Superseded in part (27 Sep):** unsubscribed people are now shown through the Status filter, not appended to General search results; the tabs still split by tier. See 16 and 17.
 - **Decision (owner, 27 Sep, replaces 26 Sep):** **General members** lists and counts subscribed people who aren't paying members. **Paying members** lists and counts subscribed paying members. Nobody is in both. Unsubscribed people are left out of both lists and every count. The General tab's tooltip says: "Subscribed people who aren't paying members." An empty search on either tab offers the other tab when it has matches.
 - **Before (26 Sep):** General members included paying members.
 - **Search fallback (assumption):** a search on **General members** still returns matching unsubscribed people, after every subscribed match, dimmed and marked with an **Unsubscribed** badge, so admins can answer "why isn't X getting emails?" Search on **Paying members** doesn't include them.
@@ -43,6 +44,7 @@ Assumptions made while building the UI from the Community PRD. Each can be revis
 - **When encountered:** An unsubscribed person asks to be added back.
 
 ## 7. Export follows the tab unless changed
+- **Superseded in part (27 Sep):** the export now also chooses Members or Activity and has every field. See 21.
 - **Decision (owner, 27 Sep):** **Export members** offers **General members**, **Paying members** or **Both**, and defaults to the current tab. "Include unsubscribed members" applies to any choice (unsubscribing stops emails, not paying access). It shows the record count before download. CSV columns: name, email.
 - **Page:** Admin → Community → Export members.
 - **Affects:** Contact lists leaving the platform.
@@ -54,17 +56,20 @@ Assumptions made while building the UI from the Community PRD. Each can be revis
 - **When encountered:** After pasting bare addresses.
 
 ## 9. Unsubscribed status is inline, not a column
+- **Superseded (27 Sep):** a Status column is back, with one status per person (see 16). Unsubscribed rows are still dimmed.
 - **Decision:** Dropped the dedicated Status column. In search results, an unsubscribed person's name and email are dimmed and the name carries a text **Unsubscribed** badge (replacing the earlier mail-off icon and tooltip), freeing a column for Last email.
 - **Page:** Admin → Community → table.
 - **Affects:** Table density; the "Give paying access"/"Remove paying access" action is renamed "Convert to paying member"/"Remove paying access" everywhere, including the row's own **⋯** menu.
 - **When encountered:** Scanning the table for who's unsubscribed.
 
 ## 10. Row actions and email history live at two altitudes
+- **Changed (27 Sep):** the row menu no longer has **Copy email** (the email itself copies, see 19).
 - **Decision:** Every row has its own **⋯** menu (copy email, convert/remove, unsubscribe or, for people an admin unsubscribed, resubscribe) so common actions don't require opening the panel. Every item in both ⋯ menus has an icon.
 - **Page:** Admin → Community → table row menu.
 - **When encountered:** Bulk-managing access from the list instead of one profile at a time.
 
 ## 11. The person panel is one scrolling view
+- **Superseded in part (27 Sep):** the header has no badges and no ⋯ menu; actions are a visible row. See 20.
 - **Decision (owner, 26 Sep):** No tabs, no avatar, no primary button. The header shows the name (or the email when there's no name), the email with a copy button, status badges (**General member** or **Paying member**, plus **Unsubscribed**; see 13) and "Added {date}". Every action (**Edit details**, **Copy email**, **Convert to paying member** / **Remove paying access**, **Unsubscribe** / **Resubscribe**, see 6) is in the header's **⋯** menu. Each fact appears once: the email isn't repeated in a details list and the status isn't repeated elsewhere.
 - **Emails:** below the header, an **Emails** section lists every email sent to the person, newest first, all expanded (no accordion, no Expand all). Each shows its subject as a heading and a short sent date on the same line, plus **Not delivered** when delivery failed (see 14); the kind label ("Opportunities") is gone. Each body renders in a sandboxed frame of fixed height with its own scrollbar, and is fetched only when it scrolls near view, with a same-size placeholder until then, so the panel opens fast. With no emails: "No emails sent yet."
 - **Page:** Admin → Community → person panel.
@@ -72,6 +77,7 @@ Assumptions made while building the UI from the Community PRD. Each can be revis
 - **When encountered:** Checking what someone received, or acting on one person.
 
 ## 12. The copy button confirms, then reverts
+- **Changed (27 Sep):** the whole email is the copy control; see 19.
 - **Decision:** The copy icon next to an email shows a check and a "Copied" tooltip for about 1.5 seconds, then reverts. The tooltip closes as soon as the pointer leaves or focus moves.
 - **Page:** Admin → Community → table Email column and person panel header.
 - **When encountered:** Copying an email address.
@@ -105,9 +111,57 @@ Assumptions made while building the UI from the Community PRD. Each can be revis
 - **Where:** Add members dialog, preview step.
 
 ## Wider person panel with one header row
+- **Superseded in part (27 Sep):** the ⋯ menu is gone (see 20); the panel keeps its width.
 - **Decision (owner, 27 Sep):** The person panel is `min(720px, 100vw)` wide so a 600px email fits without scrolling sideways. Its header has one row (name, then the ⋯ menu and close button, the same size, vertically centred), then the email with its copy button, then the status badge and "Added {date}" on one line.
 - **Where:** Community, person panel (kit: `SheetContent size="wide"`, `SheetHeader actions`).
 
 ## Loading while sorting, searching or paging
 - **Decision (owner, 27 Sep):** While the next rows load, the current rows stay in place, dimmed; the active sort arrow becomes a spinner and a thin line runs under the header. Nothing jumps.
 - **Where:** Community table (kit: `Table busy`).
+
+## 16. One status per person, for where they are in their journey
+- **Decision (owner, 27 Sep):** every person has exactly one derived status, checked in this order: **Unsubscribed**; **Invited** (onboarding not started); **Onboarding incomplete**; **Never clicked** (onboarded, never clicked a primary action); **Active** (clicked a primary action in the last 60 days); **Inactive** (clicked before, not in 60 days). A primary action is an opportunity's main button in an email (signed up or did it). Shares ("Invite a friend") are recorded but don't change status. **Opens never count**: they're unreliable and don't show intent.
+- **Page:** Community table (**Status** column, one badge per person, text plus color), member panel header (as text), exports.
+- **Affects:** Backend derives it (docs/backend/community.md, "Status"); it's never stored.
+- **When encountered:** Every visit.
+
+## 17. Status is filtered in the column header; Unsubscribed is hidden by default
+- **Decision (owner, 27 Sep):** the **Status** header has a filter (checkbox list with a count per status). By default every status except **Unsubscribed** is selected, so the lists match who gets emails. The selection is in the URL (`status`), survives search, tab, sort and page changes, and resets to page 1. Tab counts and empty states follow it: with no search, a filter that hides everything says so and offers **Clear filters** (show every status); a search whose only matches are hidden says how many and offers **Show all statuses**.
+- **Tabs:** still General members and Paying members by tier, now including unsubscribed people when the filter shows them. The General tab tooltip becomes "People who aren't paying members." (needs approval; owner decision 2 said "subscribed").
+- **Page:** Community table header. **When encountered:** looking for a segment, or for someone who unsubscribed.
+
+## 18. Columns: Name, Email, Status, Clicks, Last email, Sent
+- **Decision (27 Sep):** **Added** is removed as a column (the date is in the panel and the export); the default order is still newest added first. **Clicks** is the total of primary-action clicks and sorts most first. Name and Email stay frozen while the table scrolls sideways (only Name below 600px). **Last email** and **Sent** hide when no row on the page has an email.
+- **Page:** Community table.
+
+## 19. Click an email to copy it
+- **Decision (owner, 27 Sep):** clicking anywhere on an email (the address or its copy icon) copies it; the icon becomes a check with a "Copied" tooltip for 1.5 seconds. It doesn't open the panel. Any copy without in-place feedback shows a toast, "Copied {name}'s email" (or "Copied {email}"); today every copy has in-place feedback, so no toast fires.
+- **Page:** Community table Email column and the panel header.
+
+## 20. Member panel: who and where, then visible actions
+- **Decision (owner, 27 Sep):** the header shows the name, the email right under it (click to copy), and one muted line such as "Active · General member · Added Apr 11, 2026". No badge, no ⋯ menu. Below it, a row of actions like a profile page: **Edit details**, **Unsubscribe** (or **Resubscribe** when an admin unsubscribed them; nothing when they unsubscribed themselves, and the header says why), then icon buttons with tooltips for the rare ones: **Convert to paying member** (or **Remove paying access**) and **Delete member**. Padding matches the page. Each opportunities email in the panel shows what they did, e.g. "Signed up: Film night · Shared: Tenant workshop", or "No clicks". Other emails (welcomes) have nothing to click, so no line.
+- **Page:** Community → member panel.
+
+## 21. Converting to paying asks first
+- **Decision (owner, 27 Sep):** **Convert to paying member** (panel or row menu) opens a confirmation: "Make {name} a paying member?", saying they'll get the members-only feed and {paid benefit}, and that we'll email them (or "They're unsubscribed, so we won't email them."). Button **Make paying member**. It grants paid benefits and sends an email, so a stray click shouldn't do it.
+- **Open:** `{paid benefit}` is a placeholder (`PAID_BENEFIT` in `_copy.ts`) until SDC confirms the benefit.
+
+## 22. Delete is a true delete; unsubscribe is for stopping emails
+- **Decision (owner, 27 Sep):** **Delete member** is for data-removal requests. It asks first ("Delete {name} permanently?"), says they'll be removed from Community and every export, that it can't be undone, and to unsubscribe instead to only stop emails. The backend deletes the record and history, deletes them in the email provider, and keeps a hash of the address so imports and **Add members** skip it (the preview shows "deleted earlier, skipped"). A person who signs up again themselves (at a booth) is fresh consent and is added.
+- **Page:** Community → member panel. **Not** in the row menu: it's rare and irreversible.
+
+## 23. Export for analysis: Members or Activity, every field
+- **Decision (owner, 27 Sep):** **Export members** is the page's primary action. The dialog chooses **Members (one row per person)** or **Activity (one row per click)**, keeps **General members / Paying members / Both** and **Include unsubscribed members**, and shows the row count. Members has every field (status, tier, subscribed, who unsubscribed and when, onboarding, source, source detail, added, last email, emails received, clicks, sign-ups, shares, last click). Activity has email, subject, sent date, opportunity, action (Signed up, Took action, Shared) and clicked date. Values are plain words and `YYYY-MM-DD` dates, so the file works in a spreadsheet without a key.
+- **Page:** Community → Export members.
+
+## 24. Source is export only
+- **Decision (owner, 27 Sep):** how someone joined (legacy import, booth, website, partner event, referral, added by an admin, file import, plus a detail such as the booth location) is recorded when they're added and appears only in the Members export. It's for analysis, not for day-to-day decisions about a person, so the list and panel stay calm.
+
+## 25. Header: Export primary; Add members and the kiosk secondary
+- **Decision (owner, 27 Sep):** **Export members** (Download icon) is the primary button. **Add members** and **Open sign-up kiosk** are secondary. The kiosk button opens a small popover asking "Where are you?" (required; e.g. Kitchener Market), then opens `/kiosk?location=…` in a new tab. The location is saved with each booth sign-up as its source detail.
+
+## 26. Add members: one person first, a file second
+- **Decision (owner, 27 Sep):** the dialog opens on a single-person form: **Name**, **Email** and **Make them a paying member** (unchecked). Footer: **Import from a file** on the left; **Cancel** and **Add member** on the right. A clear new person is added straight away; anything that needs a look (already a member, unsubscribed, deleted, invalid) shows the preview. **Import from a file** takes a CSV with name and email columns (with **Download template**), the same checkbox (**Make them paying members**) and the same preview. The tag input is gone from this dialog (it stays in the kit).
+
+## 27. No bulk actions for now
+- **Decision (owner, 27 Sep):** no row selection or bulk convert, unsubscribe or delete. Each of those changes consent, access or data one person at a time, and a mistake across many people is hard to undo (a bulk delete can't be). Bulk adding is covered by **Import from a file** with its preview; bulk analysis by the export. Revisit if admins repeatedly do the same action to a filtered group.

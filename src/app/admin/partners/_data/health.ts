@@ -1,7 +1,7 @@
 import { listPublishedHistory } from "@/features/opportunities/queries";
 import { emailStatsFor } from "./emailStats";
 import { currentContacts, statusOf, type StoredOrg } from "./store";
-import type { PartnerHealthTag } from "./types";
+import { EMAIL_WITHIN_DAYS, NO_RECENT_POSTS_DAYS, type PartnerHealthTag } from "./types";
 
 /*
  * Partner health: one tag per organization with access, first match wins (docs/backend/partners.md).
@@ -9,10 +9,7 @@ import type { PartnerHealthTag } from "./types";
  */
 
 const DAY = 86_400_000;
-/** No post for this long, since joining or since the last post: No recent posts. */
-export const NO_RECENT_POSTS_DAYS = 60;
-/** A published opportunity should be in an email within this many days of posting: Not emailed. */
-export const EMAIL_WITHIN_DAYS = 14;
+// Thresholds: NO_RECENT_POSTS_DAYS and EMAIL_WITHIN_DAYS in types.ts (the UI's reasons quote them).
 
 export interface OrganizationActivity {
   health?: PartnerHealthTag;
