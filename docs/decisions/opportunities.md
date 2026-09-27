@@ -95,7 +95,7 @@ Each entry gives the decision, which page it's on, what it affects, when someone
 - **Revisit when:** SDC's emails or members' pages need images, and there's somewhere to store them.
 
 ## 11. No prefill from an Eventbrite link
-- **Status:** Assumption — not yet confirmed with SDC.
+- **Status:** Superseded by [decision 18](#18-eventbrite-first-for-events) (27 Sep 2026).
 - **Decision:** Partners type every field. Prefilling from a pasted Eventbrite link is still being explored. The link field stays prominent so prefill can be added later without redesigning the form.
 - **Page:** Admin and partner → Opportunities → form → **Basics** → **Link**.
 - **Affects:** How long it takes to post, especially for partners who already use Eventbrite.
@@ -108,10 +108,10 @@ Each entry gives the decision, which page it's on, what it affects, when someone
 
   | Type | Required to publish | Optional |
   |---|---|---|
-  | Event | Date, Start time, How people attend, and Location unless online | End time, Cost (Free/Paid plus Cost details), Accessibility |
+  | Event | Date, Start time, How people attend, Area | End time, Address or venue, Cost (Free/Paid plus Cost details), Accessibility (checkboxes), Accessibility note |
   | Petition | Addressed to | Deadline, Signature goal |
-  | Volunteer role | Commitment, Where volunteers work, and Location unless remote | Start date, Time commitment, Skills or experience, Minimum age, Apply by |
-  | Job | Employment type, Workplace, and Location unless remote | Pay, Apply by, Qualifications |
+  | Volunteer role | Time commitment, Where volunteers work, Area | Address or venue, Start date, Apply by, Skills, Minimum age |
+  | Job | Employment type, Workplace, Area | Address or venue, Pay, Apply by, Qualifications |
   | Other | Call to action | Deadline, up to 5 Details |
 
   Every type also needs a Title (up to 100 characters), a Short description (up to 280), 1–3 Topics and a link.
@@ -152,3 +152,53 @@ Each entry gives the decision, which page it's on, what it affects, when someone
 - **Page:** Admin and partner → Opportunities → form.
 - **Affects:** Every failed publish, save or draft save.
 - **When encountered:** Clicking **Publish**, **Save changes** or **Save as draft** with a missing or invalid field.
+
+## 17. The form has three steps: Type, Details, Review
+- **Status:** Requested by owner, 27 Sep 2026. Step names, **Next**, **Back** and the Review copy are new and need approval.
+- **Decision:** New and edited listings use one full-page form in three steps: **1 Type** (the type and its link; for events, the Eventbrite link first), **2 Details** (organization, title, short description, topics and the type's own fields) and **3 Review** (a read-only preview of the listing as it appears in members' emails: title, date and area, short description, topics and the button, with **Edit type and link** and **Edit details**). A step indicator reads "1 Type · 2 Details · 3 Review". **Back** and **Next** move between steps without losing anything; the step isn't in the page address. **Save as draft** (or **Save changes** once published) is on every step; **Publish** is on Review. If publishing fails validation, the form opens the step with the first invalid field and shows the error summary there; its links open other steps too.
+- **Page:** Admin and partner → Opportunities → **New opportunity** or **Edit**.
+- **Affects:** Every new and edited listing; the error-summary rule in decision 16 now spans steps.
+- **When encountered:** Every time someone posts or edits a listing.
+- **Revisit when:** Partners find three steps slower than one page for short listings like petitions.
+
+## 18. Eventbrite first for events
+- **Status:** Requested by owner, 27 Sep 2026. A spike: the dev version returns made-up details. Label, hint, button and messages are new and need approval.
+- **Decision:** For events, the first field after **Type** is **Eventbrite link (optional)** with a **Fill in details** button. It fills the title, short description, date, start and end times, area and address, and uses the Eventbrite page as the **Link** if that's empty. It overwrites those fields, and a toast says to check them on the next step. It accepts eventbrite.ca and eventbrite.com event pages only. The real version reads the event from the Eventbrite API ([backend](../backend/opportunities.md#eventbrite-prefill)).
+- **Page:** Admin and partner → Opportunities → form → **Type** step (events).
+- **Affects:** How fast partners who already use Eventbrite can post. Replaces decision 11.
+- **When encountered:** Posting an event.
+- **Revisit when:** The API spike shows which fields Eventbrite returns reliably (for example, the area from the venue's city).
+
+## 19. Structured fields instead of free text, for matching
+- **Status:** Requested by owner, 27 Sep 2026. The option lists are proposals until SDC confirms its tags at the 29 September session; they need approval.
+- **Decision:** Fields that emails and recommendations match on are chosen from fixed lists:
+  - **Area** (event, volunteer role, job; required to publish): Kitchener, Waterloo, Cambridge, North Dumfries, Wellesley, Wilmot, Woolwich, Online / remote. Choosing an online or remote format fills in Online / remote. **Address or venue** stays optional free text, hidden for Online / remote. Replaces the free-text **Location**.
+  - **Time commitment** (volunteer role; required to publish): Under 2 hours a week, 2–5 hours a week, 5+ hours a week, One-time. It replaces the old **Commitment** (One-time/Ongoing) choice, which it made redundant.
+  - **Skills** (volunteer role; optional, any number): No experience needed, Driving, Languages, Tech, Childcare, Cooking, Writing, Event setup.
+  - **Accessibility** (event; optional checkboxes): Step-free access, Accessible washroom, ASL on request, Childcare, Quiet space, plus an optional **Accessibility note**.
+  The dev seed was migrated to these values.
+- **Page:** Admin and partner → Opportunities → form → **Details** step; the side panel.
+- **Affects:** Matching members by area, time, skills and access needs; what emails can say.
+- **When encountered:** Posting an event, volunteer role or job.
+- **Revisit when:** SDC confirms its location, commitment, skill and accessibility tags.
+
+## 20. Each type has its own tag color in the table
+- **Status:** Requested by owner, 27 Sep 2026.
+- **Decision:** The table has a **Type** column (with the Type filter) showing a colored tag: the type's icon and name in one of five category colors (Event 1, Petition 2, Volunteer role 3, Job 4, Other 5). Color is never the only signal: the name is always there. The kind text under each title is gone. The table's rows are one line with fixed column widths; long titles end in "…" and show in full on hover. **Updated** became **Last change**, reading "Created {when}" or "Edited {when}" (new copy, needs approval). The search box moved to the page header. The open panel is in the page address (`?opportunity=<id>`), so a link opens it.
+- **Page:** Admin and partner → Opportunities (list).
+- **Affects:** Scanning the list by type; sharing a listing with a colleague.
+- **When encountered:** Every visit to Opportunities.
+
+## 21. Topics are capped at 3 in the form
+- **Status:** Decided by owner, 27 Sep 2026 (the disabled reason is the owner's words; "{n} of 3 selected" is new and needs approval).
+- **Decision:** "{n} of 3 selected" shows beside **Topics**. Once 3 are chosen, the other topics are unavailable, and pointing at or focusing one shows "You can choose up to 3 topics. Unselect one to choose another." The server still refuses more than 3.
+- **Page:** Admin and partner → Opportunities → form → **Details** step → **Topics**.
+- **Affects:** Keeps recommendations focused; replaces the server-only "Choose up to 3 topics." error.
+- **When encountered:** Choosing a fourth topic.
+
+## 22. Hints only where they prevent a mistake
+- **Status:** Requested by owner, 27 Sep 2026.
+- **Decision:** The form keeps a hint only where it prevents a mistake: the **Link** (where people take part, per type), the **Short description** (it's for the email), the **Eventbrite link**, the type description, **Call to action**, and deadlines ("It closes after this day."). Title and the other fields have none; a field without "(required)" is optional, so "Optional." hints are gone. Hints and character counters share one line.
+- **Page:** Admin and partner → Opportunities → form.
+- **Affects:** How long the form looks and reads.
+- **When encountered:** Every listing.

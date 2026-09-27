@@ -72,7 +72,7 @@ const columns: TableColumn<Member>[] = [
 
 ## Row height and widths
 - Every cell is `white-space: nowrap`, so every row in every table is `--row-height` (44px, room for a 32px button). Don't put wrapping content or stacked two-line cells in a table; show the rest in the detail view.
-- Give columns with long values (names, organizations, emails) a `width` such as `"240px"`. Once any column has one, the table uses `table-layout: fixed`: columns with a width keep it, the rest share what's left, and overflowing content is clipped. Wrap long text in `TruncatedText` (add `tooltip` to show the full text on hover, only when cut off) and emails in `TruncatedEmail` (keeps the `@domain`). See [TruncatedText](./TruncatedText.md).
+- Give columns with long values (names, organizations, emails) a `width` such as `"240px"` (cell padding included). That column is exactly that wide and clips what doesn't fit; columns without a width still size to their content, so short columns (role, status badges) never get squeezed. When every column has a width, the table switches to `table-layout: fixed`. Wrap long text in `TruncatedText` (add `tooltip` to show the full text on hover, only when cut off) and emails in `TruncatedEmail` (keeps the `@domain`). See [TruncatedText](./TruncatedText.md).
 - Without any widths, columns size to their content and the table scrolls sideways when it doesn't fit.
 
 ## Loading

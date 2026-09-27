@@ -23,7 +23,7 @@ Decisions and their rationale: [docs/decisions/opportunities.md](../decisions/op
 | `kind` | `event` \| `petition` \| `volunteer` \| `job` \| `other` | Can't change after creation. `saveOpportunity` keeps the stored kind when editing. |
 | `title` | text, ≤ 100 | Required, even for drafts. |
 | `summary` | text, ≤ 280 | Required to publish. Written for email. |
-| `topics` | `TopicId[]`, 1–3 | Required to publish. IDs come from `TOPICS` in `catalog.ts`. The list is a placeholder until the 29 September taxonomy; keep IDs stable if labels change. Store as an array column or a join table. |
+| `topics` | `TopicId[]`, 1–3 | Required to publish. The form disables more than 3 ([decision 21](../decisions/opportunities.md#21-topics-are-capped-at-3-in-the-form)). IDs come from `TOPICS` in `catalog.ts`. The list is a placeholder until the 29 September taxonomy; keep IDs stable if labels change. Store as an array column or a join table. |
 | `link` | text, `https://` | Required to publish. The external page where people take action. People may type it without a protocol (`sdckw.ca`); `saveOpportunity` stores the result of `normalizeWebAddress` (`src/lib/url.ts`). |
 | `organization_id` | FK → organizations, or `sdc` | SDC posts as itself (`SDC_ORG`). Either add SDC as an organizations row or treat `sdc` as a reserved ID. The UI needs `{ id, name }`, with the **current** name. |
 | `details` | JSON (per kind, below) | Drafts may be partial. Published and closed listings are complete. |
@@ -38,13 +38,20 @@ Dates are `yyyy-mm-dd` and times are `HH:mm` (24-hour), both local to Waterloo R
 
 | Kind | Required to publish | Optional |
 |---|---|---|
-| `event` | `date`, `startTime`, `format` (`in_person` \| `online` \| `hybrid`), `location` unless `online` | `endTime` (after `startTime`), `cost` (`free` \| `paid`, default `free`), `costDetails` (required if `paid`), `accessibility` |
+| `event` | `date`, `startTime`, `format` (`in_person` \| `online` \| `hybrid`), `area` | `endTime` (after `startTime`), `address`, `cost` (`free` \| `paid`, default `free`), `costDetails` (required if `paid`), `accessibility` (`AccessibilityFeature[]`), `accessibilityNote` (≤ 200) |
 | `petition` | `target` | `deadline`, `signatureGoal` (positive integer) |
-| `volunteer` | `commitment` (`one_time` \| `ongoing`), `format` (`in_person` \| `remote` \| `hybrid`), `location` unless `remote` | `startDate`, `timeCommitment`, `skills`, `minimumAge` (positive integer), `applyBy` |
-| `job` | `employmentType` (`full_time` \| `part_time` \| `contract` \| `temporary` \| `internship`), `workplace` (`on_site` \| `remote` \| `hybrid`), `location` unless `remote` | `pay`, `applyBy`, `qualifications` |
+| `volunteer` | `timeCommitment` (`under_2` \| `2_to_5` \| `5_plus` \| `one_time`), `format` (`in_person` \| `remote` \| `hybrid`), `area` | `address`, `startDate`, `skills` (`SkillId[]`), `minimumAge` (positive integer), `applyBy` |
+| `job` | `employmentType` (`full_time` \| `part_time` \| `contract` \| `temporary` \| `internship`), `workplace` (`on_site` \| `remote` \| `hybrid`), `area` | `address`, `pay`, `applyBy`, `qualifications` |
 | `other` | `callToAction` | `deadline`, `details[]` (≤ 5 `{ label ≤ 40, value ≤ 120 }`) |
 
-When the format or workplace is `online` or `remote`, `location` is dropped. When cost is `free`, `costDetails` is dropped.
+**Structured values for matching** ([decision 19](../decisions/opportunities.md#19-structured-fields-instead-of-free-text-for-matching)); ids and labels are in `catalog.ts`:
+- `area`: `kitchener` \| `waterloo` \| `cambridge` \| `north_dumfries` \| `wellesley` \| `wilmot` \| `woolwich` \| `online` (`AREAS`). `address` (≤ 120, free text) is dropped when `area` is `online`.
+- `timeCommitment` (`TIME_COMMITMENTS`) replaced the old free-text `timeCommitment` and the `commitment` (`one_time` \| `ongoing`) field. `formatWhen` shows "One-time" for `one_time`, otherwise "Ongoing".
+- `skills`: any of `no_experience`, `driving`, `languages`, `tech`, `childcare`, `cooking`, `writing`, `event_setup` (`SKILLS`).
+- `accessibility`: any of `step_free`, `accessible_washroom`, `asl`, `childcare`, `quiet_space` (`ACCESSIBILITY_FEATURES`); free text goes in `accessibilityNote`.
+- **Migration:** the old `location` (free text) maps to `address` plus a chosen `area`; old free-text `timeCommitment`, `skills` and `accessibility` need mapping by hand or can move to `accessibilityNote`. The dev seed is already migrated (`store.ts`, key `__opportunitiesStoreV3`).
+
+When cost is `free`, `costDetails` is dropped. Area, time commitment, skills and accessibility are good candidates for columns (or join tables) since emails will filter on them.
 
 JSON is enough because emails and recommendations only need the fields in this table. If you later filter emails by format, location or date in SQL, add those as columns.
 
@@ -110,11 +117,13 @@ All values are strings. Fields marked "multiple" repeat the key.
 | `organizationId` | Admin only. Ignored for partners. Empty means SDC. |
 | `title`, `summary`, `link` | |
 | `topics` | Multiple. Unknown IDs and duplicates are dropped. |
-| Event | `date`, `startTime`, `endTime`, `format`, `location`, `cost`, `costDetails`, `accessibility` |
+| Event | `date`, `startTime`, `endTime`, `format`, `area`, `address`, `cost`, `costDetails`, `accessibility` (multiple), `accessibilityNote` |
 | Petition | `target`, `deadline`, `signatureGoal` |
-| Volunteer role | `commitment`, `format`, `location`, `startDate`, `timeCommitment`, `skills`, `minimumAge`, `applyBy` |
-| Job | `employmentType`, `workplace`, `location`, `pay`, `applyBy`, `qualifications` |
+| Volunteer role | `timeCommitment`, `format`, `area`, `address`, `startDate`, `skills` (multiple), `minimumAge`, `applyBy` |
+| Job | `employmentType`, `workplace`, `area`, `address`, `pay`, `applyBy`, `qualifications` |
 | Other | `callToAction`, `deadline`, `detailLabel` (multiple), `detailValue` (multiple), paired by position. Rows with both empty are skipped. |
+
+Unknown ids in `area`, `timeCommitment`, `skills` and `accessibility` are rejected (`area`, `timeCommitment`) or dropped (the lists). The form is three steps, but it always posts the whole model at once (`toFormData` in `components/form/formValues.ts`), so this contract is unchanged in shape. `/components/form-contract` shows the fields.
 
 ### Validation
 - **The strictness depends on the next status.** Publishing, and saving a published or closed listing, are **strict** (every required field). Drafts are **lenient**: only a title is required, but anything that *is* filled in must still be valid (lengths, date and time format, link format, a positive integer, end time after start time, complete detail pairs).
@@ -123,6 +132,13 @@ All values are strings. Fields marked "multiple" repeat the key.
 - **Links:** accept anything `normalizeWebAddress` accepts (`sdckw.ca`, `www.sdckw.ca/events`, `http://…`, `https://…`) and store its `https://` result. Otherwise the error is `Enter a web address, like sdckw.ca.`
 - **You can't publish a listing with a date that has passed.** The error goes on `date` (events), `applyBy` (volunteer role, job) or `deadline` (petition, other).
 - The field messages are in `service.ts`; the rules for showing them are in [docs/ux/portal.md](../ux/portal.md#shared-rules) (Form errors).
+
+## Eventbrite prefill
+**Spike** ([decision 18](../decisions/opportunities.md#18-eventbrite-first-for-events)). The event form's **Fill in details** calls each portal's `prefillFromEventbrite(url)` server action (`src/app/{admin,partner}/opportunities/_data/actions.ts`), which checks the session and calls `prefillFromEventbrite` in `src/features/opportunities/eventbrite.ts`.
+
+- **Returns** `ActionState<EventbritePrefill>`: `{ link, title, summary, date (yyyy-mm-dd), startTime (HH:mm), endTime?, area, address? }`. On failure, `status: "error"` with the message on `fieldErrors.eventbrite`.
+- **Dev mock (now):** accepts eventbrite.ca and eventbrite.com `/e/…` links only; derives the title from the URL slug and returns a fixed date 14 days out, 18:00–20:00, Kitchener, Kitchener Public Library. It saves nothing.
+- **Real version:** parse the event id from the URL (`/e/{slug}-{id}`) and call the Eventbrite API, `GET https://www.eventbriteapi.com/v3/events/{id}/?expand=venue`, with SDC's private token (a server-only secret; never sent to the browser). Map `name.text` → `title`, `summary` (or the first 280 characters of `description.text`) → `summary`, `start.local`/`end.local` → `date`, `startTime`, `endTime` (the event's own time zone), `venue.address.city` → `area` (online events → `online`; an unknown city leaves `area` empty for the person to choose), and `venue.name` plus `venue.address.address_1` → `address`. Rate-limit per session. Keep the messages in `eventbrite.ts`.
 
 ## Automatic expiry
 Rule (`format.ts`, `hasEnded` and `effectiveStatus`):

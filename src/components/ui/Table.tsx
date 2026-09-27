@@ -70,9 +70,10 @@ export interface TableColumn<T> {
    */
   isEmpty?: (row: T) => boolean;
   /**
-   * A fixed CSS width, e.g. `"240px"`. When any column sets one, the table uses fixed layout: columns
-   * without a width share the rest, and cell content that doesn't fit is clipped (use `TruncatedText`
-   * or `TruncatedEmail` in the cell to show an ellipsis).
+   * A fixed CSS width, e.g. `"240px"` (including the cell padding). The column is exactly this wide and
+   * clips content that doesn't fit (use `TruncatedText` or `TruncatedEmail` in the cell for an
+   * ellipsis). Columns without a width size to their content; when every column has one, the table
+   * uses `table-layout: fixed`.
    */
   width?: string;
 }
@@ -221,7 +222,7 @@ const StyledTable = styled.table`
   border-collapse: collapse;
   font-size: var(--text-sm);
 
-  /* A column with a fixed width switches the table to fixed layout (data-fixed). */
+  /* When every column has a fixed width, the table uses fixed layout (data-fixed). */
   &[data-fixed] {
     table-layout: fixed;
   }
@@ -239,12 +240,17 @@ const StyledTable = styled.table`
     background: var(--color-bg-hover);
   }
 
-  /* Fixed layout: content that doesn't fit its column is clipped rather than spilling into the next. */
-  &[data-fixed] td,
-  &[data-fixed] th {
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+`;
+
+/*
+ * A fixed-width column's content box: exactly the column's width minus the cell padding, clipping
+ * what doesn't fit (TruncatedText/TruncatedEmail inside add the ellipsis). Works in auto layout too,
+ * where the column then sizes to exactly this box.
+ */
+const CellBox = styled.div`
+  width: calc(var(--column-width) - 2 * var(--space-3));
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
 
 const Th = styled.th<{ $align?: "left" | "right"; $sticky?: boolean }>`
@@ -725,7 +731,7 @@ export function Table<T>({
 
   if (!hasRows) return <>{empty}</>;
 
-  const fixed = visibleColumns.some((col) => col.width);
+  const fixed = visibleColumns.every((col) => col.width);
 
   return (
     <Wrapper ref={wrapperRef}>
@@ -805,7 +811,11 @@ export function Table<T>({
               >
                 {visibleColumns.map((col, index) => (
                   <Td key={col.key} $align={col.align} {...frozenProps(index, frozen, offsets)}>
-                    {col.render(row)}
+                    {col.width ? (
+                      <CellBox style={{ "--column-width": col.width } as React.CSSProperties}>{col.render(row)}</CellBox>
+                    ) : (
+                      col.render(row)
+                    )}
                   </Td>
                 ))}
               </Row>

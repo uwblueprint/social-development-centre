@@ -475,6 +475,8 @@ export const TagInput = React.forwardRef<HTMLInputElement, TagInputProps>(functi
           onChange={handleChange}
           onPaste={handlePaste}
           onKeyDown={handleKeyDown}
+          // Moving into the field (click, Arrow Right past the last tag) deselects; Cmd/Ctrl+A selects from here.
+          onFocus={clearSelection}
           onBlur={() => {
             if (!draft.trim()) return;
             commit([draft]);

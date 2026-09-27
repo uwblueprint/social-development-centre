@@ -622,7 +622,7 @@ export function TruncationDemo() {
       <TruncatedText tooltip>Short name, no tooltip</TruncatedText>
       <TruncatedEmail email="amara.okafor.coordinator@northsidefood.org" />
       <TruncatedEmail email="luis@riverbend.org" />
-      <TruncatedEmail email="x@a-very-long-domain-that-cannot-fit-anywhere.example.org" />
+      <TruncatedEmail email="xavier@a-very-long-domain-that-cannot-fit-anywhere.example.org" />
     </TruncationFrame>
   );
 }

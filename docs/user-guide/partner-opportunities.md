@@ -12,28 +12,32 @@ New here? Start with [Getting started with the partner portal](./partner-getting
    - **Published:** members can see it now. Sorted by date, soonest first.
    - **Drafts:** not published yet. Only people at your organization, and SDC, see drafts. Most recently updated first.
    - **Closed:** members aren't recommended or emailed it. Each one shows why: **Ended** (its date passed) or **Closed** (someone closed it). Most recently updated first.
-3. To narrow the list, type in the search box (results update as you type). To filter by type, click the filter icon next to **Opportunity** in the table header (**Filter Type**) tick one or more types and click **Apply**. To remove it, open it, click **Clear**, then **Apply**.
-4. To sort, click a column header: **Opportunity**, **Date** or **Updated**. Click it again to reverse the order.
-5. Click a row to see its details on the right.
+3. To narrow the list, type in the search box at the top of the page (results update as you type). To filter by type, click the filter icon next to **Type** in the table header (**Filter Type**), tick one or more types and click **Apply**. To remove it, open it, click **Clear**, then **Apply**.
+4. To sort, click a column header: **Opportunity**, **Date** or **Last change**. Click it again to reverse the order. **Last change** reads "Created …" or "Edited …". Point at a title that ends in "…" to see all of it.
+5. Click a row to see its details on the right. To share it with a colleague, copy the page address: it opens with the same details panel open.
 
 If nothing matches, you'll see **No matches**. Click **Clear filters** to start over.
 
 ## Post an opportunity
-It takes about two minutes. Have your link ready.
+It takes about two minutes. Have your link ready. The form has three steps, shown at the top: **1 Type · 2 Details · 3 Review**. Click **Next** and **Back** to move between them, and **Save as draft** on any step.
 
 1. Go to **Opportunities** and click **New opportunity** (top right).
-2. Choose what you're posting: **Event**, **Petition**, **Volunteer role**, **Job** or **Other** (for surveys, programs and calls for input).
-3. Under **Basics**:
+2. **Type:** choose what you're posting: **Event**, **Petition**, **Volunteer role**, **Job** or **Other** (for surveys, programs and calls for input).
+   - **Is your event on Eventbrite?** Paste its address into **Eventbrite link (optional)** and click **Fill in details**. We fill in the title, short description, date, times and place, and use the Eventbrite page as your **Link**. Check them on the next step.
+   - **Link:** your page where people take part, like `yourorg.ca/events`. You don't need to type `https://`.
+3. Click **Next**.
+4. **Details:**
    - **Title:** say what it is in a few words. This is the email headline.
    - **Short description:** one or two sentences for the email. Full details stay on your page.
-   - **Topics:** choose up to 3. SDC sends it to people who care about these.
-   - **Link:** your page where people take part, like `yourorg.ca/events`. You don't need to type `https://`.
-4. Fill in the section for your type (see [What each type asks for](#what-each-type-asks-for)).
-5. Click **Publish**.
+   - **Topics:** choose up to 3. The count beside **Topics** shows how many you've chosen; at 3, unselect one to choose another.
+   - Fill in the section for your type (see [What each type asks for](#what-each-type-asks-for)).
+5. Click **Next**.
+6. **Review:** this is how your listing looks in members' emails. Click **Edit type and link** or **Edit details** to change something.
+7. Click **Publish**.
 
 It's published right away. You'll see "Published. Members can now see this event." (or petition, volunteer role, and so on).
 
-**If something is missing or wrong,** a box at the top of the form lists each problem, for example "Fix 2 fields to publish this event", and the cursor moves to the first field to fix. Click a problem in the box to jump to its field. What you typed is kept.
+**If something is missing or wrong,** the form opens the step with the first problem. A box at the top lists each problem, for example "Fix 2 fields to publish this event", and the cursor moves to the first field to fix. Click a problem in the box to jump to its field, even on another step. What you typed is kept.
 
 ## Save a draft and finish it later
 Not ready to publish? For example, you don't have the registration link yet.
@@ -45,7 +49,7 @@ Your draft is on the **Drafts** tab. The community doesn't see it. When you're r
 ## Change an opportunity
 1. Open the opportunity (click its row).
 2. Click **Edit**.
-3. Make your changes and click **Save changes**. For a draft, click **Publish** or **Save as draft**.
+3. Move through the steps with **Next** and make your changes, then click **Save changes** (on any step). For a draft, click **Publish** on the **Review** step, or **Save as draft**.
 
 You'll see "Changes saved." Emails that already went out can't be changed.
 
@@ -86,11 +90,13 @@ You need the required fields to publish. Everything else is optional; leave it b
 
 | Type | Section | Required | Optional |
 |---|---|---|---|
-| **Event** | **Date and place** | **Date**, **Start time**, **How people attend** (**In person**, **Online** or **Hybrid**), and **Location** unless it's online | **End time**, **Cost** (**Free** or **Paid**; if paid, **Cost details**), **Accessibility** |
+| **Event** | **Date and place** | **Date**, **Start time**, **How people attend** (**In person**, **Online** or **Hybrid**), **Area** | **End time**, **Address or venue**, **Cost** (**Free** or **Paid**; if paid, **Cost details**), **Accessibility** (tick **Step-free access**, **Accessible washroom**, **ASL on request**, **Childcare**, **Quiet space**), **Accessibility note** |
 | **Petition** | **Petition details** | **Addressed to** | **Deadline**, **Signature goal** |
-| **Volunteer role** | **Role details** | **Commitment** (**One-time** or **Ongoing**), **Where volunteers work** (**In person**, **Remote** or **Hybrid**), and **Location** unless it's remote | **Start date**, **Time commitment**, **Skills or experience**, **Minimum age**, **Apply by** |
-| **Job** | **Job details** | **Employment type**, **Workplace** (**On-site**, **Remote** or **Hybrid**), and **Location** unless it's remote | **Pay**, **Apply by**, **Qualifications** |
+| **Volunteer role** | **Role details** | **Time commitment** (**Under 2 hours a week**, **2–5 hours a week**, **5+ hours a week** or **One-time**), **Where volunteers work** (**In person**, **Remote** or **Hybrid**), **Area** | **Address or venue**, **Start date**, **Apply by**, **Skills** (choose any: **No experience needed**, **Driving**, **Languages**, **Tech**, **Childcare**, **Cooking**, **Writing**, **Event setup**), **Minimum age** |
+| **Job** | **Job details** | **Employment type**, **Workplace** (**On-site**, **Remote** or **Hybrid**), **Area** | **Address or venue**, **Pay**, **Apply by**, **Qualifications** |
 | **Other** | **Details** | **Call to action**: the button people see, like "Take the survey" | **Deadline**, and up to 5 **Details**, each a **Label** and a **Value** (click **Add detail**) |
+
+**Area** is one of **Kitchener**, **Waterloo**, **Cambridge**, **North Dumfries**, **Wellesley**, **Wilmot**, **Woolwich** or **Online / remote**. SDC uses it to send your listing to people nearby. Choosing **Online** or **Remote** fills in **Online / remote** for you.
 
 ## If something goes wrong
 - **"Opportunity not found":** it was deleted, or it belongs to another organization. Click **Back to opportunities**.
