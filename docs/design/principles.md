@@ -14,7 +14,7 @@ The rules behind the component kit. Evidence and sources: [research.md](./resear
 - Disabled things explain why (see `disabledReason`), and there's a meaningful difference between *disabled* (can't use it, state unknown) and *read-only* (can see the state, can't change it).
 
 ## 3. Quiet type, clear hierarchy
-- One family (Onest) for UI and headings; JetBrains Mono for keyboard shortcuts, codes and IDs.
+- One family (Switzer, from Fontshare, weights 400 and 500) for UI and headings; JetBrains Mono for keyboard shortcuts, codes and IDs.
 - Regular (400) by default, medium (500) for headings and titles. Nothing bolder.
 - Line height: 1.5 for body text, 1.4 for small UI text, 1.2 for headings, 1.05 for display.
 
