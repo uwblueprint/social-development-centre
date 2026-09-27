@@ -33,22 +33,18 @@ Each entry: the decision, which page it's on, what it affects, and when someone 
 - **Affects:** The organization badge, when the partner can start managing opportunities.
 - **When encountered:** Right after inviting a new organization, until its first contact accepts.
 
-## 6. Opportunity expiry after a partner is removed
-- **Status:** Decided by owner, 26 Sep 2026. **Partly superseded 27 Sep 2026** by decision 13: the Remove access confirmation now says the opportunities are closed (**Closed**, reason **Partner access removed**), and reinviting reopens those whose dates haven't passed once someone accepts. See docs/decisions/opportunities.md for the listing lifecycle.
-- **Decision:** Removal doesn't delete opportunities.
-  - **Immediately:** the organization's opportunities stop being emailed and recommended.
-  - **People who already received one** can still see it until its own end or **one month (30 days) after removal, whichever comes first**. Undated ones close one month after removal. One that already ended stays ended.
-  - Until then it stays on Admin → Opportunities → **Live** with a **No longer emailed** badge; after that it moves to **Closed** marked **Partner removed**.
-  - Reinviting the partner doesn't republish listings that already closed this way; each needs review first.
-- **Page:** Admin → Partners → side panel → Remove access (confirmation explains this); Admin → Opportunities (badges, panel note, "{name} (removed)" in the **Organization** filter); public listing pages.
-- **Affects:** Opportunity visibility, recommendations, automated emails, the partner's opportunity count.
-- **When encountered:** When an admin removes a partner, and over the following month as listings close.
+## 6. A removed partner's opportunities close
+- **Status:** Decided by owner, 26 Sep 2026. Revised 27 Sep 2026: listings no longer "expire"; they close.
+- **Decision:** Removal doesn't delete opportunities. From the moment access is removed, the organization's published listings are **Closed** with the reason **Partner access removed**: no longer recommended or included in emails. One whose date had already passed keeps the reason **Ended**. People who already got a listing by email can still view it until it ends or one month after removal, whichever is first (a member-side rule). Reopening them is refused while the partner is removed; when someone accepts a reinvitation they reopen automatically if their dates haven't passed (decision 13). Details: docs/decisions/opportunities.md decisions 13 and 14.
+- **Page:** Admin → Partners → organization panel → Remove access (the confirmation says so); Admin → Opportunities → Closed.
+- **Affects:** Opportunity status, recommendations, automated emails, the partner's published count.
+- **When encountered:** When an admin removes a partner, and if the partner is reinvited.
 
-## 7. Links to expired listings show "no longer available"
-- **Decision:** An SDC link to an expired listing (e.g. from an email sent before removal) opens a "This opportunity is no longer available" page instead of the listing. External registration links are the partner's and may keep working.
+## 7. Links to closed listings show "no longer available"
+- **Decision:** An SDC link to a listing members can no longer see (e.g. from an email sent before removal) opens a "This opportunity is no longer available" page instead of the listing. External registration links are the partner's and may keep working.
 - **Page:** Public opportunity page (not the admin UI).
 - **Affects:** Community members clicking old email links.
-- **When encountered:** After a listing expires, when someone opens an older email.
+- **When encountered:** After the member-side viewing window ends, when someone opens an older email.
 
 ## 8. People move by being removed and reinvited; names and emails change
 - **Decision:** A contact belongs to one organization at a time. There is no "move" action. If someone leaves an organization, the admin removes them from it; if they join another partner, the admin invites their email under that organization. A move may not be instant. Organizations and people can be renamed and emails can change, so records use stable IDs, never names or emails, and history, invitations and opportunities stay linked through changes.

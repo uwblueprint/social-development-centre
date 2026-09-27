@@ -11,8 +11,15 @@ export type FormValues = Record<string, string>;
 /** One custom detail row (Other). `key` is a stable React key; it is never submitted. */
 export type DetailRow = CustomDetail & { key: number };
 
+/**
+ * `values` holds the fields every type shares (organization, title, summary, link). Each type's own fields
+ * live in `byKind`, so switching Type and back restores what was typed; only `kind`'s values are submitted.
+ * `details` are Other's custom rows, kept the same way.
+ */
 export interface FormModel {
+  kind: OpportunityKind;
   values: FormValues;
+  byKind: Partial<Record<OpportunityKind, FormValues>>;
   topics: TopicId[];
   details: DetailRow[];
 }
@@ -22,6 +29,9 @@ export const newDetailRow = (d: CustomDetail = { label: "", value: "" }): Detail
 
 const str = (v: unknown) => (v === undefined || v === null ? "" : String(v));
 
+/** A type's starting values the first time it's chosen. */
+export const emptyKindValues = (kind: OpportunityKind): FormValues => (kind === "event" ? { cost: "free" } : {});
+
 export function initialModel(kind: OpportunityKind, opportunity?: Opportunity): FormModel {
   const values: FormValues = {
     organizationId: opportunity?.organization.id ?? SDC_ORG.id,
@@ -29,29 +39,23 @@ export function initialModel(kind: OpportunityKind, opportunity?: Opportunity): 
     summary: opportunity?.summary ?? "",
     link: opportunity?.link ?? "",
   };
-  let details: DetailRow[] = [];
-
-  if (!opportunity) {
-    if (kind === "event") values.cost = "free";
-    return { values, topics: [], details };
-  }
+  if (!opportunity) return { kind, values, byKind: { [kind]: emptyKindValues(kind) }, topics: [], details: [] };
 
   // Flatten the kind's details into strings; `details` (Other's custom rows) is handled separately.
+  const own = emptyKindValues(opportunity.kind);
   for (const [key, value] of Object.entries(opportunity.details)) {
     if (key === "details") continue;
-    values[key] = str(value);
+    if (value !== undefined && value !== "") own[key] = str(value);
   }
-  if (opportunity.kind === "event" && !values.cost) values.cost = "free";
-  if (opportunity.kind === "other") details = (opportunity.details.details ?? []).map((d) => newDetailRow(d));
-
-  return { values, topics: [...opportunity.topics], details };
+  const details = opportunity.kind === "other" ? (opportunity.details.details ?? []).map((d) => newDetailRow(d)) : [];
+  return { kind: opportunity.kind, values, byKind: { [opportunity.kind]: own }, topics: [...opportunity.topics], details };
 }
 
 /** The control id for a FormData field (or error key like `detailLabel.0`), so the error summary can link to it. */
 export const fieldId = (name: string) => `opportunity-${name.replace(/\./g, "-")}`;
 
 /** Error keys in form order, per kind, so the error summary lists them top to bottom. */
-const BASICS = ["organizationId", "title", "summary", "topics", "link"];
+const BASICS = ["kind", "organizationId", "title", "summary", "topics", "link"];
 const KIND_ORDER: Record<OpportunityKind, string[]> = {
   event: ["date", "startTime", "endTime", "format", "location", "cost", "costDetails", "accessibility"],
   petition: ["target", "deadline", "signatureGoal"],

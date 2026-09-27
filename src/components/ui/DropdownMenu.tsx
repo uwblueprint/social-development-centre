@@ -48,10 +48,18 @@ const itemStyles = css`
   border-radius: var(--radius-sm);
   font-size: var(--text-sm);
   color: var(--color-text);
+  /* Link items (asChild with an <a> or Link) look like every other item, never underlined. */
+  text-decoration: none;
   cursor: pointer;
   outline: none;
   user-select: none;
   position: relative;
+
+  &:hover,
+  &:focus,
+  &:visited {
+    text-decoration: none;
+  }
 
   /* Leading icon: fixed width and the same var(--space-2) gap as every other item, muted so the label leads. */
   & > svg {

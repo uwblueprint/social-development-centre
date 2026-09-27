@@ -6,7 +6,6 @@ export const copy = {
   page: {
     title: "Opportunities",
     newButton: "New opportunity",
-    newMenuLabel: "Choose a type",
   },
   tabs: { published: "Published", drafts: "Drafts", closed: "Closed" },
   toolbar: {
@@ -64,6 +63,19 @@ export const copy = {
     saveChanges: "Save changes",
     saveDraft: "Save as draft",
     cancel: "Cancel",
+    /** The first field. Editable on new listings and drafts; plain text once published or closed. */
+    kind: { label: "Type" },
+    /**
+     * One muted line under Type describing the selected type.
+     * NEEDS OWNER APPROVAL: proposed copy, not yet confirmed by the owner.
+     */
+    kindDescription: {
+      event: "People attend at a set time.",
+      petition: "People add their name to support a cause.",
+      volunteer: "People give their time to help.",
+      job: "A paid position.",
+      other: "Anything else, like a survey or a program.",
+    },
     /** Placeholder for pickers with nothing chosen yet (organization, employment type). */
     choose: "Choose one",
     sections: {
