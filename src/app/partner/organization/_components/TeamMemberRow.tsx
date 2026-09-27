@@ -1,65 +1,51 @@
 "use client";
 
-import * as React from "react";
-import { CircleAlert, MailX, MoreVertical, Send, UserMinus } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogActions,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogTitle,
-} from "@/components/ui/AlertDialog";
-import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
+import { MailX, MoreVertical, RotateCw, UserMinus } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/DropdownMenu";
 import { Icon } from "@/components/ui/Icon";
 import { useToast } from "@/components/ui/Toast";
 import {
   ContactEmail,
-  ContactErrorLine,
   ContactInfo,
   ContactMenuTrigger,
-  ContactMeta,
   ContactName,
   ContactRowFrame,
+  InvitationStatus,
+  resendLabel,
 } from "@/app/admin/partners/_components/ContactRowParts";
+import { usePersonActions, type PersonConfirmCopy } from "@/app/admin/partners/_components/PersonActions";
 import type { PartnerContact } from "@/app/admin/partners/_data/types";
-import { formatDate } from "@/app/admin/partners/_lib/format";
 import { partnerCopy } from "../../_copy";
-import { cancelColleagueInvitation, removeColleague, resendColleagueInvitation } from "../_data/actions";
+import { cancelColleagueInvitation, removeColleague, resendColleagueInvitation, type PartnerResult } from "../_data/actions";
+import { useReportBlocked } from "./BlockedNotice";
 
 const copy = partnerCopy.organization;
 
-type Confirm = "cancel" | "remove";
+const handlers = { resend: resendColleagueInvitation, cancel: cancelColleagueInvitation, remove: removeColleague };
+
+const confirmCopy: PersonConfirmCopy = {
+  cancelNotSentBody: copy.cancelNotSentBody,
+  removeTitle: copy.confirmRemove.title,
+  removeBody: copy.confirmRemove.body,
+  removeKeep: copy.confirmRemove.keep,
+  removeConfirm: copy.confirmRemove.confirm,
+};
 
 /**
- * One person on the partner's Team list, with the same actions as the admin ContactRow minus Edit.
- * The signed-in person's own row has no Remove item (hidden, not disabled).
+ * One person on the partner's Team list: name (+ "(you)"), email, invitation state, and a menu named
+ * "Actions for {name}". Pending, not sent and expired invitations can be resent or cancelled; people with
+ * access can be removed, except on the signed-in person's own row (hidden; the server refuses it too).
  */
 export function TeamMemberRow({ contact, isSelf }: { contact: PartnerContact; isSelf: boolean }) {
   const { toast } = useToast();
-  const [confirm, setConfirm] = React.useState<Confirm | null>(null);
+  const reportBlocked = useReportBlocked();
+  const actions = usePersonActions(contact, handlers, confirmCopy, (result: PartnerResult) => {
+    if (result.data?.blocked) reportBlocked(result.data.blocked);
+    else if (result.message) toast({ title: result.message });
+  });
 
-  // Keeps the alert dialog's copy stable while it plays its close animation (by then `confirm` is null).
-  const [shownConfirm, setShownConfirm] = React.useState<Confirm>("cancel");
-  if (confirm && confirm !== shownConfirm) setShownConfirm(confirm);
-
-  const pending = contact.status === "pending";
-  const showMenu = pending || !isSelf;
-
-  async function handleResend() {
-    const result = await resendColleagueInvitation(contact.id);
-    if (result.message) toast({ title: result.message });
-  }
-
-  async function handleConfirm(kind: Confirm) {
-    const result = kind === "cancel" ? await cancelColleagueInvitation(contact.id) : await removeColleague(contact.id);
-    if (result.message) toast({ title: result.message });
-  }
-
-  const dialog = shownConfirm === "cancel" ? copy.confirmCancel : copy.confirmRemove;
+  const state = contact.invitationState;
+  const showMenu = !!state || !isSelf;
 
   return (
     <ContactRowFrame role="listitem">
@@ -69,22 +55,9 @@ export function TeamMemberRow({ contact, isSelf }: { contact: PartnerContact; is
             {contact.name}
             {isSelf && ` ${copy.you}`}
           </span>
-          {pending && <Badge $variant="warning">{copy.pending}</Badge>}
         </ContactName>
         <ContactEmail>{contact.email}</ContactEmail>
-        {pending &&
-          contact.invitation &&
-          (contact.invitation.sendError ? (
-            <ContactErrorLine>
-              <Icon icon={CircleAlert} size={13} />
-              <span>{contact.invitation.sendError}</span>
-              <Button type="button" $variant="ghost" $size="sm" onClick={handleResend}>
-                {copy.retry}
-              </Button>
-            </ContactErrorLine>
-          ) : (
-            <ContactMeta>{copy.invitationExpires(formatDate(contact.invitation.expiresAt))}</ContactMeta>
-          ))}
+        <InvitationStatus contact={contact} onRetry={actions.resend} />
       </ContactInfo>
 
       {showMenu && (
@@ -95,27 +68,27 @@ export function TeamMemberRow({ contact, isSelf }: { contact: PartnerContact; is
             </ContactMenuTrigger>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            {pending ? (
+            {state ? (
               <>
-                <DropdownMenuItem onSelect={handleResend}>
-                  <Icon icon={Send} size={16} />
-                  {copy.resendInvitation}
+                <DropdownMenuItem onSelect={actions.resend}>
+                  <Icon icon={RotateCw} size={16} />
+                  {resendLabel(state)}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onSelect={(event) => {
                     event.preventDefault();
-                    setConfirm("cancel");
+                    actions.requestCancel();
                   }}
                 >
                   <Icon icon={MailX} size={16} />
-                  {copy.cancelInvitation}
+                  {copy.invitation.cancel}
                 </DropdownMenuItem>
               </>
             ) : (
               <DropdownMenuItem
                 onSelect={(event) => {
                   event.preventDefault();
-                  setConfirm("remove");
+                  actions.requestRemove();
                 }}
               >
                 <Icon icon={UserMinus} size={16} />
@@ -125,27 +98,7 @@ export function TeamMemberRow({ contact, isSelf }: { contact: PartnerContact; is
           </DropdownMenuContent>
         </DropdownMenu>
       )}
-
-      <AlertDialog open={confirm !== null} onOpenChange={(open) => !open && setConfirm(null)}>
-        <AlertDialogContent>
-          <AlertDialogTitle>
-            {shownConfirm === "cancel" ? copy.confirmCancel.title : copy.confirmRemove.title(contact.name)}
-          </AlertDialogTitle>
-          <AlertDialogDescription>{dialog.body(contact.name)}</AlertDialogDescription>
-          <AlertDialogActions>
-            <AlertDialogCancel asChild>
-              <Button type="button" $variant="secondary">
-                {dialog.keep}
-              </Button>
-            </AlertDialogCancel>
-            <AlertDialogAction asChild>
-              <Button type="button" $variant="danger" onClick={() => confirm && void handleConfirm(confirm)}>
-                {dialog.confirm}
-              </Button>
-            </AlertDialogAction>
-          </AlertDialogActions>
-        </AlertDialogContent>
-      </AlertDialog>
+      {actions.dialog}
     </ContactRowFrame>
   );
 }

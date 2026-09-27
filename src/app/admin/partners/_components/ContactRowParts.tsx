@@ -65,6 +65,11 @@ export const ContactMenuTrigger = styled(Button)`
   flex-shrink: 0;
 `;
 
+const StatusDate = styled.span`
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+`;
+
 const StatusLine = styled.span`
   display: inline-flex;
   align-items: center;
@@ -131,7 +136,7 @@ export function InvitationStatus({
   return (
     <StatusLine>
       <InvitationBadge state={contact.invitationState} />
-      {date && <ContactMeta as="span">{date}</ContactMeta>}
+      {date && <StatusDate>{date}</StatusDate>}
       {contact.invitationState === "notSent" && onRetry && (
         <Button type="button" $variant="secondary" $size="sm" onClick={onRetry}>
           {invitationCopy.retry}

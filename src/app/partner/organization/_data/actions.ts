@@ -6,96 +6,109 @@ import {
   addInvitedContact,
   cancelContactInvitation,
   contactFieldErrors,
-  findContactIn,
   removeContactFromOrganization,
   resendContactInvitation,
+  type InviteResult,
 } from "@/app/admin/partners/_data/contacts";
-import { applyOrganizationProfile, profileFieldsError, readOrganizationProfile } from "@/app/admin/partners/_data/profile";
+import { applyOrganizationProfile, profileFieldsError, profileMessages, readOrganizationProfile } from "@/app/admin/partners/_data/profile";
 import { orgs, statusOf } from "@/app/admin/partners/_data/store";
+import { partnerCopy } from "../../_copy";
 import { getCurrentPartner } from "../../_data/session";
 
 /*
- * Backend: implement against the real data store, keeping the name, FormData fields and ActionState result.
+ * Backend: implement against the real data store, keeping the names, FormData fields and ActionState results.
  * The organization always comes from the session, never from the client; see docs/backend/opportunities.md.
+ *
+ * Every action first re-checks the session. If the person was signed out, or their organization lost access,
+ * nothing is saved and the result carries `data.blocked`: the page then shows a persistent message with a
+ * way forward (sign in again, or contact SDC) instead of a toast.
  */
 
-/** Fields: name, website, description. Same rules as the admin's updateOrganization. */
-export async function updateMyOrganization(_prev: ActionState, fd: FormData): Promise<ActionState> {
+/** Why an action couldn't run at all. */
+export type Blocked = "signedOut" | "accessEnded";
+export type BlockedData = { blocked?: Blocked };
+/** Every Organization action's result: the shared rules' result, or `data.blocked`. */
+export type PartnerResult<D = object> = ActionState<(BlockedData & D) | undefined>;
+
+const blockedResult = (blocked: Blocked): PartnerResult<InviteResult> => ({
+  status: "error",
+  message: blocked === "signedOut" ? partnerCopy.organization.blocked.signedOut : partnerCopy.organization.blocked.accessEnded,
+  data: { blocked, saved: false },
+});
+
+type Mine =
+  | { blocked: Blocked }
+  | { blocked?: undefined; partner: NonNullable<Awaited<ReturnType<typeof getCurrentPartner>>>; org: ReturnType<typeof orgs>[number] };
+
+async function myOrganization(): Promise<Mine> {
   const partner = await getCurrentPartner();
-  if (!partner) return { status: "error", message: "Your session ended. Sign in again to save changes." };
+  if (!partner) return { blocked: "signedOut" as const };
   const org = orgs().find((o) => o.id === partner.organization.id);
-  if (!org || statusOf(org) === "removed") {
-    return { status: "error", message: "Your organization's access has ended. Contact SDC if this is a mistake." };
-  }
-  const result = readOrganizationProfile(org, fd);
-  if (result.fieldErrors) return profileFieldsError(result.fieldErrors);
-  applyOrganizationProfile(org, result.changes);
-  // The organization's name is the sidebar's product name, and Partners shows the profile too.
+  if (!org || statusOf(org) === "removed") return { blocked: "accessEnded" as const };
+  return { partner, org };
+}
+
+function settle<D>(result: ActionState<D>): ActionState<D> {
   revalidatePath("/partner", "layout");
   revalidatePath("/admin/partners");
-  return { status: "success", message: "Changes saved." };
+  return result;
+}
+
+/** Fields: name, website, description. Same rules and messages as the admin's updateOrganization. */
+export async function updateMyOrganization(_prev: PartnerResult, fd: FormData): Promise<PartnerResult> {
+  const me = await myOrganization();
+  if (me.blocked) return blockedResult(me.blocked);
+  const result = readOrganizationProfile(me.org, fd);
+  if (result.fieldErrors) return profileFieldsError(result.fieldErrors);
+  applyOrganizationProfile(me.org, result.changes);
+  // The organization's name is the sidebar's product name, and Partners shows the profile too.
+  return settle({ status: "success", message: profileMessages.saved });
 }
 
 /*
  * Team: partners invite and remove colleagues in their own organization (partners decision 10).
- * Every action re-checks the session and only touches contacts of the signed-in partner's organization;
- * a contact ID from another organization acts as if it doesn't exist. Rules and messages are shared with
+ * A contact ID from another organization acts as if it doesn't exist. Rules and messages are shared with
  * the admin actions (src/app/admin/partners/_data/contacts.ts).
  */
 
-const SESSION_ENDED: ActionState = { status: "error", message: "Your session ended. Sign in again to save changes." };
-const ACCESS_ENDED: ActionState = {
-  status: "error",
-  message: "Your organization's access has ended. Contact SDC if this is a mistake.",
-};
-
-type MyOrganization =
-  | { error: ActionState }
-  | { partner: NonNullable<Awaited<ReturnType<typeof getCurrentPartner>>>; org: ReturnType<typeof orgs>[number] };
-
-async function myOrganization(): Promise<MyOrganization> {
-  const partner = await getCurrentPartner();
-  if (!partner) return { error: SESSION_ENDED };
-  const org = orgs().find((o) => o.id === partner.organization.id);
-  if (!org || statusOf(org) === "removed") return { error: ACCESS_ENDED };
-  return { partner, org };
-}
-
-const settle = (result: ActionState): ActionState => {
-  revalidatePath("/partner/organization");
-  revalidatePath("/admin/partners");
-  return result;
-};
-
-/** Fields: name, email. Invites a colleague to the signed-in partner's organization. */
-export async function inviteColleague(_prev: ActionState, fd: FormData): Promise<ActionState> {
+/**
+ * Fields: name, email. `data.saved` says whether the person was saved: if so the dialog closes and the
+ * row shows (Invitation not sent with Retry if the email failed); if not, the dialog keeps its values.
+ */
+export async function inviteColleague(
+  _prev: PartnerResult<InviteResult>,
+  fd: FormData,
+): Promise<PartnerResult<InviteResult>> {
   const me = await myOrganization();
-  if ("error" in me) return me.error;
+  if (me.blocked) return blockedResult(me.blocked);
   const name = String(fd.get("name") ?? "").trim();
   const email = String(fd.get("email") ?? "").trim();
-  const fieldErrors = contactFieldErrors(name, email, { inUseMessage: "This person is already a current partner contact." });
-  if (Object.keys(fieldErrors).length) return { status: "error", message: "Check the highlighted fields.", fieldErrors };
+  const fieldErrors = contactFieldErrors(name, email, { audience: "partner", org: me.org });
+  if (Object.keys(fieldErrors).length) return { status: "error", fieldErrors };
   return settle(await addInvitedContact(me.org, name, email));
 }
 
-export async function resendColleagueInvitation(contactId: string): Promise<ActionState> {
+/** Resend invitation, Retry or Send new invitation, depending on the invitation's state. */
+export async function resendColleagueInvitation(contactId: string): Promise<PartnerResult> {
   const me = await myOrganization();
-  if ("error" in me) return me.error;
+  if (me.blocked) return blockedResult(me.blocked);
   return settle(await resendContactInvitation(me.org, contactId));
 }
 
-export async function cancelColleagueInvitation(contactId: string): Promise<ActionState> {
+export async function cancelColleagueInvitation(contactId: string): Promise<PartnerResult> {
   const me = await myOrganization();
-  if ("error" in me) return me.error;
+  if (me.blocked) return blockedResult(me.blocked);
   return settle(cancelContactInvitation(me.org, contactId));
 }
 
-/** Removes an active colleague. Nobody can remove themselves (the UI hides the option on their own row). */
-export async function removeColleague(contactId: string): Promise<ActionState> {
+/**
+ * Removes a colleague who has access. Refuses the organization's last person with access and the caller
+ * themselves (the UI hides that option on their own row).
+ */
+export async function removeColleague(contactId: string): Promise<PartnerResult> {
   const me = await myOrganization();
-  if ("error" in me) return me.error;
-  if (findContactIn(me.org, contactId) && contactId === me.partner.contactId) {
-    return { status: "error", message: "You can't remove yourself. Ask a colleague or SDC to remove you." };
-  }
-  return settle(removeContactFromOrganization(me.org, contactId));
+  if (me.blocked) return blockedResult(me.blocked);
+  return settle(
+    removeContactFromOrganization(me.org, contactId, { audience: "partner", selfContactId: me.partner.contactId }),
+  );
 }

@@ -156,5 +156,6 @@ function seed(): Opportunity[] {
   ];
 }
 
-const globalStore = globalThis as unknown as { __opportunitiesStore?: Opportunity[] };
-export const opportunities = (): Opportunity[] => (globalStore.__opportunitiesStore ??= seed());
+// Versioned key: a store left over from an older shape (e.g. the "live" status) is dropped on hot reload.
+const globalStore = globalThis as unknown as { __opportunitiesStoreV2?: Opportunity[] };
+export const opportunities = (): Opportunity[] => (globalStore.__opportunitiesStoreV2 ??= seed());

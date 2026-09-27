@@ -21,10 +21,10 @@ import type { PartnerContact } from "../_data/types";
  * safe button (Keep …); the confirm button uses danger styling.
  */
 
-export interface PersonActionHandlers {
-  resend: (contactId: string) => Promise<ActionState>;
-  cancel: (contactId: string) => Promise<ActionState>;
-  remove: (contactId: string) => Promise<ActionState>;
+export interface PersonActionHandlers<D = undefined> {
+  resend: (contactId: string) => Promise<ActionState<D>>;
+  cancel: (contactId: string) => Promise<ActionState<D>>;
+  remove: (contactId: string) => Promise<ActionState<D>>;
 }
 
 export interface PersonConfirmCopy {
@@ -38,11 +38,11 @@ export interface PersonConfirmCopy {
 
 type Confirm = "cancel" | "remove";
 
-export function usePersonActions(
+export function usePersonActions<D = undefined>(
   contact: Pick<PartnerContact, "id" | "name" | "invitationState">,
-  handlers: PersonActionHandlers,
+  handlers: PersonActionHandlers<D>,
   copy: PersonConfirmCopy,
-  onResult: (result: ActionState) => void,
+  onResult: (result: ActionState<D>) => void,
 ) {
   const [confirm, setConfirm] = React.useState<Confirm | null>(null);
   const busy = React.useRef(false);
@@ -51,7 +51,7 @@ export function usePersonActions(
   const [shown, setShown] = React.useState<Confirm>("cancel");
   if (confirm && confirm !== shown) setShown(confirm);
 
-  async function run(action: (id: string) => Promise<ActionState>) {
+  async function run(action: (id: string) => Promise<ActionState<D>>) {
     if (busy.current) return;
     busy.current = true;
     try {

@@ -9,28 +9,50 @@ import { Field } from "@/components/ui/Field";
 import { Input } from "@/components/ui/Input";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { useToast } from "@/components/ui/Toast";
-import { fieldError, idleState } from "@/lib/forms";
+import type { InviteResult } from "@/app/admin/partners/_data/contacts";
+import { useFocusFirstInvalid } from "@/app/admin/partners/_lib/useFocusFirstInvalid";
+import { fieldError } from "@/lib/forms";
 import { partnerCopy } from "../../_copy";
-import { inviteColleague } from "../_data/actions";
+import { inviteColleague, type PartnerResult } from "../_data/actions";
+import { useReportBlocked } from "./BlockedNotice";
 
 const copy = partnerCopy.organization.invite;
+const initialState: PartnerResult<InviteResult> = { status: "idle" };
 
 const Form = styled.form`
   display: grid;
   gap: var(--space-4);
 `;
 
-/** Name + Email → invitation to the signed-in partner's organization. Mirrors the admin InviteDialog. */
+/**
+ * Name + Email → invitation to the signed-in partner's organization.
+ * - Field errors: stays open with its values, focus on the first invalid field.
+ * - Saved (sent, or saved but not sent): closes with a toast; the row shows its state.
+ * - Nothing saved: stays open with its values and says the invitation couldn't be sent.
+ * - Signed out or access ended: closes; the page shows a persistent message.
+ */
 export function InviteColleagueDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
-  const [state, action] = useActionState(inviteColleague, idleState);
+  const [state, action] = useActionState(inviteColleague, initialState);
   const { toast } = useToast();
+  const reportBlocked = useReportBlocked();
+  const [name, setName] = React.useState("");
+  const [email, setEmail] = React.useState("");
+  const formRef = React.useRef<HTMLFormElement>(null);
+  useFocusFirstInvalid(formRef, state);
 
   React.useEffect(() => {
-    // Field errors keep the dialog open; anything else (sent, or added but not sent) closes it with a toast.
-    if (state.status !== "idle" && !state.fieldErrors) {
+    if (state.status === "idle" || state.fieldErrors) return;
+    if (state.data?.blocked) {
       onOpenChange(false);
-      if (state.message) toast({ title: state.message });
+      reportBlocked(state.data.blocked);
+      return;
     }
+    if (state.status === "success" || state.data?.saved) {
+      onOpenChange(false);
+      setName("");
+      setEmail("");
+    }
+    if (state.message) toast({ title: state.message });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 
@@ -39,12 +61,14 @@ export function InviteColleagueDialog({ open, onOpenChange }: { open: boolean; o
       <DialogContent>
         <DialogTitle>{copy.title}</DialogTitle>
         <DialogDescription>{copy.description}</DialogDescription>
-        <Form action={action} noValidate>
+        <Form ref={formRef} action={action} noValidate>
           <Field label={copy.nameLabel} error={fieldError(state, "name")} required>
-            {(p) => <Input {...p} name="name" autoComplete="off" />}
+            {(p) => <Input {...p} name="name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="off" />}
           </Field>
           <Field label={copy.emailLabel} error={fieldError(state, "email")} required>
-            {(p) => <Input {...p} name="email" type="email" autoComplete="off" />}
+            {(p) => (
+              <Input {...p} name="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="off" />
+            )}
           </Field>
           <DialogActions>
             <DialogClose asChild>

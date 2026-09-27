@@ -10,7 +10,7 @@ import { Field } from "@/components/ui/Field";
 import { Input } from "@/components/ui/Input";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { useToast } from "@/components/ui/Toast";
-import { fieldError, idleState, type ActionState } from "@/lib/forms";
+import { fieldError, type ActionState } from "@/lib/forms";
 import { partnersCopy } from "../_copy";
 import { invitePartner } from "../_data/actions";
 import type { InviteResult } from "../_data/contacts";
@@ -18,6 +18,7 @@ import type { OrganizationOption } from "../_data/types";
 import { useFocusFirstInvalid } from "../_lib/useFocusFirstInvalid";
 
 const copy = partnersCopy.invite;
+const initialState: ActionState<InviteResult> = { status: "idle" };
 
 const Form = styled.form`
   display: grid;
@@ -46,7 +47,7 @@ export function InviteDialog({
   organizationOptions: OrganizationOption[];
   preset?: InvitePreset;
 }) {
-  const [state, action] = useActionState(invitePartner, idleState as ActionState<InviteResult>);
+  const [state, action] = useActionState(invitePartner, initialState);
   const { toast } = useToast();
   const [name, setName] = React.useState(preset?.name ?? "");
   const [email, setEmail] = React.useState(preset?.email ?? "");
