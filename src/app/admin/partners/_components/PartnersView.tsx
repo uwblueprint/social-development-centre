@@ -173,6 +173,7 @@ export function PartnersView({
     label: copy.status.label,
     options: organizations.facets.status.map((f) => ({ value: f.value, label: copy.status[f.value], count: f.count })),
     selected: filters.status,
+    defaultSelected: ["active"],
     onChange: (selected) => setParams({ status: filterParam(selected, ["active"]) }),
   };
   const healthFilter: HeaderFilter = {
@@ -191,6 +192,7 @@ export function PartnersView({
     label: copy.tags.label,
     options: people.facets.tags.map((f) => ({ value: f.value, label: copy.tags.options[f.value], count: f.count })),
     selected: filters.tags,
+    defaultSelected: DEFAULT_PERSON_TAGS,
     onChange: (selected) => setParams({ tags: filterParam(selected, DEFAULT_PERSON_TAGS) }),
   };
 

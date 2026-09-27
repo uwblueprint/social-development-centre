@@ -76,6 +76,15 @@ export interface TableColumnFilter {
   options: { value: string; label: string; count?: number }[];
   selected: string[];
   onChange: (values: string[]) => void;
+  /** The selection the page starts with (e.g. every status but Unsubscribed). The filter only reads as active, and only keeps an `isEmpty` column visible, when `selected` differs from it. Default: none selected. */
+  defaultSelected?: string[];
+}
+
+/** A filter is active when its selection differs from its default. */
+function isFilterActive(filter: TableColumnFilter | undefined): boolean {
+  if (!filter) return false;
+  const base = filter.defaultSelected ?? [];
+  return filter.selected.length !== base.length || filter.selected.some((v) => !base.includes(v));
 }
 
 export interface TableProps<T> {
@@ -287,7 +296,7 @@ function ColumnFilter({ filter }: { filter: TableColumnFilter }) {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <FilterButton type="button" aria-label={tableFilterCopy.trigger(label, count)} $active={count > 0}>
+        <FilterButton type="button" aria-label={tableFilterCopy.trigger(label, count)} $active={isFilterActive(filter)}>
           <Icon icon={ListFilter} size={SORT_ICON_SIZE} />
           {count > 0 && <FilterCount aria-hidden="true">{count}</FilterCount>}
         </FilterButton>
@@ -579,7 +588,7 @@ export function Table<T>({
   "aria-label": ariaLabel,
 }: TableProps<T>) {
   const visibleColumns = columns.filter(
-    (col) => !col.isEmpty || (col.filter?.selected.length ?? 0) > 0 || !rows.every(col.isEmpty),
+    (col) => !col.isEmpty || isFilterActive(col.filter) || !rows.every(col.isEmpty),
   );
   const frozen = Math.max(0, Math.min(stickyColumns, visibleColumns.length));
   const tableRef = React.useRef<HTMLTableElement>(null);

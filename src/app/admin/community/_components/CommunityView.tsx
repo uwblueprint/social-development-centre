@@ -22,7 +22,7 @@ import { Sheet, SheetContent } from "@/components/ui/Sheet";
 import { Table, type TableColumnFilter } from "@/components/ui/Table";
 import { Tabs, TabsContent, TabsCount, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { Tooltip } from "@/components/ui/Tooltip";
-import { DEFAULT_MEMBER_SORT, MEMBER_SORT_KEYS, MEMBER_STATUSES } from "../_data/types";
+import { DEFAULT_MEMBER_SORT, DEFAULT_MEMBER_STATUSES, MEMBER_SORT_KEYS, MEMBER_STATUSES } from "../_data/types";
 import type { CommunityCounts, Member, MemberPage, MemberStatus, MemberTier } from "../_data/types";
 import { communityCopy as copy } from "../_copy";
 import { statusParam } from "../_lib/statusParam";
@@ -142,6 +142,7 @@ export function CommunityView({
       count: counts.byStatus[s],
     })),
     selected: selectedStatuses,
+    defaultSelected: [...DEFAULT_MEMBER_STATUSES],
     onChange: (values) => setStatuses(values),
   };
   const columns = memberColumns(now, statusFilter);
