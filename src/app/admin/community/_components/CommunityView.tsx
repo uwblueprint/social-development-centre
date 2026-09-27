@@ -20,11 +20,26 @@ import { Pagination } from "@/components/ui/Pagination";
 import { SearchField } from "@/components/ui/SearchField";
 import { Sheet, SheetContent } from "@/components/ui/Sheet";
 import { Table, type TableColumnFilter } from "@/components/ui/Table";
-import { Tabs, TabsContent, TabsCount, TabsList, TabsTrigger } from "@/components/ui/Tabs";
-import { AppToastProvider } from "@/components/ui/Toast";
+import {
+  Tabs,
+  TabsContent,
+  TabsCount,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/Tabs";
 import { Tooltip } from "@/components/ui/Tooltip";
-import { DEFAULT_MEMBER_SORT, MEMBER_SORT_KEYS, MEMBER_STATUSES } from "../_data/types";
-import type { CommunityCounts, Member, MemberPage, MemberStatus, MemberTier } from "../_data/types";
+import {
+  DEFAULT_MEMBER_SORT,
+  MEMBER_SORT_KEYS,
+  MEMBER_STATUSES,
+} from "../_data/types";
+import type {
+  CommunityCounts,
+  Member,
+  MemberPage,
+  MemberStatus,
+  MemberTier,
+} from "../_data/types";
 import { communityCopy as copy } from "../_copy";
 import { statusParam } from "../_lib/statusParam";
 import { AddMembersDialog } from "./AddMembersDialog";
@@ -64,10 +79,17 @@ export function CommunityView({
 }) {
   const { setParams, pending: paramsPending } = useListParams();
   const searchState = useListSearch(q);
-  const { sort: requestedSort, setSort, pending: sortPending } = useListSort(DEFAULT_MEMBER_SORT);
+  const {
+    sort: requestedSort,
+    setSort,
+    pending: sortPending,
+  } = useListSort(DEFAULT_MEMBER_SORT);
   // The server ignores unknown sort keys and uses the default; show the same.
   const sort =
-    requestedSort && (MEMBER_SORT_KEYS as readonly string[]).includes(requestedSort.key) ? requestedSort : DEFAULT_MEMBER_SORT;
+    requestedSort &&
+    (MEMBER_SORT_KEYS as readonly string[]).includes(requestedSort.key)
+      ? requestedSort
+      : DEFAULT_MEMBER_SORT;
   // Page, tab, filter, search and sort changes keep the current rows on screen, dimmed, until the next ones arrive.
   const busy = paramsPending || sortPending || searchState.pending;
   const searchRef = React.useRef<HTMLInputElement>(null);
@@ -83,7 +105,8 @@ export function CommunityView({
   }
 
   // The filter shows the new selection at once; the rows follow when the server responds.
-  const [selectedStatuses, setOptimisticStatuses] = React.useOptimistic<string[]>(statuses);
+  const [selectedStatuses, setOptimisticStatuses] =
+    React.useOptimistic<string[]>(statuses);
 
   // The open panel's person. Kept as a snapshot so the panel stays open when an action moves them
   // out of the current list (e.g. converted to paying, or unsubscribed and hidden by the filter).
@@ -99,8 +122,13 @@ export function CommunityView({
     setParams({ tab: next === "general" ? undefined : next, page: undefined });
   }
 
-  function setStatuses(values: string[], extra: Record<string, string | undefined> = {}) {
-    setParams({ status: statusParam(values), page: undefined, ...extra }, () => setOptimisticStatuses(values));
+  function setStatuses(
+    values: string[],
+    extra: Record<string, string | undefined> = {},
+  ) {
+    setParams({ status: statusParam(values), page: undefined, ...extra }, () =>
+      setOptimisticStatuses(values),
+    );
   }
 
   const showAllStatuses = () => setStatuses([...MEMBER_STATUSES]);
@@ -137,17 +165,25 @@ export function CommunityView({
 
   const statusFilter: TableColumnFilter = {
     label: copy.table.headerStatus,
-    options: MEMBER_STATUSES.map((s) => ({ value: s, label: copy.status[s], count: counts.byStatus[s] })),
+    options: MEMBER_STATUSES.map((s) => ({
+      value: s,
+      label: copy.status[s],
+      count: counts.byStatus[s],
+    })),
     selected: selectedStatuses,
     onChange: (values) => setStatuses(values),
   };
   const columns = memberColumns(now, statusFilter);
 
-  const selectedMember = selected ? (memberPage.rows.find((m) => m.id === selected.id) ?? selected) : undefined;
+  const selectedMember = selected
+    ? (memberPage.rows.find((m) => m.id === selected.id) ?? selected)
+    : undefined;
 
-  const items = activeTab === "paying" ? copy.empty.payingItems : copy.empty.generalItems;
+  const items =
+    activeTab === "paying" ? copy.empty.payingItems : copy.empty.generalItems;
   const otherTab: MemberTier = activeTab === "general" ? "paying" : "general";
-  const otherScope = otherTab === "paying" ? copy.tabs.paying : copy.tabs.general;
+  const otherScope =
+    otherTab === "paying" ? copy.tabs.paying : copy.tabs.general;
   const hiddenHere = counts.hidden[activeTab];
   const hiddenThere = counts.hidden[otherTab];
 
@@ -176,7 +212,11 @@ export function CommunityView({
         // The tabs are exclusive: an empty search can match in the other tab.
         elsewhere={
           counts[otherTab] > 0
-            ? { count: counts[otherTab], scope: otherScope, onShow: () => showInOtherTab(otherTab) }
+            ? {
+                count: counts[otherTab],
+                scope: otherScope,
+                onShow: () => showInOtherTab(otherTab),
+              }
             : {
                 count: hiddenThere,
                 scope: otherScope,
@@ -188,8 +228,14 @@ export function CommunityView({
         onClearFilters={showAllStatuses}
         empty={{
           icon: UsersRound,
-          title: activeTab === "paying" ? copy.empty.payingTitle : copy.empty.generalTitle,
-          description: activeTab === "paying" ? copy.empty.payingDescription : copy.empty.generalDescription,
+          title:
+            activeTab === "paying"
+              ? copy.empty.payingTitle
+              : copy.empty.generalTitle,
+          description:
+            activeTab === "paying"
+              ? copy.empty.payingDescription
+              : copy.empty.generalDescription,
           action: (
             <Button type="button" onClick={openAdd}>
               <Icon icon={UserPlus} size={16} />
@@ -200,93 +246,123 @@ export function CommunityView({
       />
     );
 
+  // Toasts come from the admin shell's provider; a page-level one would trap them under the panel.
   return (
-    <AppToastProvider>
-      <ListPage>
-        <ListPageHeader
-          title={copy.page.title}
-          actions={
-            <>
-              <KioskLauncher />
-              <Button type="button" $variant="secondary" onClick={openAdd}>
-                <Icon icon={UserPlus} size={16} />
-                {copy.toolbar.addMembers}
-              </Button>
-              <Button type="button" onClick={openExport}>
-                <Icon icon={Download} size={16} />
-                {copy.toolbar.export}
-              </Button>
-            </>
+    <ListPage>
+      <ListPageHeader
+        title={copy.page.title}
+        actions={
+          <>
+            <KioskLauncher />
+            <Button type="button" $variant="secondary" onClick={openAdd}>
+              <Icon icon={UserPlus} size={16} />
+              {copy.toolbar.addMembers}
+            </Button>
+            <Button type="button" onClick={openExport}>
+              <Icon icon={Download} size={16} />
+              {copy.toolbar.export}
+            </Button>
+          </>
+        }
+      />
+
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
+        <ListPageToolbar
+          tabs={
+            <TabsList aria-label={copy.tabs.ariaLabel}>
+              <Tooltip
+                content={copy.tabs.generalTabTooltip}
+                delayDuration={600}
+                pinOnClick={false}
+              >
+                <TabsTrigger value="general">
+                  {copy.tabs.general}
+                  <TabsCount>
+                    {copy.tabs.generalCount(counts.general)}
+                  </TabsCount>
+                </TabsTrigger>
+              </Tooltip>
+              <TabsTrigger value="paying">
+                {copy.tabs.paying}
+                <TabsCount>{copy.tabs.payingCount(counts.paying)}</TabsCount>
+              </TabsTrigger>
+            </TabsList>
           }
+          search={
+            <SearchField
+              ref={searchRef}
+              name="q"
+              aria-label={copy.toolbar.searchPlaceholder}
+              placeholder={copy.toolbar.searchPlaceholder}
+              value={searchState.value}
+              onChange={(event) => searchState.setValue(event.target.value)}
+              onSearch={searchState.search}
+              pending={searchState.pending}
+            />
+          }
+          results={{
+            query: q,
+            count: memberPage.total,
+            pending: searchState.pending,
+          }}
         />
 
-        <Tabs value={activeTab} onValueChange={handleTabChange}>
-          <ListPageToolbar
-            tabs={
-              <TabsList aria-label={copy.tabs.ariaLabel}>
-                <Tooltip content={copy.tabs.generalTabTooltip} delayDuration={600} pinOnClick={false}>
-                  <TabsTrigger value="general">
-                    {copy.tabs.general}
-                    <TabsCount>{copy.tabs.generalCount(counts.general)}</TabsCount>
-                  </TabsTrigger>
-                </Tooltip>
-                <TabsTrigger value="paying">
-                  {copy.tabs.paying}
-                  <TabsCount>{copy.tabs.payingCount(counts.paying)}</TabsCount>
-                </TabsTrigger>
-              </TabsList>
-            }
-            search={
-              <SearchField
-                ref={searchRef}
-                name="q"
-                aria-label={copy.toolbar.searchPlaceholder}
-                placeholder={copy.toolbar.searchPlaceholder}
-                value={searchState.value}
-                onChange={(event) => searchState.setValue(event.target.value)}
-                onSearch={searchState.search}
-                pending={searchState.pending}
+        <TabsContent value={activeTab}>
+          <TabContentBody>
+            <Table
+              columns={columns}
+              rows={memberPage.rows}
+              getRowId={(m) => m.id}
+              onRowClick={setSelected}
+              sort={sort}
+              onSortChange={setSort}
+              busy={busy}
+              stickyColumns={2}
+              aria-label={
+                activeTab === "paying" ? copy.tabs.paying : copy.tabs.general
+              }
+              empty={empty}
+            />
+            {memberPage.rows.length > 0 && (
+              <Pagination
+                page={memberPage.page}
+                pageCount={memberPage.pageCount}
+                pageSize={pageSize}
+                total={memberPage.total}
+                onPageChange={handlePageChange}
               />
-            }
-            results={{ query: q, count: memberPage.total, pending: searchState.pending }}
-          />
+            )}
+          </TabContentBody>
+        </TabsContent>
+      </Tabs>
 
-          <TabsContent value={activeTab}>
-            <TabContentBody>
-              <Table
-                columns={columns}
-                rows={memberPage.rows}
-                getRowId={(m) => m.id}
-                onRowClick={setSelected}
-                sort={sort}
-                onSortChange={setSort}
-                busy={busy}
-                stickyColumns={2}
-                aria-label={activeTab === "paying" ? copy.tabs.paying : copy.tabs.general}
-                empty={empty}
-              />
-              {memberPage.rows.length > 0 && (
-                <Pagination
-                  page={memberPage.page}
-                  pageCount={memberPage.pageCount}
-                  pageSize={pageSize}
-                  total={memberPage.total}
-                  onPageChange={handlePageChange}
-                />
-              )}
-            </TabContentBody>
-          </TabsContent>
-        </Tabs>
+      <Sheet
+        open={selectedMember !== undefined}
+        onOpenChange={(open) => !open && setSelected(null)}
+      >
+        <SheetContent size="wide">
+          {selectedMember && (
+            <MemberSheetContent
+              key={selectedMember.id}
+              member={selectedMember}
+              now={now}
+              onChange={setSelected}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
 
-        <Sheet open={selectedMember !== undefined} onOpenChange={(open) => !open && setSelected(null)}>
-          <SheetContent size="wide">
-            {selectedMember && <MemberSheetContent key={selectedMember.id} member={selectedMember} now={now} onChange={setSelected} />}
-          </SheetContent>
-        </Sheet>
-
-        <AddMembersDialog key={`add-${addKey}`} open={addOpen} onOpenChange={setAddOpen} />
-        <ExportDialog key={`export-${exportKey}`} open={exportOpen} onOpenChange={setExportOpen} tab={activeTab} />
-      </ListPage>
-    </AppToastProvider>
+      <AddMembersDialog
+        key={`add-${addKey}`}
+        open={addOpen}
+        onOpenChange={setAddOpen}
+      />
+      <ExportDialog
+        key={`export-${exportKey}`}
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        tab={activeTab}
+      />
+    </ListPage>
   );
 }

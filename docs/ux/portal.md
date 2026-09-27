@@ -102,7 +102,7 @@ The SDC brand mark is decorative when adjacent text already says **SDC Admin**.
 #### Find an organization or person
 
 1. Open **Partners**. Offer **Organizations** and **People** as the two views.
-2. Within either view, use a visibly labelled **Status** filter with **Active** and **Removed**. Counts beside views should reflect the current filter, if counts are shown.
+2. Within either view, use a visibly labelled **Status** filter with **Active** and **Removed**. Counts beside views should reflect the current filter, if counts are shown. *(Owner, 27 Sep: filters live in column headers instead. **Status** (Active, Removed) is the Organization column's filter on Organizations, default Active; on People, **Removed** is an option of the Tags filter, off by default. See "Partner health, notes and contact (27 Sep)".)*
 3. Enter a query and select the visible **Search** button or press Enter. Run the search on submission, not on every keystroke. Keep the query and filter visible with the results. *(Owner decision 1: search as you type instead.)*
 4. What each view matches:
    - In **Organizations**, match organization name and its people's names or emails.
@@ -144,6 +144,51 @@ The tabs have `aria-label="Partner views"`. Label the tables **Organizations** a
 | Invitation delivery failure | {name} was added, but we couldn't send the invitation. Select Retry to try again. | Only if the person was in fact saved |
 | Delivery status | Invitation not sent | Do not label a failed send pending |
 | Delivery action | Retry | |
+
+#### Partner health, notes and contact (27 Sep)
+
+Owner goal: Partners is simple user management. Admins see which organizations and people are on the platform, add, edit and remove them (an organization always has at least one person, and is only created by inviting its first person), reach them quickly, and spot organizations that might need SDC's support. Rules and thresholds: [decisions/partners.md](../decisions/partners.md) decisions 14–19.
+
+- **Organizations table:** Organization (Status filter), Health (one tag; filter; the column hides when no row has a tag), People (count), Published (count), Last posted (relative). Every column sorts.
+- **People table:** Name (frozen when scrolling sideways), Email (click to copy), Organization (filter), Tags (filter). Every column sorts.
+- **Callout** above the Organizations table when any organization has a tag; **Show them** turns on the Health filter.
+- **Organization panel:** actions under the title (Edit details, Add person or Reinvite, Copy emails, Remove access); then Health (reason and next step), Summary, People, SDC notes, Profile.
+- **Awaiting response** is no longer shown as an organization badge in the admin portal: **Not onboarded** has the same rule. The reinvite result still says "{organization} is awaiting a response."
+
+| Element | Current text | Notes |
+|---|---|---|
+| Header action | Copy all emails | New, needs approval. Beside Invite partner (primary) |
+| Copy toast | Copied {n} email addresses | New, needs approval. "Copied 1 email address" for one |
+| Copy failed toast | Couldn't copy the email addresses. Try again. | New, needs approval |
+| Table email button name | Copy {email} | New, needs approval. Accessible name; the visible text is the email |
+| Table email tooltip | Copied; Couldn't copy | New, needs approval |
+| Organizations headers | Organization; Health; People; Published; Last posted | New, needs approval: Health, Published, Last posted |
+| No posts yet | Never | New, needs approval. Last posted cell and panel |
+| People headers | Name; Email; Organization; Tags | New, needs approval: Tags |
+| Tags filter option (no tag) | Has access | New, needs approval |
+| Health tags | Not onboarded; No recent posts; Not emailed; No clicks | Owner's names |
+| Callout | {n} partners might need support | Owner's text. "1 partner might need support" for one |
+| Callout button | Show them | Owner's text |
+| Panel actions | Edit details; Add person; Copy emails; Remove access | New, needs approval: Edit details, Copy emails. Group name "Organization actions" |
+| Panel section headings | Health; Summary; People; Profile | New, needs approval: Health, Summary |
+| Summary labels | Published; Total clicks; Last posted | New, needs approval |
+| Post link | Post an opportunity for them | Owner's text |
+| Next step label | Suggested next step | New, needs approval |
+| Not onboarded reason | Nobody at {organization} has accepted an invitation yet. | New, needs approval |
+| Not onboarded next step | Check their invitation under People, then resend it or reach out to confirm the email address. | New, needs approval |
+| No recent posts reason | {organization} hasn't posted an opportunity in the 60 days since joining. / …since their last post. | New, needs approval |
+| No recent posts next step | Reach out to see if they need help posting. | Owner's example |
+| Not emailed reason | A published opportunity from {organization} wasn't in any email within 14 days of posting. | New, needs approval |
+| Not emailed next step | Check the listing's topics and dates so it can go out in the next email. | New, needs approval |
+| No clicks reason | Nobody has clicked an opportunity from {organization} in SDC's emails yet. | New, needs approval |
+| No clicks next step | Reach out to help them write a clearer title and summary. | New, needs approval |
+| Notes label | SDC notes (only admins see these) | Owner's text |
+| Notes button | Save notes | New, needs approval |
+| Notes saved | Notes saved. | New, needs approval |
+| Notes too long | Shorten the notes to 2,000 characters or fewer. | New, needs approval |
+| Notes edited line | Last edited by {name}, {relative time} | Owner's text; full date on hover |
+| Profile, empty field | Not added | New, needs approval |
+| Filtered empty state | No organizations match these filters; No people match these filters | New, needs approval. With Clear filters |
 
 #### Remove an organization's access
 
