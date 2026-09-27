@@ -5,6 +5,7 @@ import { useActionState } from "react";
 import { styled } from "next-yak";
 import { MailX, MoreVertical, Pencil, RotateCw, UserMinus, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { DialogActions, DialogClose } from "@/components/ui/Dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/DropdownMenu";
 import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
@@ -65,8 +66,24 @@ export const adminConfirmCopy = (organizationName: string): PersonConfirmCopy =>
   removeConfirm: copy.removeConfirm.confirm,
 });
 
-/** Name + email edit form for one person (admin only). Controlled, so a failed save keeps what was typed. */
-export function PersonEditForm({ contact, onDone }: { contact: PartnerContact; onDone?: () => void }) {
+const DialogForm = styled.form`
+  display: grid;
+  gap: var(--space-4);
+`;
+
+/**
+ * Name + email edit form for one person (admin only). Controlled, so a failed save keeps what was typed.
+ * `inDialog` lays it out for a kit Dialog (the People row's Edit details), with Cancel closing the dialog.
+ */
+export function PersonEditForm({
+  contact,
+  onDone,
+  inDialog,
+}: {
+  contact: PartnerContact;
+  onDone?: () => void;
+  inDialog?: boolean;
+}) {
   const { toast } = useToast();
   const [state, action] = useActionState(updateContact.bind(null, contact.id), idleState);
   const [name, setName] = React.useState(contact.name);
@@ -81,8 +98,9 @@ export function PersonEditForm({ contact, onDone }: { contact: PartnerContact; o
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 
+  const Form = inDialog ? DialogForm : EditForm;
   return (
-    <EditForm ref={formRef} action={action} noValidate aria-label={`${copy.edit} ${contact.name}`}>
+    <Form ref={formRef} action={action} noValidate aria-label={`${copy.edit} ${contact.name}`}>
       <Field label={partnersCopy.personPanel.nameLabel} error={fieldError(state, "name")} required>
         {(p) => <Input {...p} name="name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="off" />}
       </Field>
@@ -91,6 +109,16 @@ export function PersonEditForm({ contact, onDone }: { contact: PartnerContact; o
           <Input {...p} name="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="off" />
         )}
       </Field>
+      {inDialog ? (
+        <DialogActions>
+          <DialogClose asChild>
+            <Button type="button" $variant="secondary">
+              {copy.cancelEdit}
+            </Button>
+          </DialogClose>
+          <SubmitButton>{copy.saveEdit}</SubmitButton>
+        </DialogActions>
+      ) : (
       <EditActions>
         {onDone && (
           <Button type="button" $variant="secondary" $size="sm" onClick={onDone}>
@@ -100,7 +128,8 @@ export function PersonEditForm({ contact, onDone }: { contact: PartnerContact; o
         )}
         <SubmitButton $size="sm">{copy.saveEdit}</SubmitButton>
       </EditActions>
-    </EditForm>
+      )}
+    </Form>
   );
 }
 

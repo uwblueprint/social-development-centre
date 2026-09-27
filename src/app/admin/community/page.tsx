@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getCommunityCounts, listMembers, PAGE_SIZE } from "./_data/queries";
+import { getCommunityCounts, getMember, listMembers, PAGE_SIZE } from "./_data/queries";
 import { DEFAULT_MEMBER_SORT, MEMBER_SORT_KEYS } from "./_data/types";
 import type { MemberSort, MemberSortKey, MemberTier } from "./_data/types";
 import { parseStatusParam } from "./_lib/statusParam";
@@ -20,7 +20,7 @@ function normalizeSort(sort: string | undefined, dir: string | undefined): Membe
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; q?: string; page?: string; sort?: string; dir?: string; status?: string }>;
+  searchParams: Promise<{ tab?: string; q?: string; page?: string; sort?: string; dir?: string; status?: string; member?: string }>;
 }) {
   const params = await searchParams;
   const tab = normalizeTab(params.tab);
@@ -31,7 +31,26 @@ export default async function Page({
   // One clock for the whole render, sent to the client, so relative dates match on both sides.
   const now = new Date().toISOString();
 
-  const [memberPage, counts] = await Promise.all([listMembers(tab, q, page, sort, statuses), getCommunityCounts(tab, q, statuses)]);
+  // The open panel lives in the URL (`?member=<id>`), so a shared link opens it, even for someone not on this page.
+  const memberId = params.member?.trim() || null;
 
-  return <CommunityView tab={tab} q={q} statuses={statuses} memberPage={memberPage} counts={counts} pageSize={PAGE_SIZE} now={now} />;
+  const [memberPage, counts, openMember] = await Promise.all([
+    listMembers(tab, q, page, sort, statuses),
+    getCommunityCounts(tab, q, statuses),
+    memberId ? getMember(memberId) : null,
+  ]);
+
+  return (
+    <CommunityView
+      tab={tab}
+      q={q}
+      statuses={statuses}
+      memberPage={memberPage}
+      counts={counts}
+      pageSize={PAGE_SIZE}
+      now={now}
+      memberId={memberId}
+      openMember={openMember}
+    />
+  );
 }

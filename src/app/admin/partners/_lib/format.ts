@@ -1,9 +1,12 @@
-import { formatDate as formatSdcDate, formatDateTime, formatRelative } from "@/lib/date";
+import { formatDate as formatSdcDate, formatDateTime, formatRelative, formatShortDate } from "@/lib/date";
 
 /** Presentation-only helpers for the Partners UI. Not part of the backend contract. */
 
 /** "Sep 12, 2026", in SDC's time zone (hydration-safe). */
 export const formatDate = (iso: string) => formatSdcDate(iso);
+
+/** "Oct 2", or "Oct 2, 2027" outside `now`'s year: for one-line table cells (hydration-safe). */
+export const formatShortDateCell = (iso: string, now: string) => formatShortDate(iso, now);
 
 export function initialsOf(name: string): string {
   return (

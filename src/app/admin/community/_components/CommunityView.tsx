@@ -50,6 +50,8 @@ export function CommunityView({
   counts,
   pageSize,
   now,
+  memberId,
+  openMember,
 }: {
   tab: MemberTier;
   q: string;
@@ -60,6 +62,10 @@ export function CommunityView({
   pageSize: number;
   /** The server's render time (ISO), for relative dates that match on server and client. */
   now: string;
+  /** The open panel's person, from `?member=<id>`, or null. */
+  memberId: string | null;
+  /** That person, looked up by the server (null when the id is unknown or they were deleted). */
+  openMember: Member | null;
 }) {
   const { setParams, pending: paramsPending } = useListParams();
   const searchState = useListSearch(q);
@@ -67,8 +73,11 @@ export function CommunityView({
   // The server ignores unknown sort keys and uses the default; show the same.
   const sort =
     requestedSort && (MEMBER_SORT_KEYS as readonly string[]).includes(requestedSort.key) ? requestedSort : DEFAULT_MEMBER_SORT;
-  // Page, tab, filter, search and sort changes keep the current rows on screen, dimmed, until the next ones arrive.
-  const busy = paramsPending || sortPending || searchState.pending;
+  // Tab, filter, search and page changes keep the current rows on screen, dimmed, until the next ones
+  // arrive. Only a sort change spins the sort arrow (`sortPending`), so switching tabs never spins it.
+  const busy = paramsPending || searchState.pending;
+  // Its own transition, so opening or closing the panel never dims the table.
+  const { setParams: setMemberParam } = useListParams();
   const searchRef = React.useRef<HTMLInputElement>(null);
 
   const [activeTab, setActiveTab] = React.useState<MemberTier>(tab);
@@ -84,9 +93,17 @@ export function CommunityView({
   // The filter shows the new selection at once; the rows follow when the server responds.
   const [selectedStatuses, setOptimisticStatuses] = React.useOptimistic<string[]>(statuses);
 
-  // The open panel's person. Kept as a snapshot so the panel stays open when an action moves them
-  // out of the current list (e.g. converted to paying, or unsubscribed and hidden by the filter).
-  const [selected, setSelected] = React.useState<Member | null>(null);
+  // The open panel's person, mirrored in the URL (`?member=<id>`) so the link is shareable. Kept as a
+  // snapshot so the panel opens at once and stays open when an action moves them out of the current
+  // list (e.g. converted to paying, or unsubscribed and hidden by the filter).
+  const [selected, setSelected] = React.useState<Member | null>(openMember);
+  const [prevMemberId, setPrevMemberId] = React.useState(memberId);
+  if (memberId !== prevMemberId) {
+    // The URL changed from outside (back/forward, a pasted link): follow it.
+    setPrevMemberId(memberId);
+    if (!memberId) setSelected(null);
+    else if (openMember && selected?.id !== memberId) setSelected(openMember);
+  }
   const [addOpen, setAddOpen] = React.useState(false);
   const [addKey, setAddKey] = React.useState(0);
   const [exportOpen, setExportOpen] = React.useState(false);
@@ -119,6 +136,16 @@ export function CommunityView({
     searchRef.current?.focus();
   }
 
+  function openPanel(member: Member) {
+    setSelected(member);
+    setMemberParam({ member: member.id });
+  }
+
+  function closePanel() {
+    setSelected(null);
+    setMemberParam({ member: undefined });
+  }
+
   function handlePageChange(page: number) {
     setParams({ page: page > 1 ? String(page) : undefined });
   }
@@ -147,7 +174,9 @@ export function CommunityView({
   };
   const columns = memberColumns(now, statusFilter);
 
-  const selectedMember = selected ? (memberPage.rows.find((m) => m.id === selected.id) ?? selected) : undefined;
+  const selectedMember = selected
+    ? (memberPage.rows.find((m) => m.id === selected.id) ?? (openMember?.id === selected.id ? openMember : selected))
+    : undefined;
 
   const items = activeTab === "paying" ? copy.empty.payingItems : copy.empty.generalItems;
   const otherTab: MemberTier = activeTab === "general" ? "paying" : "general";
@@ -213,6 +242,18 @@ export function CommunityView({
     <ListPage>
       <ListPageHeader
         title={copy.page.title}
+        search={
+          <SearchField
+            ref={searchRef}
+            name="q"
+            aria-label={copy.toolbar.searchPlaceholder}
+            placeholder={copy.toolbar.searchPlaceholder}
+            value={searchState.value}
+            onChange={(event) => searchState.setValue(event.target.value)}
+            onSearch={searchState.search}
+            pending={searchState.pending}
+          />
+        }
         actions={
           <>
             <KioskLauncher />
@@ -244,18 +285,6 @@ export function CommunityView({
               </TabsTrigger>
             </TabsList>
           }
-          search={
-            <SearchField
-              ref={searchRef}
-              name="q"
-              aria-label={copy.toolbar.searchPlaceholder}
-              placeholder={copy.toolbar.searchPlaceholder}
-              value={searchState.value}
-              onChange={(event) => searchState.setValue(event.target.value)}
-              onSearch={searchState.search}
-              pending={searchState.pending}
-            />
-          }
           results={{
             query: q,
             count: memberPage.total,
@@ -269,10 +298,11 @@ export function CommunityView({
               columns={columns}
               rows={memberPage.rows}
               getRowId={(m) => m.id}
-              onRowClick={setSelected}
+              onRowClick={openPanel}
               sort={sort}
               onSortChange={setSort}
               busy={busy}
+              sortPending={sortPending}
               stickyColumns={2}
               aria-label={activeTab === "paying" ? copy.tabs.paying : copy.tabs.general}
               empty={empty}
@@ -290,10 +320,15 @@ export function CommunityView({
         </TabsContent>
       </Tabs>
 
-      <Sheet open={selectedMember !== undefined} onOpenChange={(open) => !open && setSelected(null)}>
+      <Sheet open={selectedMember !== undefined} onOpenChange={(open) => !open && closePanel()}>
         <SheetContent size="wide">
           {selectedMember && (
-            <MemberSheetContent key={selectedMember.id} member={selectedMember} now={now} onChange={setSelected} />
+            <MemberSheetContent
+              key={selectedMember.id}
+              member={selectedMember}
+              now={now}
+              onChange={(member) => (member ? setSelected(member) : closePanel())}
+            />
           )}
         </SheetContent>
       </Sheet>

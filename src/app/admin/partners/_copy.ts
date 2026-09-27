@@ -190,6 +190,10 @@ export const partnersCopy = {
   person: {
     rowActions: (name: string) => `Actions for ${name}`,
     edit: "Edit",
+    /** New, needs approval: the People row menu's edit item and its dialog title. */
+    editDetails: "Edit details",
+    /** New, needs approval: the Organization cell's accessible name (it opens that organization's panel). */
+    openOrganization: (organization: string) => `Open ${organization}`,
     cancelEdit: "Cancel",
     saveEdit: "Save changes",
     remove: "Remove from organization",
