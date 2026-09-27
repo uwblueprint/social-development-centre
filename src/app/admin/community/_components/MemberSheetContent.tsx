@@ -88,10 +88,6 @@ const MenuTrigger = styled(Button)`
   flex-shrink: 0;
 `;
 
-const DangerMenuItem = styled(DropdownMenuItem)`
-  color: var(--color-danger);
-`;
-
 const EditForm = styled.form`
   display: flex;
   flex-direction: column;
@@ -215,7 +211,8 @@ export function MemberSheetContent({ member, onClose }: { member: Member; onClos
               {member.subscribed ? (
                 <>
                   <DropdownMenuSeparator />
-                  <DangerMenuItem
+                  <DropdownMenuItem
+                    $variant="danger"
                     onSelect={(event) => {
                       event.preventDefault();
                       setConfirm("unsubscribe");
@@ -223,7 +220,7 @@ export function MemberSheetContent({ member, onClose }: { member: Member; onClos
                   >
                     <Icon icon={MailX} size={16} />
                     {copy.panel.menuUnsubscribe}
-                  </DangerMenuItem>
+                  </DropdownMenuItem>
                 </>
               ) : (
                 // Owner decision 6: admins resubscribe only people an admin unsubscribed.

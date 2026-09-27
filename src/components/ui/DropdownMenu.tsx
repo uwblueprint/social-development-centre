@@ -18,13 +18,13 @@ const Content = styled(DropdownMenuPrimitive.Content)`
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-md);
-  padding: 4px;
+  padding: var(--space-1);
   animation: ${contentShow} var(--duration) var(--ease);
   transform-origin: var(--radix-dropdown-menu-content-transform-origin);
 
   /* The indicator column only exists when something in the menu can be checked. */
   &:not(:has([role="menuitemcheckbox"], [role="menuitemradio"])) > * {
-    padding-left: var(--space-3);
+    padding-left: var(--space-2);
   }
 
   &:focus {
@@ -44,7 +44,8 @@ const itemStyles = css`
   gap: var(--space-2);
   height: 32px;
   line-height: var(--leading-ui);
-  padding: 0 var(--space-3) 0 var(--space-7);
+  /* Equal inset on both sides; checkable menus widen only the leading column. */
+  padding: 0 var(--space-2) 0 var(--space-7);
   border-radius: var(--radius-sm);
   font-size: var(--text-sm);
   color: var(--color-text);
@@ -76,8 +77,23 @@ const itemStyles = css`
   }
 `;
 
-const Item = styled(DropdownMenuPrimitive.Item)`
+/** `$variant="danger"` for destructive items: label and icon both use the danger color. */
+const Item = styled(DropdownMenuPrimitive.Item)<{ $variant?: "danger" }>`
   ${itemStyles}
+
+  ${({ $variant }) =>
+    $variant === "danger" &&
+    css`
+      color: var(--color-danger);
+
+      & > svg {
+        color: var(--color-danger);
+      }
+
+      &[data-highlighted] {
+        background: var(--color-danger-subtle);
+      }
+    `}
 `;
 
 const CheckboxItem = styled(DropdownMenuPrimitive.CheckboxItem)`

@@ -61,3 +61,6 @@ Full keyboard navigation (arrows, type-ahead, Esc to close) via Radix. Disabled 
 2. Relying on a keyboard shortcut shown in `DropdownMenuShortcut` as the only way to trigger it.
 3. Nesting a destructive action without a confirming `AlertDialog`.
 4. Giving icons to some items in a menu and not others.
+
+## Destructive items
+Use `<DropdownMenuItem $variant="danger">` for destructive actions (Unsubscribe, Remove, Delete). The label and its icon both use `--color-danger`, and the highlight uses `--color-danger-subtle`. Don't restyle items locally. Put destructive items last, after a separator.

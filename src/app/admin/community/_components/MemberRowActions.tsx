@@ -15,10 +15,6 @@ const Trigger = styled(Button)`
   flex-shrink: 0;
 `;
 
-const DangerItem = styled(DropdownMenuItem)`
-  color: var(--color-danger);
-`;
-
 /* Layout-neutral wrapper; see the stopPropagation note below. */
 const RowEventBoundary = styled.span`
   display: contents;
@@ -72,7 +68,8 @@ export function MemberRowActions({ member }: { member: Member }) {
           {member.subscribed ? (
             <>
               <DropdownMenuSeparator />
-              <DangerItem
+              <DropdownMenuItem
+                $variant="danger"
                 onSelect={(event) => {
                   event.preventDefault();
                   setConfirm("unsubscribe");
@@ -80,7 +77,7 @@ export function MemberRowActions({ member }: { member: Member }) {
               >
                 <Icon icon={MailX} size={16} />
                 {copy.rowMenu.unsubscribe}
-              </DangerItem>
+              </DropdownMenuItem>
             </>
           ) : (
             member.unsubscribedBy === "admin" && (

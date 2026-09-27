@@ -45,7 +45,8 @@ export const TabsTrigger = styled(TabsPrimitive.Trigger)`
     color: var(--color-text);
   }
 
-  &[data-state="active"] {
+  /* aria-selected, not data-state: a Tooltip trigger wrapping the tab overwrites data-state. */
+  &[aria-selected="true"] {
     color: var(--color-text);
     border-bottom-color: var(--color-text);
   }
