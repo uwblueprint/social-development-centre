@@ -3,25 +3,14 @@
 import { redirect } from "next/navigation";
 import type { ActionState } from "@/lib/forms";
 import { getCurrentAdmin } from "../admin/_data/session";
+import { addBoothSignup } from "../admin/community/_data/actions";
 import { kioskCopy as copy } from "./copy";
 
 export type KioskState = ActionState<{ name: string; email: string }>;
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-/*
- * TODO(kiosk): temporary stub. Replace with
- *   import { addBoothSignup } from "../admin/community/_data/actions";
- * once that action lands. Contract (docs/backend/community.md, "Booth kiosk"): adds a subscribed
- * general member tagged with the booth location and sends the general welcome; an existing email
- * returns the same success and changes nothing, so the kiosk never reveals who is already a member.
- */
-async function addBoothSignup(name: string, email: string, location: string | null): Promise<ActionState> {
-  void name;
-  void email;
-  void location;
-  return { status: "success" };
-}
+/* addBoothSignup (docs/backend/community.md, "Booth kiosk"): an existing email returns the same success and changes nothing, so the kiosk never reveals who is already a member. */
 
 /** Booth sign-up form (fields: name, email). `location` is bound from the page's `?location=`. */
 export async function signUpAtBooth(location: string | null, _prev: KioskState, fd: FormData): Promise<KioskState> {

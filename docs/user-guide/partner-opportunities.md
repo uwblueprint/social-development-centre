@@ -10,10 +10,11 @@ New here? Start with [Getting started with the partner portal](./partner-getting
 1. Go to **Opportunities** in the sidebar.
 2. Choose a tab:
    - **Published:** members can see it now. Sorted by date, soonest first.
-   - **Drafts:** not published yet. Only people at your organization, and SDC, see drafts.
-   - **Closed:** members aren't recommended or emailed it. Each one shows why: **Ended** (its date passed) or **Closed** (someone closed it).
-3. To narrow the list, type in the search box (results update as you type), or choose a **Type**.
-4. Click a row to see its details on the right.
+   - **Drafts:** not published yet. Only people at your organization, and SDC, see drafts. Most recently updated first.
+   - **Closed:** members aren't recommended or emailed it. Each one shows why: **Ended** (its date passed) or **Closed** (someone closed it). Most recently updated first.
+3. To narrow the list, type in the search box (results update as you type). To filter by type, click the filter icon next to **Opportunity** in the table header (**Filter Type**) and tick one or more types; click **Clear filter** to remove it.
+4. To sort, click a column header: **Opportunity**, **Date** or **Updated**. Click it again to reverse the order.
+5. Click a row to see its details on the right.
 
 If nothing matches, you'll see **No matches**. Click **Clear filters** to start over.
 

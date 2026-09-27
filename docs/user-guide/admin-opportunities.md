@@ -8,13 +8,15 @@ You can do anything a partner can, for any organization, including posting as SD
 1. Go to **Opportunities**.
 2. Choose a tab:
    - **Published:** members can see it now. Sorted by date, soonest first.
-   - **Drafts:** not published yet. Only people who can edit it see it.
-   - **Closed:** members aren't recommended or emailed it. Each one shows why: **Ended** (its date passed), **Closed** (someone closed it) or **Partner access removed** (you removed the partner's access).
+   - **Drafts:** not published yet. Only people who can edit it see it. Most recently updated first.
+   - **Closed:** members aren't recommended or emailed it. Each one shows why: **Ended** (its date passed), **Closed** (someone closed it) or **Partner access removed** (you removed the partner's access). Most recently updated first.
 3. To narrow the list:
    - Type in the search box. Results update as you type and match the title and the organization name.
-   - Choose a **Type**, or **All types**.
-   - Choose an **Organization**, or **All organizations**. Partners whose access you removed are listed as "{name} (removed)".
-4. Click a row to open its details on the right.
+   - To filter by type, click the filter icon next to **Opportunity** in the table header (**Filter Type**), then tick one or more types. Each shows how many listings it has.
+   - To filter by organization, click the filter icon next to **Organization** (**Filter Organization**), then tick one or more. Partners whose access you removed are listed as "{name} (removed)".
+   - An active filter shows the number of choices ticked next to its icon. To remove it, open it and click **Clear filter**.
+4. To sort, click a column header: **Opportunity**, **Organization**, **Date** or **Updated**. Click it again to reverse the order.
+5. Click a row to open its details on the right.
 
 If nothing matches, you'll see **No matches**. Click **Clear filters** to start over.
 
@@ -92,7 +94,7 @@ It's removed for everyone and can't be restored. You'll see "Deleted “{title}�
 2. Click **More actions** (⋯) and choose **Open link**. The page people go to opens, so you can check it works.
 
 ## See one partner's opportunities
-1. Go to **Opportunities** and choose the partner under **Organization**.
+1. Go to **Opportunities**, click the filter icon next to **Organization** in the table header, and tick the partner.
 2. Or, from **Partners**, open the partner and click **View opportunities**.
 
 ## What each type asks for
