@@ -1,18 +1,11 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { styled } from "next-yak";
-import { Archive, ChevronDown, FilePen, FilterX, Megaphone, Plus, Search as SearchIcon } from "lucide-react";
+import { Archive, FilePen, FilterX, Megaphone, Plus, Search as SearchIcon } from "lucide-react";
 import { ListPage, ListPageHeader, ListPageToolbar, useListParams, useListSearch } from "@/components/patterns/ListPage";
 import { Button } from "@/components/ui/Button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "@/components/ui/DropdownMenu";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
@@ -28,11 +21,9 @@ import type {
   OpportunityActions,
   OpportunityCounts,
   OpportunityFilters,
-  OpportunityKind,
   OpportunityTab,
   OrganizationFilterOption,
 } from "../types";
-import { KindIcon } from "./KindIcon";
 import { opportunityColumns } from "./opportunityColumns";
 import { OpportunitySheetContent } from "./OpportunitySheetContent";
 
@@ -77,6 +68,7 @@ export interface OpportunitiesViewProps {
 
 /** The Opportunities list shared by the admin and partner portals: status tabs, filters, table and side panel. */
 export function OpportunitiesView({ scope, basePath, tab, filters, items, counts, organizations, actions }: OpportunitiesViewProps) {
+  const router = useRouter();
   const { setParams: syncUrl } = useListParams();
   const searchState = useListSearch(filters.q ?? "");
 
@@ -126,26 +118,10 @@ export function OpportunitiesView({ scope, basePath, tab, filters, items, counts
       <ListPageHeader
         title={copy.page.title}
         actions={
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button type="button">
-                <Icon icon={Plus} size={16} />
-                {copy.page.newButton}
-                <Icon icon={ChevronDown} size={14} />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{copy.page.newMenuLabel}</DropdownMenuLabel>
-              {KINDS.map((kind: OpportunityKind) => (
-                <DropdownMenuItem key={kind} asChild>
-                  <Link href={`${basePath}/new?kind=${kind}`}>
-                    <KindIcon kind={kind} />
-                    {KIND_LABEL[kind]}
-                  </Link>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button type="button" onClick={() => router.push(`${basePath}/new`)}>
+            <Icon icon={Plus} size={16} />
+            {copy.page.newButton}
+          </Button>
         }
       />
 

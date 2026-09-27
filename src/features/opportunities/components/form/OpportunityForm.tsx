@@ -16,7 +16,10 @@ import type { Opportunity, OpportunityActions, OpportunityKind, OrganizationRef,
 import { BasicsFields } from "./BasicsFields";
 import { EventFields } from "./EventFields";
 import { BackLink, GhostLink, Section } from "./FormParts";
-import { initialModel, orderedErrors, type DetailRow, type KindFieldsProps } from "./formValues";
+import { emptyKindValues, initialModel, orderedErrors, type DetailRow, type KindFieldsProps } from "./formValues";
+import { TypeField } from "./TypeField";
+
+const SHARED_FIELDS = new Set(["organizationId", "title", "summary", "link"]);
 import { JobFields } from "./JobFields";
 import { OtherFields } from "./OtherFields";
 import { PetitionFields } from "./PetitionFields";
@@ -106,18 +109,28 @@ export interface OpportunityFormProps {
  * `id` and `kind` (and each selected topic) are appended in the action wrapper, since
  * native hidden inputs are off-limits in feature code; `intent` comes from the clicked button.
  */
-export function OpportunityForm({ scope, basePath, kind, opportunity, organizations, save }: OpportunityFormProps) {
+export function OpportunityForm({ scope, basePath, kind: initialKind, opportunity, organizations, save }: OpportunityFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [state, formAction] = useActionState(save, initialState);
-  const [model, setModel] = React.useState(() => initialModel(kind, opportunity));
+  const [model, setModel] = React.useState(() => initialModel(initialKind, opportunity));
 
   const status = opportunity?.status ?? "draft";
   const isDraft = status === "draft";
+  // Type can change until a listing is published (service.ts enforces the same rule).
+  const kind = model.kind;
   const noun = KIND_NOUN[kind];
 
+  // Shared fields live in `values`; each type's own fields live in `byKind`, so switching Type and back restores them.
   const set = React.useCallback((name: string, value: string) => {
-    setModel((m) => ({ ...m, values: { ...m.values, [name]: value } }));
+    setModel((m) =>
+      SHARED_FIELDS.has(name)
+        ? { ...m, values: { ...m.values, [name]: value } }
+        : { ...m, byKind: { ...m.byKind, [m.kind]: { ...m.byKind[m.kind], [name]: value } } },
+    );
+  }, []);
+  const setKind = React.useCallback((next: OpportunityKind) => {
+    setModel((m) => ({ ...m, kind: next, byKind: { ...m.byKind, [next]: m.byKind[next] ?? emptyKindValues(next) } }));
   }, []);
   const setDetails = React.useCallback((details: DetailRow[]) => setModel((m) => ({ ...m, details })), []);
   const toggleTopic = React.useCallback((id: TopicId) => {
@@ -147,7 +160,7 @@ export function OpportunityForm({ scope, basePath, kind, opportunity, organizati
     formAction(fd);
   }
 
-  const fieldProps: KindFieldsProps = { values: model.values, set, error };
+  const fieldProps: KindFieldsProps = { values: { ...model.values, ...model.byKind[kind] }, set, error };
 
   return (
     <Page>
@@ -162,6 +175,7 @@ export function OpportunityForm({ scope, basePath, kind, opportunity, organizati
       <Form action={submit} noValidate>
         {summary.length > 0 && <ErrorSummary title={state.message ?? ""} errors={summary} />}
         <Section title={copy.form.sections.basics}>
+          <TypeField kind={kind} editable={isDraft} onChange={setKind} error={error("kind")} />
           <BasicsFields
             {...fieldProps}
             scope={scope}

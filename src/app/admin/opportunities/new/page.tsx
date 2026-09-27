@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { KINDS, KIND_NOUN } from "@/features/opportunities/catalog";
 import { OpportunityForm } from "@/features/opportunities/components/form/OpportunityForm";
 import { copy } from "@/features/opportunities/copy";
@@ -16,14 +15,14 @@ function parseKind(value: string | string[] | undefined): OpportunityKind | null
 }
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
-  const kind = parseKind((await searchParams).kind);
-  return { title: kind ? copy.form.newTitle(KIND_NOUN[kind]) : copy.page.title };
+  const kind = parseKind((await searchParams).kind) ?? "event";
+  return { title: copy.form.newTitle(KIND_NOUN[kind]) };
 }
 
-/** /admin/opportunities/new?kind=event — an unknown or missing kind goes back to the list. */
+/** /admin/opportunities/new, optionally ?kind=job to preselect a type. */
 export default async function NewOpportunityPage({ searchParams }: Props) {
-  const kind = parseKind((await searchParams).kind);
-  if (!kind) redirect(BASE);
+  // No or unknown ?kind starts as an event; Type is the form's first field and can be changed there.
+  const kind = parseKind((await searchParams).kind) ?? "event";
   const organizations = await listPublisherOptions();
   return <OpportunityForm scope="admin" basePath={BASE} kind={kind} organizations={organizations} save={saveOpportunity} />;
 }

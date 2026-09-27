@@ -167,7 +167,8 @@ export async function saveOpportunity(actor: Actor, fd: FormData): Promise<Actio
   const existing = id ? opportunities().find((o) => o.id === id) : undefined;
   if (id && (!existing || !canEdit(actor, existing))) return fail(MISSING);
 
-  const kind = (existing?.kind ?? text(fd, "kind")) as OpportunityKind;
+  // Type can change while a listing is new or a draft; after publishing it's fixed.
+  const kind = (existing && existing.status !== "draft" ? existing.kind : text(fd, "kind")) as OpportunityKind;
   if (!KINDS.has(kind)) return fail("Choose a type of opportunity.");
 
   const intent = text(fd, "intent") || "publish";
