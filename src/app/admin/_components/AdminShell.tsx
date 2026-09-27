@@ -15,9 +15,9 @@ const sections: { key: AdminSection; label: string; description: string; icon: S
     description: "Events, petitions, volunteer roles and jobs from SDC and Civic Hub partners.",
     icon: BriefcaseBusiness,
   },
-  { key: "partners", label: "Partners", description: "Civic Hub organizations and the people who post for them.", icon: Building },
-  { key: "community", label: "Community", description: "Everyone on SDC's email list, and who has paid access.", icon: UsersRound },
   { key: "insights", label: "Insights", description: "Reports on what people click and join.", icon: ChartColumnIncreasing },
+  { key: "community", label: "Community", description: "Everyone on SDC's email list, and who has paid access.", icon: UsersRound },
+  { key: "partners", label: "Partners", description: "Civic Hub organizations and the people who post for them.", icon: Building },
 ];
 
 /** No section shows a count badge yet (owner decision 10); a count needs `count` plus a `countLabel` that explains it. */

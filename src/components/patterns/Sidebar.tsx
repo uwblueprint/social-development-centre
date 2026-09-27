@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { css, keyframes, styled } from "next-yak";
 import type { LucideIcon } from "lucide-react";
-import { ChevronsUpDown, Menu, X } from "lucide-react";
+import { ChevronsUpDown, LogOut, Menu, UserRound, X } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import {
   DropdownMenu,
@@ -542,11 +542,15 @@ function SidebarContent({
           <DropdownMenuContent side="top" align="start" style={{ minWidth: 220 }}>
             <DropdownMenuItem asChild>
               <MenuLink href={config.accountHref} onClick={() => onNavigate(config.accountHref)}>
+                <Icon icon={UserRound} size={16} />
                 My account
               </MenuLink>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={config.onSignOut}>Sign out</DropdownMenuItem>
+            <DropdownMenuItem onSelect={config.onSignOut}>
+              <Icon icon={LogOut} size={16} />
+              Sign out
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </Footer>
