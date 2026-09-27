@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { styled } from "next-yak";
 import { Archive, FilePen, FilterX, Megaphone, Plus, Search as SearchIcon } from "lucide-react";
 import { ListPage, ListPageHeader, ListPageToolbar, useListParams, useListSearch, useListSort } from "@/components/patterns/ListPage";
@@ -53,6 +53,13 @@ export interface OpportunitiesViewProps {
   /** Admin only: organizations for the Organization filter (listOrganizationFilterOptions). */
   organizations?: OrganizationFilterOption[];
   actions: OpportunityActions;
+  /** The request time (ISO), so relative times render the same on server and client. */
+  now: string;
+  /**
+   * The listing named by `?opportunity=<id>`, if the actor can see it (getOpportunity). Its panel opens on
+   * load, even when it's in another tab or filtered out.
+   */
+  linked?: Opportunity;
 }
 
 /** The Opportunities list shared by the admin and partner portals: status tabs, filters, table and side panel. */
@@ -66,6 +73,8 @@ export function OpportunitiesView({
   filterCounts,
   organizations,
   actions,
+  now,
+  linked,
 }: OpportunitiesViewProps) {
   const router = useRouter();
   const { setParams: syncUrl, pending: paramsPending } = useListParams();
@@ -83,14 +92,27 @@ export function OpportunitiesView({
     setActiveTab(tab);
   }
 
-  const [selectedId, setSelectedId] = React.useState<string | null>(null);
-  const selected = items.find((o) => o.id === selectedId);
+  // The open panel is shareable: `?opportunity=<id>` (router.replace, no history entry). Local state opens it
+  // at once; the URL follows. Loading a URL with the param opens it (the server passes `linked`).
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const [selectedId, setSelectedIdState] = React.useState<string | null>(linked?.id ?? null);
+  const selected = items.find((o) => o.id === selectedId) ?? (linked?.id === selectedId ? linked : undefined);
+
+  function setSelectedId(id: string | null) {
+    setSelectedIdState(id);
+    const params = new URLSearchParams(searchParams.toString());
+    if (id) params.set("opportunity", id);
+    else params.delete("opportunity");
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }
 
   function handleTabChange(value: string) {
     const next = normalizeTab(value);
     setActiveTab(next);
-    setSelectedId(null);
-    syncUrl({ tab: next === "published" ? undefined : next });
+    setSelectedIdState(null);
+    syncUrl({ tab: next === "published" ? undefined : next, opportunity: undefined });
   }
 
   function clearFilters() {
@@ -129,12 +151,23 @@ export function OpportunitiesView({
 
   const filtered = !!(filters.q || kinds.length > 0 || (scope === "admin" && organizationIds.length > 0));
   // Row content follows the server's tab (not the optimistic one) so it always matches `items`.
-  const columns = opportunityColumns(scope, tab, { type: typeFilter, organization: organizationFilter });
+  const columns = opportunityColumns(scope, tab, now, { type: typeFilter, organization: organizationFilter });
 
   return (
     <ListPage>
       <ListPageHeader
         title={copy.page.title}
+        search={
+          <SearchField
+            name="q"
+            aria-label={copy.toolbar.searchLabel}
+            placeholder={copy.toolbar.searchPlaceholder}
+            value={searchState.value}
+            onChange={(event) => searchState.setValue(event.target.value)}
+            onSearch={searchState.search}
+            pending={searchState.pending}
+          />
+        }
         actions={
           <Button type="button" onClick={() => router.push(`${basePath}/new`)}>
             <Icon icon={Plus} size={16} />
@@ -155,17 +188,6 @@ export function OpportunitiesView({
               ))}
             </TabsList>
           }
-          search={
-            <SearchField
-              name="q"
-              aria-label={copy.toolbar.searchLabel}
-              placeholder={copy.toolbar.searchPlaceholder}
-              value={searchState.value}
-              onChange={(event) => searchState.setValue(event.target.value)}
-              onSearch={searchState.search}
-              pending={searchState.pending}
-            />
-          }
         />
 
         <TabsContent value={activeTab}>
@@ -178,6 +200,7 @@ export function OpportunitiesView({
               sort={sort}
               onSortChange={setSort}
               busy={paramsPending || sortPending || searchState.pending}
+              sortPending={sortPending}
               aria-label={copy.tabs[tab]}
               empty={
                 filtered ? (

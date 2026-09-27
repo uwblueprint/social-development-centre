@@ -94,7 +94,7 @@ export function organizationColumns(
       header: copy.headerOrganization,
       sortKey: "name",
       filter: filters.status,
-      width: "320px",
+      width: "280px",
       render: (org) => (
         <NameLine>
           <TruncatedText tooltip>{org.name}</TruncatedText>
@@ -112,6 +112,7 @@ export function organizationColumns(
       sortKey: "health",
       filter: filters.health,
       isEmpty: (org) => !org.health,
+      width: "180px",
       render: (org) => (org.health ? <HealthBadge tag={org.health.tag} /> : null),
     },
     {
@@ -177,14 +178,14 @@ export function personColumns(
       key: "name",
       header: copy.headerName,
       sortKey: "name",
-      width: "200px",
+      width: "160px",
       render: (person) => <TruncatedText tooltip>{person.name}</TruncatedText>,
     },
     {
       key: "email",
       header: copy.headerEmail,
       sortKey: "email",
-      width: "260px",
+      width: "250px",
       render: (person) => <CopyableEmail email={person.email} />,
     },
     {
@@ -192,7 +193,7 @@ export function personColumns(
       header: copy.headerOrganization,
       sortKey: "organization",
       filter: filters.organization,
-      width: "220px",
+      width: "200px",
       render: (person) => (
         <OrganizationLink
           type="button"
@@ -221,6 +222,6 @@ export function personColumns(
         );
       },
     },
-    { key: "actions", header: "", align: "right", width: "56px", render: renderActions },
+    { key: "actions", header: "", align: "right", width: "72px", render: renderActions },
   ];
 }

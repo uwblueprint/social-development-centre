@@ -24,6 +24,9 @@ import { Checkbox } from "@/components/ui/Checkbox";
 <Checkbox readOnly defaultChecked disabledReason="Set by your plan." label="Two-factor authentication" />
 ```
 
+## Size
+The box is exactly 20×20px in every state. Its 1px border is drawn inside the box (an inset box-shadow in `--checkbox-border`, with `box-sizing: border-box`), so checking, hovering or an error never changes the box size or shifts the label. Change the border color by setting `--checkbox-border`, never with `border`.
+
 ## Content rules
 Label states the thing being agreed to or included, not the state: "Subscribe to newsletter", not "Newsletter: on".
 

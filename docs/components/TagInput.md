@@ -26,6 +26,12 @@ import { TagInput, tagInputCopy } from "@/components/ui/TagInput";
 - Pasting text with separators or new lines splits it into tags at once.
 - Leaving the field turns what's typed into a tag, so nothing is lost when someone clicks Continue.
 - Backspace in the empty field removes the last tag.
+- **Tags are selectable, like Notion's share dialog.** Click a tag to select it; Shift-click selects the range from the last clicked tag; Cmd/Ctrl-click toggles one. Cmd/Ctrl+A in the empty field selects every tag. With tags selected:
+  - Backspace or Delete removes them all.
+  - Cmd/Ctrl+C copies them, comma-separated ("ada@example.org, luis@example.org"); Cmd/Ctrl+X cuts them.
+  - Typing, pasting or Escape deselects (typing on a selected tag moves to the field with that character). Leaving the control deselects too.
+- Selected tags use `--color-bg-selected` with a 2px outline in the tag's own text color, so selection isn't carried by color alone. The focused tag also gets the focus ring.
+- The × on each tag is pointer-only; keyboard users select the tag and press Backspace or Delete.
 - Invalid tags use `--color-danger` on `--color-danger-subtle` with a `CircleAlert` icon (never color alone) and a tooltip with the reason.
 
 ## Example
@@ -49,9 +55,9 @@ import { TagInput, tagInputCopy } from "@/components/ui/TagInput";
 The hint says how to separate entries. The invalid reason says what's wrong and how to fix it ("This isn't an email address. Check for a missing @ or a typo."), not just "Invalid".
 
 ## Accessibility
-- One tab stop: the text field. Arrow Left from the start of the field moves into the tags; Arrow Left and Right move between them, Backspace or Delete removes the focused tag, and Arrow Right past the last tag returns to the field. Escape is left to the surrounding dialog.
-- Each tag's remove button is named "Remove {tag}", or "Remove {tag}. {reason}" when invalid; focusing it also opens the reason's tooltip.
-- The tags are a list named by `copy.tagsLabel`. Adding, removing and duplicate entries are announced politely ("ada@example.org added", "3 added", "ada@example.org removed", "ada@example.org is already in the list").
+- One tab stop: the text field. Arrow Left from the start of the field moves into the tags and selects the last one; Arrow Left and Right move between them (selecting the focused tag; Shift extends the selection), Backspace or Delete removes the selected tags, and Arrow Right past the last tag returns to the field. Escape deselects when tags are selected; otherwise it's left to the surrounding dialog. (Radix dialogs listen for Escape first, so inside a dialog Escape also closes it.)
+- The tags are a `listbox` (`aria-multiselectable`) named by `copy.tagsLabel`; each tag is an `option` with `aria-selected`. An invalid tag's reason is part of its name ("grace@example. This isn't an email address…") and shows in a tooltip on hover.
+- Copying is announced ("2 copied"). Adding, removing and duplicate entries are announced politely ("ada@example.org added", "3 added", "ada@example.org removed", "3 removed", "ada@example.org is already in the list").
 - The field keeps the `Field`'s label, hint and error.
 
 ## Don't

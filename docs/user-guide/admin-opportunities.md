@@ -14,7 +14,7 @@ You can do anything a partner can, for any organization, including posting as SD
    - Type in the search box. Results update as you type and match the title and the organization name.
    - To filter by type, click the filter icon next to **Opportunity** in the table header (**Filter Type**), then tick one or more types. Each shows how many listings it has.
    - To filter by organization, click the filter icon next to **Organization** (**Filter Organization**), then tick one or more. Partners whose access you removed are listed as "{name} (removed)".
-   - An active filter shows the number of choices ticked next to its icon. To remove it, open it and click **Clear filter**.
+   - An active filter shows the number of choices ticked next to its icon. To remove it, open it, click **Clear**, then **Apply**.
 4. To sort, click a column header: **Opportunity**, **Organization**, **Date** or **Updated**. Click it again to reverse the order.
 5. Click a row to open its details on the right.
 

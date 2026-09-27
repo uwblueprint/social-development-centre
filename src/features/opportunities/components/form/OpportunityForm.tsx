@@ -189,12 +189,19 @@ export function OpportunityForm({
     setStep(next);
   }
 
+  // A new validation result opens the step with its first invalid field (derived at render, not in an effect).
+  const [handledState, setHandledState] = React.useState(state);
+  if (state !== handledState) {
+    setHandledState(state);
+    if (state.status === "error" && summary.length > 0) setStep(stepOf(summary[0].key));
+  }
+
   React.useEffect(() => {
     if (state.status === "success") {
       if (state.message) toast({ title: state.message });
       router.push(`${basePath}?tab=${state.data?.tab ?? "published"}`);
     } else if (state.status === "error") {
-      if (summary.length > 0) goTo(stepOf(summary[0].key), summary[0].fieldId);
+      if (summary.length > 0) focusField(summary[0].fieldId);
       else if (state.message) toast({ title: state.message });
     }
     // Runs once per submission result.

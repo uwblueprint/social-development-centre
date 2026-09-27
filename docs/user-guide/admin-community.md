@@ -23,7 +23,7 @@ If nobody matches but someone with a hidden status does (for example, they unsub
 
 ## Filter by status
 1. Click the filter icon next to **Status** in the table header.
-2. Check the statuses you want to see. Each shows how many people have it. Click **Clear filter** to go back.
+2. Check the statuses you want to see. Each shows how many people have it. Click **Apply** to filter the list. To go back, click **Clear**, then **Apply**.
 
 Unsubscribed people are hidden until you check **Unsubscribed**. The tab counts and the list follow your choice, and it stays while you search, sort, switch tabs and change pages.
 

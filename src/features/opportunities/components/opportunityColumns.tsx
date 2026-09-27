@@ -3,7 +3,9 @@
 import { styled } from "next-yak";
 import { Badge } from "@/components/ui/Badge";
 import type { TableColumn, TableColumnFilter } from "@/components/ui/Table";
-import { KIND_LABEL } from "../catalog";
+import { TruncatedText } from "@/components/ui/TruncatedText";
+import { formatRelative } from "@/lib/date";
+import { KIND_CATEGORY, KIND_LABEL } from "../catalog";
 import { copy } from "../copy";
 import { formatWhen } from "../format";
 import type { Opportunity, OpportunityTab } from "../types";
@@ -11,44 +13,14 @@ import { KindIcon } from "./KindIcon";
 
 const TitleCell = styled.span`
   display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  min-width: 0;
-`;
-
-const IconSlot = styled.span`
-  display: inline-flex;
-  flex-shrink: 0;
-  padding-top: 2px;
-  color: var(--color-text-muted);
-`;
-
-const TitleText = styled.span`
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-`;
-
-const TitleLine = styled.span`
-  display: flex;
   align-items: center;
   gap: var(--space-2);
   min-width: 0;
-`;
 
-/* Long titles truncate in the table and wrap in the panel. */
-const Title = styled.span`
-  display: block;
-  max-width: 44ch;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-`;
-
-const Muted = styled.span`
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
+  & > :first-child {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
 `;
 
 const Nowrap = styled.span`
@@ -79,13 +51,32 @@ export function closedReasonLabel(o: Opportunity): string | undefined {
   return copy.panel.closedReason[o.closedReason ?? "closed"];
 }
 
+/** "Created today" or "Edited 3d ago": edited once it changed after it was created. */
+export function formatLastChange(o: Opportunity, now: string): string {
+  const relative = formatRelative(o.updatedAt, now);
+  const when = relative === "Today" || relative === "Yesterday" ? relative.toLowerCase() : relative;
+  return new Date(o.updatedAt).getTime() > new Date(o.createdAt).getTime() ? copy.table.edited(when) : copy.table.created(when);
+}
+
+/** The type as a colored tag: the kind's icon and label, one category color per kind (never color alone). */
+export function KindBadge({ kind }: { kind: Opportunity["kind"] }) {
+  return (
+    <Badge $category={KIND_CATEGORY[kind]}>
+      <KindIcon kind={kind} size={12} />
+      {KIND_LABEL[kind]}
+    </Badge>
+  );
+}
+
 /**
- * Opportunity table columns. There is no status column (the tab is the status); the Closed tab shows the
- * closed reason as a badge, since it mixes reasons.
+ * Opportunity table columns, one line per row with fixed widths; long titles truncate with a tooltip.
+ * There is no status column (the tab is the status); the Closed tab shows the closed reason as a badge,
+ * since it mixes reasons. `now` (ISO, from the server) keeps the relative times hydration-safe.
  */
 export function opportunityColumns(
   scope: "admin" | "partner",
   tab: OpportunityTab,
+  now: string,
   filters: { type?: TableColumnFilter; organization?: TableColumnFilter } = {},
 ): TableColumn<Opportunity>[] {
   const columns: TableColumn<Opportunity>[] = [
@@ -93,40 +84,40 @@ export function opportunityColumns(
       key: "opportunity",
       header: copy.table.opportunity,
       sortKey: "title",
-      filter: filters.type,
       render: (o) => (
         <TitleCell>
-          <IconSlot>
-            <KindIcon kind={o.kind} />
-          </IconSlot>
-          <TitleText>
-            <TitleLine>
-              <Title title={o.title}>{o.title}</Title>
-              {tab === "closed" && <Badge $variant="outline">{closedReasonLabel(o)}</Badge>}
-            </TitleLine>
-            <Muted>{KIND_LABEL[o.kind]}</Muted>
-          </TitleText>
+          <TruncatedText tooltip>{o.title}</TruncatedText>
+          {tab === "closed" && <Badge $variant="outline">{closedReasonLabel(o)}</Badge>}
         </TitleCell>
       ),
+    },
+    {
+      key: "type",
+      header: copy.table.type,
+      width: "164px",
+      filter: filters.type,
+      render: (o) => <KindBadge kind={o.kind} />,
     },
   ];
   if (scope === "admin") {
     columns.push({
       key: "organization",
       header: copy.table.organization,
+      width: "200px",
       sortKey: "organization",
       filter: filters.organization,
-      render: (o) => <Nowrap>{o.organization.name}</Nowrap>,
+      render: (o) => <TruncatedText tooltip>{o.organization.name}</TruncatedText>,
     });
   }
   columns.push(
-    { key: "date", header: copy.table.date, sortKey: "date", render: (o) => <Nowrap>{formatWhen(o)}</Nowrap> },
+    { key: "date", header: copy.table.date, width: "176px", sortKey: "date", render: (o) => <TruncatedText tooltip>{formatWhen(o)}</TruncatedText> },
     {
       key: "updated",
-      header: copy.table.updated,
+      header: copy.table.lastChange,
+      width: "148px",
       sortKey: "updated",
       defaultSortDirection: "desc",
-      render: (o) => <Nowrap>{formatUpdated(o.updatedAt)}</Nowrap>,
+      render: (o) => <Nowrap>{formatLastChange(o, now)}</Nowrap>,
     },
   );
   return columns;

@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { OpportunitiesView } from "@/features/opportunities/components/OpportunitiesView";
 import { copy } from "@/features/opportunities/copy";
 import { parseListParams } from "@/features/opportunities/components/listParams";
-import { getFilterCounts, getOpportunityCounts, listOpportunities, listOrganizationFilterOptions } from "@/features/opportunities/queries";
+import { getFilterCounts, getOpportunity, getOpportunityCounts, listOpportunities, listOrganizationFilterOptions } from "@/features/opportunities/queries";
 import type { Actor } from "@/features/opportunities/types";
 import { getCurrentAdmin } from "../_data/session";
 import {
@@ -21,13 +21,17 @@ export default async function Page({ searchParams }: PageProps<"/admin/opportuni
   if (!admin) redirect("/login");
   const actor: Actor = { role: "admin", name: admin.name };
 
-  const { tab, filters } = parseListParams(await searchParams);
+  const params = await searchParams;
+  const { tab, filters } = parseListParams(params);
   const [items, counts, filterCounts, organizations] = await Promise.all([
     listOpportunities(actor, { tab, ...filters }),
     getOpportunityCounts(actor, filters),
     getFilterCounts(actor, { tab, ...filters }),
     listOrganizationFilterOptions(),
   ]);
+  // ?opportunity=<id> opens that listing's panel (shareable); one the actor can't see is ignored.
+  const linkedId = typeof params.opportunity === "string" ? params.opportunity : undefined;
+  const linked = linkedId ? ((await getOpportunity(actor, linkedId)) ?? undefined) : undefined;
 
   return (
     <OpportunitiesView
@@ -38,6 +42,8 @@ export default async function Page({ searchParams }: PageProps<"/admin/opportuni
       items={items}
       counts={counts}
       filterCounts={filterCounts}
+      now={new Date().toISOString()}
+      linked={linked}
       organizations={organizations}
       actions={{
         save: saveOpportunity,

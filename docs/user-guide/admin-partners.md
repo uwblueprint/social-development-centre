@@ -9,7 +9,7 @@ For SDC admins. Partners are organizations that share opportunities with SDC. Ea
    - **Organizations** matches organization names and the names and emails of their people.
    - **People** matches names, emails and organization names.
    - The number beside each view shows how many match.
-4. To narrow the list, click the filter icon next to a column heading and tick the options you want. The number beside each option shows how many rows it would show. Click **Clear filter** to show everything in that column.
+4. To narrow the list, click the filter icon next to a column heading and tick the options you want, then click **Apply**. The number beside each option shows how many rows it would show. To show everything in that column, click **Clear**, then **Apply**. Closing the filter without **Apply** keeps the list as it was.
    - **Organizations:** **Organization** filters by status (**Active** or **Removed**; you see **Active** unless you change it). **Health** filters by tag.
    - **People:** **Organization** filters by organization. **Tags** filters by invitation state; **Removed** is unticked at first, so removed people are hidden until you tick it.
 5. To sort, click a column heading. Click it again to reverse the order.
