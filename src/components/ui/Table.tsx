@@ -2,6 +2,37 @@
 
 import * as React from "react";
 import { styled } from "next-yak";
+import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
+import { Icon } from "./Icon";
+
+export type SortDirection = "asc" | "desc";
+
+export interface TableSort {
+  /** A column's `sortKey`. */
+  key: string;
+  direction: SortDirection;
+}
+
+/**
+ * Screen-reader text a sortable header adds after its label. The owner edits it here.
+ * The header's accessible name reads "{label}, sorted ascending. Select to sort descending" or "{label}. Select to sort".
+ */
+export const tableSortCopy = {
+  sorted: (direction: SortDirection, next: SortDirection) =>
+    `, sorted ${direction === "asc" ? "ascending" : "descending"}. Select to sort ${next === "asc" ? "ascending" : "descending"}`,
+  unsorted: ". Select to sort",
+} as const;
+
+/**
+ * The sort after selecting `column`'s header: its default direction when it isn't the active column
+ * (`asc` unless the column says otherwise), the reverse direction when it is.
+ */
+export function nextTableSort(current: TableSort | undefined, column: { sortKey: string; defaultSortDirection?: SortDirection }): TableSort {
+  if (current?.key === column.sortKey) {
+    return { key: column.sortKey, direction: current.direction === "asc" ? "desc" : "asc" };
+  }
+  return { key: column.sortKey, direction: column.defaultSortDirection ?? "asc" };
+}
 
 export interface TableColumn<T> {
   /** Unique key for the column; also used as the React key for its header/body cells. */
@@ -9,6 +40,13 @@ export interface TableColumn<T> {
   header: React.ReactNode;
   render: (row: T) => React.ReactNode;
   align?: "left" | "right";
+  /**
+   * Makes the header a sort button (needs the table's `onSortChange`). The key the page sorts by,
+   * usually the server's sort param value.
+   */
+  sortKey?: string;
+  /** Direction on first select: `"asc"` (default) for text, `"desc"` for dates and "most first" numbers. */
+  defaultSortDirection?: SortDirection;
 }
 
 export interface TableProps<T> {
@@ -22,6 +60,10 @@ export interface TableProps<T> {
   sticky?: boolean;
   /** Rendered instead of the table when `rows` is empty (e.g. an `EmptyState`). */
   empty?: React.ReactNode;
+  /** The active sort, controlled. The page does the sorting (usually on the server); `Table` only shows it. */
+  sort?: TableSort;
+  /** Called with the next sort when a sortable header is selected. Without it, headers render as plain text. */
+  onSortChange?: (next: TableSort) => void;
   "aria-label"?: string;
 }
 
@@ -61,6 +103,100 @@ const Th = styled.th<{ $align?: "left" | "right"; $sticky?: boolean }>`
   `}
 `;
 
+/* Inactive columns: a muted up/down hint, shown only on hover or focus so the header stays quiet. */
+const SortHint = styled.span`
+  display: inline-flex;
+  flex: none;
+  color: var(--color-text-subtle);
+  opacity: 0;
+  transition: opacity var(--duration) var(--ease);
+`;
+
+/*
+ * Sits in the header cell's padding: its own padding is cancelled by an equal negative margin, so the
+ * label lines up with the cells below and the row height doesn't change. The icon slot is always
+ * reserved, so selecting or hovering never shifts the label.
+ */
+const SortButton = styled.button<{ $align?: "left" | "right"; $active?: boolean }>`
+  display: inline-flex;
+  flex-direction: ${({ $align }) => ($align === "right" ? "row-reverse" : "row")};
+  align-items: center;
+  gap: var(--space-1);
+  margin: calc(var(--space-1) * -1);
+  padding: var(--space-1);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font: inherit;
+  line-height: var(--leading-ui);
+  color: ${({ $active }) => ($active ? "var(--color-text)" : "inherit")};
+  cursor: pointer;
+  transition:
+    background-color var(--duration) var(--ease),
+    color var(--duration) var(--ease);
+
+  &:hover {
+    background: var(--color-bg-hover);
+    color: var(--color-text);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+
+  &:hover ${SortHint},
+  &:focus-visible ${SortHint} {
+    opacity: 1;
+  }
+`;
+
+const SortIndicator = styled.span`
+  display: inline-flex;
+  flex: none;
+`;
+
+const VisuallyHidden = styled.span`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+`;
+
+const SORT_ICON_SIZE = 14;
+
+function SortableHeader<T>({
+  column,
+  sort,
+  onSortChange,
+}: {
+  column: TableColumn<T> & { sortKey: string };
+  sort?: TableSort;
+  onSortChange: (next: TableSort) => void;
+}) {
+  const active = sort?.key === column.sortKey ? sort.direction : undefined;
+  const next = nextTableSort(sort, column);
+  return (
+    <SortButton type="button" $align={column.align} $active={!!active} onClick={() => onSortChange(next)}>
+      <span>{column.header}</span>
+      {active ? (
+        <SortIndicator>
+          <Icon icon={active === "asc" ? ArrowUp : ArrowDown} size={SORT_ICON_SIZE} />
+        </SortIndicator>
+      ) : (
+        <SortHint>
+          <Icon icon={ChevronsUpDown} size={SORT_ICON_SIZE} />
+        </SortHint>
+      )}
+      <VisuallyHidden>{active ? tableSortCopy.sorted(active, next.direction) : tableSortCopy.unsorted}</VisuallyHidden>
+    </SortButton>
+  );
+}
+
 const Td = styled.td<{ $align?: "left" | "right" }>`
   padding: var(--space-2) var(--space-3);
   color: var(--color-text);
@@ -95,6 +231,9 @@ const Row = styled.tr<{ $clickable?: boolean }>`
  * a detail view; rows without it render as plain, non-interactive rows.
  * Renders `empty` in place of the table when `rows` is empty — paginate
  * below the table, outside this component.
+ *
+ * Sorting is controlled: give columns a `sortKey`, pass `sort` and `onSortChange`, and sort the rows
+ * yourself (usually on the server). Sortable headers become buttons and the `th` gets `aria-sort`.
  */
 export function Table<T>({
   columns,
@@ -103,6 +242,8 @@ export function Table<T>({
   onRowClick,
   sticky,
   empty,
+  sort,
+  onSortChange,
   "aria-label": ariaLabel,
 }: TableProps<T>) {
   if (rows.length === 0) return <>{empty}</>;
@@ -112,11 +253,26 @@ export function Table<T>({
       <StyledTable aria-label={ariaLabel}>
         <thead>
           <tr>
-            {columns.map((col) => (
-              <Th key={col.key} scope="col" $align={col.align} $sticky={sticky}>
-                {col.header}
-              </Th>
-            ))}
+            {columns.map((col) => {
+              const sortKey = onSortChange ? col.sortKey : undefined;
+              const ariaSort =
+                sortKey === undefined
+                  ? undefined
+                  : sort?.key === sortKey
+                    ? sort.direction === "asc"
+                      ? "ascending"
+                      : "descending"
+                    : "none";
+              return (
+                <Th key={col.key} scope="col" aria-sort={ariaSort} $align={col.align} $sticky={sticky}>
+                  {sortKey !== undefined && onSortChange ? (
+                    <SortableHeader column={{ ...col, sortKey }} sort={sort} onSortChange={onSortChange} />
+                  ) : (
+                    col.header
+                  )}
+                </Th>
+              );
+            })}
           </tr>
         </thead>
         <tbody>

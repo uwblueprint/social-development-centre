@@ -448,3 +448,42 @@ This table reviews the supplied audit as a proposed change set:
 8. Which exact email does **Convert to paying member** send, and what is its existing template title? Align the email list entry and toast with the answer.
 
 These are behaviour and data decisions. The revised wording should ship with the corresponding behaviour, not ahead of it.
+
+## Empty and error states
+
+An empty or error state says what's empty, why, and the one action that fixes it. It never shows raw error text. List strings are in `listEmptyCopy` (`src/components/patterns/ListPage.tsx`); `{items}`, `{scope}`, `{fields}` and `{filtered}` come from each page.
+
+| Element | Current text | Notes |
+|---|---|---|
+| List: search matches only in another tab, title (`listEmptyCopy.searchTitle`) | No {items} match “{query}” | New, needs approval |
+| List: search matches only in another tab, body (`listEmptyCopy.elsewhere`) | {n} match / {n} matches in {scope} | New, needs approval |
+| List: search matches only in another tab, button (`listEmptyCopy.showIn`) | Show in {scope} | New, needs approval |
+| List: search matches nothing, body (`listEmptyCopy.searched`) | Searched {fields}. Check the spelling, or clear the search. | New, needs approval |
+| List: search matches nothing, button (`listEmptyCopy.clearSearch`) | Clear search | New, needs approval |
+| List: filters hide everything, title (`listEmptyCopy.filtersTitle`) | No {filtered}, e.g. No closed jobs from Northside Food Bank | New, needs approval |
+| List: filters hide everything, body (`listEmptyCopy.filtersBody`) | Nothing matches these filters. | New, needs approval |
+| List: filters hide everything, button (`listEmptyCopy.clearFilters`) | Clear filters | New, needs approval |
+| List: search plus filters, title | No {filtered} match “{query}” | New, needs approval |
+| List: search plus filters, body (`listEmptyCopy.searchAndFiltersBody`) | Searched {fields} with these filters on. Check the spelling, or clear the search and filters. | New, needs approval |
+| List: search plus filters, button (`listEmptyCopy.clearSearchAndFilters`) | Clear search and filters | New, needs approval |
+| Search announcement, screen readers only (`listEmptyCopy.results`) | {n} result / {n} results | New, needs approval |
+| Search announcement, no results (`listEmptyCopy.noResults`) | No results | New, needs approval |
+| Community: General members noun (`empty.generalItems`) | members (“No members match “zzz””) | New, needs approval |
+| Community: Paying members noun (`empty.payingItems`) | paying members | New, needs approval |
+| Community: searched fields (`empty.searchedFields`) | names and emails | New, needs approval |
+| Member panel, Emails, none sent (`emails.empty`) | No emails sent to them yet. | New, needs approval. Replaces “No emails sent yet.” |
+| Member panel, Emails, none sent to an unsubscribed person (`emails.emptyUnsubscribed`) | No emails sent. They're unsubscribed, so none will be sent. | New, needs approval |
+| Member panel, Emails, failed to load (`emails.loadError`) | We couldn't load their emails. Nothing was changed; this is a loading problem. | New, needs approval. Replaces “Couldn't load this person's emails.” Button: Try again |
+| Import members preview, nothing valid pasted (`addDialog.noValidAddresses`) | None of these are email addresses, so nothing will change. Edit the list so each entry looks like name@example.org. | New, needs approval |
+| Import members preview, nothing valid pasted, button (`addDialog.editList`) | Edit the list | New, needs approval. Goes back to the list with focus in it; Cancel closes |
+| Add member / Import members preview, everyone already a member (`addDialog.allAlreadyMembers`) | They're already a member, so nothing will change. / All {n} are already members, so nothing will change. | New, needs approval |
+| Community fails to load (`communityCopy.loadError.title`) | We couldn't load Community. | New, needs approval |
+| Admin Opportunities fails to load (`errorCopy.admin.opportunities.title`) | We couldn't load Opportunities. | New, needs approval |
+| Admin Partners fails to load (`errorCopy.admin.partners.title`) | We couldn't load Partners. | New, needs approval |
+| Other admin page fails to load (`errorCopy.admin.portal.title`) | We couldn't load this page. | New, needs approval |
+| Partner Opportunities fails to load (`errorCopy.partner.opportunities.title`) | We couldn't load your opportunities. | New, needs approval |
+| Partner Organization fails to load (`errorCopy.partner.organization.title`) | We couldn't load your organization. | New, needs approval |
+| Other partner page fails to load (`errorCopy.partner.portal.title`) | We couldn't load this page. | New, needs approval |
+| Any section fails to load, body | Your data is safe; this is a loading problem. | New, needs approval |
+| Any section fails to load, button | Try again | New, needs approval |
+| Partner portal fails to load, contact line | If it keeps happening, contact SDC at {SDC contact email}. | New, needs approval |

@@ -7,6 +7,7 @@ import { ArrowRight, FunnelX, SearchX, X, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Icon } from "@/components/ui/Icon";
+import type { TableSort } from "@/components/ui/Table";
 
 /**
  * Every string the list pattern writes itself (not the caller's nouns, scopes or filter names).
@@ -365,4 +366,37 @@ export function useListSearch(q: string) {
   }
 
   return { value, setValue, search, pending };
+}
+
+/**
+ * Sort state for a list page's `Table`, backed by the `sort` (a column's `sortKey`) and `dir`
+ * (`asc` | `desc`) URL params. Pass `sort` and `setSort` to the table as `sort` and `onSortChange`.
+ * `setSort` writes both params with `router.replace`, resets to page 1 and keeps the rest. `fallback`
+ * is the server's default order: it shows as the active column when the URL has no sort, and choosing
+ * it removes the params. The server validates `sort` against its own list of sortable columns.
+ */
+export function useListSort(fallback?: TableSort) {
+  const searchParams = useSearchParams();
+  const { setParams, pending } = useListParams();
+  const key = searchParams.get("sort");
+  const dir = searchParams.get("dir");
+  const sort: TableSort | undefined = key
+    ? { key, direction: dir === "desc" ? "desc" : "asc" }
+    : fallback;
+
+  const fallbackKey = fallback?.key;
+  const fallbackDirection = fallback?.direction;
+  const setSort = React.useCallback(
+    (next: TableSort) => {
+      const isFallback = next.key === fallbackKey && next.direction === fallbackDirection;
+      setParams({
+        sort: isFallback ? undefined : next.key,
+        dir: isFallback ? undefined : next.direction,
+        page: undefined,
+      });
+    },
+    [setParams, fallbackKey, fallbackDirection],
+  );
+
+  return { sort, setSort, pending };
 }

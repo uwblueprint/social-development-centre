@@ -16,8 +16,9 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { List, ListRow } from "@/components/ui/ListRow";
 import { Pagination } from "@/components/ui/Pagination";
 import { Table } from "@/components/ui/Table";
-import type { TableColumn } from "@/components/ui/Table";
-import { Building2, ChevronRight, Search } from "lucide-react";
+import type { TableColumn, TableSort } from "@/components/ui/Table";
+import { Building2, ChevronRight, Search, UserPlus, UsersRound } from "lucide-react";
+import { ListEmptyState } from "@/components/patterns/ListPage";
 import { Icon } from "@/components/ui/Icon";
 
 const Grid = styled.div`
@@ -195,6 +196,35 @@ export function TableDemo() {
   );
 }
 
+const SORTABLE_COLUMNS: TableColumn<DemoMember>[] = [
+  { ...TABLE_COLUMNS[0], sortKey: "name" },
+  { ...TABLE_COLUMNS[1], sortKey: "email" },
+  TABLE_COLUMNS[2],
+  { ...TABLE_COLUMNS[3], sortKey: "added", defaultSortDirection: "desc" },
+];
+
+/** Sorts in the browser for the demo; list pages sort on the server via `useListSort()`. */
+function sortMembers(rows: DemoMember[], sort: TableSort) {
+  const value = (m: DemoMember) => (sort.key === "name" ? (m.name ?? "") : sort.key === "email" ? m.email : m.addedAt);
+  const sorted = [...rows].sort((a, b) => value(a).localeCompare(value(b)));
+  return sort.direction === "asc" ? sorted : sorted.reverse();
+}
+
+export function SortableTableDemo() {
+  const [sort, setSort] = useState<TableSort>({ key: "added", direction: "desc" });
+  return (
+    <Table
+      columns={SORTABLE_COLUMNS}
+      rows={sortMembers(TABLE_ROWS, sort)}
+      getRowId={(m) => m.id}
+      onRowClick={() => {}}
+      sort={sort}
+      onSortChange={setSort}
+      aria-label="Members, sortable"
+    />
+  );
+}
+
 export function PaginationDemo() {
   const [page, setPage] = useState(2);
   const total = 962;
@@ -224,7 +254,60 @@ export function EmptyStateDemo() {
       <Card>
         <EmptyState icon={Search} title='No matches for "harbor"' description="Try a different organization name, contact name or email." />
       </Card>
+      <ListEmptyStateDemo />
     </Stack>
+  );
+}
+
+const noop = () => {};
+
+/** ListEmptyState (src/components/patterns/ListPage.tsx) in each of its five variants. */
+function ListEmptyStateDemo() {
+  const truly = {
+    icon: UsersRound,
+    title: "No paying members yet",
+    description: "Convert a general member to paying from their record, or add a paying member here.",
+    action: (
+      <Button type="button" $size="sm">
+        <Icon icon={UserPlus} size={16} />
+        Add member
+      </Button>
+    ),
+  };
+  return (
+    <Grid>
+      <Card>
+        <ListEmptyState
+          items="paying members"
+          query="okafor"
+          searchedFields="names and emails"
+          onClearSearch={noop}
+          elsewhere={{ count: 3, scope: "General members", onShow: noop }}
+          empty={truly}
+        />
+      </Card>
+      <Card>
+        <ListEmptyState items="members" query="zzz" searchedFields="names and emails" onClearSearch={noop} empty={truly} />
+      </Card>
+      <Card>
+        <ListEmptyState items="jobs" filtered="closed jobs from Northside Food Bank" onClearFilters={noop} empty={truly} />
+      </Card>
+      <Card>
+        <ListEmptyState
+          items="jobs"
+          query="tutor"
+          searchedFields="titles and descriptions"
+          filtered="closed jobs from Northside Food Bank"
+          onClearSearch={noop}
+          onClearFilters={noop}
+          onClearSearchAndFilters={noop}
+          empty={truly}
+        />
+      </Card>
+      <Card>
+        <ListEmptyState items="paying members" empty={truly} />
+      </Card>
+    </Grid>
   );
 }
 
