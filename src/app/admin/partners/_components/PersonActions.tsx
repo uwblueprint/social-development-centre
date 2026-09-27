@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/Button";
 import type { ActionState } from "@/lib/forms";
 import { invitationCopy } from "../_copy";
 import type { PartnerContact } from "../_data/types";
+import { useReturnFocus } from "../_lib/useReturnFocus";
 
 /*
  * Resend / cancel / remove for one person, with the two confirmations. Shared by the admin panels and the
@@ -47,6 +48,9 @@ export function usePersonActions<D = undefined>(
   const [confirm, setConfirm] = React.useState<Confirm | null>(null);
   const busy = React.useRef(false);
   const keepRef = React.useRef<HTMLButtonElement>(null);
+  // The row's ⋯ menu button has closed by the time this dialog opens, so Radix has nothing to return
+  // focus to on its own; capture it ourselves (decision: explicit return-focus over relying on Radix timing).
+  const { capture: captureFocus, restore: restoreFocus } = useReturnFocus();
 
   // Keeps the dialog's copy stable while it plays its close animation (by then `confirm` is null).
   const [shown, setShown] = React.useState<Confirm>("cancel");
@@ -75,6 +79,7 @@ export function usePersonActions<D = undefined>(
           event.preventDefault();
           keepRef.current?.focus();
         }}
+        onCloseAutoFocus={restoreFocus}
       >
         <AlertDialogTitle>
           {shown === "cancel" ? invitationCopy.cancelConfirm.title : copy.removeTitle(contact.name)}
@@ -102,8 +107,14 @@ export function usePersonActions<D = undefined>(
 
   return {
     resend: () => void run(handlers.resend),
-    requestCancel: () => setConfirm("cancel"),
-    requestRemove: () => setConfirm("remove"),
+    requestCancel: () => {
+      captureFocus();
+      setConfirm("cancel");
+    },
+    requestRemove: () => {
+      captureFocus();
+      setConfirm("remove");
+    },
     dialog,
   };
 }

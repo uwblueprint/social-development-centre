@@ -41,11 +41,14 @@ export function InviteDialog({
   onOpenChange,
   organizationOptions,
   preset,
+  onCloseAutoFocus,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   organizationOptions: OrganizationOption[];
   preset?: InvitePreset;
+  /** Returns focus to whatever opened the dialog (a header button, a row's ⋯ menu, a panel's Add person). */
+  onCloseAutoFocus?: (event: Event) => void;
 }) {
   const [state, action] = useActionState(invitePartner, initialState);
   const { toast } = useToast();
@@ -67,7 +70,7 @@ export function InviteDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent onCloseAutoFocus={onCloseAutoFocus}>
         <DialogTitle>{copy.title}</DialogTitle>
         <DialogDescription>{copy.description}</DialogDescription>
         <Form ref={formRef} action={action} noValidate>

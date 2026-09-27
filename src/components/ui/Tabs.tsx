@@ -1,5 +1,7 @@
 "use client";
 
+import { forwardRef, useCallback } from "react";
+import type { FocusEvent } from "react";
 import { styled } from "next-yak";
 import { Tabs as TabsPrimitive } from "radix-ui";
 
@@ -22,7 +24,7 @@ export const TabsList = styled(TabsPrimitive.List)`
   }
 `;
 
-export const TabsTrigger = styled(TabsPrimitive.Trigger)`
+const StyledTabsTrigger = styled(TabsPrimitive.Trigger)`
   all: unset;
   display: inline-flex;
   align-items: center;
@@ -61,6 +63,27 @@ export const TabsTrigger = styled(TabsPrimitive.Trigger)`
     cursor: not-allowed;
   }
 `;
+
+/**
+ * On a narrow screen, TabsList scrolls sideways instead of wrapping. Arrow-key navigation (and clicking
+ * a partly clipped tab) moves focus here, but Radix focuses it with `preventScroll` — needed globally so
+ * tabbing through a page never jumps it — which also skips the *local* horizontal scroll this list
+ * needs. Without this, a tab can end up focused and active while sitting outside the visible strip
+ * (WCAG 2.4.7): confirmed at 320px, where "Paying members" lands 31px past the list's clipped edge.
+ */
+export const TabsTrigger = forwardRef<HTMLButtonElement, TabsPrimitive.TabsTriggerProps>(function TabsTrigger(
+  { onFocus, ...props },
+  ref,
+) {
+  const handleFocus = useCallback(
+    (event: FocusEvent<HTMLButtonElement>) => {
+      onFocus?.(event);
+      event.currentTarget.scrollIntoView({ block: "nearest", inline: "nearest" });
+    },
+    [onFocus],
+  );
+  return <StyledTabsTrigger {...props} ref={ref} onFocus={handleFocus} />;
+});
 
 /** Muted count/suffix shown after a tab's label, e.g. `Paying members`<TabsCount>(12)</TabsCount>. Always muted, active or not. */
 export const TabsCount = styled.span`

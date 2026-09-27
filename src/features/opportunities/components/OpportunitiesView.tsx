@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { styled } from "next-yak";
 import { Archive, FilePen, FilterX, Megaphone, Plus, Search as SearchIcon } from "lucide-react";
 import { ListPage, ListPageHeader, ListPageToolbar, useListParams, useListSearch, useListSort } from "@/components/patterns/ListPage";
+import { useReturnFocus } from "@/app/admin/partners/_lib/useReturnFocus";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Icon } from "@/components/ui/Icon";
@@ -99,7 +100,16 @@ export function OpportunitiesView({
   const [selectedId, setSelectedIdState] = React.useState<string | null>(linked?.id ?? null);
   const selected = items.find((o) => o.id === selectedId) ?? (linked?.id === selectedId ? linked : undefined);
 
+  // The sheet opens from a table row, not a Radix Trigger, and the row can be replaced by a fresh one when
+  // the URL param changes the server render; capture focus ourselves and fall back to the current tab if
+  // the original row is gone by the time the sheet closes.
+  const tabRefs = React.useRef<Partial<Record<OpportunityTab, HTMLButtonElement | null>>>({});
+  const { capture: captureSheetFocus, restore: restoreSheetFocus } = useReturnFocus(() =>
+    tabRefs.current[activeTab]?.focus(),
+  );
+
   function setSelectedId(id: string | null) {
+    if (id) captureSheetFocus();
     setSelectedIdState(id);
     const params = new URLSearchParams(searchParams.toString());
     if (id) params.set("opportunity", id);
@@ -181,7 +191,7 @@ export function OpportunitiesView({
           tabs={
             <TabsList aria-label={copy.page.title}>
               {TABS.map((t) => (
-                <TabsTrigger key={t} value={t}>
+                <TabsTrigger key={t} ref={(el) => { tabRefs.current[t] = el; }} value={t}>
                   {copy.tabs[t]}
                   <TabsCount>({counts[t]})</TabsCount>
                 </TabsTrigger>
@@ -225,7 +235,7 @@ export function OpportunitiesView({
       </Tabs>
 
       <Sheet open={selected !== undefined} onOpenChange={(open) => !open && setSelectedId(null)}>
-        <SheetContent aria-describedby={undefined}>
+        <SheetContent aria-describedby={undefined} onCloseAutoFocus={restoreSheetFocus}>
           {selected && (
             <OpportunitySheetContent
               key={selected.id}

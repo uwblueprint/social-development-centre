@@ -216,6 +216,10 @@ export function OpportunitySheetContent({
   const [pending, startTransition] = React.useTransition();
   const [confirmDelete, setConfirmDelete] = React.useState(false);
   const noun = KIND_NOUN[o.kind];
+  // The menu (and its "Delete" item) is gone by the time this confirm closes, so Radix has no trigger to
+  // return focus to; this button stays mounted (the sheet is still open), so we return focus to it directly.
+  const moreActionsRef = React.useRef<HTMLButtonElement>(null);
+  const keepRef = React.useRef<HTMLButtonElement>(null);
 
   function run<T>(action: () => Promise<ActionState<T>>, after?: (result: ActionState<T>) => void) {
     if (pending) return;
@@ -296,7 +300,7 @@ export function OpportunitySheetContent({
       <SheetFooter>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button type="button" $variant="ghost" aria-label={copy.panel.moreActions} aria-busy={pending || undefined}>
+            <Button ref={moreActionsRef} type="button" $variant="ghost" aria-label={copy.panel.moreActions} aria-busy={pending || undefined}>
               <Icon icon={MoreHorizontal} size={16} />
             </Button>
           </DropdownMenuTrigger>
@@ -350,12 +354,22 @@ export function OpportunitySheetContent({
       </SheetFooter>
 
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
-        <AlertDialogContent>
+        <AlertDialogContent
+          onOpenAutoFocus={(event) => {
+            // Start on the safe choice (Keep), not the dialog's close button.
+            event.preventDefault();
+            keepRef.current?.focus();
+          }}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            moreActionsRef.current?.focus();
+          }}
+        >
           <AlertDialogTitle>{copy.confirmDelete.title(noun)}</AlertDialogTitle>
           <AlertDialogDescription>{copy.confirmDelete.body}</AlertDialogDescription>
           <AlertDialogActions>
             <AlertDialogCancel asChild>
-              <Button type="button" $variant="secondary">
+              <Button ref={keepRef} type="button" $variant="secondary">
                 {copy.confirmDelete.cancel}
               </Button>
             </AlertDialogCancel>

@@ -39,6 +39,7 @@ import {
   type PersonTagFilter,
 } from "../_data/types";
 import { filterParam } from "../_lib/params";
+import { useReturnFocus } from "../_lib/useReturnFocus";
 import { copyEmails } from "./CopyableEmail";
 import { InviteDialog, type InvitePreset } from "./InviteDialog";
 import { organizationColumns, personColumns, type HeaderFilter } from "./PartnerRows";
@@ -153,6 +154,16 @@ export function PartnersView({
   const [invitePreset, setInvitePreset] = React.useState<InvitePreset | undefined>(undefined);
   const [inviteKey, setInviteKey] = React.useState(0);
 
+  // Neither overlay opens through a Radix Trigger (a row, a menu item, one of several buttons opens
+  // each), so Radix has nothing reliable to return focus to on close; we capture and restore it ourselves.
+  // The panel's fallback is the Organizations tab, since showOrganization can switch tabs out from under
+  // the row that opened it.
+  const organizationsTabRef = React.useRef<HTMLButtonElement>(null);
+  const { capture: capturePanelFocus, restore: restorePanelFocus } = useReturnFocus(() =>
+    organizationsTabRef.current?.focus(),
+  );
+  const { capture: captureInviteFocus, restore: restoreInviteFocus } = useReturnFocus();
+
   function handleViewChange(value: string) {
     const next: PartnersViewName = value === "people" ? "people" : "organizations";
     setActiveView(next);
@@ -162,12 +173,14 @@ export function PartnersView({
   }
 
   function openOrganization(id: string) {
+    capturePanelFocus();
     setOpenOrgId(id);
     setPanelParams({ view: "organizations", org: id });
   }
 
   /** From a People row: switch to Organizations with that organization's panel open. */
   function showOrganization(id: string) {
+    capturePanelFocus();
     setActiveView("organizations");
     setOpenOrgId(id);
     setPanelParams({ view: "organizations", org: id, sort: undefined, dir: undefined });
@@ -179,6 +192,7 @@ export function PartnersView({
   }
 
   function openInvite(preset?: InvitePreset) {
+    captureInviteFocus();
     setInvitePreset(preset);
     setInviteKey((k) => k + 1);
     setInviteOpen(true);
@@ -280,7 +294,7 @@ export function PartnersView({
         <ListPageToolbar
           tabs={
             <TabsList aria-label={copy.views.ariaLabel}>
-              <TabsTrigger value="organizations">
+              <TabsTrigger ref={organizationsTabRef} value="organizations">
                 {copy.views.organizations}
                 <TabsCount>{copy.views.count(organizations.rows.length)}</TabsCount>
               </TabsTrigger>
@@ -395,7 +409,7 @@ export function PartnersView({
       </Tabs>
 
       <Sheet open={!!selectedOrg} onOpenChange={(open) => !open && closePanel()}>
-        <SheetContent>
+        <SheetContent onCloseAutoFocus={restorePanelFocus}>
           {selectedOrg && (
             <PartnerSheetContent
               key={selectedOrg.id}
@@ -413,6 +427,7 @@ export function PartnersView({
         onOpenChange={setInviteOpen}
         organizationOptions={organizationOptions}
         preset={invitePreset}
+        onCloseAutoFocus={restoreInviteFocus}
       />
     </ListPage>
   );

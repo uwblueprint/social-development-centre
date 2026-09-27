@@ -47,6 +47,9 @@ export function PersonRowActions({
   const { toast } = useToast();
   const [editOpen, setEditOpen] = React.useState(false);
   const [editKey, setEditKey] = React.useState(0);
+  // The menu (and its "Edit details" item) is gone by the time the dialog closes, so Radix has no trigger
+  // to return focus to; this button stays mounted, so we can return focus to it directly.
+  const triggerRef = React.useRef<HTMLButtonElement>(null);
   const actions = usePersonActions(person, adminPersonHandlers, adminConfirmCopy(person.organization.name), (result) => {
     if (result.message) toast({ title: result.message });
   });
@@ -72,7 +75,7 @@ export function PersonRowActions({
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button type="button" $variant="ghost" $size="sm" aria-label={copy.rowActions(person.name)}>
+          <Button ref={triggerRef} type="button" $variant="ghost" $size="sm" aria-label={copy.rowActions(person.name)}>
             <Icon icon={MoreHorizontal} size={16} />
           </Button>
         </DropdownMenuTrigger>
@@ -120,7 +123,12 @@ export function PersonRowActions({
       </DropdownMenu>
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent>
+        <DialogContent
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            triggerRef.current?.focus();
+          }}
+        >
           <DialogTitle>{copy.editDetails}</DialogTitle>
           <PersonEditForm key={editKey} contact={person} inDialog onDone={() => setEditOpen(false)} />
         </DialogContent>

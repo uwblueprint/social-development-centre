@@ -72,6 +72,9 @@ const SectionHeader = styled.div`
 export function OrganizationView({ org, currentContactId }: { org: PartnerOrganization; currentContactId: string }) {
   const { toast } = useToast();
   const [inviteOpen, setInviteOpen] = React.useState(false);
+  // Not opened through a Radix Trigger, so Radix has nothing to return focus to on close; this button
+  // stays mounted, so we can return focus to it directly.
+  const inviteTriggerRef = React.useRef<HTMLButtonElement>(null);
   const [blocked, setBlocked] = React.useState<Blocked | null>(null);
   const [state, action] = useActionState(updateMyOrganization, initialState);
   // Controlled so a failed save keeps what the person typed (React resets uncontrolled forms after an action).
@@ -140,7 +143,7 @@ export function OrganizationView({ org, currentContactId }: { org: PartnerOrgani
         <Section aria-labelledby="team-heading">
           <SectionHeader>
             <SectionTitle id="team-heading">{copy.teamHeading}</SectionTitle>
-            <Button type="button" $variant="secondary" $size="sm" onClick={() => setInviteOpen(true)}>
+            <Button ref={inviteTriggerRef} type="button" $variant="secondary" $size="sm" onClick={() => setInviteOpen(true)}>
               <Icon icon={UserPlus} size={16} />
               {copy.inviteButton}
             </Button>
@@ -150,7 +153,14 @@ export function OrganizationView({ org, currentContactId }: { org: PartnerOrgani
               <TeamMemberRow key={c.id} contact={c} isSelf={c.id === currentContactId} />
             ))}
           </List>
-          <InviteColleagueDialog open={inviteOpen} onOpenChange={setInviteOpen} />
+          <InviteColleagueDialog
+            open={inviteOpen}
+            onOpenChange={setInviteOpen}
+            onCloseAutoFocus={(event) => {
+              event.preventDefault();
+              inviteTriggerRef.current?.focus();
+            }}
+          />
         </Section>
       </Page>
     </ReportBlockedContext.Provider>

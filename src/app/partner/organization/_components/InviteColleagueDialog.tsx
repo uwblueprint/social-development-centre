@@ -31,7 +31,16 @@ const Form = styled.form`
  * - Nothing saved: stays open with its values and says the invitation couldn't be sent.
  * - Signed out or access ended: closes; the page shows a persistent message.
  */
-export function InviteColleagueDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+export function InviteColleagueDialog({
+  open,
+  onOpenChange,
+  onCloseAutoFocus,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  /** Returns focus to the button that opened the dialog. */
+  onCloseAutoFocus?: (event: Event) => void;
+}) {
   const [state, action] = useActionState(inviteColleague, initialState);
   const { toast } = useToast();
   const reportBlocked = useReportBlocked();
@@ -64,7 +73,7 @@ export function InviteColleagueDialog({ open, onOpenChange }: { open: boolean; o
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent onCloseAutoFocus={onCloseAutoFocus}>
         <DialogTitle>{copy.title}</DialogTitle>
         <DialogDescription>{copy.description}</DialogDescription>
         <Form ref={formRef} action={action} noValidate>

@@ -584,20 +584,29 @@ const ProgressTrack = styled.div`
   }
 `;
 
-/* Stale rows while the next ones load: dimmed in place (no layout shift) and not clickable twice. */
-const Body = styled.tbody<{ $busy?: boolean }>`
-  transition: opacity var(--duration) var(--ease);
-  opacity: ${({ $busy }) => ($busy ? 0.6 : 1)};
-`;
+/* Stale rows while the next ones load, semantically only: the visible dimming lives on Td (below). */
+const Body = styled.tbody``;
 
-/* Every cell is single-line, so every row is exactly --row-height. */
-const Td = styled.td<{ $align?: "left" | "right" }>`
+/*
+ * Every cell is single-line, so every row is exactly --row-height. While busy, plain cell text fades
+ * toward the background instead of using `opacity`: opacity would fade a status badge's fill and text
+ * together and, doing the same to both, still leaves too little contrast between them (measured 2.37:1
+ * for the Status column's info badge at 0.6 opacity, short of the 4.5:1 WCAG 1.4.3 needs). `color-mix`
+ * only touches text that inherits this color — Badge and the other status/danger colors set their own,
+ * so they stay fully legible — and 78% keeps even the palette's most muted table text at 4.5:1+.
+ */
+const Td = styled.td<{ $align?: "left" | "right"; $busy?: boolean }>`
   height: var(--row-height);
   padding: 0 var(--space-3);
   white-space: nowrap;
   color: var(--color-text);
   text-align: ${({ $align }) => $align ?? "left"};
   vertical-align: middle;
+  transition: color var(--duration) var(--ease);
+
+  ${({ $busy }) =>
+    $busy &&
+    `color: color-mix(in srgb, var(--color-text) 78%, var(--color-bg));`}
 `;
 
 const Row = styled.tr<{ $clickable?: boolean }>`
@@ -788,7 +797,7 @@ export function Table<T>({
             </ProgressRow>
           )}
         </thead>
-        <Body $busy={busy}>
+        <Body>
           {rows.map((row) => {
             const id = getRowId(row);
             const clickable = !!onRowClick;
@@ -810,7 +819,7 @@ export function Table<T>({
                 }
               >
                 {visibleColumns.map((col, index) => (
-                  <Td key={col.key} $align={col.align} {...frozenProps(index, frozen, offsets)}>
+                  <Td key={col.key} $align={col.align} $busy={busy} {...frozenProps(index, frozen, offsets)}>
                     {col.width ? (
                       <CellBox style={{ "--column-width": col.width } as React.CSSProperties}>{col.render(row)}</CellBox>
                     ) : (

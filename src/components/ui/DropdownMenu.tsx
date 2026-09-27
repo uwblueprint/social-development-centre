@@ -6,6 +6,16 @@ import { Check } from "lucide-react";
 import type { ReactNode } from "react";
 import { Icon } from "./Icon";
 
+/*
+ * Radix's default `modal` mode marks the rest of the page `aria-hidden` while the menu is open, but
+ * doesn't remove its focusable elements from the tab order (a real axe/WCAG 4.1.2 violation whenever a
+ * menu opens over a page with other content — the account menu, a row's ⋯ menu). Non-modal avoids the
+ * mismatch outright: closing behavior (Escape, outside click, item select) is unaffected.
+ */
+export function DropdownMenu(props: DropdownMenuPrimitive.DropdownMenuProps) {
+  return <DropdownMenuPrimitive.Root modal={false} {...props} />;
+}
+
 const contentShow = keyframes`
   from { opacity: 0; transform: translateY(-4px) scale(0.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }
@@ -152,13 +162,13 @@ const Shortcut = styled.kbd`
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   line-height: var(--leading-none);
-  color: var(--color-text-subtle);
+  /* text-subtle on this chip's own bg-hover fill is 4.4:1, short of the 4.5:1 text needs (WCAG 1.4.3). */
+  color: var(--color-text-muted);
   background: var(--color-bg-hover);
   border: 1px solid var(--color-bg-selected);
   border-radius: var(--radius-sm);
 `;
 
-export const DropdownMenu = DropdownMenuPrimitive.Root;
 export const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
 export const DropdownMenuItem = Item;
 export const DropdownMenuLabel = Label;

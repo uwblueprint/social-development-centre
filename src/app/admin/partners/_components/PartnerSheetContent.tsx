@@ -222,6 +222,9 @@ export function PartnerSheetContent({
   const [editing, setEditing] = React.useState(false);
   const [confirmOpen, setConfirmOpen] = React.useState(false);
   const keepRef = React.useRef<HTMLButtonElement>(null);
+  // Not opened through a Radix Trigger, so Radix has nothing to return focus to on close; this button
+  // stays mounted (the panel is still open), so we can return focus to it directly.
+  const removeAccessRef = React.useRef<HTMLButtonElement>(null);
 
   async function handleRemove() {
     const result = await removePartner(org.id);
@@ -276,7 +279,7 @@ export function PartnerSheetContent({
             </Button>
           )}
           {!removed && (
-            <Button type="button" $variant="danger" $size="sm" onClick={() => setConfirmOpen(true)}>
+            <Button ref={removeAccessRef} type="button" $variant="danger" $size="sm" onClick={() => setConfirmOpen(true)}>
               <Icon icon={Ban} size={16} />
               {partnersCopy.removeAccess.action}
             </Button>
@@ -383,6 +386,10 @@ export function PartnerSheetContent({
             // Start on the safe choice (Keep access), not the dialog's close button.
             event.preventDefault();
             keepRef.current?.focus();
+          }}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            removeAccessRef.current?.focus();
           }}
         >
           <AlertDialogTitle>{partnersCopy.removeAccess.title(org.name)}</AlertDialogTitle>
