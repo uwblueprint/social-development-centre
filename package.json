@@ -12,6 +12,7 @@
     "check": "pnpm typecheck && pnpm lint && pnpm test:a11y"
   },
   "dependencies": {
+    "@fontsource-variable/geist": "^5.3.0",
     "@fontsource-variable/jetbrains-mono": "^5.3.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.116.0",

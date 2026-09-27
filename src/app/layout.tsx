@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import "@fontsource-variable/geist/wght.css";
 import "@fontsource-variable/jetbrains-mono/wght.css";
 import "@/components/ui/tokens";
 import { TooltipProvider } from "@/components/ui/Tooltip";

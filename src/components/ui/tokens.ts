@@ -3,7 +3,7 @@ import { globalStyle } from "next-yak";
 // Neutrals are Tailwind Taupe (converted from its OKLCH values). Accent is Tailwind Orange; statuses use the -700 step for 4.5:1 text on white.
 globalStyle`
   :root {
-    --font-sans: "Switzer", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-sans: "Switzer", "Geist Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
     --font-display: var(--font-sans);
     --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
 
