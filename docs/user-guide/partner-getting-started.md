@@ -9,6 +9,9 @@ For Civic Hub partners. The partner portal is where your organization posts oppo
 The link works once, for 7 days. **If it has expired or doesn't work,** ask your SDC contact to resend it. Resending sends a new link, and the old one stops working.
 
 ## Sign in later
+
+![The sign-in page with an email address entered and the Send sign-in link button highlighted](img/partner-getting-started/sign-in-later.png)
+
 There's no password. You sign in with a link sent to your email.
 1. Go to the sign-in page and enter your **Email**.
 2. Click **Send sign-in link**.
@@ -17,6 +20,9 @@ There's no password. You sign in with a link sent to your email.
 You'll see "Check your email for a sign-in link." after step 2. Use the same email address SDC invited. If no email arrives, check your spam folder, then ask your SDC contact to check which address they invited.
 
 ## Get around the portal
+
+![The partner portal with the organization's name at the top of the sidebar, Opportunities and Organization, and Organization highlighted](img/partner-getting-started/get-around-the-portal.png)
+
 The sidebar on the left shows your organization's name at the top, and two sections:
 - **Opportunities:** post and manage your events, petitions, volunteer roles, jobs and other asks. See [Partner portal: opportunities](./partner-opportunities.md).
 - **Organization:** your organization's details and who on your team has access.
@@ -24,12 +30,18 @@ The sidebar on the left shows your organization's name at the top, and two secti
 The section you're in is highlighted. On a phone, tap the menu button (**Open menu**) at the top left to open the sidebar, then choose a section. To close it without choosing, tap the **X** (**Close menu**), tap the dimmed page beside it, or press Escape.
 
 ## Go to your account or sign out
+
+![The account menu open above your name, with My account and Sign out](img/partner-getting-started/go-to-your-account-or-sign-out.png)
+
 1. Click your name at the bottom of the sidebar.
 2. Choose **My account** to change your name or profile picture, or **Sign out**.
 
 When you sign out, you go back to the sign-in page, which says **You're signed out. See you soon.**
 
 ## Change your name or profile picture
+
+![The My account dialog with Upload photo, the Name field and the Save changes button highlighted](img/partner-getting-started/change-your-name-or-profile-picture.png)
+
 1. Click your name at the bottom of the sidebar, then choose **My account**.
 2. To add or change your picture, click **Upload photo** (or **Change photo**) and choose a JPG, PNG or WebP image. It's cropped to a square. To go back to your initials, click **Remove photo**.
 3. Edit **Name**.
@@ -38,6 +50,9 @@ When you sign out, you go back to the sign-in page, which says **You're signed o
 Your email address can't be changed here yet.
 
 ## Delete your account
+
+![The Delete your account? confirmation with Keep account and the Delete account button highlighted](img/partner-getting-started/delete-your-account.png)
+
 1. Click your name at the bottom of the sidebar, then choose **My account**.
 2. Under **Danger zone**, click **Delete account**.
 3. Click **Delete account** again to confirm, or **Keep account** to go back.
@@ -45,6 +60,9 @@ Your email address can't be changed here yet.
 You're signed out and lose access right away. This can't be undone.
 
 ## Update your organization's details
+
+![The Profile section with Organization name, Website and Short description, and the Save changes button highlighted](img/partner-getting-started/update-your-organizations-details.png)
+
 Keep these current. Your organization's name appears on every opportunity you post.
 1. Go to **Organization**.
 2. Under **Profile**, change any of:
@@ -58,6 +76,9 @@ You'll see "Changes saved." The new name shows up in the sidebar and on all your
 **If something needs fixing,** a message shows under the field, what you typed stays, and the cursor moves to the first field to fix. For example, "Another organization already has this name." or "Enter a valid website, like sdckw.ca." SDC can also edit these details for you.
 
 ## See who on your team has access
+
+![The Team list showing Amara Okafor (you) and a colleague, with Invite colleague above](img/partner-getting-started/see-who-on-your-team-has-access.png)
+
 1. Go to **Organization**.
 2. Under **Team**, you'll see everyone at your organization who can use the portal or has been invited. Your own row is marked **(you)**. Anyone who hasn't accepted yet shows one of:
    - **Invitation pending** and the date it expires: the email arrived and the link still works.
@@ -65,6 +86,9 @@ You'll see "Changes saved." The new name shows up in the sidebar and on all your
    - **Invitation expired** and the date it expired: the link no longer works. Send a new one.
 
 ## Invite a colleague
+
+![The Invite colleague dialog with Name and Email fields and the Send invitation button highlighted](img/partner-getting-started/invite-a-colleague.png)
+
 1. Go to **Organization**.
 2. Under **Team**, click **Invite colleague**.
 3. Enter their **Name** and **Email**.
@@ -86,6 +110,9 @@ You'll see "Invitation sent to {email}." They appear under **Team** as **Invitat
    - **Cancel invitation**, then **Cancel invitation** in the confirmation, if you invited the wrong person or address. You'll see "Invitation cancelled." To keep it, click **Keep invitation**.
 
 ## Remove someone who has left
+
+![The remove confirmation with Keep access and the Remove access button highlighted](img/partner-getting-started/remove-someone-who-has-left.png)
+
 1. Go to **Organization**.
 2. Under **Team**, click **Actions for {name}** (⋯) on the person's row.
 3. Choose **Remove from organization**.

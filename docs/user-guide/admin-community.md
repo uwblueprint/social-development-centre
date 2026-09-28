@@ -14,6 +14,9 @@ Every person has one status in the **Status** column:
 Opening an email doesn't count, and neither does sharing an opportunity with a friend.
 
 ## Find someone
+
+![The Community page with the General members and Paying members tabs and the Search by name or email box highlighted](img/admin-community/find-someone.png)
+
 1. Go to **Community** and choose **General members** or **Paying members**.
 2. Type a name or email in **Search by name or email**, next to the page title. Results update as you type. Click the **×** to clear it.
 
@@ -22,12 +25,18 @@ Long names, emails and subjects end in "…". Point at a name or a **Last email*
 If nobody matches but someone with a hidden status does (for example, they unsubscribed), the page says so. Click **Show all statuses** to see them.
 
 ## Filter by status
+
+![The Status filter open with a count beside each status, Unsubscribed unticked, and Apply highlighted](img/admin-community/filter-by-status.png)
+
 1. Click the filter icon next to **Status** in the table header.
 2. Check the statuses you want to see. Each shows how many people have it. Click **Apply** to filter the list. To go back, click **Clear**, then **Apply**.
 
 Unsubscribed people are hidden until you check **Unsubscribed**. The tab counts and the list follow your choice, and it stays while you search, sort, switch tabs and change pages.
 
 ## Sort the list
+
+![The Community table header with the Clicks column header highlighted](img/admin-community/sort-the-list.png)
+
 1. Select a column header: **Name**, **Email**, **Clicks** or **Sent**. The list starts with the newest people first.
 2. Select the same header again to reverse the order. An arrow beside the header shows the current order.
 3. Changing the order takes you back to the first page. While the list reloads, the current rows stay dimmed and the arrow turns into a spinner.
@@ -35,9 +44,15 @@ Unsubscribed people are hidden until you check **Unsubscribed**. The tab counts 
 **Clicks** counts every time the person clicked an opportunity's main button. **Last email** shows the subject of the most recent email they were sent, and **Sent** shows how long ago it went out. Point at the time to see the full date. On a narrow screen, scroll the table sideways; the name and email stay in place.
 
 ## Copy someone's email
+
+![An email address in the table with a check beside it and a Copied label above](img/admin-community/copy-someones-email.png)
+
 Click their email, in the table or at the top of their panel. The icon beside it turns into a check and "Copied" shows for a moment.
 
 ## Add someone
+
+![The Add members dialog with Name, Email, Make them a paying member and the Add member button highlighted](img/admin-community/add-someone.png)
+
 1. Click **Add members**.
 2. Enter their **Name** (optional) and **Email**.
 3. To give them paid benefits, check **Make them a paying member**.
@@ -46,6 +61,9 @@ Click their email, in the table or at the top of their panel. The icon beside it
 They get the matching welcome email and show as **Invited** until they set up their preferences. If they're already in Community, unsubscribed or were deleted, you'll see a preview of what will happen instead (see [Check the preview](#check-the-preview)).
 
 ## Import people from a file
+
+![The Import from a file view with the Upload CSV button highlighted, Download template beside it and the Rows to add box below](img/admin-community/import-people-from-a-file.png)
+
 1. Click **Add members**, then **Import from a file**.
 2. Click **Download template** if you need one. Your CSV needs a **name** and an **email** column.
 3. Click **Upload CSV** and choose your file. Its rows appear in **Rows to add** so you can check and edit them.
@@ -53,6 +71,9 @@ They get the matching welcome email and show as **Invited** until they set up th
 5. Click **Continue** and read the preview. To go back to adding one person, click **Back**.
 
 ## Check the preview
+
+![The preview grouping addresses into new general members, already general members and an invalid entry, with the Add 2 people button highlighted](img/admin-community/check-the-preview.png)
+
 Nothing is saved or sent until you confirm. The preview groups every address by what will happen; click a group to see its addresses:
 - **new general members** or **new paying members**: they're added and get the matching welcome email.
 - **general members will become paying**: they get the Paying membership added email.
@@ -67,6 +88,9 @@ Nothing is saved or sent until you confirm. The preview groups every address by 
 Below the groups you'll see how many emails will be sent. The main button says what it does: **Add N people**, **Make N people paying**, **Resubscribe N people**, or **Confirm N changes** for a mix. If nothing would change, click **Edit list** to fix the list, or **Close**.
 
 ## Sign people up at a booth
+
+![The Open sign-up kiosk dialog with the Location field and the Open kiosk button highlighted](img/admin-community/sign-people-up-at-a-booth.png)
+
 1. Click **Open sign-up kiosk**.
 2. Optionally, under **Location**, type where the booth is. It's saved with each sign-up and shows in the Members export; visitors don't see it.
 3. Click **Open kiosk**. The sign-up page opens in a new tab; hand the tablet to visitors. To close without opening it, click **Cancel**.
@@ -74,6 +98,9 @@ Below the groups you'll see how many emails will be sent. The main button says w
 People who sign up become general members and show as **Invited**. After each sign-up the screen turns green with "You're in, {first name}!" and starts over after 20 seconds, or when they tap **Next person**. Someone already in Community sees the same thanks and nothing changes for them.
 
 ## See someone's details and emails
+
+![A person's panel with their status line and the Emails section highlighted, showing the welcome email](img/admin-community/see-someones-details-and-emails.png)
+
 1. Click the person's row. Their panel shows their name, email and a line such as "Active · General member · Added Apr 11, 2026".
 2. Scroll to **Emails**. It lists every email they were sent, newest first. Under each opportunities email you'll see what they did, such as "Signed up: Film night · Shared: Tenant workshop", or "No clicks". An email that couldn't be delivered shows **Not delivered**; use **Edit details** to correct their address.
 3. Keep scrolling to read each message. Each one loads as you reach it.
@@ -81,30 +108,45 @@ People who sign up become general members and show as **Invited**. After each si
 To share someone's panel with another admin, copy the page address while it's open; the link opens Community with their panel showing.
 
 ## Edit someone's name or email
+
+![A person's panel in edit mode with Name and Email fields and the Save button highlighted](img/admin-community/edit-someones-name-or-email.png)
+
 1. Click the person's row, then click **Edit details**.
 2. Change **Name** or **Email** and click **Save** (or **Cancel** to discard).
 
 If the email already belongs to someone else, including someone who unsubscribed, you'll be told and nothing is saved.
 
 ## Convert someone to a paying member
+
+![The Make Jonas Lee a paying member? confirmation with the Make paying member button highlighted](img/admin-community/convert-someone-to-a-paying-member.png)
+
 1. Click the person's row, then click the **Convert to paying member** icon button (a badge with a check). Or open the row's **⋯** menu and choose **Convert to paying member**.
 2. Read what they'll get and click **Make paying member**.
 
 They move to **Paying members** and get the Paying membership added email. You'll see "Paying member email sent." once it's delivered. If they're unsubscribed, they get paying access but no email, and the message says so. You can also convert people by adding them again with **Add members** and the paying box checked.
 
 ## Remove someone's paying access
+
+![The Remove paying access confirmation with Keep paying access and the Remove paying access button highlighted](img/admin-community/remove-someones-paying-access.png)
+
 1. Click the person's row, then click the **Remove paying access** icon button. Or open the row's **⋯** menu and choose **Remove paying access**.
 2. Click **Remove paying access** to confirm.
 
 Their paid benefits end right away and they get the Paying access removed email (unless they're unsubscribed). They become a general member and keep getting general emails.
 
 ## Unsubscribe someone
+
+![The Unsubscribe confirmation with Keep subscribed and the Yes, unsubscribe button highlighted](img/admin-community/unsubscribe-someone.png)
+
 1. Click the person's row, then click **Unsubscribe**. Or open the row's **⋯** menu and choose **Unsubscribe**.
 2. Click **Yes, unsubscribe**.
 
 They stop getting all SDC emails. A paying member stays a paying member. Their record stays, with the status **Unsubscribed**, hidden until you show **Unsubscribed** in the Status filter.
 
 ## Resubscribe someone
+
+![The panel of someone an admin unsubscribed, with the Resubscribe button highlighted](img/admin-community/resubscribe-someone.png)
+
 You can resubscribe only people an admin unsubscribed. People who unsubscribed themselves can only resubscribe themselves; their panel says "Unsubscribed themselves on {date}. Only they can resubscribe."
 1. In the **Status** filter, check **Unsubscribed**, then find the person.
 2. Click their row, then click **Resubscribe**. Or open the row's **⋯** menu and choose **Resubscribe**.
@@ -112,6 +154,9 @@ You can resubscribe only people an admin unsubscribed. People who unsubscribed t
 They get SDC emails again. No welcome email is sent.
 
 ## Delete someone at their request
+
+![The Delete permanently? warning with the Delete member button highlighted](img/admin-community/delete-someone-at-their-request.png)
+
 Use this when someone asks for their data to be removed. To only stop emails, unsubscribe them instead.
 1. Click the person's row, then click the **Delete member** icon button (a bin).
 2. Read the warning and click **Delete member**.
@@ -119,6 +164,9 @@ Use this when someone asks for their data to be removed. To only stop emails, un
 They're removed from Community, every export and the email system. This can't be undone, and they can't be added again with **Add members** or a file. They can sign up again themselves.
 
 ## Export for analysis
+
+![The Export members dialog with What to export, Who to export, the number of people and the Download CSV button highlighted](img/admin-community/export-for-analysis.png)
+
 1. Click **Export members**.
 2. Under **What to export**, choose **Members (one row per person)** or **Activity (one row per click)**.
 3. Under **Who to export**, choose **General members**, **Paying members** or **Both**. It starts on the tab you're on. Check **Include unsubscribed members** to add people who unsubscribed.

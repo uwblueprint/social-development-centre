@@ -7,6 +7,9 @@ You only see your own organization's opportunities. Anyone at your organization 
 New here? Start with [Getting started with the partner portal](./partner-getting-started.md).
 
 ## Find your opportunities
+
+![Your Opportunities list with the search box, the Published, Drafts and Closed tabs, and the Type filter open with Apply highlighted](img/partner-opportunities/find-your-opportunities.png)
+
 1. Go to **Opportunities** in the sidebar.
 2. Choose a tab:
    - **Published:** members can see it now. Sorted by date, soonest first.
@@ -19,6 +22,9 @@ New here? Start with [Getting started with the partner portal](./partner-getting
 If nothing matches, you'll see **No matches**. Click **Clear filters** to start over.
 
 ## Post an opportunity
+
+![The Type step of New event, with the type choices, Eventbrite link (optional), Link and the Next button highlighted](img/partner-opportunities/post-an-opportunity.png)
+
 It takes about two minutes. Have your link ready. The form has three steps, shown at the top: **1 Type · 2 Details · 3 Review**. Click **Next** and **Back** to move between them, and **Save as draft** on any step.
 
 1. Go to **Opportunities** and click **New opportunity** (top right).
@@ -40,6 +46,9 @@ It's published right away. You'll see "Published. Members can now see this event
 **If something is missing or wrong,** the form opens the step with the first problem. A box at the top lists each problem, for example "Fix 2 fields to publish this event", and the cursor moves to the first field to fix. Click a problem in the box to jump to its field, even on another step. What you typed is kept.
 
 ## Save a draft and finish it later
+
+![The Details step with Title empty and the Save as draft button highlighted next to Next](img/partner-opportunities/save-a-draft-and-finish-it-later.png)
+
 Not ready to publish? For example, you don't have the registration link yet.
 1. Fill in at least a **Title**.
 2. Click **Save as draft**.
@@ -47,6 +56,9 @@ Not ready to publish? For example, you don't have the registration link yet.
 Your draft is on the **Drafts** tab. The community doesn't see it. When you're ready, open it, click **Edit**, fill in the rest and click **Publish**.
 
 ## Change an opportunity
+
+![An opportunity's details panel with the Edit button highlighted at the bottom](img/partner-opportunities/change-an-opportunity.png)
+
 1. Open the opportunity (click its row).
 2. Click **Edit**.
 3. Move through the steps with **Next** and make your changes, then click **Save changes** (on any step). For a draft, click **Publish** on the **Review** step, or **Save as draft**.
@@ -56,11 +68,17 @@ You'll see "Changes saved." Emails that already went out can't be changed.
 To leave without saving, click **Cancel**. Nothing you changed is kept.
 
 ## Post the same event again
+
+![The More actions menu open with Duplicate highlighted](img/partner-opportunities/post-the-same-event-again.png)
+
 1. Open the event.
 2. Click **More actions** (⋯) and choose **Duplicate**.
 3. A copy opens as a draft called "Copy of …". Change the title and date, then click **Publish**.
 
 ## Close an opportunity (it's full, cancelled or filled)
+
+![The More actions menu open with Close highlighted](img/partner-opportunities/close-an-opportunity.png)
+
 1. Open the opportunity.
 2. Click **More actions** (⋯) and choose **Close**.
 
@@ -69,12 +87,18 @@ There's no confirmation. It moves to **Closed**. You'll see "Closed. This opport
 You don't need to close things when their date passes. An **event** closes by itself at its start time. Anything with a **Deadline** or **Apply by** date closes at the end of that day. These show **Ended**.
 
 ## Reopen an opportunity
+
+![The More actions menu for a closed opportunity with Reopen highlighted](img/partner-opportunities/reopen-an-opportunity.png)
+
 1. Go to **Closed** and open the opportunity.
 2. Click **More actions** (⋯) and choose **Reopen**.
 
 It's back on **Published**. You'll see "Reopened. Members can see this opportunity again." If its date has passed, you'll see "This event has already ended. Edit its date to reopen it." Click **Edit**, choose a new date, click **Save changes**, then **Reopen** it.
 
 ## Delete an opportunity you posted by mistake
+
+![The delete confirmation with Cancel and the Delete button highlighted](img/partner-opportunities/delete-an-opportunity-you-posted-by-mistake.png)
+
 1. Open the opportunity.
 2. Click **More actions** (⋯) and choose **Delete**.
 3. Click **Delete** to confirm.
@@ -82,6 +106,9 @@ It's back on **Published**. You'll see "Reopened. Members can see this opportuni
 It's gone for good. You'll see "Deleted “{title}”." If it was real but is now full or cancelled, **Close** it instead so SDC keeps the record.
 
 ## Check your link
+
+![The More actions menu open with Open link highlighted](img/partner-opportunities/check-your-link.png)
+
 1. Open the opportunity.
 2. Click **More actions** (⋯) and choose **Open link**. This is the page people will land on.
 

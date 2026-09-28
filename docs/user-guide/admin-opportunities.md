@@ -5,6 +5,9 @@ For SDC admins. Opportunities are what SDC and Civic Hub partners share with the
 You can do anything a partner can, for any organization, including posting as SDC. Partners only see and manage their own organization's listings (see [Partner portal: opportunities](./partner-opportunities.md)).
 
 ## Find an opportunity
+
+![The Opportunities list with the search box, the Published, Drafts and Closed tabs, and the Type filter open with Apply highlighted](img/admin-opportunities/find-an-opportunity.png)
+
 1. Go to **Opportunities**.
 2. Choose a tab:
    - **Published:** members can see it now. Sorted by date, soonest first.
@@ -21,6 +24,9 @@ You can do anything a partner can, for any organization, including posting as SD
 If nothing matches, you'll see **No matches**. Click **Clear filters** to start over.
 
 ## Post a new opportunity
+
+![The Type step of New event, with the type choices, Eventbrite link (optional), Link and the Next button highlighted](img/admin-opportunities/post-a-new-opportunity.png)
+
 The form has three steps, shown at the top: **1 Type · 2 Details · 3 Review**. Click **Next** and **Back** to move between them; nothing is lost. You can click **Save as draft** on any step.
 
 1. Go to **Opportunities** and click **New opportunity** (top right).
@@ -43,18 +49,27 @@ The listing is published right away, with no review by SDC. You'll see "Publishe
 **If something is missing or wrong,** the form opens the step with the first problem. A box at the top lists each problem, for example "Fix 2 fields to publish this event", and the cursor moves to the first field to fix. Click a problem in the box to jump to its field, even on another step. What you typed is kept.
 
 ## Post for a partner
+
+![The Organization field highlighted on the Details step, set to Social Development Centre](img/admin-opportunities/post-for-a-partner.png)
+
 1. Follow **Post a new opportunity**.
 2. On the **Details** step, choose the partner in **Organization**.
 
 The listing appears in that partner's portal as if they had posted it, and they can edit it. The panel shows who last updated it.
 
 ## Save a draft and finish it later
+
+![The Details step with Title empty and the Save as draft button highlighted next to Next](img/admin-opportunities/save-a-draft-and-finish-it-later.png)
+
 1. In the form, fill in at least a **Title** (on the **Details** step).
 2. Click **Save as draft**. It's there on every step.
 
 The draft appears on the **Drafts** tab. Community members never see drafts. To finish it, open it from **Drafts**, click **Edit**, complete the fields and click **Publish**.
 
 ## Edit an opportunity
+
+![An opportunity's details panel with the Edit button highlighted at the bottom](img/admin-opportunities/edit-an-opportunity.png)
+
 1. Open the opportunity (click its row).
 2. Click **Edit**.
 3. Move through the steps with **Next** and make your changes, then click **Save changes** (on any step). For a draft, click **Publish** on the **Review** step, or **Save as draft**.
@@ -66,12 +81,18 @@ To leave without saving, click **Cancel**. Nothing you changed is kept.
 You can't change an opportunity's type after it's created. To change it, post a new one and delete the old one.
 
 ## Post a repeat of an event (or any listing)
+
+![The More actions menu open with Duplicate highlighted](img/admin-opportunities/post-a-repeat-of-an-event-or-any-listing.png)
+
 There's no repeat schedule. Copy the listing instead:
 1. Open the opportunity.
 2. Click **More actions** (⋯) and choose **Duplicate**.
 3. The copy opens as a draft called "Copy of …". Change the title and date, then click **Publish**.
 
 ## Close an opportunity (full, cancelled or no longer needed)
+
+![The More actions menu open with Close highlighted](img/admin-opportunities/close-an-opportunity.png)
+
 1. Open the opportunity.
 2. Click **More actions** (⋯) and choose **Close**.
 
@@ -80,6 +101,9 @@ There's no confirmation. It moves to **Closed** and the record is kept. You'll s
 Opportunities also close by themselves: an **event** at its start time, and anything else at the end of its deadline or apply-by day. These show **Ended**.
 
 ## Reopen a closed opportunity
+
+![The More actions menu for a closed opportunity with Reopen highlighted](img/admin-opportunities/reopen-a-closed-opportunity.png)
+
 1. Go to **Closed** and open the opportunity.
 2. Click **More actions** (⋯) and choose **Reopen**.
 
@@ -89,6 +113,9 @@ It goes back to **Published**. You'll see "Reopened. Members can see this opport
 - If it shows **Partner access removed**, you'll see "This partner no longer has access. Reinvite them before reopening their opportunities." See [When you remove a partner's access](#when-you-remove-a-partners-access).
 
 ## Delete an opportunity posted by mistake
+
+![The delete confirmation with Cancel and the Delete button highlighted](img/admin-opportunities/delete-an-opportunity-posted-by-mistake.png)
+
 1. Open the opportunity.
 2. Click **More actions** (⋯) and choose **Delete**.
 3. Read the confirmation and click **Delete**.
@@ -96,10 +123,16 @@ It goes back to **Published**. You'll see "Reopened. Members can see this opport
 It's removed for everyone and can't be restored. You'll see "Deleted “{title}”." If you only want to stop it being recommended and emailed, **Close** it instead.
 
 ## Open the link people will use
+
+![The More actions menu open with Open link highlighted](img/admin-opportunities/open-the-link-people-will-use.png)
+
 1. Open the opportunity.
 2. Click **More actions** (⋯) and choose **Open link**. The page people go to opens, so you can check it works.
 
 ## See one partner's opportunities
+
+![The Organization filter open with Northside Food Bank ticked and highlighted](img/admin-opportunities/see-one-partners-opportunities.png)
+
 1. Go to **Opportunities**, click the filter icon next to **Organization** in the table header, and tick the partner.
 2. Or, from **Partners**, open the partner and click **View opportunities**.
 
