@@ -10,7 +10,10 @@ The link works once, for 7 days. **If it has expired or doesn't work,** ask your
 
 ## Sign in later
 
-![The sign-in page with an email address entered and the Send sign-in link button highlighted](img/partner-getting-started/sign-in-later.png)
+<figure>
+  <img src="img/partner-getting-started/sign-in-later.png" alt="The sign-in page with an email address entered and the Send sign-in link button highlighted" />
+  <figcaption>Figure 1. Sign in later</figcaption>
+</figure>
 
 There's no password. You sign in with a link sent to your email.
 1. Go to the sign-in page and enter your **Email**.
@@ -21,7 +24,10 @@ You'll see "Check your email for a sign-in link." after step 2. Use the same ema
 
 ## Get around the portal
 
-![The partner portal with the organization's name at the top of the sidebar, Opportunities and Organization, and Organization highlighted](img/partner-getting-started/get-around-the-portal.png)
+<figure>
+  <img src="img/partner-getting-started/get-around-the-portal.png" alt="The partner portal with the organization's name at the top of the sidebar, Opportunities and Organization, and Organization highlighted" />
+  <figcaption>Figure 2. Get around the portal</figcaption>
+</figure>
 
 The sidebar on the left shows your organization's name at the top, and two sections:
 - **Opportunities:** post and manage your events, petitions, volunteer roles, jobs and other asks. See [Partner portal: opportunities](./partner-opportunities.md).
@@ -31,7 +37,10 @@ The section you're in is highlighted. On a phone, tap the menu button (**Open me
 
 ## Go to your account or sign out
 
-![The account menu open above your name, with My account and Sign out](img/partner-getting-started/go-to-your-account-or-sign-out.png)
+<figure>
+  <img src="img/partner-getting-started/go-to-your-account-or-sign-out.png" alt="The account menu open above your name, with My account and Sign out" />
+  <figcaption>Figure 3. Go to your account or sign out</figcaption>
+</figure>
 
 1. Click your name at the bottom of the sidebar.
 2. Choose **My account** to change your name or profile picture, or **Sign out**.
@@ -40,7 +49,10 @@ When you sign out, you go back to the sign-in page, which says **You're signed o
 
 ## Change your name or profile picture
 
-![The My account dialog with Upload photo, the Name field and the Save changes button highlighted](img/partner-getting-started/change-your-name-or-profile-picture.png)
+<figure>
+  <img src="img/partner-getting-started/change-your-name-or-profile-picture.png" alt="The My account dialog with Upload photo, the Name field and the Save changes button highlighted" />
+  <figcaption>Figure 4. Change your name or profile picture</figcaption>
+</figure>
 
 1. Click your name at the bottom of the sidebar, then choose **My account**.
 2. To add or change your picture, click **Upload photo** (or **Change photo**) and choose a JPG, PNG or WebP image. It's cropped to a square. To go back to your initials, click **Remove photo**.
@@ -51,7 +63,10 @@ Your email address can't be changed here yet.
 
 ## Delete your account
 
-![The Delete your account? confirmation with Keep account and the Delete account button highlighted](img/partner-getting-started/delete-your-account.png)
+<figure>
+  <img src="img/partner-getting-started/delete-your-account.png" alt="The Delete your account? confirmation with Keep account and the Delete account button highlighted" />
+  <figcaption>Figure 5. Delete your account</figcaption>
+</figure>
 
 1. Click your name at the bottom of the sidebar, then choose **My account**.
 2. Under **Danger zone**, click **Delete account**.
@@ -61,7 +76,10 @@ You're signed out and lose access right away. This can't be undone.
 
 ## Update your organization's details
 
-![The Profile section with Organization name, Website and Short description, and the Save changes button highlighted](img/partner-getting-started/update-your-organizations-details.png)
+<figure>
+  <img src="img/partner-getting-started/update-your-organizations-details.png" alt="The Profile section with Organization name, Website and Short description, and the Save changes button highlighted" />
+  <figcaption>Figure 6. Update your organization's details</figcaption>
+</figure>
 
 Keep these current. Your organization's name appears on every opportunity you post.
 1. Go to **Organization**.
@@ -77,7 +95,10 @@ You'll see "Changes saved." The new name shows up in the sidebar and on all your
 
 ## See who on your team has access
 
-![The Team list showing Amara Okafor (you) and a colleague, with Invite colleague above](img/partner-getting-started/see-who-on-your-team-has-access.png)
+<figure>
+  <img src="img/partner-getting-started/see-who-on-your-team-has-access.png" alt="The Team list showing Amara Okafor (you) and a colleague, with Invite colleague above" />
+  <figcaption>Figure 7. See who on your team has access</figcaption>
+</figure>
 
 1. Go to **Organization**.
 2. Under **Team**, you'll see everyone at your organization who can use the portal or has been invited. Your own row is marked **(you)**. Anyone who hasn't accepted yet shows one of:
@@ -87,7 +108,10 @@ You'll see "Changes saved." The new name shows up in the sidebar and on all your
 
 ## Invite a colleague
 
-![The Invite colleague dialog with Name and Email fields and the Send invitation button highlighted](img/partner-getting-started/invite-a-colleague.png)
+<figure>
+  <img src="img/partner-getting-started/invite-a-colleague.png" alt="The Invite colleague dialog with Name and Email fields and the Send invitation button highlighted" />
+  <figcaption>Figure 8. Invite a colleague</figcaption>
+</figure>
 
 1. Go to **Organization**.
 2. Under **Team**, click **Invite colleague**.
@@ -111,7 +135,10 @@ You'll see "Invitation sent to {email}." They appear under **Team** as **Invitat
 
 ## Remove someone who has left
 
-![The remove confirmation with Keep access and the Remove access button highlighted](img/partner-getting-started/remove-someone-who-has-left.png)
+<figure>
+  <img src="img/partner-getting-started/remove-someone-who-has-left.png" alt="The remove confirmation with Keep access and the Remove access button highlighted" />
+  <figcaption>Figure 9. Remove someone who has left</figcaption>
+</figure>
 
 1. Go to **Organization**.
 2. Under **Team**, click **Actions for {name}** (⋯) on the person's row.

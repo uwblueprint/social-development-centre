@@ -8,7 +8,10 @@ New here? Start with [Getting started with the partner portal](./partner-getting
 
 ## Find your opportunities
 
-![Your Opportunities list with the search box, the Published, Drafts and Closed tabs, and the Type filter open with Apply highlighted](img/partner-opportunities/find-your-opportunities.png)
+<figure>
+  <img src="img/partner-opportunities/find-your-opportunities.png" alt="Your Opportunities list with the search box, the Published, Drafts and Closed tabs, and the Type filter open with Apply highlighted" />
+  <figcaption>Figure 1. Find your opportunities</figcaption>
+</figure>
 
 1. Go to **Opportunities** in the sidebar.
 2. Choose a tab:
@@ -23,7 +26,10 @@ If nothing matches, you'll see **No matches**. Click **Clear filters** to start 
 
 ## Post an opportunity
 
-![The Type step of New event, with the type choices, Eventbrite link (optional), Link and the Next button highlighted](img/partner-opportunities/post-an-opportunity.png)
+<figure>
+  <img src="img/partner-opportunities/post-an-opportunity.png" alt="The Type step of New event, with the type choices, Eventbrite link (optional), Link and the Next button highlighted" />
+  <figcaption>Figure 2. Post an opportunity</figcaption>
+</figure>
 
 It takes about two minutes. Have your link ready. The form has three steps, shown at the top: **1 Type · 2 Details · 3 Review**. Click **Next** and **Back** to move between them, and **Save as draft** on any step.
 
@@ -47,7 +53,10 @@ It's published right away. You'll see "Published. Members can now see this event
 
 ## Save a draft and finish it later
 
-![The Details step with Title empty and the Save as draft button highlighted next to Next](img/partner-opportunities/save-a-draft-and-finish-it-later.png)
+<figure>
+  <img src="img/partner-opportunities/save-a-draft-and-finish-it-later.png" alt="The Details step with Title empty and the Save as draft button highlighted next to Next" />
+  <figcaption>Figure 3. Save a draft and finish it later</figcaption>
+</figure>
 
 Not ready to publish? For example, you don't have the registration link yet.
 1. Fill in at least a **Title**.
@@ -57,7 +66,10 @@ Your draft is on the **Drafts** tab. The community doesn't see it. When you're r
 
 ## Change an opportunity
 
-![An opportunity's details panel with the Edit button highlighted at the bottom](img/partner-opportunities/change-an-opportunity.png)
+<figure>
+  <img src="img/partner-opportunities/change-an-opportunity.png" alt="An opportunity's details panel with the Edit button highlighted at the bottom" />
+  <figcaption>Figure 4. Change an opportunity</figcaption>
+</figure>
 
 1. Open the opportunity (click its row).
 2. Click **Edit**.
@@ -69,7 +81,10 @@ To leave without saving, click **Cancel**. Nothing you changed is kept.
 
 ## Post the same event again
 
-![The More actions menu open with Duplicate highlighted](img/partner-opportunities/post-the-same-event-again.png)
+<figure>
+  <img src="img/partner-opportunities/post-the-same-event-again.png" alt="The More actions menu open with Duplicate highlighted" />
+  <figcaption>Figure 5. Post the same event again</figcaption>
+</figure>
 
 1. Open the event.
 2. Click **More actions** (⋯) and choose **Duplicate**.
@@ -77,7 +92,10 @@ To leave without saving, click **Cancel**. Nothing you changed is kept.
 
 ## Close an opportunity (it's full, cancelled or filled)
 
-![The More actions menu open with Close highlighted](img/partner-opportunities/close-an-opportunity.png)
+<figure>
+  <img src="img/partner-opportunities/close-an-opportunity.png" alt="The More actions menu open with Close highlighted" />
+  <figcaption>Figure 6. Close an opportunity (it's full, cancelled or filled)</figcaption>
+</figure>
 
 1. Open the opportunity.
 2. Click **More actions** (⋯) and choose **Close**.
@@ -88,7 +106,10 @@ You don't need to close things when their date passes. An **event** closes by it
 
 ## Reopen an opportunity
 
-![The More actions menu for a closed opportunity with Reopen highlighted](img/partner-opportunities/reopen-an-opportunity.png)
+<figure>
+  <img src="img/partner-opportunities/reopen-an-opportunity.png" alt="The More actions menu for a closed opportunity with Reopen highlighted" />
+  <figcaption>Figure 7. Reopen an opportunity</figcaption>
+</figure>
 
 1. Go to **Closed** and open the opportunity.
 2. Click **More actions** (⋯) and choose **Reopen**.
@@ -97,7 +118,10 @@ It's back on **Published**. You'll see "Reopened. Members can see this opportuni
 
 ## Delete an opportunity you posted by mistake
 
-![The delete confirmation with Cancel and the Delete button highlighted](img/partner-opportunities/delete-an-opportunity-you-posted-by-mistake.png)
+<figure>
+  <img src="img/partner-opportunities/delete-an-opportunity-you-posted-by-mistake.png" alt="The delete confirmation with Cancel and the Delete button highlighted" />
+  <figcaption>Figure 8. Delete an opportunity you posted by mistake</figcaption>
+</figure>
 
 1. Open the opportunity.
 2. Click **More actions** (⋯) and choose **Delete**.
@@ -107,7 +131,10 @@ It's gone for good. You'll see "Deleted “{title}”." If it was real but is no
 
 ## Check your link
 
-![The More actions menu open with Open link highlighted](img/partner-opportunities/check-your-link.png)
+<figure>
+  <img src="img/partner-opportunities/check-your-link.png" alt="The More actions menu open with Open link highlighted" />
+  <figcaption>Figure 9. Check your link</figcaption>
+</figure>
 
 1. Open the opportunity.
 2. Click **More actions** (⋯) and choose **Open link**. This is the page people will land on.

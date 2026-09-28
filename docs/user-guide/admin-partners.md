@@ -4,7 +4,10 @@ For SDC admins. Partners are organizations that share opportunities with SDC. Ea
 
 ## Find an organization or a person
 
-![The Partners page with the Organizations and People views and the Search by name or email box highlighted](img/admin-partners/find-an-organization-or-a-person.png)
+<figure>
+  <img src="img/admin-partners/find-an-organization-or-a-person.png" alt="The Partners page with the Organizations and People views and the Search by name or email box highlighted" />
+  <figcaption>Figure 1. Find an organization or a person</figcaption>
+</figure>
 
 1. Go to **Partners**.
 2. Choose a view: **Organizations** or **People**.
@@ -25,7 +28,10 @@ If nothing matches, the page says so and offers **Clear search** or **Clear filt
 
 ## See which partners might need support
 
-![The "5 partners might need support" banner with Show them highlighted, above tags such as No clicks and Not onboarded in the Health column](img/admin-partners/see-which-partners-might-need-support.png)
+<figure>
+  <img src="img/admin-partners/see-which-partners-might-need-support.png" alt="The "5 partners might need support" banner with Show them highlighted, above tags such as No clicks and Not onboarded in the Health column" />
+  <figcaption>Figure 2. See which partners might need support</figcaption>
+</figure>
 
 Each organization has at most one tag in the **Health** column:
 - **Not onboarded**: nobody at the organization has accepted an invitation yet.
@@ -39,7 +45,10 @@ Each organization has at most one tag in the **Health** column:
 
 ## Copy partners' email addresses
 
-![The Partners page header with the Copy all emails button highlighted next to Invite partner](img/admin-partners/copy-partners-email-addresses.png)
+<figure>
+  <img src="img/admin-partners/copy-partners-email-addresses.png" alt="The Partners page header with the Copy all emails button highlighted next to Invite partner" />
+  <figcaption>Figure 3. Copy partners' email addresses</figcaption>
+</figure>
 
 - **Everyone:** on **Partners**, click **Copy all emails** (top right). Every person who isn't removed is copied, separated by commas, ready to paste into your email's To or Bcc field. You'll see "Copied {n} email addresses".
 - **One organization:** open it and click **Copy emails**.
@@ -47,7 +56,10 @@ Each organization has at most one tag in the **Health** column:
 
 ## Keep notes about a partner
 
-![The SDC notes (only admins see these) box with the Save notes button highlighted](img/admin-partners/keep-notes-about-a-partner.png)
+<figure>
+  <img src="img/admin-partners/keep-notes-about-a-partner.png" alt="The SDC notes (only admins see these) box with the Save notes button highlighted" />
+  <figcaption>Figure 4. Keep notes about a partner</figcaption>
+</figure>
 
 1. Open the organization.
 2. Type in **SDC notes (only admins see these)** and click **Save notes**. You'll see "Notes saved."
@@ -56,7 +68,10 @@ Under the notes you'll see who last edited them and when. Partners never see the
 
 ## Post an opportunity for a partner
 
-![An organization's panel with Post an opportunity for them highlighted under Summary](img/admin-partners/post-an-opportunity-for-a-partner.png)
+<figure>
+  <img src="img/admin-partners/post-an-opportunity-for-a-partner.png" alt="An organization's panel with Post an opportunity for them highlighted under Summary" />
+  <figcaption>Figure 5. Post an opportunity for a partner</figcaption>
+</figure>
 
 1. Open the organization.
 2. Under **Summary**, click **Post an opportunity for them**.
@@ -64,7 +79,10 @@ Under the notes you'll see who last edited them and when. Partners never see the
 
 ## Invite a person from a new or existing partner
 
-![The Invite partner dialog with Contact name, Email and Organization fields and the Send invitation button highlighted](img/admin-partners/invite-a-person-from-a-new-or-existing-partner.png)
+<figure>
+  <img src="img/admin-partners/invite-a-person-from-a-new-or-existing-partner.png" alt="The Invite partner dialog with Contact name, Email and Organization fields and the Send invitation button highlighted" />
+  <figcaption>Figure 6. Invite a person from a new or existing partner</figcaption>
+</figure>
 
 1. Go to **Partners** and click **Invite partner** (top right).
 2. Enter their **Contact name** and **Email**.
@@ -83,7 +101,10 @@ Every new organization starts this way, with its first person.
 
 ## Add another person to an existing partner
 
-![The Invite partner dialog with Organization already set to Northside Food Bank and Send invitation highlighted](img/admin-partners/add-another-person-to-an-existing-partner.png)
+<figure>
+  <img src="img/admin-partners/add-another-person-to-an-existing-partner.png" alt="The Invite partner dialog with Organization already set to Northside Food Bank and Send invitation highlighted" />
+  <figcaption>Figure 7. Add another person to an existing partner</figcaption>
+</figure>
 
 1. Open the organization (click its row).
 2. Click **Add person** (under the organization's name). The organization is already filled in.
@@ -91,7 +112,10 @@ Every new organization starts this way, with its first person.
 
 ## Resend, retry or cancel an invitation
 
-![A pending person's row menu on People with Resend invitation highlighted above Cancel invitation](img/admin-partners/resend-retry-or-cancel-an-invitation.png)
+<figure>
+  <img src="img/admin-partners/resend-retry-or-cancel-an-invitation.png" alt="A pending person's row menu on People with Resend invitation highlighted above Cancel invitation" />
+  <figcaption>Figure 8. Resend, retry or cancel an invitation</figcaption>
+</figure>
 
 1. Go to **Partners** > **People** and click ⋯ (**Actions for {name}**) at the end of the person's row. The **Tags** column shows their invitation state and when it expires, for example "Invitation pending · Expires Oct 2".
 2. Click:
@@ -102,7 +126,10 @@ You can do the same from the organization's panel: find the person under **Peopl
 
 ## Edit a partner's details
 
-![The Profile fields Organization name, Website and Short description with the Save changes button highlighted](img/admin-partners/edit-a-partners-details.png)
+<figure>
+  <img src="img/admin-partners/edit-a-partners-details.png" alt="The Profile fields Organization name, Website and Short description with the Save changes button highlighted" />
+  <figcaption>Figure 9. Edit a partner's details</figcaption>
+</figure>
 
 1. Open the organization and click **Edit details** (under the organization's name).
 2. Under **Profile**, change **Organization name**, **Website** (for example, sdckw.ca; you don't need to type https://) or **Short description**.
@@ -112,7 +139,10 @@ If something needs fixing, the message shows under the field and the cursor move
 
 ## Change a person's name or email
 
-![The Edit details dialog with Name and Email and the Save changes button highlighted](img/admin-partners/change-a-persons-name-or-email.png)
+<figure>
+  <img src="img/admin-partners/change-a-persons-name-or-email.png" alt="The Edit details dialog with Name and Email and the Save changes button highlighted" />
+  <figcaption>Figure 10. Change a person's name or email</figcaption>
+</figure>
 
 1. Go to **Partners** > **People** and click ⋯ (**Actions for {name}**) at the end of the person's row.
 2. Click **Edit details**.
@@ -122,14 +152,20 @@ Changing someone's email sends a new invitation to the new address. If they alre
 
 ## See a partner's opportunities
 
-![An organization's Summary with Published, Total clicks and Last posted, and View opportunities highlighted](img/admin-partners/see-a-partners-opportunities.png)
+<figure>
+  <img src="img/admin-partners/see-a-partners-opportunities.png" alt="An organization's Summary with Published, Total clicks and Last posted, and View opportunities highlighted" />
+  <figcaption>Figure 11. See a partner's opportunities</figcaption>
+</figure>
 
 1. Open the organization. **Summary** shows how many opportunities are **Published**, their **Total clicks** from SDC's emails, and when they **Last posted**.
 2. Click **View opportunities**. The Opportunities list opens filtered to that partner.
 
 ## Remove a person who left a partner organization
 
-![The remove confirmation with Keep access and the Remove access button highlighted](img/admin-partners/remove-a-person-who-left-a-partner-organization.png)
+<figure>
+  <img src="img/admin-partners/remove-a-person-who-left-a-partner-organization.png" alt="The remove confirmation with Keep access and the Remove access button highlighted" />
+  <figcaption>Figure 12. Remove a person who left a partner organization</figcaption>
+</figure>
 
 1. Go to **Partners** > **People** and click ⋯ (**Actions for {name}**) at the end of the person's row (or open the organization and use **Actions for {name}** there).
 2. Click **Remove from organization**, then **Remove access**. To keep their access, click **Keep access**.
@@ -140,14 +176,20 @@ An organization always has at least one person. You can't remove the only person
 
 ## Move a person to a different partner
 
-![A person's row menu on People with Remove from organization highlighted](img/admin-partners/move-a-person-to-a-different-partner.png)
+<figure>
+  <img src="img/admin-partners/move-a-person-to-a-different-partner.png" alt="A person's row menu on People with Remove from organization highlighted" />
+  <figcaption>Figure 13. Move a person to a different partner</figcaption>
+</figure>
 
 1. Remove them from their current organization (see above).
 2. Invite their email under the new organization (see **Invite a person**).
 
 ## Remove a partner's access (the partnership ended or the organization dissolved)
 
-![The Remove Northside Food Bank's access? confirmation with the Remove access button highlighted](img/admin-partners/remove-a-partners-access.png)
+<figure>
+  <img src="img/admin-partners/remove-a-partners-access.png" alt="The Remove Northside Food Bank's access? confirmation with the Remove access button highlighted" />
+  <figcaption>Figure 14. Remove a partner's access (the partnership ended or the organization dissolved)</figcaption>
+</figure>
 
 1. Open the organization and click **Remove access** (under the organization's name).
 2. Read the confirmation and click **Remove access**. To cancel, click **Keep access**.
@@ -161,7 +203,10 @@ You'll see "{organization} no longer has access. Its opportunities are closed." 
 
 ## Bring back a removed partner or person
 
-![A removed organization's panel marked Removed, with the Reinvite button highlighted](img/admin-partners/bring-back-a-removed-partner-or-person.png)
+<figure>
+  <img src="img/admin-partners/bring-back-a-removed-partner-or-person.png" alt="A removed organization's panel marked Removed, with the Reinvite button highlighted" />
+  <figcaption>Figure 15. Bring back a removed partner or person</figcaption>
+</figure>
 
 **An organization:**
 1. Go to **Partners**, tick **Removed** in the **Organization** column's filter, and open the organization.
