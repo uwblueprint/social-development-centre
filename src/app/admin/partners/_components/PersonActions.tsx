@@ -12,9 +12,9 @@ import {
 } from "@/components/ui/AlertDialog";
 import { Button } from "@/components/ui/Button";
 import type { ActionState } from "@/lib/forms";
+import { useReturnFocus } from "@/lib/useReturnFocus";
 import { invitationCopy } from "../_copy";
 import type { PartnerContact } from "../_data/types";
-import { useReturnFocus } from "../_lib/useReturnFocus";
 
 /*
  * Resend / cancel / remove for one person, with the two confirmations. Shared by the admin panels and the

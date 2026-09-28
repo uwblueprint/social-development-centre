@@ -285,6 +285,9 @@ export function CreatableCombobox({
           type="button"
           id={controlId}
           disabled={disabled}
+          // Select-only combobox (WAI-ARIA APG): the role makes aria-required valid on the trigger
+          // (a plain button doesn't allow it — axe: aria-allowed-attr). Matches Select.tsx's ComboboxSelect.
+          role="combobox"
           aria-haspopup="listbox"
           aria-invalid={ariaInvalid}
           aria-required={required}

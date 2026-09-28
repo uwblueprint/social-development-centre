@@ -5,7 +5,6 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { styled } from "next-yak";
 import { Archive, FilePen, FilterX, Megaphone, Plus, Search as SearchIcon } from "lucide-react";
 import { ListPage, ListPageHeader, ListPageToolbar, useListParams, useListSearch, useListSort } from "@/components/patterns/ListPage";
-import { useReturnFocus } from "@/app/admin/partners/_lib/useReturnFocus";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Icon } from "@/components/ui/Icon";
@@ -13,6 +12,7 @@ import { SearchField } from "@/components/ui/SearchField";
 import { Sheet, SheetContent } from "@/components/ui/Sheet";
 import { Table, type TableColumnFilter } from "@/components/ui/Table";
 import { Tabs, TabsContent, TabsCount, TabsList, TabsTrigger } from "@/components/ui/Tabs";
+import { useReturnFocus } from "@/lib/useReturnFocus";
 import { KIND_LABEL, KINDS } from "../catalog";
 import { copy } from "../copy";
 import type {

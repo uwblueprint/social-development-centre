@@ -19,6 +19,7 @@ import { Sheet, SheetContent } from "@/components/ui/Sheet";
 import { Table, type TableSort } from "@/components/ui/Table";
 import { Tabs, TabsContent, TabsCount, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { useToast } from "@/components/ui/Toast";
+import { useReturnFocus } from "@/lib/useReturnFocus";
 import { partnersCopy as copy } from "../_copy";
 import {
   DEFAULT_ORGANIZATION_SORT,
@@ -39,7 +40,6 @@ import {
   type PersonTagFilter,
 } from "../_data/types";
 import { filterParam } from "../_lib/params";
-import { useReturnFocus } from "../_lib/useReturnFocus";
 import { copyEmails } from "./CopyableEmail";
 import { InviteDialog, type InvitePreset } from "./InviteDialog";
 import { organizationColumns, personColumns, type HeaderFilter } from "./PartnerRows";

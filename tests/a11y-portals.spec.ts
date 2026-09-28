@@ -15,12 +15,6 @@ async function expectNoViolations(page: import("@playwright/test").Page, exclude
   expect(results.violations.map((v) => `${v.id}: ${v.nodes.length} × ${v.help}`)).toEqual([]);
 }
 
-// Kit: reported — CreatableCombobox's trigger sets `aria-required` on a `role="button"` element, which
-// axe's aria-allowed-attr rule rejects (that ARIA state isn't valid on `button`). Fix in
-// src/components/ui/CreatableCombobox.tsx: drop the `aria-required={required}` line on `Trigger`; the
-// requiredness is already conveyed by the Field's visible "Required" label and enforced on submit.
-const CREATABLE_COMBOBOX_TRIGGER = '[class*="CreatableCombobox_Trigger"]';
-
 test.describe("Partners", () => {
   test("organization panel open", async ({ page }) => {
     await page.goto("/admin/partners?org=org_1");
@@ -43,7 +37,7 @@ test.describe("Partners", () => {
   test("invite partner dialog open", async ({ page }) => {
     await page.goto("/admin/partners");
     await page.getByRole("button", { name: /invite partner/i }).click();
-    await expectNoViolations(page, [CREATABLE_COMBOBOX_TRIGGER]);
+    await expectNoViolations(page);
   });
 
   test("remove access confirm open", async ({ page }) => {

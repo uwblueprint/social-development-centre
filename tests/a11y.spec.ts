@@ -18,12 +18,18 @@ async function settle(page: import("@playwright/test").Page) {
   await page.waitForTimeout(250);
 }
 
-async function checkA11y(page: import("@playwright/test").Page) {
-  const results = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-    .analyze();
+async function checkA11y(page: import("@playwright/test").Page, excludeSelectors: string[] = []) {
+  let builder = new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]);
+  for (const selector of excludeSelectors) builder = builder.exclude(selector);
+  const results = await builder.analyze();
   expect(results.violations.map((v) => `${v.id}: ${v.nodes.length} × ${v.help}`)).toEqual([]);
 }
+
+// The member sheet's email bodies render in `sandbox=""` iframes (a unique opaque origin, by design —
+// see MemberEmails.tsx): axe can't inject into that origin to scan it and analyze() hangs until Playwright's
+// own timeout. Exclude it; its content is a static rendered email, not kit UI, and the frame itself has
+// an accessible name (`title`).
+const SANDBOXED_EMAIL_FRAME = 'iframe[sandbox=""]';
 
 for (const path of routes) test(`${path} has no WCAG 2.2 AA violations`, async ({ page }) => {
   await page.goto(path);
@@ -138,17 +144,17 @@ test.describe("community", () => {
     await settle(page);
     await page.locator("tbody tr").first().click();
     await page.waitForTimeout(250);
-    await checkA11y(page);
+    await checkA11y(page, [SANDBOXED_EMAIL_FRAME]);
 
     await page.getByRole("button", { name: "Delete member" }).click();
     await page.waitForTimeout(250);
-    await checkA11y(page);
+    await checkA11y(page, [SANDBOXED_EMAIL_FRAME]);
     await page.keyboard.press("Escape");
     await page.waitForTimeout(250);
 
     await page.getByRole("button", { name: /Convert to paying member|Remove paying access/ }).click();
     await page.waitForTimeout(250);
-    await checkA11y(page);
+    await checkA11y(page, [SANDBOXED_EMAIL_FRAME]);
   });
 
   test("column filter popover (staged Apply) has no violations", async ({ page }) => {
