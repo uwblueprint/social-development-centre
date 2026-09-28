@@ -1,0 +1,123 @@
+import { expect, test } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
+
+/**
+ * Axe over the key opened states of Partners, the partner portal and Opportunities (routes covered by
+ * a11y.spec.ts aren't repeated here). Each opens a sheet, dialog, menu or confirm — states a plain page
+ * load doesn't reach.
+ */
+async function expectNoViolations(page: import("@playwright/test").Page, excludeSelectors: string[] = []) {
+  await page.evaluate(() => document.fonts.ready);
+  await page.waitForTimeout(250);
+  let builder = new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]);
+  for (const selector of excludeSelectors) builder = builder.exclude(selector);
+  const results = await builder.analyze();
+  expect(results.violations.map((v) => `${v.id}: ${v.nodes.length} × ${v.help}`)).toEqual([]);
+}
+
+test.describe("Partners", () => {
+  test("organization panel open", async ({ page }) => {
+    await page.goto("/admin/partners?org=org_1");
+    await expectNoViolations(page);
+  });
+
+  test("people row menu open", async ({ page }) => {
+    await page.goto("/admin/partners?view=people");
+    await page.getByRole("button", { name: /^Actions for /i }).first().click();
+    await expectNoViolations(page);
+  });
+
+  test("edit details dialog open", async ({ page }) => {
+    await page.goto("/admin/partners?view=people");
+    await page.getByRole("button", { name: /^Actions for /i }).first().click();
+    await page.getByRole("menuitem", { name: /edit details/i }).click();
+    await expectNoViolations(page);
+  });
+
+  test("invite partner dialog open", async ({ page }) => {
+    await page.goto("/admin/partners");
+    await page.getByRole("button", { name: /invite partner/i }).click();
+    await expectNoViolations(page);
+  });
+
+  test("remove access confirm open", async ({ page }) => {
+    await page.goto("/admin/partners?org=org_1");
+    await page.getByRole("button", { name: /remove access/i }).click();
+    await expectNoViolations(page);
+  });
+});
+
+test.describe("Opportunities", () => {
+  test("sheet open (published)", async ({ page }) => {
+    await page.goto("/admin/opportunities?opportunity=opp_1");
+    await expectNoViolations(page);
+  });
+
+  test("sheet open (draft)", async ({ page }) => {
+    await page.goto("/admin/opportunities?opportunity=opp_11&tab=drafts");
+    await expectNoViolations(page);
+  });
+
+  test("delete confirm open", async ({ page }) => {
+    await page.goto("/admin/opportunities?opportunity=opp_11&tab=drafts");
+    await page.getByRole("button", { name: /more actions/i }).click();
+    await page.getByRole("menuitem", { name: /delete/i }).click();
+    await expectNoViolations(page);
+  });
+
+  test("new form: type step with Eventbrite field", async ({ page }) => {
+    await page.goto("/admin/opportunities/new?kind=event");
+    await expectNoViolations(page);
+  });
+
+  test("new form: details step, topics at cap", async ({ page }) => {
+    await page.goto("/admin/opportunities/new?kind=event");
+    await page.getByRole("button", { name: /^next$/i }).click();
+    const tagButtons = page.locator('[id$="topics"] button');
+    for (let i = 0; i < 3; i++) await tagButtons.nth(i).click();
+    await expectNoViolations(page);
+  });
+
+  test("new form: review step", async ({ page }) => {
+    await page.goto("/admin/opportunities/new?kind=event");
+    await page.getByRole("button", { name: /^next$/i }).click();
+    await page.getByRole("button", { name: /^next$/i }).click();
+    await expectNoViolations(page);
+  });
+
+  test("new form: error summary after invalid submit", async ({ page }) => {
+    await page.goto("/admin/opportunities/new?kind=event");
+    await page.getByRole("button", { name: /^next$/i }).click();
+    await page.getByRole("button", { name: /^next$/i }).click();
+    await page.getByRole("button", { name: /^publish$/i }).click();
+    await expectNoViolations(page);
+  });
+});
+
+test.describe("Partner portal", () => {
+  test("opportunities sheet open", async ({ page }) => {
+    await page.goto("/partner/opportunities?opportunity=opp_3");
+    await expectNoViolations(page);
+  });
+
+  test("team invite dialog open", async ({ page }) => {
+    await page.goto("/partner/organization");
+    await page.getByRole("button", { name: /invite colleague/i }).click();
+    await expectNoViolations(page);
+  });
+});
+
+test.describe("320px", () => {
+  test.use({ viewport: { width: 320, height: 800 } });
+
+  for (const path of ["/admin/partners?org=org_1", "/admin/opportunities/new?kind=event", "/partner/organization"]) {
+    test(`${path} has no violations at 320px`, async ({ page }) => {
+      await page.goto(path);
+      await expectNoViolations(page);
+      const hasHorizontalScroll = await page.evaluate(
+        () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+      );
+      expect(hasHorizontalScroll).toBe(false);
+    });
+  }
+});

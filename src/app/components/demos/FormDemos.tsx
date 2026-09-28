@@ -1,0 +1,299 @@
+"use client";
+
+import * as React from "react";
+import { styled } from "next-yak";
+import { Label } from "@/components/ui/Label";
+import { Input } from "@/components/ui/Input";
+import { Textarea } from "@/components/ui/Textarea";
+import { Field } from "@/components/ui/Field";
+import { Select } from "@/components/ui/Select";
+import { CreatableCombobox } from "@/components/ui/CreatableCombobox";
+import { SearchField } from "@/components/ui/SearchField";
+import { DatePicker } from "@/components/ui/DatePicker";
+import { ErrorSummary } from "@/components/ui/ErrorSummary";
+import { TagInput } from "@/components/ui/TagInput";
+
+const Section = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 420px;
+  margin-bottom: var(--space-7);
+`;
+
+const FormGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  max-width: 640px;
+  margin-bottom: var(--space-7);
+
+  @media (max-width: 640px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+`;
+
+
+
+export function LabelDemo() {
+  return (
+    <Section>
+      <Label htmlFor="label-demo-input">Full name</Label>
+      <Input id="label-demo-input" placeholder="Ada Lovelace" />
+    </Section>
+  );
+}
+
+export function InputDemo() {
+  return (
+    <Section>
+      <Field label="Full name">
+        {(props) => <Input {...props} placeholder="Ada Lovelace" />}
+      </Field>
+      <Field
+        label="Account ID"
+        disabled
+        disabledReason="Set by your administrator. Contact support to change it."
+      >
+        {(props) => <Input {...props} defaultValue="ACC-1029" />}
+      </Field>
+      <Field label="Email" error="Enter a valid email address">
+        {(props) => <Input {...props} type="email" defaultValue="not-an-email" />}
+      </Field>
+    </Section>
+  );
+}
+
+const SEARCH_PEOPLE = ["Ada Lovelace", "Grace Hopper", "Katherine Johnson", "Margaret Hamilton", "Radia Perlman"];
+
+const SearchResults = styled.p`
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+`;
+
+export function SearchFieldDemo() {
+  const [text, setText] = React.useState("");
+  const [query, setQuery] = React.useState("");
+  const [pending, setPending] = React.useState(false);
+  const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  React.useEffect(() => () => {
+    if (timer.current) clearTimeout(timer.current);
+  }, []);
+
+  // Stands in for a server round trip so the spinner is visible.
+  function runSearch(value: string) {
+    setPending(true);
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => {
+      setQuery(value.trim().toLowerCase());
+      setPending(false);
+    }, 500);
+  }
+
+  const matches = SEARCH_PEOPLE.filter((name) => name.toLowerCase().includes(query));
+
+  return (
+    <Section>
+      <SearchField
+        aria-label="Search by name or email"
+        placeholder="Search by name or email"
+        value={text}
+        onChange={(event) => setText(event.target.value)}
+        onSearch={runSearch}
+        pending={pending}
+      />
+      <SearchResults aria-live="polite">
+        {matches.length ? matches.join(", ") : `No matches for "${query}"`}
+      </SearchResults>
+      <SearchField aria-label="Search opportunities" placeholder="Loading state" defaultValue="food bank" onSearch={() => {}} pending />
+    </Section>
+  );
+}
+
+export function TextareaDemo() {
+  return (
+    <Section>
+      <Field label="Message" hint="Tell us a bit about your request">
+        {(props) => <Textarea {...props} maxLength={200} placeholder="Write your message..." />}
+      </Field>
+      <Field label="Feedback" error="Feedback is required">
+        {(props) => <Textarea {...props} maxLength={500} placeholder="Required" />}
+      </Field>
+    </Section>
+  );
+}
+
+function todayISODate() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(
+    now.getDate(),
+  ).padStart(2, "0")}`;
+}
+
+export function FieldDemo() {
+  const todayIso = todayISODate();
+  return (
+    <FormGrid>
+      <Field label="Full name" required>
+        {(props) => <Input {...props} placeholder="Ada Lovelace" autoComplete="name" />}
+      </Field>
+      <Field label="Email" hint="We'll send confirmations here">
+        {(props) => (
+          <Input {...props} type="email" placeholder="you@example.com" autoComplete="email" />
+        )}
+      </Field>
+      <Field label="Phone" hint="Include the country code, e.g. +44 20 7946 0958">
+        {(props) => <Input {...props} type="tel" placeholder="+44 20 7946 0958" autoComplete="tel" />}
+      </Field>
+      <Field label="Password" hint="At least 8 characters, with a number and a symbol">
+        {(props) => <Input {...props} type="password" autoComplete="new-password" />}
+      </Field>
+      <Field label="Website" error="Enter a URL starting with https://">
+        {(props) => (
+          <Input {...props} type="url" placeholder="https://example.org" defaultValue="example.org" />
+        )}
+      </Field>
+      <Field label="Date of birth" hint="YYYY-MM-DD — typing is fastest; the calendar button also works">
+        {(props) => <DatePicker {...props} defaultValue="1990-05-14" max={todayIso} />}
+      </Field>
+      <Field label="Number of volunteers" hint="Between 1 and 500">
+        {(props) => <Input {...props} type="number" min={1} max={500} placeholder="10" />}
+      </Field>
+      <Field
+        label="Organization ID"
+        disabled
+        disabledReason="Set by your administrator. Contact support to change it."
+      >
+        {(props) => <Input {...props} defaultValue="SDC-04821" />}
+      </Field>
+    </FormGrid>
+  );
+}
+
+
+const contactMethodOptions = [
+  { value: "email", label: "Email" },
+  { value: "phone", label: "Phone" },
+  { value: "text", label: "Text message", disabled: true },
+];
+
+const countryOptions = [
+  { value: "us", label: "United States" },
+  { value: "ca", label: "Canada" },
+  { value: "uk", label: "United Kingdom" },
+  { value: "au", label: "Australia" },
+  { value: "de", label: "Germany" },
+  { value: "fr", label: "France" },
+  { value: "in", label: "India" },
+  { value: "jp", label: "Japan" },
+  { value: "br", label: "Brazil" },
+  { value: "za", label: "South Africa" },
+  { value: "mx", label: "Mexico" },
+  { value: "ng", label: "Nigeria" },
+  { value: "kr", label: "South Korea" },
+  { value: "es", label: "Spain" },
+  { value: "it", label: "Italy", disabled: true },
+];
+
+export function SelectDemo() {
+  return (
+    <Section>
+      <Field label="Preferred contact method">
+        {(props) => (
+          <Select
+            {...props}
+            options={contactMethodOptions}
+            defaultValue="email"
+            placeholder="Choose a method"
+          />
+        )}
+      </Field>
+      <Field label="Country" hint="Type to search the list">
+        {(props) => (
+          <Select
+            {...props}
+            options={countryOptions}
+            defaultValue="us"
+            placeholder="Select a country"
+          />
+        )}
+      </Field>
+      <Field
+        label="Region"
+        disabled
+        disabledReason="Set by your administrator. Contact support to change it."
+      >
+        {(props) => (
+          <Select {...props} options={contactMethodOptions} placeholder="Not available" />
+        )}
+      </Field>
+    </Section>
+  );
+}
+
+const organizationOptions = [
+  { value: "org_1", label: "Northside Food Bank" },
+  { value: "org_2", label: "Riverbend Youth Collective" },
+  { value: "org_3", label: "Maple Literacy Project" },
+  { value: "org_4", label: "Eastside Newcomer Services" },
+];
+
+export function CreatableComboboxDemo() {
+  return (
+    <Section>
+      <Field label="Organization" hint="Search existing organizations, or create a new one">
+        {(props) => (
+          <CreatableCombobox
+            {...props}
+            options={organizationOptions}
+            existingFieldName="organizationId"
+            createFieldName="organizationName"
+            placeholder="Search or create an organization…"
+          />
+        )}
+      </Field>
+    </Section>
+  );
+}
+
+
+const summaryErrors = [
+  { fieldId: "demo-summary-title", message: "Enter a title." },
+  { fieldId: "demo-summary-website", message: "Enter a web address like sdckw.ca." },
+];
+
+export function ErrorSummaryDemo() {
+  return (
+    <Section>
+      <ErrorSummary title="Fix 2 fields to publish this opportunity" errors={summaryErrors} />
+      <Field id="demo-summary-title" label="Title" required error={summaryErrors[0].message}>
+        {(props) => <Input {...props} />}
+      </Field>
+      <Field id="demo-summary-website" label="Website" error={summaryErrors[1].message}>
+        {(props) => <Input {...props} defaultValue="sdckw" />}
+      </Field>
+    </Section>
+  );
+}
+
+const DEMO_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+export function TagInputDemo() {
+  const [tags, setTags] = React.useState(["amara@example.org", "grace@example", "luis@example.org"]);
+  return (
+    <Field label="Email addresses" hint="Press Enter, comma or space after each address, or paste a list.">
+      {(p) => (
+        <TagInput
+          {...p}
+          value={tags}
+          onValueChange={setTags}
+          normalize={(text) => text.trim().toLowerCase()}
+          validate={(tag) => (DEMO_EMAIL.test(tag) ? undefined : "This isn't an email address. Check for a missing @ or a typo.")}
+          placeholder="name@example.org"
+          copy={{ tagsLabel: "Email addresses entered" }}
+        />
+      )}
+    </Field>
+  );
+}

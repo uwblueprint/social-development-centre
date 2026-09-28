@@ -1,0 +1,386 @@
+"use client";
+
+import * as React from "react";
+import { useRouter } from "next/navigation";
+import { styled } from "next-yak";
+import { CircleOff, Copy, ExternalLink as ExternalLinkIcon, MoreHorizontal, RotateCcw, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogActions,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTitle,
+} from "@/components/ui/AlertDialog";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/DropdownMenu";
+import { Icon } from "@/components/ui/Icon";
+import { SheetBody, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/Sheet";
+import { Tag, TagList } from "@/components/ui/Tag";
+import { useToast } from "@/components/ui/Toast";
+import type { ActionState } from "@/lib/forms";
+import {
+  ACCESSIBILITY_LABEL,
+  EMPLOYMENT_TYPE_LABEL,
+  EVENT_FORMAT_LABEL,
+  KIND_LABEL,
+  KIND_NOUN,
+  SKILL_LABEL,
+  TIME_COMMITMENT_LABEL,
+  TOPIC_LABEL,
+  VOLUNTEER_FORMAT_LABEL,
+  WORKPLACE_LABEL,
+} from "../catalog";
+import { copy } from "../copy";
+import { formatDate, formatTime, formatWhere } from "../format";
+import type { Opportunity, OpportunityActions } from "../types";
+import { KindIcon } from "./KindIcon";
+import { closedReasonLabel, formatUpdated, statusLabel } from "./opportunityColumns";
+
+const Title = styled(SheetTitle)`
+  overflow-wrap: anywhere;
+`;
+
+const MetaRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+`;
+
+const KindLine = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+`;
+
+const Body = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+`;
+
+const DetailsList = styled.dl`
+  margin: 0;
+  display: grid;
+  gap: var(--space-3);
+`;
+
+const DetailRow = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+`;
+
+const DetailLabel = styled.dt`
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+`;
+
+const DetailValue = styled.dd`
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-body);
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+`;
+
+const MutedValue = styled(DetailValue)`
+  color: var(--color-text-muted);
+`;
+
+const ExternalLink = styled.a`
+  color: var(--color-text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+    border-radius: var(--radius-sm);
+  }
+`;
+
+const Updated = styled.p`
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+`;
+
+const DangerMenuItem = styled(DropdownMenuItem)`
+  color: var(--color-danger);
+
+  & > svg {
+    color: inherit;
+  }
+`;
+
+type Detail = { label: string; value: string | number | undefined };
+
+const date = (v?: string) => (v ? formatDate(v) : undefined);
+
+/** Kind-specific rows, in form order; empty values are skipped by the caller. */
+function kindDetails(o: Opportunity): Detail[] {
+  const f = copy.form;
+  switch (o.kind) {
+    case "event": {
+      const d = o.details;
+      return [
+        { label: f.event.date, value: date(d.date) },
+        { label: f.event.startTime, value: d.startTime && formatTime(d.startTime) },
+        { label: f.event.endTime, value: d.endTime && formatTime(d.endTime) },
+        { label: f.event.format, value: d.format && EVENT_FORMAT_LABEL[d.format] },
+        { label: f.area.label, value: formatWhere(o) },
+        { label: f.event.cost, value: d.cost && (d.cost === "paid" ? f.event.paid : f.event.free) },
+        { label: f.event.costDetails.label, value: d.cost === "paid" ? d.costDetails : undefined },
+        { label: f.event.accessibility.label, value: d.accessibility?.map((a) => ACCESSIBILITY_LABEL[a]).join(", ") },
+        { label: f.event.accessibilityNote.label, value: d.accessibilityNote },
+      ];
+    }
+    case "petition": {
+      const d = o.details;
+      return [
+        { label: f.petition.target.label, value: d.target },
+        { label: f.petition.deadline.label, value: date(d.deadline) },
+        { label: f.petition.signatureGoal.label, value: d.signatureGoal?.toLocaleString("en-CA") },
+      ];
+    }
+    case "volunteer": {
+      const d = o.details;
+      return [
+        { label: f.volunteer.timeCommitment.label, value: d.timeCommitment && TIME_COMMITMENT_LABEL[d.timeCommitment] },
+        { label: f.volunteer.format, value: d.format && VOLUNTEER_FORMAT_LABEL[d.format] },
+        { label: f.area.label, value: formatWhere(o) },
+        { label: f.volunteer.startDate.label, value: date(d.startDate) },
+        { label: f.volunteer.skills.label, value: d.skills?.map((x) => SKILL_LABEL[x]).join(", ") },
+        { label: f.volunteer.minimumAge.label, value: d.minimumAge },
+        { label: f.volunteer.applyBy.label, value: date(d.applyBy) },
+      ];
+    }
+    case "job": {
+      const d = o.details;
+      return [
+        { label: f.job.employmentType, value: d.employmentType && EMPLOYMENT_TYPE_LABEL[d.employmentType] },
+        { label: f.job.workplace, value: d.workplace && WORKPLACE_LABEL[d.workplace] },
+        { label: f.area.label, value: formatWhere(o) },
+        { label: f.job.pay.label, value: d.pay },
+        { label: f.job.applyBy.label, value: date(d.applyBy) },
+        { label: f.job.qualifications.label, value: d.qualifications },
+      ];
+    }
+    case "other": {
+      const d = o.details;
+      return [
+        { label: f.other.callToAction.label, value: d.callToAction },
+        { label: f.other.deadline.label, value: date(d.deadline) },
+        ...(d.details ?? []).map((x) => ({ label: x.label, value: x.value })),
+      ];
+    }
+  }
+}
+
+function statusVariant(o: Opportunity) {
+  if (o.status === "published") return "success" as const;
+  if (o.status === "draft") return "neutral" as const;
+  return "outline" as const;
+}
+
+/**
+ * Read-only details for one opportunity, shown in the list's side panel. One primary action (Edit);
+ * everything else lives in the ⋯ menu. Results show as toasts.
+ */
+export function OpportunitySheetContent({
+  opportunity: o,
+  basePath,
+  actions,
+  onDeleted,
+}: {
+  opportunity: Opportunity;
+  basePath: string;
+  actions: OpportunityActions;
+  onDeleted: () => void;
+}) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [pending, startTransition] = React.useTransition();
+  const [confirmDelete, setConfirmDelete] = React.useState(false);
+  const noun = KIND_NOUN[o.kind];
+  // The menu (and its "Delete" item) is gone by the time this confirm closes, so Radix has no trigger to
+  // return focus to; this button stays mounted (the sheet is still open), so we return focus to it directly.
+  const moreActionsRef = React.useRef<HTMLButtonElement>(null);
+  const keepRef = React.useRef<HTMLButtonElement>(null);
+
+  function run<T>(action: () => Promise<ActionState<T>>, after?: (result: ActionState<T>) => void) {
+    if (pending) return;
+    startTransition(async () => {
+      const result = await action();
+      if (result.message) toast({ title: result.message });
+      if (result.status === "success") {
+        router.refresh();
+        after?.(result);
+      }
+    });
+  }
+
+  const details = kindDetails(o).filter((d) => d.value !== undefined && d.value !== "");
+
+  return (
+    <>
+      <SheetHeader>
+        <Title>{o.title}</Title>
+        <MetaRow>
+          <Badge $variant={statusVariant(o)}>{statusLabel(o)}</Badge>
+          {o.status === "closed" && o.closedReason !== "closed" && <Badge $variant="outline">{closedReasonLabel(o)}</Badge>}
+          <KindLine>
+            <KindIcon kind={o.kind} size={14} />
+            {KIND_LABEL[o.kind]}
+          </KindLine>
+        </MetaRow>
+      </SheetHeader>
+
+      <SheetBody aria-busy={pending || undefined}>
+        <Body>
+          <DetailsList>
+            <DetailRow>
+              <DetailLabel>{copy.form.summary.label}</DetailLabel>
+              {o.summary ? <DetailValue>{o.summary}</DetailValue> : <MutedValue>{copy.panel.noDescription}</MutedValue>}
+            </DetailRow>
+            <DetailRow>
+              <DetailLabel>{copy.panel.postedBy}</DetailLabel>
+              <DetailValue>{o.organization.name}</DetailValue>
+            </DetailRow>
+            <DetailRow>
+              <DetailLabel>{copy.panel.topics}</DetailLabel>
+              {o.topics.length > 0 ? (
+                <DetailValue>
+                  <TagList>
+                    {o.topics.map((t) => (
+                      <Tag key={t}>{TOPIC_LABEL[t]}</Tag>
+                    ))}
+                  </TagList>
+                </DetailValue>
+              ) : (
+                <MutedValue>{copy.panel.notSet}</MutedValue>
+              )}
+            </DetailRow>
+            <DetailRow>
+              <DetailLabel>{copy.form.link.label}</DetailLabel>
+              {o.link ? (
+                <DetailValue>
+                  <ExternalLink href={o.link} target="_blank" rel="noopener noreferrer">
+                    {o.link}
+                  </ExternalLink>
+                </DetailValue>
+              ) : (
+                <MutedValue>{copy.panel.notSet}</MutedValue>
+              )}
+            </DetailRow>
+            {details.map((d, i) => (
+              <DetailRow key={`${d.label}-${i}`}>
+                <DetailLabel>{d.label}</DetailLabel>
+                <DetailValue>{d.value}</DetailValue>
+              </DetailRow>
+            ))}
+          </DetailsList>
+          <Updated>{copy.panel.lastUpdated(formatUpdated(o.updatedAt), o.updatedBy.name)}</Updated>
+        </Body>
+      </SheetBody>
+
+      <SheetFooter>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button ref={moreActionsRef} type="button" $variant="ghost" aria-label={copy.panel.moreActions} aria-busy={pending || undefined}>
+              <Icon icon={MoreHorizontal} size={16} />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" side="top">
+            {o.link && (
+              <DropdownMenuItem asChild>
+                <a href={o.link} target="_blank" rel="noopener noreferrer">
+                  <Icon icon={ExternalLinkIcon} size={16} />
+                  {copy.panel.openLink}
+                </a>
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem
+              onSelect={() =>
+                run(
+                  () => actions.duplicate(o.id),
+                  (result) => result.data && router.push(`${basePath}/${result.data.id}/edit`),
+                )
+              }
+            >
+              <Icon icon={Copy} size={16} />
+              {copy.panel.duplicate}
+            </DropdownMenuItem>
+            {o.status === "published" && (
+              <DropdownMenuItem onSelect={() => run(() => actions.close(o.id))}>
+                <Icon icon={CircleOff} size={16} />
+                {copy.panel.close}
+              </DropdownMenuItem>
+            )}
+            {o.status === "closed" && (
+              <DropdownMenuItem onSelect={() => run(() => actions.reopen(o.id))}>
+                <Icon icon={RotateCcw} size={16} />
+                {copy.panel.reopen}
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            <DangerMenuItem
+              onSelect={(event) => {
+                event.preventDefault();
+                setConfirmDelete(true);
+              }}
+            >
+              <Icon icon={Trash2} size={16} />
+              {copy.panel.delete}
+            </DangerMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <Button type="button" onClick={() => router.push(`${basePath}/${o.id}/edit`)}>
+          {copy.panel.edit}
+        </Button>
+      </SheetFooter>
+
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent
+          onOpenAutoFocus={(event) => {
+            // Start on the safe choice (Keep), not the dialog's close button.
+            event.preventDefault();
+            keepRef.current?.focus();
+          }}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            moreActionsRef.current?.focus();
+          }}
+        >
+          <AlertDialogTitle>{copy.confirmDelete.title(noun)}</AlertDialogTitle>
+          <AlertDialogDescription>{copy.confirmDelete.body}</AlertDialogDescription>
+          <AlertDialogActions>
+            <AlertDialogCancel asChild>
+              <Button ref={keepRef} type="button" $variant="secondary">
+                {copy.confirmDelete.cancel}
+              </Button>
+            </AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <Button type="button" $variant="danger" onClick={() => run(() => actions.remove(o.id), onDeleted)}>
+                {copy.confirmDelete.confirm}
+              </Button>
+            </AlertDialogAction>
+          </AlertDialogActions>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}

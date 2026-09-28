@@ -15,3 +15,4 @@ civic hubby
 2. create a .env in root
 3. copy the env variables in #dev into the .env
 5. `pnpm dev`
+
