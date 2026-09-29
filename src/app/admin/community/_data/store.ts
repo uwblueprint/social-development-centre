@@ -1,5 +1,6 @@
 import { labList, labLong } from "@/dev/state-lab/state"; // STATE LAB (disposable)
 import type { CtaKind, EmailKind, EmailOpportunity, MemberRecord, MemberSource, OnboardingState, SentEmail } from "./types";
+import { globalSingleton } from "@/lib/globalSingleton";
 
 /*
  * In-memory stand-in for the backend so the UI works end to end in development.
@@ -150,8 +151,7 @@ function seedEmails(m: MemberRecord, r: () => number, onboarding: OnboardingStat
   return out.reverse();
 }
 
-const g = globalThis as unknown as { __communityStoreV4?: Store };
-const store = (): Store => (g.__communityStoreV4 ??= seed()); // V3: reseeds with source, onboarding and clicks
+const store = (): Store => globalSingleton("__communityStoreV4", seed);
 
 export const members = (): MemberRecord[] => labList(store().members, (m) => ({ ...m, name: m.name && labLong(m.name) })); // STATE LAB (disposable)
 export const nextMemberId = () => `m_${++store().seq}`;

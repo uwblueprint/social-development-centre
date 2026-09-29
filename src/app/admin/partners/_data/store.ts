@@ -1,5 +1,6 @@
 import { countPublishedOpportunities } from "@/features/opportunities/queries";
 import type { Invitation, OrganizationNotes, PartnerContact, PartnerOrganization, PartnerStatus } from "./types";
+import { globalSingleton } from "@/lib/globalSingleton";
 
 /*
  * In-memory stand-in for the backend so the UI works end to end in development.
@@ -105,9 +106,7 @@ function sampleOrgs(): StoredOrg[] {
   });
 }
 
-// Bump the key when the seed or shape changes, so a running dev server picks up the new seed.
-const globalStore = globalThis as unknown as { __partnersStoreV7?: StoredOrg[] };
-export const orgs = (): StoredOrg[] => (globalStore.__partnersStoreV7 ??= seed());
+export const orgs = (): StoredOrg[] => globalSingleton("__partnersStoreV7", seed);
 
 export function statusOf(org: StoredOrg): PartnerStatus {
   if (org.removedAt) return "removed";

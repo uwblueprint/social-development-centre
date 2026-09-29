@@ -1,10 +1,13 @@
 import { css, styled } from "next-yak";
 
-/** No "link" variant (owner): every action is a box. Text-like actions use `ghost`. */
-type Variant = "primary" | "secondary" | "outline" | "ghost" | "danger";
+/**
+ * No "link" variant: every action is a box, and text-like actions use `ghost`. `dropzone` is the large
+ * dashed target that opens a file picker or takes a dropped file; `$dragging` highlights it during a drag.
+ */
+type Variant = "primary" | "secondary" | "outline" | "ghost" | "danger" | "dropzone";
 type Size = "sm" | "md" | "lg";
 
-export const Button = styled.button<{ $variant?: Variant; $size?: Size }>`
+export const Button = styled.button<{ $variant?: Variant; $size?: Size; $dragging?: boolean }>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -85,10 +88,27 @@ export const Button = styled.button<{ $variant?: Variant; $size?: Size }>`
         filter: brightness(0.92);
       }
     `}
-
+  ${({ $variant, $dragging }) =>
+    $variant === "dropzone" &&
+    css`
+      flex-direction: column;
+      gap: var(--space-1);
+      width: 100%;
+      height: auto;
+      padding: var(--space-5) var(--space-4);
+      border: 1px dashed ${$dragging ? "var(--color-primary)" : "var(--color-border-strong)"};
+      border-radius: var(--radius-lg);
+      background: ${$dragging ? "var(--color-bg-hover)" : "var(--color-surface)"};
+      color: var(--color-text);
+      white-space: normal;
+      &:hover:not(:disabled) {
+        border-color: var(--color-primary);
+        background: var(--color-bg-hover);
+      }
+    `}
 
   &:active:not(:disabled) {
-    transform: scale(0.96);
+    transform: ${({ $variant }) => ($variant === "dropzone" ? "none" : "scale(0.96)")};
   }
 
   &:focus-visible {

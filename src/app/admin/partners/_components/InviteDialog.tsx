@@ -57,11 +57,14 @@ export function InviteDialog({
   const formRef = React.useRef<HTMLFormElement>(null);
   useFocusFirstInvalid(formRef, state);
 
-  React.useEffect(() => {
+  // An Effect Event reads the latest props and toast without making the effect re-run when they change.
+  const onResult = React.useEffectEvent(() => {
     if (state.status === "idle" || state.fieldErrors) return;
     if (state.status === "success" || state.data?.saved) onOpenChange(false);
     if (state.message) toast({ title: state.message });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  });
+  React.useEffect(() => {
+    onResult();
   }, [state]);
 
   const defaultOrganization: CreatableComboboxValue | undefined = preset?.organization

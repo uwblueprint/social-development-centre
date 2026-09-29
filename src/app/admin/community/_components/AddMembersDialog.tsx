@@ -27,6 +27,7 @@ import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Textarea } from "@/components/ui/Textarea";
 import { useToast } from "@/components/ui/Toast";
 import { fieldError, idleState, type ActionState } from "@/lib/forms";
+import { requireOnline } from "@/lib/offline";
 import { confirmMembers, previewMembers, type AddMode } from "../_data/actions";
 import type { ImportPreview } from "../_data/types";
 import { csvToLines, summarizePreview } from "../_lib/import";
@@ -108,35 +109,9 @@ const StepHint = styled.span`
   color: var(--color-text-muted);
 `;
 
-/*
- * The drop target is the button itself: one dashed box, 224px tall so a file is easy to drop on it
- * (owner). No press-shrink: a big target that scales down reads as broken.
- */
-const DropButton = styled(Button)<{ $dragging?: boolean }>`
-  && {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-1);
-    width: 100%;
-    height: auto;
-    min-height: calc(var(--space-8) * 3.5);
-    padding: var(--space-5);
-    border: 1px solid transparent;
-    border-radius: var(--radius-md);
-    background-color: ${({ $dragging }) => ($dragging ? "var(--color-bg-hover)" : "transparent")};
-    background-image: var(--dashed-border);
-    background-size: var(--dashed-border-size);
-    background-position: var(--dashed-border-position);
-    background-repeat: var(--dashed-border-repeat);
-    background-origin: border-box;
-    white-space: normal;
-  }
-  &&:hover:not(:disabled) {
-    background-color: var(--color-bg-hover);
-  }
-  &&:active:not(:disabled) {
-    transform: none;
-  }
+/* Tall enough that a file is easy to drop on it. */
+const DropButton = styled(Button)`
+  min-height: calc(var(--space-8) * 3.5);
 `;
 
 const DropTitle = styled.span`
@@ -251,12 +226,14 @@ export function AddMembersDialog({ open, onOpenChange }: { open: boolean; onOpen
 
   // Done: close and say what happened, whether it was added straight away or confirmed from the preview.
   const applied = previewState.applied?.status === "success" ? previewState.applied : confirmState.status === "success" ? confirmState : null;
-  React.useEffect(() => {
+  const announceApplied = React.useEffectEvent(() => {
     if (applied) {
       onOpenChange(false);
       toast({ title: applied.message ?? copy.addDialog.addedFallback });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  });
+  React.useEffect(() => {
+    announceApplied();
   }, [applied]);
 
   function formData() {
@@ -274,7 +251,7 @@ export function AddMembersDialog({ open, onOpenChange }: { open: boolean; onOpen
   }
 
   function handleConfirm() {
-    if (confirmPending) return;
+    if (confirmPending || !requireOnline()) return;
     const fd = formData();
     if (resubscribe) fd.set("resubscribe", "on");
     startTransition(() => confirmAction(fd));
@@ -441,7 +418,7 @@ export function AddMembersDialog({ open, onOpenChange }: { open: boolean; onOpen
                       <DropButton
                         ref={uploadRef}
                         type="button"
-                        $variant="ghost"
+                        $variant="dropzone"
                         $dragging={dragging}
                         onClick={pickCsv}
                         onDragOver={(e) => {

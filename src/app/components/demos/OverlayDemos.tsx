@@ -122,6 +122,20 @@ function DialogDemo() {
   );
 }
 
+function IllustrationDialogDemo() {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button $variant="secondary">Illustration dialog</Button>
+      </DialogTrigger>
+      <DialogContent $variant="illustration" aria-describedby={undefined}>
+        <DialogTitle $flush>Goose stole your wifi.</DialogTitle>
+        <DialogDescription>Please reconnect to the internet and try again.</DialogDescription>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function AlertDialogDemo() {
   return (
     <AlertDialog>
@@ -359,6 +373,7 @@ export function OverlayDemos() {
       <AppToastProvider>
         <Row>
           <DialogDemo />
+          <IllustrationDialogDemo />
           <AlertDialogDemo />
           <PopoverDemo />
           <TooltipDemo />

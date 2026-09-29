@@ -26,6 +26,7 @@ import { Icon } from "@/components/ui/Icon";
 import { List } from "@/components/ui/ListRow";
 import { SheetBody, SheetHeader, SheetTitle } from "@/components/ui/Sheet";
 import { useToast } from "@/components/ui/Toast";
+import { requireOnline } from "@/lib/offline";
 import { partnersCopy } from "../_copy";
 import { dismissHealth, removePartner } from "../_data/actions";
 import type { AdminPartnerOrganization } from "../_data/types";
@@ -256,11 +257,13 @@ export function PartnerSheetContent({
   const moreActionsRef = React.useRef<HTMLButtonElement>(null);
 
   async function handleRemove() {
+    if (!requireOnline()) return;
     const result = await removePartner(org.id);
     if (result.message) toast({ title: result.message });
   }
 
   async function handleDismissHealth() {
+    if (!requireOnline()) return;
     const result = await dismissHealth(org.id);
     if (result.message) toast({ title: result.message });
   }

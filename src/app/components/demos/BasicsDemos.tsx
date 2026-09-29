@@ -27,6 +27,10 @@ export function ButtonDemos() {
         <Button $variant="ghost">Ghost</Button>
         <Button $variant="danger">Delete</Button>
       </Row>
+      <Button $variant="dropzone">
+        <strong>Choose a file</strong>
+        <span>or drop it here</span>
+      </Button>
       <Row>
         <Button $size="sm">Small</Button>
         <Button $size="md">Medium</Button>

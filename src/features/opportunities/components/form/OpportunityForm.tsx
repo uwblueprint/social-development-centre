@@ -248,7 +248,7 @@ export function OpportunityForm({
     if (state.status === "error" && allErrors.length > 0) setStep(stepOf(allErrors[0].key));
   }
 
-  React.useEffect(() => {
+  const handleSaveResult = React.useEffectEvent(() => {
     if (state.status === "success") {
       clearDraft();
       if (state.message) toast({ title: state.message });
@@ -258,7 +258,9 @@ export function OpportunityForm({
       else if (state.message) toast({ title: state.message });
     }
     // Runs once per submission result.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  });
+  React.useEffect(() => {
+    handleSaveResult();
   }, [state]);
 
   React.useEffect(() => {

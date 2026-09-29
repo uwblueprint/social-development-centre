@@ -1,6 +1,6 @@
 # Button
 
-A clickable control for a single action, styled with six variants and three sizes.
+A clickable control for a single action, styled with six variants (plus `dropzone`) and three sizes.
 
 ## Use when / Don't use when
 - Triggering an action: submit a form, open a `Dialog`, confirm a change.
@@ -13,6 +13,8 @@ A clickable control for a single action, styled with six variants and three size
 import { Button } from "@/components/ui/Button";
 ```
 - `$variant?: "primary" | "secondary" | "outline" | "ghost" | "danger"` — default `primary`. There is no link-style variant (owner, 28 Sep): every action is a box. For a quiet in-content action ("Back", "Download template") use `ghost` or `secondary` at `$size="sm"`.
+  - `dropzone` is the large dashed target that opens a file picker or takes a dropped file (the image field, the CSV import). It fills the width and lays its content out in a column. Pass `$dragging` while a file is dragged over it to highlight it.
+- `$dragging?: boolean` — `dropzone` only.
 - `$size?: "sm" | "md" | "lg"` — default `md`.
 - All native `<button>` props (`type`, `disabled`, `onClick`, …).
 - Icon-only buttons need `aria-label` (hard rule #3); disabled buttons need `disabledReason` via `DisabledReason`.

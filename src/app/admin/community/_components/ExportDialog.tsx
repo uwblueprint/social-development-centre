@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/Label";
 import { RadioGroup, RadioGroupOption } from "@/components/ui/RadioGroup";
 import { Select } from "@/components/ui/Select";
 import { useToast } from "@/components/ui/Toast";
+import { requireOnline } from "@/lib/offline";
 import { countExport, exportMembers } from "../_data/actions";
 import type { ExportKind, ExportScope, MemberTier } from "../_data/types";
 import { communityCopy as copy } from "../_copy";
@@ -73,6 +74,7 @@ export function ExportDialog({
   }, [open, kind, scope, includeUnsubscribed]);
 
   async function handleDownload() {
+    if (!requireOnline()) return;
     setDownloading(true);
     try {
       const { filename, csv } = await exportMembers(kind, scope, includeUnsubscribed);

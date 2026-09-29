@@ -1,6 +1,7 @@
 import { SAMPLE_ORG_NAMES } from "@/app/admin/partners/_data/store";
 import type { Opportunity, TopicId } from "./types";
 import { labList, labLong } from "@/dev/state-lab/state"; // STATE LAB (disposable)
+import { globalSingleton } from "@/lib/globalSingleton";
 
 /*
  * In-memory stand-in for the backend so both portals work end to end in development.
@@ -189,10 +190,9 @@ function sampleOpportunities(): Opportunity[] {
   return out;
 }
 
-// Versioned key: a store left over from an older shape (e.g. the "live" status, or free-text locations) is dropped on hot reload.
-const globalStore = globalThis as unknown as { __opportunitiesStoreV6?: Opportunity[] };
+// The versioned key drops a store left over from an older shape on hot reload.
 export const opportunities = (): Opportunity[] =>
-  labList((globalStore.__opportunitiesStoreV6 ??= seed().map(withPerformance)), (o) => ({ ...o, title: labLong(o.title) })); // STATE LAB (disposable)
+  labList(globalSingleton("__opportunitiesStoreV6", () => seed().map(withPerformance)), (o) => ({ ...o, title: labLong(o.title) })); // STATE LAB (disposable)
 
 /** Mock email reach, stable per id. The newest published listing hasn't gone out yet, to show the "not sent" state. */
 function withPerformance(o: Opportunity): Opportunity {

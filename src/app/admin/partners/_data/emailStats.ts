@@ -4,6 +4,8 @@
  * Backend: replace `emailStatsFor` with a query over the real sends and click tracking; delete the seed.
  */
 
+import { globalSingleton } from "@/lib/globalSingleton";
+
 const DAY = 86_400_000;
 const iso = (offsetDays: number) => new Date(Date.now() + offsetDays * DAY).toISOString();
 
@@ -27,8 +29,7 @@ function seed(): EmailInclusion[] {
   ];
 }
 
-const globalStore = globalThis as unknown as { __partnerEmailStatsV2?: EmailInclusion[] };
-const inclusions = () => (globalStore.__partnerEmailStatsV2 ??= seed());
+const inclusions = () => globalSingleton<EmailInclusion[]>("__partnerEmailStatsV2", seed);
 
 export interface OpportunityEmailStats {
   /** The first email the opportunity was in; absent if it was never emailed. */

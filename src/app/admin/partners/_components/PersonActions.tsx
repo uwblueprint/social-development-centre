@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import type { ActionState } from "@/lib/forms";
 import { useReturnFocus } from "@/lib/useReturnFocus";
+import { requireOnline } from "@/lib/offline";
 import { invitationCopy } from "../_copy";
 import type { PartnerContact } from "../_data/types";
 
@@ -57,7 +58,7 @@ export function usePersonActions<D = undefined>(
   if (confirm && confirm !== shown) setShown(confirm);
 
   async function run(action: (id: string) => Promise<ActionState<D>>) {
-    if (busy.current) return;
+    if (busy.current || !requireOnline()) return;
     busy.current = true;
     try {
       onResult(await action(contact.id));

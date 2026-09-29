@@ -122,12 +122,14 @@ export function MemberSheetContent({ member, now, onChange }: { member: Member; 
     else if (editState.fieldErrors?.email) emailRef.current?.focus();
   }, [editState]);
 
-  React.useEffect(() => {
+  const onResult = React.useEffectEvent(() => {
     if (editState.status !== "idle" && !editState.fieldErrors && editState.message) {
       toast({ title: editState.message });
       void getMemberById(member.id).then(onChange);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  });
+  React.useEffect(() => {
+    onResult();
   }, [editState]);
 
   const displayName = member.name ?? member.email;

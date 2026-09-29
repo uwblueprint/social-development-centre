@@ -18,8 +18,8 @@ import {
 ```
 - `Dialog` (Root): `open`/`onOpenChange`.
 - `DialogTrigger asChild` — wrap your own `Button`.
-- `DialogContent` — the overlay, panel, and a built-in labeled close (×) button.
-- `DialogTitle` (required), `DialogDescription` (optional), `DialogActions` — right-aligned action row, separated from the body by spacing.
+- `DialogContent` — the overlay, panel, and a built-in labeled close (×) button. `$variant="illustration"` puts the panel on the illustrations' ground so an illustration's square blends in (the offline dialog).
+- `DialogTitle` (required), `DialogDescription` (optional), `DialogActions` — right-aligned action row, separated from the body by spacing. `DialogTitle $flush` drops the title's margin and its space for the close button, for a centered title.
 
 ## Example
 ```tsx

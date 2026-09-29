@@ -68,34 +68,6 @@ const Preview = styled(ImageMatte)`
   border-radius: var(--radius-lg);
 `;
 
-/*
- * No image yet: one compact dashed target that opens the picker or takes a dropped file. A real dashed
- * border in --color-border-strong (the gradient dashes are the kit's disabled look, and lose the corners).
- */
-const Empty = styled(Button)<{ $dragging?: boolean }>`
-  && {
-    display: flex;
-    flex-direction: column;
-    /* Full width like the other fields (owner). */
-    gap: var(--space-1);
-    width: 100%;
-    height: auto;
-    padding: var(--space-5) var(--space-4);
-    border: 1px dashed ${({ $dragging }) => ($dragging ? "var(--color-primary)" : "var(--color-border-strong)")};
-    border-radius: var(--radius-lg);
-    /* Taupe ground (owner): taupe-50 at rest, taupe-100 on hover or while dragging. */
-    background: ${({ $dragging }) => ($dragging ? "var(--color-bg-hover)" : "var(--color-surface)")};
-    white-space: normal;
-  }
-  &&:hover:not(:disabled) {
-    border-color: var(--color-primary);
-    background: var(--color-bg-hover);
-  }
-  &&:active:not(:disabled) {
-    transform: none;
-  }
-`;
-
 const IconTile = styled.span`
   display: inline-flex;
   align-items: center;
@@ -176,10 +148,10 @@ export function ImageField({ value, onChange, error }: { value: string; onChange
             </Actions>
           </Frame>
         ) : (
-          <Empty
+          <Button
             id={p.id}
             type="button"
-            $variant="ghost"
+            $variant="dropzone"
             $dragging={dragging}
             aria-describedby={p["aria-describedby"]}
             onClick={pick}
@@ -199,7 +171,7 @@ export function ImageField({ value, onChange, error }: { value: string; onChange
             </IconTile>
             <EmptyTitle>{t.add}</EmptyTitle>
             <EmptyHint>{t.dropHint}</EmptyHint>
-          </Empty>
+          </Button>
         )
       }
     </Field>

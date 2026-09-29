@@ -468,19 +468,18 @@ const SignOutButton = styled.button`
   }
 `;
 
-/*
- * A 404 inside a portal keeps the sidebar but highlights nothing (owner): the URL may still start with a
- * section's path (e.g. /admin/opportunities/unknown-id). The 404 page flips this flag while it's shown.
+const NoActiveItemContext = React.createContext<(hidden: boolean) => void>(() => {});
+
+/**
+ * Call from a page that has no matching sidebar item, such as a 404 whose URL still starts with a section's
+ * path (/admin/opportunities/unknown-id). While it is mounted, no sidebar item is highlighted.
  */
-let notFoundShown = false;
-const notFoundListeners = new Set<() => void>();
-export function setSidebarNotFound(value: boolean) {
-  notFoundShown = value;
-  notFoundListeners.forEach((listener) => listener());
-}
-function subscribeNotFound(listener: () => void) {
-  notFoundListeners.add(listener);
-  return () => notFoundListeners.delete(listener);
+export function useSidebarNoActiveItem() {
+  const setHidden = React.useContext(NoActiveItemContext);
+  React.useEffect(() => {
+    setHidden(true);
+    return () => setHidden(false);
+  }, [setHidden]);
 }
 
 function isActive(pathname: string, href: string) {
@@ -493,9 +492,12 @@ function SidebarContent({
   onClose,
   closeRef,
   brandId,
+  noActiveItem,
 }: {
   config: SidebarConfig;
   brandId: string;
+  /** No item is highlighted (see useSidebarNoActiveItem). */
+  noActiveItem: boolean;
   /** Called with the destination when a link in the sidebar is chosen. */
   onNavigate: (href: string) => void;
   onClose: () => void;
@@ -505,8 +507,7 @@ function SidebarContent({
   // Highlight the chosen item at once (owner): a slow page would otherwise leave the old item selected
   // until it loads, so the click looks ignored. Dropped as soon as the URL changes.
   const [pending, setPending] = React.useState<{ href: string; from: string } | null>(null);
-  const notFound = React.useSyncExternalStore(subscribeNotFound, () => notFoundShown, () => false);
-  const current = pending && pending.from === pathname ? pending.href : notFound ? "" : pathname;
+  const current = pending && pending.from === pathname ? pending.href : noActiveItem ? "" : pathname;
   const choose = (href: string) => (e: React.MouseEvent) => {
     // A new tab or window doesn't change this page.
     if (!(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0)) setPending({ href, from: pathname });
@@ -649,6 +650,7 @@ export function SidebarLayout({
   // "/admin/community/…" → "/admin/community": the page entrance replays only when the section changes.
   const section = pathname.split("/").slice(0, 3).join("/");
   const [mobileOpen, setMobileOpen] = React.useState(false);
+  const [noActiveItem, setNoActiveItem] = React.useState(false);
   const asideId = React.useId();
   const brandId = React.useId();
   const asideRef = React.useRef<HTMLDivElement>(null);
@@ -680,7 +682,7 @@ export function SidebarLayout({
 
   // Move focus into the drawer when it opens. On close, return it to the menu button, unless a link was
   // chosen: then it goes to the destination page's heading.
-  React.useEffect(() => {
+  const moveFocus = React.useEffectEvent(() => {
     if (mobileOpen) closeRef.current?.focus();
     else if (wasOpen.current) {
       if (pendingHref.current) {
@@ -693,7 +695,9 @@ export function SidebarLayout({
     }
     wasOpen.current = mobileOpen;
     // pathname is read, not tracked: the route-change effect below handles navigation.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  });
+  React.useEffect(() => {
+    moveFocus();
   }, [mobileOpen]);
 
   React.useEffect(() => {
@@ -743,6 +747,7 @@ export function SidebarLayout({
           onClose={() => setMobileOpen(false)}
           closeRef={closeRef}
           brandId={brandId}
+          noActiveItem={noActiveItem}
         />
       </Aside>
       {mobileOpen && (
@@ -763,7 +768,9 @@ export function SidebarLayout({
           </IconButton>
           <Brand>{config.product.name}</Brand>
         </MobileBar>
-        <PageTransition key={section}>{children}</PageTransition>
+        <NoActiveItemContext.Provider value={setNoActiveItem}>
+          <PageTransition key={section}>{children}</PageTransition>
+        </NoActiveItemContext.Provider>
       </Main>
     </Shell>
   );

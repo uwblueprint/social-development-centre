@@ -80,10 +80,12 @@ function useRovingGrid(itemCount: number, cols: number, initialIndex: number, is
   const [activeIndex, setActiveIndex] = React.useState(initialIndex);
   const refs = React.useRef<(HTMLButtonElement | null)[]>([]);
 
-  React.useEffect(() => {
+  const focusActiveCell = React.useEffectEvent(() => {
     refs.current[activeIndex]?.focus();
     // Runs once, when this grid mounts — it owns the initial focus hand-off.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  });
+  React.useEffect(() => {
+    focusActiveCell();
   }, []);
 
   const handleKeyDown = React.useCallback(
@@ -264,9 +266,11 @@ export function DaysView({
   rangeEnd: Date;
   containerRef: React.RefObject<HTMLDivElement | null>;
 }) {
-  React.useEffect(() => {
+  const focusFirstDay = React.useEffectEvent(() => {
     containerRef.current?.querySelector<HTMLElement>('[tabindex="0"]')?.focus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  });
+  React.useEffect(() => {
+    focusFirstDay();
   }, []);
 
   return (

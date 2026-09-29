@@ -111,9 +111,11 @@ export function OrganizationView({ org, currentContactId }: { org: PartnerOrgani
     else if (state.status === "success") setBlocked(null);
   }
 
-  React.useEffect(() => {
+  const onResult = React.useEffectEvent(() => {
     if (state.status === "success" && state.message) toast({ title: state.message });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  });
+  React.useEffect(() => {
+    onResult();
   }, [state]);
 
   return (

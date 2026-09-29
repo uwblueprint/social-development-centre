@@ -42,7 +42,7 @@ const Overlay = styled(DialogPrimitive.Overlay)`
   }
 `;
 
-const Content = styled(DialogPrimitive.Content)`
+const Content = styled(DialogPrimitive.Content)<{ $variant?: "default" | "illustration" }>`
   position: fixed;
   top: 50%;
   left: 50%;
@@ -51,7 +51,7 @@ const Content = styled(DialogPrimitive.Content)`
   max-width: 480px;
   max-height: 85vh;
   overflow-y: auto;
-  background: var(--color-surface-raised);
+  background: ${({ $variant }) => ($variant === "illustration" ? "var(--illustration-page-bg)" : "var(--color-surface-raised)")};
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   padding: 20px;
@@ -90,14 +90,14 @@ const CloseButton = styled(DialogPrimitive.Close)`
   }
 `;
 
-const Title = styled(DialogPrimitive.Title)`
-  margin: 0 0 4px;
+const Title = styled(DialogPrimitive.Title)<{ $flush?: boolean }>`
+  margin: ${({ $flush }) => ($flush ? "0" : "0 0 4px")};
   font-size: var(--text-lg);
   font-weight: var(--weight-medium);
   line-height: var(--leading-heading);
   letter-spacing: var(--tracking-tight);
   color: var(--color-text);
-  padding-right: var(--space-6);
+  padding-right: ${({ $flush }) => ($flush ? "0" : "var(--space-6)")};
 `;
 
 const Description = styled(DialogPrimitive.Description)`
@@ -121,11 +121,15 @@ export const DialogTitle = Title;
 export const DialogDescription = Description;
 export const DialogActions = Actions;
 
+/**
+ * `$variant="illustration"` puts the dialog on the illustrations' ground, so an illustration's square
+ * blends in (the offline dialog).
+ */
 export function DialogContent({
   children,
   onEscapeKeyDown,
   ...props
-}: DialogPrimitive.DialogContentProps & { children: ReactNode }) {
+}: DialogPrimitive.DialogContentProps & { children: ReactNode; $variant?: "default" | "illustration" }) {
   return (
     <DialogPrimitive.Portal>
       <Overlay />

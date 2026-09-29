@@ -91,11 +91,13 @@ export function PersonEditForm({
   const formRef = React.useRef<HTMLFormElement>(null);
   useFocusFirstInvalid(formRef, state);
 
-  React.useEffect(() => {
+  const onResult = React.useEffectEvent(() => {
     if (state.status === "idle" || state.fieldErrors) return;
     if (state.message) toast({ title: state.message });
     if (state.status === "success") onDone?.();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  });
+  React.useEffect(() => {
+    onResult();
   }, [state]);
 
   const Form = inDialog ? DialogForm : EditForm;

@@ -56,7 +56,6 @@ export function useFormDraft<T>(storageKey: string, initial: () => T, model: T, 
       // Early drafts stored the bare model; later ones wrap it with the time it was saved.
       const savedModel = saved && "model" in saved ? saved.model : saved;
       if (savedModel && JSON.stringify(savedModel) !== pristine.current) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- restoring from browser storage after hydration
         setModel(savedModel as T);
         latest.current.toast({
           title: copy.form.draft.restored(saved && "savedAt" in saved && saved.savedAt ? draftWhen(saved.savedAt) : undefined),

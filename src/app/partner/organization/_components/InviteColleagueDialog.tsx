@@ -59,7 +59,7 @@ export function InviteColleagueDialog({
     }
   }
 
-  React.useEffect(() => {
+  const onResult = React.useEffectEvent(() => {
     if (state.status === "idle" || state.fieldErrors) return;
     if (state.data?.blocked) {
       onOpenChange(false);
@@ -68,7 +68,9 @@ export function InviteColleagueDialog({
     }
     if (state.status === "success" || state.data?.saved) onOpenChange(false);
     if (state.message) toast({ title: state.message });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  });
+  React.useEffect(() => {
+    onResult();
   }, [state]);
 
   return (

@@ -147,7 +147,7 @@ export function StateLab() {
     Object.defineProperty(navigator, "onLine", { get: () => false, configurable: true });
     window.dispatchEvent(new Event("offline"));
     return () => {
-      delete (navigator as unknown as Record<string, unknown>).onLine;
+      Reflect.deleteProperty(navigator, "onLine");
       window.dispatchEvent(new Event("online"));
     };
   }, [offline]);

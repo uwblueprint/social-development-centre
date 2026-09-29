@@ -4,6 +4,7 @@ import * as React from "react";
 import { Field } from "@/components/ui/Field";
 import { Textarea } from "@/components/ui/Textarea";
 import { idleState } from "@/lib/forms";
+import { requireOnline } from "@/lib/offline";
 import { partnersCopy } from "../_copy";
 import { saveOrganizationNotes } from "../_data/actions";
 import { ORGANIZATION_NOTES_MAX, type AdminPartnerOrganization } from "../_data/types";
@@ -27,7 +28,7 @@ export function OrganizationNotes({ org }: { org: AdminPartnerOrganization }) {
   const save = React.useCallback(
     async (value: string) => {
       window.clearTimeout(timer.current);
-      if (value === saved.current) return;
+      if (value === saved.current || !requireOnline()) return;
       setStatus("saving");
       const fd = new FormData();
       fd.set("notes", value);
