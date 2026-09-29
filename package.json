@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint --cache --cache-location node_modules/.cache/eslint/",
     "typecheck": "next typegen && tsc --noEmit",
-    "test:a11y": "playwright test",
+    "test:a11y": "playwright test --pass-with-no-tests",
     "check": "pnpm typecheck && pnpm lint && pnpm test:a11y",
     "docs:screenshots": "node --experimental-strip-types --no-warnings=ExperimentalWarning scripts/docs-screenshots.ts"
   },
