@@ -4,6 +4,7 @@ import AxeBuilder from "@axe-core/playwright";
 const routes = [
   "/components",
   "/admin/opportunities",
+  "/admin/opportunities/new?kind=event",
   "/admin/partners",
   "/admin/community",
   "/partner/opportunities",
