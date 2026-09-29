@@ -113,6 +113,9 @@ Toasts (owner, 28 Sep): every confirmation names its subject: "“Film night” 
 ## Page loading (owner, 28 Sep 2026)
 With slow data, clicking Community from Opportunities looked ignored: the old page and highlight stayed until Community loaded. Now the sidebar highlights the chosen item immediately, and every data page has a loading state (title and placeholder rows) that shows while it loads.
 
+## State lab (owner, 28 Sep 2026)
+A disposable, dev-only panel for auditing edge states, opened from **State lab** in the sidebar footer (no keyboard shortcut). See `src/dev/state-lab/README.md` to remove it.
+
 404 illustration in dark mode (owner, 28 Sep 2026): the inverse of light mode. Light is taupe-600 lines on a taupe-50 square; dark is taupe-500 lines (owner) on a taupe-900 square, and the page behind it is taupe-900 so the square blends in (tokens `--illustration-line`, `--illustration-ground`, `--illustration-page-bg`).
 
 Portal 404s (owner, 28 Sep 2026): unknown URLs under /admin or /partner show the 404 inside that portal's shell (sidebar visible, nothing highlighted). A mistyped section name (one segment, 4+ characters, exactly one section within two typos, e.g. /admin/communit) redirects to that section instead (`src/lib/closestSection.ts`).

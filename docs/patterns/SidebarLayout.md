@@ -43,3 +43,4 @@ Config must be built in a client component (icons are components and can't cross
 ## Navigation feedback (owner, 28 Sep 2026)
 - The chosen item is highlighted the moment it's clicked, before the page arrives; the highlight follows the URL again once it changes. Opening in a new tab (Ctrl/Cmd/Shift-click) doesn't move it.
 - Each route has a `loading.tsx` ([PageLoading](./PageLoading.md)), so the page area switches to a loading state at once.
+- Dev only: a **State lab** item above **Documentation** opens the disposable state lab (`src/dev/state-lab/`).

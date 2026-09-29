@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { css, keyframes, styled } from "next-yak";
 import type { LucideIcon } from "lucide-react";
-import { BookOpen, LogOut, Menu, X } from "lucide-react";
+import { BookOpen, FlaskConical, LogOut, Menu, X } from "lucide-react";
 import { Icon } from "@/components/ui/Icon";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { Tooltip } from "@/components/ui/Tooltip";
@@ -418,6 +418,32 @@ const FooterLink = styled(Link)`
   }
 `;
 
+/* STATE LAB (disposable): a footer item that's a button, styled like FooterLink. */
+const FooterButton = styled.button`
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  height: 36px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  font-size: var(--text-md);
+  line-height: var(--leading-ui);
+  cursor: pointer;
+  transition: background-color var(--duration) var(--ease), color var(--duration) var(--ease);
+
+  &:hover {
+    background: var(--color-bg-hover);
+    color: var(--color-text);
+  }
+  &:focus-visible {
+    box-shadow: var(--focus-ring);
+  }
+`;
+
 const SignOutButton = styled.button`
   all: unset;
   box-sizing: border-box;
@@ -553,6 +579,18 @@ function SidebarContent({
       )}
 
       <Footer>
+        {process.env.NODE_ENV !== "production" && ( // STATE LAB (disposable): opens src/dev/state-lab
+          <FooterButton
+            type="button"
+            onClick={() => {
+              onClose();
+              window.dispatchEvent(new Event("state-lab:open"));
+            }}
+          >
+            <Icon icon={FlaskConical} size={18} />
+            State lab
+          </FooterButton>
+        )}
         <FooterLink href={config.docsHref} aria-current={isActive(current, config.docsHref) ? "page" : undefined} onClick={choose(config.docsHref)}>
           <Icon icon={BookOpen} size={18} />
           Documentation

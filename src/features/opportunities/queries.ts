@@ -1,4 +1,5 @@
 import { orgs, statusOf } from "@/app/admin/partners/_data/store";
+import { labRead } from "@/dev/state-lab/state"; // STATE LAB (disposable)
 import { SDC_ORG } from "./catalog";
 import { effectiveStatus, keyDate } from "./format";
 import { opportunities } from "./store";
@@ -77,6 +78,7 @@ function sortFor(tab: OpportunityTab, sort?: OpportunitySort) {
 }
 
 export async function listOpportunities(actor: Actor, filters: OpportunityFilters): Promise<Opportunity[]> {
+  await labRead(); // STATE LAB (disposable)
   return scoped(actor, filters)
     .filter((o) => TAB_OF[o.status] === filters.tab)
     .sort(sortFor(filters.tab, filters.sort));
