@@ -1,0 +1,54 @@
+# Sheet
+
+A modal panel anchored to the right edge of the screen, full height, for viewing and editing a record without leaving the list behind it.
+
+Header, body and footer share one horizontal inset that matches the `ListPage` gutter (`--space-6`, `--space-4` below 768px), so a sheet lines up with the page behind it. The overlay dims but never blurs: the list behind a sheet is context people keep reading (dialogs blur).
+
+## Use when / Don't use when
+- Inspecting or editing one record from a list (a partner, a person) while keeping the list's context and scroll position.
+- A focused, centered task unrelated to a specific list row — use `Dialog`.
+- Confirming a destructive action — use `AlertDialog`, nested inside the sheet if needed.
+
+## API
+```tsx
+import {
+  Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle,
+  SheetDescription, SheetBody, SheetFooter, SheetClose,
+} from "@/components/ui/Sheet";
+```
+- `Sheet` (Root): `open`/`onOpenChange`.
+- `SheetTrigger asChild` — wrap your own `Button`.
+- `SheetContent` — overlay, right-anchored panel (~420px, full width below 640px), and a built-in labeled close (×) button. `size?: "default" | "wide"`: `wide` is `min(720px, 100vw)`, for content with its own width, such as a 600px email. Set it per sheet; don't widen every sheet.
+- `SheetHeader` — top section with a bottom hairline; put `SheetTitle` (required) and `SheetDescription` (optional) here, or any custom heading content (e.g. an editable name field). `actions?`: controls for the whole panel, such as a ⋯ menu trigger (a `$variant="ghost" $size="sm"` icon `Button`, made square). With `actions`, the first child (usually `SheetTitle`), the actions and the close button share one row, vertically centred, and the close button moves into that row; the other children sit below.
+- `SheetBody` — scrollable middle section.
+- `SheetFooter` — bottom section with a top hairline, right-aligned actions.
+- `SheetClose asChild` — wrap your own `Button` for a text "Close"/"Done" action, in addition to the built-in ×.
+
+## Example
+```tsx
+<Sheet open={open} onOpenChange={setOpen}>
+  <SheetContent>
+    <SheetHeader>
+      <SheetTitle>Northside Food Bank</SheetTitle>
+      <SheetDescription>Active partner since Jan 2026</SheetDescription>
+    </SheetHeader>
+    <SheetBody>{/* contacts, details */}</SheetBody>
+    <SheetFooter>
+      <Button variant="danger">Remove access</Button>
+    </SheetFooter>
+  </SheetContent>
+</Sheet>
+```
+
+Header, body and footer share one inset (`--space-4` top and bottom, `--space-5` sides), so edges line up down the panel.
+
+## Content rules
+`SheetTitle` names the record ("Northside Food Bank"), not the action. If the visible heading is an editable field rather than plain text, still render a `SheetTitle` for the accessible name (visually hidden if it would otherwise duplicate the field).
+
+## Accessibility
+Built on the same Radix Dialog primitive as `Dialog`: focus moves in on open and returns to the trigger on close, Esc and outside-click both dismiss, and the panel traps focus. `SheetTitle` is required as the accessible name — never omit it.
+
+## Don't
+1. Omitting `SheetTitle`, even when the visible heading is an editable field.
+2. Using `Sheet` for a task that isn't anchored to a specific record — use `Dialog`.
+3. Nesting a second `Sheet` inside a `Sheet` — use a `Dialog` for a sub-task instead.
