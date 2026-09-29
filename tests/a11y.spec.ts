@@ -3,6 +3,7 @@ import AxeBuilder from "@axe-core/playwright";
 
 const routes = [
   "/components",
+  "/admin/community",
 ];
 
 async function settle(page: import("@playwright/test").Page) {
@@ -48,3 +49,89 @@ test.describe("login", () => {
   });
 });
 
+test.describe("admin shell", () => {
+
+  test("a row's ⋯ menu opens without hiding tabbable content (WCAG 4.1.2)", async ({ page }) => {
+    await page.goto("/admin/community");
+    await settle(page);
+    await page.locator('button[aria-label^="Actions for"]').first().click();
+    await page.waitForTimeout(200);
+    await checkA11y(page);
+  });
+
+  test("mobile drawer at 320px has no violations", async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 700 });
+    await page.goto("/admin/community");
+    await settle(page);
+    // The tabs' roving-tabindex mount effect lands a little after `settle`'s wait; give it room so the
+    // scan doesn't catch the momentary state where neither tab nor the list itself is in the tab order.
+    await page.waitForTimeout(300);
+    await checkA11y(page); // reflow, no drawer open
+    await page.getByRole("button", { name: "Open menu" }).click();
+    await page.waitForTimeout(400);
+    await checkA11y(page);
+  });
+});
+
+test.describe("community", () => {
+  test("Add members dialog (single and import views) has no violations", async ({ page }) => {
+    await page.goto("/admin/community");
+    await settle(page);
+    await page.getByRole("button", { name: "Add members" }).click();
+    await page.waitForTimeout(250);
+    await checkA11y(page);
+    await page.getByRole("button", { name: "Import from a file" }).click();
+    await page.waitForTimeout(250);
+    await checkA11y(page);
+  });
+
+  test("Export dialog has no violations", async ({ page }) => {
+    await page.goto("/admin/community");
+    await settle(page);
+    await page.getByRole("button", { name: "Export" }).click();
+    await page.waitForTimeout(250);
+    await checkA11y(page);
+  });
+
+  test("kiosk launcher dialog has no violations", async ({ page }) => {
+    await page.goto("/admin/community");
+    await settle(page);
+    await page.getByRole("button", { name: "Open sign-up kiosk" }).click();
+    await page.waitForTimeout(250);
+    await checkA11y(page);
+  });
+
+  test("member sheet, its convert and delete confirm dialogs have no violations", async ({ page }) => {
+    await page.goto("/admin/community");
+    await settle(page);
+    await page.locator("tbody tr").first().click();
+    await page.waitForTimeout(250);
+    await checkA11y(page, [SANDBOXED_EMAIL_FRAME]);
+
+    await page.getByRole("button", { name: "Delete member" }).click();
+    await page.waitForTimeout(250);
+    await checkA11y(page, [SANDBOXED_EMAIL_FRAME]);
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(250);
+
+    await page.getByRole("button", { name: /Convert to paying member|Remove paying access/ }).click();
+    await page.waitForTimeout(250);
+    await checkA11y(page, [SANDBOXED_EMAIL_FRAME]);
+  });
+
+  test("column filter popover (staged Apply) has no violations", async ({ page }) => {
+    await page.goto("/admin/community");
+    await settle(page);
+    await page.getByRole("button", { name: /Filter Status/ }).click();
+    await page.waitForTimeout(250);
+    await checkA11y(page);
+  });
+
+  test("sort busy state has no violations", async ({ page }) => {
+    await page.goto("/admin/community");
+    await settle(page);
+    await page.getByRole("button", { name: /Name/ }).click();
+    await page.waitForTimeout(30);
+    await checkA11y(page);
+  });
+});
