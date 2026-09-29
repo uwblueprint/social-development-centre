@@ -1,5 +1,6 @@
 import type { ActionState } from "@/lib/forms";
 import { normalizeWebAddress } from "@/lib/url";
+import { labEventbrite } from "@/dev/state-lab/state"; // STATE LAB (disposable)
 import { dayOffset } from "./store";
 import type { Area } from "./types";
 
@@ -54,6 +55,8 @@ export async function prefillFromEventbrite(url: string): Promise<ActionState<Ev
 
   // Simulates the API's latency so the button's busy state is visible in development.
   await new Promise((resolve) => setTimeout(resolve, 400));
+  if ((await labEventbrite()) === "error") // STATE LAB (disposable)
+    return { status: "error", message: "State lab: Eventbrite didn't answer.", fieldErrors: { eventbrite: "Eventbrite didn't answer. Try again, or fill in the details yourself." } };
   const title = titleFromPath(parsed.pathname);
   return {
     status: "success",

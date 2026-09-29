@@ -4,6 +4,7 @@ import "@fontsource-variable/jetbrains-mono/wght.css";
 import "@/components/ui/tokens";
 import { TooltipProvider } from "@/components/ui/Tooltip";
 import { themeBootScript } from "@/lib/theme";
+import { StateLab } from "@/dev/state-lab/StateLab"; // STATE LAB (disposable)
 
 export const metadata: Metadata = {
   title: "Social Development Centre",
@@ -23,6 +24,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body>
         <TooltipProvider>
           {children}
+          {process.env.NODE_ENV !== "production" && <StateLab />} {/* STATE LAB (disposable) */}
         </TooltipProvider>
       </body>
     </html>
