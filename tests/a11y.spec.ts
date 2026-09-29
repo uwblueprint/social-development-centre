@@ -49,6 +49,26 @@ test.describe("login", () => {
   });
 });
 
+test.describe("kiosk", () => {
+  test("validation error state has no violations", async ({ page }) => {
+    await page.goto("/kiosk");
+    await settle(page);
+    await page.getByRole("button", { name: "Sign me up" }).click();
+    await page.waitForTimeout(200);
+    await checkA11y(page);
+  });
+
+  test("success screen with countdown has no violations", async ({ page }) => {
+    await page.goto("/kiosk");
+    await settle(page);
+    await page.getByLabel("Name", { exact: false }).fill("Ada Lovelace");
+    await page.getByLabel("Email", { exact: false }).fill("ada@example.org");
+    await page.getByRole("button", { name: "Sign me up" }).click();
+    await page.waitForTimeout(300);
+    await checkA11y(page);
+  });
+});
+
 test.describe("admin shell", () => {
 
   test("a row's ⋯ menu opens without hiding tabbable content (WCAG 4.1.2)", async ({ page }) => {
