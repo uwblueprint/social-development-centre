@@ -75,6 +75,11 @@ test.describe("kiosk", () => {
 });
 
 test.describe("admin shell", () => {
+  test("documentation page has no violations", async ({ page }) => {
+    await page.goto("/admin/documentation");
+    await settle(page);
+    await checkA11y(page);
+  });
 
   test("a row's ⋯ menu opens without hiding tabbable content (WCAG 4.1.2)", async ({ page }) => {
     await page.goto("/admin/community");
