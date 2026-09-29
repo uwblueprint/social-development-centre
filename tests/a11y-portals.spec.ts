@@ -67,6 +67,33 @@ test.describe("Opportunities", () => {
     await expectNoViolations(page);
   });
 
+  test("new form: type step with Eventbrite field", async ({ page }) => {
+    await page.goto("/admin/opportunities/new?kind=event");
+    await expectNoViolations(page);
+  });
+
+  test("new form: details step, topics at cap", async ({ page }) => {
+    await page.goto("/admin/opportunities/new?kind=event");
+    await page.getByRole("button", { name: /^next$/i }).click();
+    const tagButtons = page.locator('[id$="topics"] button');
+    for (let i = 0; i < 3; i++) await tagButtons.nth(i).click();
+    await expectNoViolations(page);
+  });
+
+  test("new form: review step", async ({ page }) => {
+    await page.goto("/admin/opportunities/new?kind=event");
+    await page.getByRole("button", { name: /^next$/i }).click();
+    await page.getByRole("button", { name: /^next$/i }).click();
+    await expectNoViolations(page);
+  });
+
+  test("new form: error summary after invalid submit", async ({ page }) => {
+    await page.goto("/admin/opportunities/new?kind=event");
+    await page.getByRole("button", { name: /^next$/i }).click();
+    await page.getByRole("button", { name: /^next$/i }).click();
+    await page.getByRole("button", { name: /^publish$/i }).click();
+    await expectNoViolations(page);
+  });
 });
 
 test.describe("Partner portal", () => {
@@ -85,7 +112,7 @@ test.describe("Partner portal", () => {
 test.describe("320px", () => {
   test.use({ viewport: { width: 320, height: 800 } });
 
-  for (const path of ["/admin/partners?org=org_1", "/partner/organization"]) {
+  for (const path of ["/admin/partners?org=org_1", "/admin/opportunities/new?kind=event", "/partner/organization"]) {
     test(`${path} has no violations at 320px`, async ({ page }) => {
       await page.goto(path);
       await expectNoViolations(page);
