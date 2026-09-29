@@ -15,10 +15,53 @@ async function expectNoViolations(page: import("@playwright/test").Page, exclude
   expect(results.violations.map((v) => `${v.id}: ${v.nodes.length} × ${v.help}`)).toEqual([]);
 }
 
+test.describe("Partners", () => {
+  test("organization panel open", async ({ page }) => {
+    await page.goto("/admin/partners?org=org_1");
+    await expectNoViolations(page);
+  });
+
+  test("people row menu open", async ({ page }) => {
+    await page.goto("/admin/partners?view=people");
+    await page.getByRole("button", { name: /^Actions for /i }).first().click();
+    await expectNoViolations(page);
+  });
+
+  test("edit details dialog open", async ({ page }) => {
+    await page.goto("/admin/partners?view=people");
+    await page.getByRole("button", { name: /^Actions for /i }).first().click();
+    await page.getByRole("menuitem", { name: /edit details/i }).click();
+    await expectNoViolations(page);
+  });
+
+  test("invite partner dialog open", async ({ page }) => {
+    await page.goto("/admin/partners");
+    await page.getByRole("button", { name: /invite partner/i }).click();
+    await expectNoViolations(page);
+  });
+
+  test("remove access confirm open", async ({ page }) => {
+    await page.goto("/admin/partners?org=org_1");
+    // Remove access lives in the panel's ⋯ menu.
+    await page.getByRole("dialog").getByRole("button", { name: /more actions/i }).click();
+    await page.getByRole("menuitem", { name: /remove access/i }).click();
+    await expectNoViolations(page);
+  });
+});
+
+test.describe("Partner portal", () => {
+
+  test("team invite dialog open", async ({ page }) => {
+    await page.goto("/partner/organization");
+    await page.getByRole("button", { name: /invite colleague/i }).click();
+    await expectNoViolations(page);
+  });
+});
+
 test.describe("320px", () => {
   test.use({ viewport: { width: 320, height: 800 } });
 
-  for (const path of []) {
+  for (const path of ["/admin/partners?org=org_1", "/partner/organization"]) {
     test(`${path} has no violations at 320px`, async ({ page }) => {
       await page.goto(path);
       await expectNoViolations(page);
