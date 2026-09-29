@@ -62,7 +62,7 @@ export async function updateMyOrganization(_prev: PartnerResult, fd: FormData): 
   if (result.fieldErrors) return profileFieldsError(result.fieldErrors);
   applyOrganizationProfile(me.org, result.changes);
   // The organization's name is the sidebar's product name, and Partners shows the profile too.
-  return settle({ status: "success", message: profileMessages.saved });
+  return settle({ status: "success", message: profileMessages.saved(me.org.name) });
 }
 
 /*

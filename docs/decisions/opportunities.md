@@ -1,6 +1,6 @@
 # Opportunities: decision log
 
-We built Opportunities while SDC wasn't available to answer questions, so most entries below are **assumptions that SDC hasn't confirmed yet**. Entries marked "Decided by owner" are confirmed. Each one is cheap to reverse. The questions and the reasoning behind them are in [plan/opportunities-and-partner-portal.md](../plan/opportunities-and-partner-portal.md). Most of them go to the 29 September discovery session.
+We built Opportunities while SDC wasn't available to answer questions, so most entries below are **assumptions that SDC hasn't confirmed yet**. Entries marked "Decided by owner" are confirmed. Each one is cheap to reverse. Most of them go to the 29 September discovery session.
 
 Each entry gives the decision, which page it's on, what it affects, when someone runs into it, and the client answer that would change it.
 
@@ -202,3 +202,44 @@ Each entry gives the decision, which page it's on, what it affects, when someone
 - **Page:** Admin and partner → Opportunities → form.
 - **Affects:** How long the form looks and reads.
 - **When encountered:** Every listing.
+
+## 23. One "Closes" date column, and reach in the table
+**What:** The list's date column is **Closes**: the event date (with start time), deadline or apply-by date, same format for every type. **Sent to** and **Clicks** columns sit after the title on Published and Closed. The title column stays frozen when the table scrolls sideways, and each row ends in an arrow to show it opens the panel.
+**Why:** The owner scans for "when does this close" and "did it reach people". Type-specific wording ("Apply by", "Closes") made the dates hard to scan.
+**Affects:** Both portals' Opportunities lists. Needs `performance` from the backend (backend/opportunities.md).
+
+## 24. The panel leads with when and how it performed
+**What:** The panel shows the date on one line, then **Sent to** and **Clicks** tiles, then the summary and topics, then a **Details** list (posted by, link, kind-specific fields). Event date, start and end are one line. A published listing closing within 7 days that hasn't been emailed shows a warning.
+**Why:** Admins rarely attend; they check reach, topics and timing first.
+
+## 25. Panel layout, round two (owner, 28 Sep 2026)
+**What:** The panel header is the name, the description right under it, then status and type badges (the table's styles) and topic badges (plain outline, same size). Below: **Sent to** and **Clicks** tiles, with the click rate in brackets beside the count. The date is the first row of **Details** ("Wed, Oct 7 · 6:30 p.m. – 9:00 p.m. · In 9 days"). The footer shows Open link, Duplicate, Close/Reopen and Delete (red) as secondary icon buttons with tooltips, and **Edit** as the primary button; there's no ⋯ menu. Panels are 480px wide.
+
+## 26. Type step, event details and review, round two (owner, 28 Sep 2026)
+**What:**
+- A real stepper (numbered circles joined by lines; done steps show a check).
+- Type is a set of cards (icon and name only); the step heading is the only "Type" label.
+- One **Link** field, required for every type. Volunteer roles and jobs say **Link or email** and accept an email address. An event's link that is an Eventbrite page offers **Fill in details** (sparkle icon); there is no separate Eventbrite field.
+- Events: online events ask for no place; in person and hybrid ask only for **Area** (no address, no meeting link). No type has an address or venue field.
+- Paid events give **From ($)** and optional **To ($)**: one price or a range, matched against members' budgets.
+- Drafts never need an area. The review preview shows the email: title with the type badge, description, when / where / hosted by, then **Register** (or the type's action) and **Send to a friend**. Topics aren't shown; they decide who gets the email.
+**Why:** The owner found the old step confusing and the address unused; a link click is how a listing's success is measured.
+Round three (owner, 28 Sep): the stepper is a thin three-segment bar with "1 Type" labels (Calendly, fal, Higgsfield), no filled circle. The Type step has no visible heading. Type cards use each type's category colour: an icon tile, a blurred glow placed differently on each card that drifts on hover, a lift on hover, and when selected the light fill with the tile one shade darker. An Eventbrite link shows the Eventbrite mark in their brand orange with a primary **Fill in details** button.
+Round four (owner, 28 Sep): type cards are compact rows (icon tile beside the name, no descriptions, no glow). On hover a 1px border draws itself around the card in the type's light (200) shade; selected keeps the fill, accent border and check. The stepper's segment fills like a loading bar, and each step's content rises and fades in.
+Form action bar (owner, 28 Sep): the primary action (Next, Publish or Save changes) sits at the far right with **Back** just left of it; **Cancel** and **Save as draft** sit apart on the left. Enter in a field presses the primary button. Type cards have even padding on every side, and the icon tile's corner radius is smaller than the card's so the corners nest.
+Eventbrite fill (owner, 28 Sep): **Fill in details** moves straight to Details, where a band in Eventbrite orange sweeps down the step and each field glows briefly as it's filled.
+Enter in an event's Eventbrite **Link** runs Fill in details (validating the link); the scan pauses 300ms, then sweeps down over 4s (`--delay-scan`, `--duration-scan`).
+Scan detail (owner, 28 Sep): a 2px glowing line; fields start empty and each fills in (text appears with a brief glow) as the line passes it.
+Eventbrite fill, round three (owner, 28 Sep): Details opens at once with the line bobbing at the top while Eventbrite answers (at least 300ms, at most 5s, then 'Timed out. Couldn't fetch details from Eventbrite.' and back to the link). The line then sweeps down over 3s and the page scrolls with it. After a fill Details is split: From Eventbrite first, Add the rest (organization, topics, cost, accessibility) at the bottom. Step headings take focus without a ring.
+Scan, round four (owner, 28 Sep): the line only sweeps From Eventbrite (never Add the rest), and it's Eventbrite orange only: a 3px core brightening to full orange, then five halos stepping out through translucent orange to its lightest tint, each wider and softer (largest blur 128px).
+Action bar (owner, 28 Sep): Cancel and Save as draft (and Save changes on published listings) are outline buttons; no success toast after an Eventbrite fill.
+Form errors (owner, 28 Sep): changing a field clears its error inline and in the summary (the count updates; the summary disappears when all are fixed) until the next save attempt re-checks. Partner Opportunities search reads "Search by title" (partners only see their own organization's listings).
+Images (owner, 28 Sep): "the ability to add an image is very, very important." Every listing can have one optional image (JPG, PNG or WebP; the browser scales it to 1200px wide). It shows on partner cards, at the top of the Review preview (the email) and in the details panel. Partner Published and Drafts are image-led cards with only type, title, closing date and one status line (reach, or last change for drafts); Closed stays a table because it grows long. Admin lists stay tables.
+Type cards (owner, 28 Sep): the hover border draw stays, drawn over the grey border in the 500 shade of the type's colour (200 lighter than its icon; `--color-category-N-line`); the border is 1px in every state (rest, hover, selected), never 2px.
+Image shapes (owner, 28 Sep): the browser shrinks any large image (longest side 1600px). Shapes beyond 8:1 or 1:8 are refused with a message; anything else is kept as is. Cards and the details panel are always exactly 16:9: the whole image sits inside a 4px taupe matte (taupe-100 via `--color-bg-hover`), with taupe bars filling any leftover width or height; the email shows it at its own shape. The empty image field is a full-width dashed drop zone like the other fields' width.
+Form density (owner, 28 Sep): 32px between fields and above each section divider; character counters appear only in the last 25% of a limit; fewer hints (no image hint, a shorter Short description hint, no "From ($)" hint, no "Add the rest" line); the empty image field has a taupe ground (taupe-50, taupe-100 on hover). Cost, From ($) and To ($) sit on one line and wrap on narrow screens. Images on cards, the panel and the form preview have 4px corners inside the taupe matte.
+
+Unsaved work (owner, 28 Sep): no "leave page?" warning. The form keeps unsaved work in the browser; coming back restores it with a toast ("We restored your unsaved changes.") and a **Discard** action. It's cleared once the listing saves.
+Broken images (owner, 28 Sep): an image that fails to load falls back to the type's colour and icon on cards, and isn't shown in the panel, the Review preview or emails.
+Scan, round five (owner feedback, 28 Sep): the layered halos read as a lightsaber. Now one simple 2px line in a brighter orange (`--color-eventbrite-bright`) with a single soft, sun-like radial glow.
+Drafts, round two (owner, 28 Sep): the restore toast says when: "We restored your unsaved changes from today at 3:42 p.m." (or yesterday, or a date). Clicking **Cancel** is an explicit discard: it clears the saved draft too.

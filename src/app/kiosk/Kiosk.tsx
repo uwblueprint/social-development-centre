@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import confetti from "canvas-confetti";
 import { styled } from "next-yak";
 import { CircleAlert, CircleCheck } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -23,67 +24,115 @@ const RESET_SECONDS = 20;
  * On phones the content starts at the top so both fields show without scrolling; tablets center it.
  * After a sign-up the whole screen tints to --color-success-subtle (with an icon and text, not color alone).
  */
+/*
+ * Poster layout: someone walking past has about two seconds, so one huge line on a solid block does the
+ * selling, and the form sits beside it (landscape) or under it (portrait) with nothing else competing.
+ */
 const Main = styled.main`
   display: grid;
-  align-items: start;
-  justify-items: center;
+  grid-template-rows: auto 1fr;
+  align-content: start;
   min-height: 100dvh;
-  padding: var(--space-5) var(--space-4) var(--space-7);
   background: var(--color-bg);
   color: var(--color-text);
   font-size: var(--text-lg);
   line-height: var(--leading-body);
   transition: background-color var(--duration-slow) var(--ease);
 
-  &[data-state="success"] {
-    background: var(--color-success-subtle);
-  }
-
-  @media (min-width: 600px) and (min-height: 600px) {
-    align-items: center;
-    padding: var(--space-6);
-  }
-`;
-
-const Panel = styled.div`
-  display: grid;
-  gap: var(--space-5);
-  width: 100%;
-  max-width: 36rem;
-
-  @media (orientation: landscape) and (min-width: 900px) {
+  /* Wide: two full-height columns. */
+  @media (min-width: 900px) {
+    grid-template-rows: 1fr;
     grid-template-columns: 1fr 1fr;
-    align-items: center;
-    gap: var(--space-8);
-    max-width: 64rem;
+    align-content: stretch;
   }
 `;
 
-/* Deliberately quieter than the form: a short heading and one muted paragraph. */
+/*
+ * Narrow screens (owner): no poster. A plain heading and a short, quieter line sit in the form's
+ * column, then a clear gap, then the fields, so the whole ask fits on a phone.
+ * 900px and wider: the poster block on the left, the form on the right.
+ */
 const Intro = styled.div`
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  width: 100%;
+  max-width: 32rem;
+  justify-self: center;
+  padding: var(--space-7) var(--space-5) 0;
+
+  @media (min-width: 900px) {
+    justify-content: center;
+    gap: var(--space-4);
+    max-width: none;
+    padding: var(--space-8);
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+  }
 `;
 
 const IntroHeading = styled.h1`
   margin: 0;
-  font-size: var(--text-lg);
+  font-size: var(--text-xl);
   line-height: var(--leading-heading);
   font-weight: var(--weight-medium);
+  letter-spacing: var(--tracking-tight);
+  overflow-wrap: anywhere;
+
+  /* Owner: the display size was too loud; the poster block carries the emphasis. */
+  @media (min-width: 900px) {
+    max-width: 16ch;
+  }
 `;
 
 const IntroBody = styled.p`
   margin: 0;
   font-size: var(--text-md);
   color: var(--color-text-muted);
+
+  @media (min-width: 900px) {
+    max-width: 32ch;
+    font-size: var(--text-lg);
+    color: inherit;
+  }
 `;
 
-const Heading = styled.h2`
+/* The short line on phones, the full one on the poster; only one is ever displayed. */
+const Narrow = styled.span`
+  @media (min-width: 900px) {
+    display: none;
+  }
+`;
+
+const Wide = styled.span`
+  display: none;
+
+  @media (min-width: 900px) {
+    display: inline;
+  }
+`;
+
+const Panel = styled.div`
+  display: grid;
+  align-content: start;
+  gap: var(--space-5);
+  width: 100%;
+  max-width: 32rem;
+  justify-self: center;
+  /* A clear gap between the heading and the first field. */
+  padding: var(--space-7) var(--space-5);
+
+  @media (min-width: 900px) {
+    align-content: center;
+    padding: var(--space-8) var(--space-6);
+  }
+`;
+
+const Heading = styled.h1`
   margin: 0;
   font-size: var(--text-xl);
   line-height: var(--leading-heading);
-  font-weight: var(--weight-regular);
+  font-weight: var(--weight-medium);
   overflow-wrap: anywhere;
 
   &:focus {
@@ -91,20 +140,16 @@ const Heading = styled.h2`
   }
 `;
 
-const Body = styled.p`
-  margin: 0;
-  overflow-wrap: anywhere;
-`;
-
 const Form = styled.form`
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-5);
   scroll-margin: var(--space-5);
 
-  label,
-  span {
-    font-size: var(--text-lg);
+  label {
+    font-size: var(--text-md);
+    font-weight: var(--weight-medium);
+    line-height: var(--leading-ui);
   }
 
   input {
@@ -143,22 +188,57 @@ const Alert = styled.p`
   }
 `;
 
+/* Success: one centred column on a soft green screen, read top to bottom in a couple of seconds. */
+const SuccessMain = styled.main`
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: var(--space-7) var(--space-5);
+  background: var(--color-success-subtle);
+  color: var(--color-text);
+  font-size: var(--text-lg);
+  line-height: var(--leading-body);
+  text-align: center;
+`;
+
 const Done = styled.div`
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  align-items: center;
+  width: 100%;
+  max-width: 28rem;
 `;
 
 const DoneIcon = styled.span`
   display: inline-flex;
+  margin-bottom: var(--space-5);
   color: var(--color-success);
 `;
 
+const DoneBody = styled.p`
+  margin: var(--space-2) 0 var(--space-7);
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+`;
+
 const Countdown = styled.p`
-  margin: 0;
+  margin: var(--space-4) 0 0;
+  font-size: var(--text-sm);
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
 `;
+
+/** Tokens, read at runtime: confetti draws on a canvas, which can't use CSS variables directly. */
+const CONFETTI_TOKENS = ["--color-success", "--color-category-1", "--color-category-2", "--color-category-3", "--color-warning"];
+
+function celebrate() {
+  const styles = getComputedStyle(document.documentElement);
+  const colors = CONFETTI_TOKENS.map((t) => styles.getPropertyValue(t).trim()).filter(Boolean);
+  // `disableForReducedMotion` skips it for people who ask for less motion.
+  const burst = { particleCount: 80, spread: 70, startVelocity: 45, colors, disableForReducedMotion: true };
+  void confetti({ ...burst, angle: 60, origin: { x: 0, y: 0.7 } });
+  void confetti({ ...burst, angle: 120, origin: { x: 1, y: 0.7 } });
+}
 
 /** Centers a focused field in view, again once the on-screen keyboard has opened and resized the viewport. */
 function useKeepFocusedFieldInView() {
@@ -210,55 +290,65 @@ function Round({ location, focusName, onNext }: { location: string | null; focus
 
   const done = state.status === "success" ? state.data : undefined;
 
-  // Success keeps the two columns: the intro stays, and the confirmation takes the form's place.
+  // Success is its own screen: the sign-up pitch is done, so only the confirmation shows.
+  if (done) {
+    return (
+      <SuccessMain>
+        <Confirmation name={done.name} email={done.email} onNext={onNext} />
+      </SuccessMain>
+    );
+  }
+
   return (
-    <Main data-state={done ? "success" : undefined}>
+    <Main>
+      <Intro>
+        <IntroHeading>{copy.heading}</IntroHeading>
+        <IntroBody>
+          <Narrow>{copy.introShort}</Narrow>
+          <Wide>{copy.intro}</Wide>
+        </IntroBody>
+      </Intro>
       <Panel>
-        <Intro>
-          <IntroHeading>{copy.heading}</IntroHeading>
-          <IntroBody>{copy.intro}</IntroBody>
-        </Intro>
-        {done ? (
-          <Confirmation name={done.name} email={done.email} onNext={onNext} />
-        ) : (
-          /* autoComplete off: this is a shared tablet, so it must never suggest the last person's details. */
-          <Form action={action} noValidate autoComplete="off">
-            <Field label={copy.nameLabel} required error={fieldError(state, "name")}>
-              {(props) => (
-                <Input
-                  {...props}
-                  ref={nameRef}
-                  name="name"
-                  autoComplete="off"
-                  autoCapitalize="words"
-                  defaultValue={state.data?.name}
-                />
-              )}
-            </Field>
-            <Field label={copy.emailLabel} required error={fieldError(state, "email")}>
-              {(props) => (
-                <Input
-                  {...props}
-                  ref={emailRef}
-                  name="email"
-                  type="email"
-                  inputMode="email"
-                  autoComplete="off"
-                  autoCapitalize="none"
-                  spellCheck={false}
-                  defaultValue={state.data?.email}
-                />
-              )}
-            </Field>
-            {state.status === "error" && state.message && (
-              <Alert role="alert">
-                <Icon icon={CircleAlert} size={20} />
-                <span>{state.message}</span>
-              </Alert>
+        {/* autoComplete off: this is a shared tablet, so it must never suggest the last person's details. */}
+        <Form action={action} noValidate autoComplete="off">
+          {/* Both fields are required, so neither shows "(required)"; the inputs still carry `required`. */}
+          <Field label={copy.nameLabel} error={fieldError(state, "name")}>
+            {(props) => (
+              <Input
+                {...props}
+                ref={nameRef}
+                name="name"
+                required
+                autoComplete="off"
+                autoCapitalize="words"
+                defaultValue={state.data?.name}
+              />
             )}
-            <BigSubmit $size="lg">{copy.submit}</BigSubmit>
-          </Form>
-        )}
+          </Field>
+          <Field label={copy.emailLabel} error={fieldError(state, "email")}>
+            {(props) => (
+              <Input
+                {...props}
+                ref={emailRef}
+                name="email"
+                required
+                type="email"
+                inputMode="email"
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                defaultValue={state.data?.email}
+              />
+            )}
+          </Field>
+          {state.status === "error" && state.message && (
+            <Alert role="alert">
+              <Icon icon={CircleAlert} size={20} />
+              <span>{state.message}</span>
+            </Alert>
+          )}
+          <BigSubmit $size="lg">{copy.submit}</BigSubmit>
+        </Form>
       </Panel>
     </Main>
   );
@@ -269,7 +359,10 @@ function Confirmation({ name, email, onNext }: { name: string; email: string; on
   const [paused, setPaused] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
 
-  useEffect(() => headingRef.current?.focus(), []);
+  useEffect(() => {
+    headingRef.current?.focus();
+    celebrate();
+  }, []);
 
   // Any touch or keypress pauses the reset (WCAG 2.2.1), so nobody loses the screen mid-read.
   useEffect(() => {
@@ -292,12 +385,12 @@ function Confirmation({ name, email, onNext }: { name: string; email: string; on
   return (
     <Done>
       <DoneIcon>
-        <Icon icon={CircleCheck} size={48} />
+        <Icon icon={CircleCheck} size={64} />
       </DoneIcon>
       <Heading ref={headingRef} tabIndex={-1}>
         {copy.done(firstName(name))}
       </Heading>
-      <Body>{copy.doneBody(email)}</Body>
+      <DoneBody>{copy.doneBody(email)}</DoneBody>
       <BigButton $size="lg" type="button" onClick={onNext}>
         {copy.next}
       </BigButton>

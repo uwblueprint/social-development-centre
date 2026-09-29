@@ -6,9 +6,8 @@ For SDC admins. Community holds everyone who gets SDC emails and shows where eac
 Every person has one status in the **Status** column:
 - **Invited**: they joined but haven't started setting up their preferences.
 - **Onboarding incomplete**: they started setting up but didn't finish.
-- **Never clicked**: they're set up but have never clicked an opportunity's main button in an email.
 - **Active**: they clicked an opportunity's main button (signed up or took action) in the last 60 days.
-- **Inactive**: they clicked before, but not in the last 60 days.
+- **Inactive**: they haven't clicked an opportunity's main button in the last 60 days, including people who never have.
 - **Unsubscribed**: they don't get emails.
 
 Opening an email doesn't count, and neither does sharing an opportunity with a friend.
@@ -53,7 +52,7 @@ Click their email, in the table or at the top of their panel. The icon beside it
 
 ![The Add members dialog with Name, Email, Make them a paying member and the Add member button highlighted](img/admin-community/add-someone.png)
 
-1. Click **Add members**.
+1. Click **Add members** (the person-with-a-plus icon at the top right; point at it to see its name).
 2. Enter their **Name** (optional) and **Email**.
 3. To give them paid benefits, check **Make them a paying member**.
 4. Click **Add member**.
@@ -65,8 +64,8 @@ They get the matching welcome email and show as **Invited** until they set up th
 ![The Import from a file view with the Upload CSV button highlighted, Download template beside it and the Rows to add box below](img/admin-community/import-people-from-a-file.png)
 
 1. Click **Add members**, then **Import from a file**.
-2. Click **Download template** if you need one. Your CSV needs a **name** and an **email** column.
-3. Click **Upload CSV** and choose your file. Its rows appear in **Rows to add** so you can check and edit them.
+2. Click **Choose a CSV file** (or drag the file onto it). Your CSV needs a **name** and an **email** column; click **Download template** if you need one. To type or paste people instead, click **Paste rows instead**.
+3. The rows appear in **People to add**, one person per line, so you can check and edit them. Click **Add another file** to add more.
 4. To make everyone on the list paying members, check **Make them paying members**.
 5. Click **Continue** and read the preview. To go back to adding one person, click **Back**.
 
@@ -91,7 +90,7 @@ Below the groups you'll see how many emails will be sent. The main button says w
 
 ![The Open sign-up kiosk dialog with the Location field and the Open kiosk button highlighted](img/admin-community/sign-people-up-at-a-booth.png)
 
-1. Click **Open sign-up kiosk**.
+1. Click **Open sign-up kiosk** (the tablet icon at the top right).
 2. Optionally, under **Location**, type where the booth is. It's saved with each sign-up and shows in the Members export; visitors don't see it.
 3. Click **Open kiosk**. The sign-up page opens in a new tab; hand the tablet to visitors. To close without opening it, click **Cancel**.
 

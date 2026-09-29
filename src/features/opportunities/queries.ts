@@ -1,4 +1,5 @@
 import { orgs, statusOf } from "@/app/admin/partners/_data/store";
+import { labRead } from "@/dev/state-lab/state"; // STATE LAB (disposable)
 import { SDC_ORG } from "./catalog";
 import { effectiveStatus, keyDate } from "./format";
 import { opportunities } from "./store";
@@ -50,7 +51,7 @@ function scoped(actor: Actor, filters: Omit<OpportunityFilters, "tab">) {
 /**
  * Default order: published by soonest date first; drafts and closed by most recently updated first.
  * A chosen sort (a column header) replaces it. Undated listings go last either way; ties fall back to
- * most recently updated.
+ * most recently updated. Sent to and Clicks put listings that haven't been emailed last either way.
  */
 function sortFor(tab: OpportunityTab, sort?: OpportunitySort) {
   const chosen: OpportunitySort = sort ?? (tab === "published" ? { key: "date", direction: "asc" } : { key: "updated", direction: "desc" });
@@ -60,6 +61,12 @@ function sortFor(tab: OpportunityTab, sort?: OpportunitySort) {
     if (chosen.key === "title") order = sign * a.title.localeCompare(b.title);
     else if (chosen.key === "organization") order = sign * a.organization.name.localeCompare(b.organization.name);
     else if (chosen.key === "updated") order = sign * a.updatedAt.localeCompare(b.updatedAt);
+    else if (chosen.key === "sentTo" || chosen.key === "clicks") {
+      const ka = a.performance?.[chosen.key];
+      const kb = b.performance?.[chosen.key];
+      if (ka === undefined || kb === undefined) order = ka !== undefined ? -1 : kb !== undefined ? 1 : 0;
+      else order = sign * (ka - kb);
+    }
     else {
       const ka = keyDate(a);
       const kb = keyDate(b);
@@ -71,6 +78,7 @@ function sortFor(tab: OpportunityTab, sort?: OpportunitySort) {
 }
 
 export async function listOpportunities(actor: Actor, filters: OpportunityFilters): Promise<Opportunity[]> {
+  await labRead(); // STATE LAB (disposable)
   return scoped(actor, filters)
     .filter((o) => TAB_OF[o.status] === filters.tab)
     .sort(sortFor(filters.tab, filters.sort));
@@ -134,9 +142,6 @@ export function countPublishedOpportunities(organizationId: string): number {
     (o) => o.organization.id === organizationId && effectiveStatus(o, new Date(), removedAt).status === "published",
   ).length;
 }
-
-/** @deprecated Renamed to countPublishedOpportunities; kept until Partners switches over. */
-export const countLiveOpportunities = countPublishedOpportunities;
 
 /**
  * Read-only, for Partners health (src/app/admin/partners/_data/health.ts): every opportunity an organization

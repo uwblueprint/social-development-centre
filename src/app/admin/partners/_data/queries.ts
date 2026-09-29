@@ -1,3 +1,4 @@
+import { labList, labLong, labRead } from "@/dev/state-lab/state"; // STATE LAB (disposable)
 import { withInvitationState } from "./contacts";
 import { activityOf } from "./health";
 import { currentContacts, orgs, statusOf, toPublic, type StoredOrg } from "./store";
@@ -73,7 +74,8 @@ export async function listPartners(query: OrganizationQuery): Promise<{
   rows: AdminPartnerOrganization[];
   facets: { status: FacetOption<PartnerStatusFilter>[]; health: FacetOption<PartnerHealth>[] };
 }> {
-  const searched = orgs()
+  await labRead(); // STATE LAB (disposable)
+  const searched = labList(orgs(), (o) => ({ ...o, name: labLong(o.name) })) // STATE LAB (disposable)
     .filter((o) => matches(query.q, o.name, ...currentContacts(o).flatMap((c) => [c.name, c.email])))
     .map((o) => ({ org: adminOrganization(o), status: statusFilterOf(o) }));
 

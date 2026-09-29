@@ -1,7 +1,7 @@
 import { EMAIL_WITHIN_DAYS, NO_RECENT_POSTS_DAYS, type PartnerHealth, type PersonTagFilter } from "./_data/types";
 
 /**
- * User-facing strings for the admin Partners page (docs/ux/portal.md → Partners). Invitation-state
+ * User-facing strings for the admin Partners page (the owner's UX spec (retired) → Partners). Invitation-state
  * strings are shared with the partner portal's Team list through `invitationCopy`.
  *
  * Server-returned strings (`ActionState.message` and field errors) live with the rules that produce
@@ -55,7 +55,7 @@ export const partnersCopy = {
     removed: "Removed",
   },
 
-  /** New, needs approval (docs/ux/portal.md → Partners → Partner health). */
+  /** New, needs approval (the owner's UX spec (retired) → Partners → Partner health). */
   health: {
     label: "Health",
     tags: {
@@ -80,6 +80,8 @@ export const partnersCopy = {
     nextStepLabel: "Suggested next step",
     callout: (n: number) => (n === 1 ? "1 partner might need support" : `${n} partners might need support`),
     showThem: "Show them",
+    /** NEW, NEEDS APPROVAL: hides a health tag (panel) or the support banner (list). */
+    dismiss: "Dismiss",
   },
 
   /** People → Tags. `access` is the filter option for people with no tag. New, needs approval: header, `access`. */
@@ -98,7 +100,9 @@ export const partnersCopy = {
   emails: {
     copyAll: "Copy all emails",
     copyOrganization: "Copy emails",
-    copied: (n: number) => (n === 1 ? "Copied 1 email address" : `Copied ${n} email addresses`),
+    /** "Copied 64 email addresses from every active partner". */
+    everyPartner: "every active partner",
+    copied: (n: number, from: string) => (n === 1 ? `Copied 1 email address from ${from}` : `Copied ${n} email addresses from ${from}`),
     copyFailed: "Couldn't copy the email addresses. Try again.",
     /** A table email is a button: its name is "Copy {email}"; the tooltip confirms. */
     copyOne: (email: string) => `Copy ${email}`,
@@ -158,22 +162,27 @@ export const partnersCopy = {
     websiteHint: "Example: sdckw.ca",
     descriptionLabel: "Short description",
     descriptionHint: "One or two sentences about what your organization does. Up to 280 characters.",
-    notAdded: "Not added",
     save: "Save changes",
     cancel: "Cancel",
     peopleHeading: "People",
     removedOn: (date: string) => `Removed ${date}`,
-    viewOpportunities: (n: number) => `View opportunities (${n} published)`,
+    viewOpportunities: (n: number) => `View opportunities (${n})`,
     /** New, needs approval. */
     healthHeading: "Health",
-    summaryHeading: "Summary",
+    /** NEW, NEEDS APPROVAL: panel section heading, ⋯ menu label and the Profile section's edit button. */
+    summaryHeading: "Opportunities",
+    moreActions: "More actions",
+    edit: "Edit",
+    editProfile: "Edit profile",
     published: "Published",
     totalClicks: "Total clicks",
     lastPosted: "Last posted",
-    postForThem: "Post an opportunity for them",
-    notesLabel: "SDC notes (only admins see these)",
-    notesSave: "Save notes",
-    notesEdited: (name: string, when: string) => `Last edited by ${name}, ${when}`,
+    /** NEW, NEEDS APPROVAL: shorter, as a button beside the Opportunities heading. */
+    postForThem: "Post for them",
+    /** NEW, NEEDS APPROVAL: notes save automatically (owner). */
+    notesLabel: "SDC notes",
+    notesSaving: "Saving…",
+    notesSaved: "Saved",
   },
 
   /** A person's fields and actions (the People view has no panel; these show in its row menu and edit dialog). */

@@ -1,9 +1,8 @@
 "use client";
 
 import { Field } from "@/components/ui/Field";
-import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
-import { AREAS, LIMITS } from "../../catalog";
+import { AREAS } from "../../catalog";
 import { copy } from "../../copy";
 import { FieldRow } from "./FormParts";
 import { fieldId, type KindFieldsProps } from "./formValues";
@@ -11,8 +10,7 @@ import { fieldId, type KindFieldsProps } from "./formValues";
 const AREA_OPTIONS = AREAS.map((a) => ({ value: a.id, label: a.label }));
 
 /**
- * Area (a fixed list, so listings can be matched to where members live) and an optional address or venue.
- * The address is hidden, and dropped by service.ts, when the area is Online / remote.
+ * Area: a fixed list, so listings can be matched to where members live. No street address (owner, 28 Sep).
  */
 export function PlaceFields({ values, set, error }: KindFieldsProps) {
   return (
@@ -29,13 +27,6 @@ export function PlaceFields({ values, set, error }: KindFieldsProps) {
           />
         )}
       </Field>
-      {values.area !== "online" && (
-        <Field label={copy.form.address.label} id={fieldId("address")} error={error("address")}>
-          {(p) => (
-            <Input {...p} name="address" maxLength={LIMITS.address} value={values.address ?? ""} onChange={(e) => set("address", e.target.value)} />
-          )}
-        </Field>
-      )}
     </FieldRow>
   );
 }

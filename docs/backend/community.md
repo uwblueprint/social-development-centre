@@ -17,9 +17,8 @@ UI contract: `src/app/admin/community/_data/{types,queries,actions}.ts`. `store.
 1. `unsubscribed`: `subscribed` is false.
 2. `invited`: onboarding `not_started`.
 3. `onboarding_incomplete`: onboarding `in_progress`.
-4. `never_clicked`: onboarded, no `cta` action ever.
-5. `active`: a `cta` action in the last 60 days (`ACTIVE_WINDOW_DAYS`).
-6. `inactive`: `cta` actions, but none in the last 60 days.
+4. `active`: a `cta` action in the last 60 days (`ACTIVE_WINDOW_DAYS`).
+5. `inactive`: no `cta` action in the last 60 days, including people who never clicked (owner, 28 Sep: there is no separate `never_clicked`; migrate any stored or exported value to `inactive`).
 Shares don't change status. For SQL, keep `last_cta_click_at` and `cta_clicks` denormalized per member (updated by the click webhook) so the list can filter and sort without scanning the log.
 
 ## Queries
@@ -58,7 +57,7 @@ Shares don't change status. For SQL, keep `last_cta_click_at` and `cta_clicks` d
 - **Initial backfill:** SDC's existing list is loaded by a one-time migration script that sends no emails. It never goes through Add member or Import members.
 - **Access enforcement:** protected member pages and automated sends read the current `tier`/`subscribed` state; paid access delivery (sign-in) follows the Authentication PRD.
 - **CSV upload** is parsed in the browser into the text box; the server only ever receives the `emails` text.
-- Confirm the paid benefit and access link before finalizing the paying-member emails ([drafts](../emails/community.md)).
+- Confirm the paid benefit and access link before finalizing the paying-member emails.
 
 ## Booth kiosk
 The `/kiosk` page ([decisions](../decisions/kiosk.md)) calls one action through `signUpAtBooth` in `src/app/kiosk/actions.ts`, which validates Name and Email and checks the admin session first.
@@ -70,3 +69,6 @@ The `/kiosk` page ([decisions](../decisions/kiosk.md)) calls one action through 
 - **Landed (27 Sep):** `addBoothSignup(name, email, location: string | null)` is in `src/app/admin/community/_data/actions.ts`. New people get `source = booth`, `sourceDetail = location`, onboarding `not_started` (so they show as **Invited**). A deleted person signing up again is fresh consent: they're added and removed from the suppression list. The kiosk's stub in `src/app/kiosk/actions.ts` (marked `TODO(kiosk)`) can be swapped for the import.
 - Admins open the kiosk from Community with **Open sign-up kiosk**, a dialog with an optional **Location** that opens `/kiosk?location=…` (or `/kiosk`) in a new tab. `location` may be `null`.
 - `source`/`sourceDetail` stay export only (decision); they're not shown in the member panel.
+
+## Imports that partly fail (owner, 28 Sep 2026)
+Rows the browser can already tell are wrong (bad email, duplicates) are skipped before confirming, and the dialog says how many. If the server then fails on some rows (for example a conflict), the action should add every row it can and return `{ added, failed: [{ row, email, reason }] }`; the UI says "{added} added. {failed} rows couldn't be imported" and offers uploading a corrected file. Nothing is all-or-nothing.

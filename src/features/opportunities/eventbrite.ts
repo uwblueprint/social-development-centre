@@ -1,5 +1,6 @@
 import type { ActionState } from "@/lib/forms";
 import { normalizeWebAddress } from "@/lib/url";
+import { labEventbrite } from "@/dev/state-lab/state"; // STATE LAB (disposable)
 import { dayOffset } from "./store";
 import type { Area } from "./types";
 
@@ -20,7 +21,6 @@ export interface EventbritePrefill {
   startTime: string;
   endTime?: string;
   area: Area;
-  address?: string;
 }
 
 const EVENTBRITE_HOST = /(^|\.)eventbrite\.(ca|com)$/i;
@@ -55,10 +55,12 @@ export async function prefillFromEventbrite(url: string): Promise<ActionState<Ev
 
   // Simulates the API's latency so the button's busy state is visible in development.
   await new Promise((resolve) => setTimeout(resolve, 400));
+  if ((await labEventbrite()) === "error") // STATE LAB (disposable)
+    return { status: "error", message: "State lab: Eventbrite didn't answer.", fieldErrors: { eventbrite: "Eventbrite didn't answer. Try again, or fill in the details yourself." } };
   const title = titleFromPath(parsed.pathname);
   return {
     status: "success",
-    message: "Filled in the title, description, date, time and place from Eventbrite. Check them on the next step.",
+    message: "Filled in the title, description, date, time and place from Eventbrite. Check them here.",
     data: {
       link: parsed.toString(),
       title,
@@ -67,7 +69,6 @@ export async function prefillFromEventbrite(url: string): Promise<ActionState<Ev
       startTime: "18:00",
       endTime: "20:00",
       area: "kitchener",
-      address: "Kitchener Public Library, 85 Queen St N",
     },
   };
 }

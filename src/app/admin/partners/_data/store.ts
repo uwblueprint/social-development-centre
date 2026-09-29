@@ -15,6 +15,8 @@ export interface StoredOrg extends Omit<PartnerOrganization, "status" | "opportu
   joinedAt?: string;
   /** SDC-only; never sent to the partner portal. */
   notes?: OrganizationNotes;
+  /** An admin dismissed this health tag; it stays hidden while the organization's tag is still this one. */
+  healthDismissed?: string;
 }
 
 const DAY = 86_400_000;
@@ -69,12 +71,43 @@ function seed(): StoredOrg[] {
       contact("c_14", "Kofi Mensah", "kofi@westmountarts.org", "active"),
       contact("c_15", "Elena Rossi", "elena@westmountarts.org", "active"),
     ] },
+    ...sampleOrgs(),
   ];
 }
 
+/**
+ * 42 more organizations so lists and filters run at SDC's real scale (about 50 partners). Stable ids
+ * `org_101`…; everyone active, one contact each (every fifth has a pending second invite).
+ * `SAMPLE_ORG_NAMES` is shared with the opportunities seed, which gives most of them listings.
+ */
+export const SAMPLE_ORG_NAMES = [
+  "Kitchener Pride Collective", "Waterloo Region Food Rescue", "Cambridge Shelter Coalition", "Grand River Climate Action",
+  "Bridgeport Neighbourhood Association", "Victoria Hills Community Centre", "Mill-Courtland Seniors Club", "Downtown Kitchener BIA Volunteers",
+  "Laurel Creek Nature Stewards", "Chicopee Youth Soccer", "Forest Heights Tenants Union", "KW Multicultural Kitchen",
+  "Galt Literacy Circle", "Hespeler Heritage Society", "Preston Community Pantry", "Elmira Refugee Sponsors",
+  "St. Jacobs Makers Guild", "Uptown Waterloo Jazz Society", "Iron Horse Trail Friends", "Region of Waterloo Arts Fund Volunteers",
+  "Doon Pioneer Tenants", "Stanley Park Parents Network", "Kingsdale Community Hub", "Mount Hope Breithaupt Park Residents",
+  "KW Accessibility Advocates", "Grand River Indigenous Land Collective", "Waterloo Bike Kitchen", "Ayr Community Garden",
+  "New Hamburg Youth Council", "KW Disability Justice Network", "Cambridge Black Community Circle", "Waterloo Region Housing Coalition",
+  "Kitchener Public Library Friends", "Sunnydale Homework Club", "Lincoln Heights Walking Group", "Region Newcomer Women's Circle",
+  "KW Tool Library", "Wilmot Food Security Team", "Cedar Hill Community Group", "Grand River Mutual Aid",
+  "Waterloo Region Climate Kids", "Southwest Kitchener Seniors Hub",
+];
+
+function sampleOrgs(): StoredOrg[] {
+  return SAMPLE_ORG_NAMES.map((name, i) => {
+    const n = 101 + i;
+    const domain = name.toLowerCase().replace(/[^a-z]+/g, "").slice(0, 18) + ".ca";
+    const [first, last] = [["Ava", "Noah", "Mei", "Ravi", "Zara", "Leo", "Ines", "Tariq", "Hana", "Owen"][i % 10], ["Patel", "Nguyen", "Silva", "Kaur", "Martin", "Ali", "Fraser", "Osei"][i % 8]];
+    const contacts = [contact(`c_${n}`, `${first} ${last}`, `${first.toLowerCase()}@${domain}`, "active")];
+    if (i % 5 === 0) contacts.push(contact(`c_${n}b`, `Jordan ${last}`, `jordan@${domain}`, "pending", { invitation: newInvitation() }));
+    return { id: `org_${n}`, name, website: `https://${domain}`, createdAt: iso(-(30 + i * 7)), joinedAt: iso(-(28 + i * 7)), everActive: true, contacts };
+  });
+}
+
 // Bump the key when the seed or shape changes, so a running dev server picks up the new seed.
-const globalStore = globalThis as unknown as { __partnersStoreV5?: StoredOrg[] };
-export const orgs = (): StoredOrg[] => (globalStore.__partnersStoreV5 ??= seed());
+const globalStore = globalThis as unknown as { __partnersStoreV7?: StoredOrg[] };
+export const orgs = (): StoredOrg[] => (globalStore.__partnersStoreV7 ??= seed());
 
 export function statusOf(org: StoredOrg): PartnerStatus {
   if (org.removedAt) return "removed";

@@ -2,7 +2,7 @@ import type { ActionState } from "@/lib/forms";
 
 /**
  * Contract between the Opportunities UI (admin and partner portals) and the backend.
- * See docs/backend/opportunities.md and docs/plan/opportunities-and-partner-portal.md.
+ * See docs/backend/opportunities.md.
  */
 
 export type OpportunityKind = "event" | "petition" | "volunteer" | "job" | "other";
@@ -64,13 +64,18 @@ export interface EventDetails {
   startTime: string;
   endTime?: string;
   format: EventFormat;
-  /** Required to publish. */
+  /**
+   * Required to publish when people attend in person or hybrid; "online" for online events. Events keep
+   * no street address (owner: the area is what members are matched on; the venue is on the event page).
+   */
   area: Area;
-  /** Optional street address or venue name. Dropped when the area is online. */
-  address?: string;
   cost: "free" | "paid";
-  /** e.g. "$10, pay what you can". Shown when cost is paid. */
-  costDetails?: string;
+  /**
+   * Paid events: whole dollars. One price is `priceMin` alone; a range adds `priceMax`. Matched against
+   * the budget range members give (owner, 28 Sep).
+   */
+  priceMin?: number;
+  priceMax?: number;
   accessibility?: AccessibilityFeature[];
   /** Anything the checkboxes don't cover, e.g. "ASL with one week's notice". */
   accessibilityNote?: string;
@@ -90,8 +95,6 @@ export interface VolunteerDetails {
   format: VolunteerFormat;
   /** Required to publish. */
   area: Area;
-  /** Optional street address or venue name. Dropped when the area is online. */
-  address?: string;
   /** yyyy-mm-dd */
   startDate?: string;
   skills?: SkillId[];
@@ -105,8 +108,6 @@ export interface JobDetails {
   workplace: Workplace;
   /** Required to publish. */
   area: Area;
-  /** Optional street address. Dropped when the area is online. */
-  address?: string;
   /** Free text, e.g. "$22–25 an hour". */
   pay?: string;
   /** yyyy-mm-dd */
@@ -156,6 +157,8 @@ interface OpportunityBase {
   title: string;
   /** Up to 280 characters; written for email. */
   summary: string;
+  /** The listing's image, 16:9 works best. Shown on partner cards, in the panel and in emails. Optional. */
+  imageUrl?: string;
   topics: TopicId[];
   /** Where people take action. Stored normalized to https (src/lib/url.ts normalizeWebAddress). Required to publish. */
   link: string;
@@ -166,6 +169,17 @@ interface OpportunityBase {
   updatedAt: string;
   updatedBy: Editor;
   publishedAt?: string;
+  /** Email reach. Absent on drafts and before the first send. Backend: docs/backend/opportunities.md "Performance". */
+  performance?: OpportunityPerformance;
+}
+
+export interface OpportunityPerformance {
+  /** Distinct people whose SDC email included this opportunity. */
+  sentTo: number;
+  /** Distinct people who clicked it in those emails. */
+  clicks: number;
+  /** When it last went out; ISO. Absent if it hasn't been sent yet. */
+  lastSentAt?: string;
 }
 
 /** Drafts may have partial details; everything else is complete. */
@@ -173,10 +187,8 @@ export type Opportunity = {
   [K in OpportunityKind]: OpportunityBase & { kind: K; details: Partial<DetailsByKind[K]> };
 }[OpportunityKind];
 
-export type OpportunityOf<K extends OpportunityKind> = Extract<Opportunity, { kind: K }>;
-
 /** Sortable list columns; the URL's `sort` param. */
-export type OpportunitySortKey = "title" | "organization" | "date" | "updated";
+export type OpportunitySortKey = "title" | "organization" | "date" | "updated" | "sentTo" | "clicks";
 
 export interface OpportunitySort {
   key: OpportunitySortKey;

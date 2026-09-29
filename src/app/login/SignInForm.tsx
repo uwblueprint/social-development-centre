@@ -10,7 +10,7 @@ import { SubmitButton } from "@/components/ui/SubmitButton";
 import { SDC_CONTACT_EMAIL } from "@/lib/contact";
 import { signIn, type SignInResult } from "./actions";
 
-/** Copy from docs/ux/portal.md, "Shared sign-in". */
+/** Copy from the owner's UX spec (retired), "Shared sign-in". */
 const copy = {
   emailLabel: "Email address",
   submit: "Send sign-in link",

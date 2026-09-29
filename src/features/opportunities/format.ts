@@ -105,10 +105,38 @@ export function formatWhen(o: Opportunity): string {
   }
 }
 
+/**
+ * The one date an admin scans for: when the event happens, or the deadline / apply-by date.
+ * Same shape for every type so the column reads as a list of dates; `time` only for events.
+ */
+export function closesOn(o: Opportunity): { date?: string; time?: string; ymd?: string } {
+  const d = o.details;
+  const ymd = o.kind === "event" ? (d as { date?: string }).date : o.kind === "volunteer" || o.kind === "job" ? (d as { applyBy?: string }).applyBy : (d as { deadline?: string }).deadline;
+  if (!ymd) return {};
+  const start = o.kind === "event" ? (d as { startTime?: string }).startTime : undefined;
+  return { date: formatDate(ymd), time: start ? formatTime(start) : undefined, ymd };
+}
+
+/** Whole days from today to a YYYY-MM-DD date; negative once it's past. */
+export function daysUntil(ymd: string, now = new Date()): number {
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.round((parseDate(ymd).getTime() - today.getTime()) / 86_400_000);
+}
+
+/** "Sat, Oct 10 · 7:00 p.m. – 8:30 p.m." for an event (one line, not three fields); the closing date otherwise. */
+export function formatWhenLine(o: Opportunity): string | undefined {
+  if (o.kind === "event") {
+    const d = o.details;
+    if (!d.date) return undefined;
+    const times = d.startTime ? (d.endTime ? `${formatTime(d.startTime)} – ${formatTime(d.endTime)}` : formatTime(d.startTime)) : "";
+    return times ? `${formatDate(d.date)} · ${times}` : formatDate(d.date);
+  }
+  return formatWhen(o);
+}
+
 /** Where it happens, for the panel and the email preview: "Kitchener · Civic Hub, 97 Victoria St N", or undefined. */
 export function formatWhere(o: Opportunity): string | undefined {
   if (o.kind !== "event" && o.kind !== "volunteer" && o.kind !== "job") return undefined;
-  const { area, address } = o.details;
-  if (!area) return address || undefined;
-  return address && area !== "online" ? `${AREA_LABEL[area]} · ${address}` : AREA_LABEL[area];
+  const { area } = o.details;
+  return area ? AREA_LABEL[area] : undefined;
 }

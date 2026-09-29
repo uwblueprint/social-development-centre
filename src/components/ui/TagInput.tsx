@@ -85,9 +85,13 @@ const Box = styled.div<{ $invalid?: boolean; $disabled?: boolean }>`
     $disabled &&
     `
     cursor: not-allowed;
-    border-style: dashed;
-    border-color: var(--color-border);
     background: var(--color-disabled-bg);
+    border-color: transparent;
+    background-image: var(--dashed-border);
+    background-size: var(--dashed-border-size);
+    background-position: var(--dashed-border-position);
+    background-repeat: var(--dashed-border-repeat);
+    background-origin: border-box;
   `}
 `;
 

@@ -63,9 +63,13 @@ const StyledTextarea = styled.textarea<{ $invalid?: boolean }>`
   &:disabled {
     background: var(--color-surface);
     color: var(--color-text-muted);
-    border-color: var(--color-border);
-    border-style: dashed;
     cursor: not-allowed;
+    border-color: transparent;
+    background-image: var(--dashed-border);
+    background-size: var(--dashed-border-size);
+    background-position: var(--dashed-border-position);
+    background-repeat: var(--dashed-border-repeat);
+    background-origin: border-box;
   }
 `;
 
@@ -170,7 +174,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(fun
   }, [remaining]);
 
   // Inside a Field, the counter sits on the Field's hint line; standalone, it renders under the box.
-  const hostedCounter = useFieldCounter(remaining === null ? null : { remaining, warning });
+  const hostedCounter = useFieldCounter(remaining === null ? null : { remaining, warning, visible: remaining <= (maxLength ?? 0) * 0.25 });
 
   const invalid = isInvalid(ariaInvalid);
   const describedByIds = [describedBy, hasLimit ? counterId : null].filter(Boolean).join(" ");

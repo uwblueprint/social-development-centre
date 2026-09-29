@@ -1,8 +1,10 @@
-/** Booth kiosk copy. All of it is new and needs approval; see docs/ux/portal.md, "Booth kiosk". */
+/** Booth kiosk copy. All of it is new and needs approval; see the owner's UX spec (retired), "Booth kiosk". */
 export const kioskCopy = {
   heading: "Get involved with your community",
   intro:
-    "Leave your name and email and we'll send you opportunities that matter to you. We only use these details for those emails.",
+    "Leave your name and email and we'll send you opportunities that matter to you. We only use these details for those emails, and you can unsubscribe at any time.",
+  /** NEW, NEEDS APPROVAL: the shorter intro shown on phones and small tablets. */
+  introShort: "We'll email you opportunities that matter to you. We only use your details for that, and you can unsubscribe at any time.",
   nameLabel: "Name",
   emailLabel: "Email",
   submit: "Sign me up",

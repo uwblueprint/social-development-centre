@@ -75,23 +75,15 @@ test.describe("kiosk", () => {
 });
 
 test.describe("admin shell", () => {
-  test("My account dialog has no violations", async ({ page }) => {
-    await page.goto("/admin/community");
+  test("documentation page has no violations", async ({ page }) => {
+    await page.goto("/admin/documentation");
     await settle(page);
-    await page.getByRole("button", { name: /Open account menu/ }).click();
-    await page.getByRole("menuitem", { name: "My account" }).click();
-    await page.waitForTimeout(250);
     await checkA11y(page);
   });
 
-  test("account menu and a row's ⋯ menu open without hiding tabbable content (WCAG 4.1.2)", async ({ page }) => {
+  test("a row's ⋯ menu opens without hiding tabbable content (WCAG 4.1.2)", async ({ page }) => {
     await page.goto("/admin/community");
     await settle(page);
-    await page.getByRole("button", { name: /Open account menu/ }).click();
-    await page.waitForTimeout(200);
-    await checkA11y(page);
-    await page.keyboard.press("Escape");
-
     await page.locator('button[aria-label^="Actions for"]').first().click();
     await page.waitForTimeout(200);
     await checkA11y(page);

@@ -26,6 +26,7 @@ import type {
 } from "../types";
 import { defaultSort } from "./listParams";
 import { opportunityColumns } from "./opportunityColumns";
+import { OpportunityCards } from "./OpportunityCards";
 import { OpportunitySheetContent } from "./OpportunitySheetContent";
 
 const TabContentBody = styled.div`
@@ -161,6 +162,23 @@ export function OpportunitiesView({
 
   const filtered = !!(filters.q || kinds.length > 0 || (scope === "admin" && organizationIds.length > 0));
   // Row content follows the server's tab (not the optimistic one) so it always matches `items`.
+  const emptyState = (
+    filtered ? (
+      <EmptyState
+        icon={SearchIcon}
+        title={copy.empty.noResults.title}
+        description={copy.empty.noResults.body}
+        action={
+          <Button type="button" $variant="secondary" onClick={clearFilters}>
+            <Icon icon={FilterX} size={16} />
+            {copy.empty.noResults.clear}
+          </Button>
+        }
+      />
+    ) : (
+      <EmptyState icon={EMPTY_ICON[tab]} title={copy.empty[tab].title} description={copy.empty[tab].body} />
+    )
+  );
   const columns = opportunityColumns(scope, tab, now, { type: typeFilter, organization: organizationFilter });
 
   return (
@@ -171,7 +189,7 @@ export function OpportunitiesView({
           <SearchField
             name="q"
             aria-label={copy.toolbar.searchLabel}
-            placeholder={copy.toolbar.searchPlaceholder}
+            placeholder={copy.toolbar.searchPlaceholder[scope]}
             value={searchState.value}
             onChange={(event) => searchState.setValue(event.target.value)}
             onSearch={searchState.search}
@@ -202,34 +220,28 @@ export function OpportunitiesView({
 
         <TabsContent value={activeTab}>
           <TabContentBody>
-            <Table
-              columns={columns}
-              rows={items}
-              getRowId={(o) => o.id}
-              onRowClick={(o) => setSelectedId(o.id)}
-              sort={sort}
-              onSortChange={setSort}
-              busy={paramsPending || sortPending || searchState.pending}
-              sortPending={sortPending}
-              aria-label={copy.tabs[tab]}
-              empty={
-                filtered ? (
-                  <EmptyState
-                    icon={SearchIcon}
-                    title={copy.empty.noResults.title}
-                    description={copy.empty.noResults.body}
-                    action={
-                      <Button type="button" $variant="secondary" onClick={clearFilters}>
-                        <Icon icon={FilterX} size={16} />
-                        {copy.empty.noResults.clear}
-                      </Button>
-                    }
-                  />
-                ) : (
-                  <EmptyState icon={EMPTY_ICON[tab]} title={copy.empty[tab].title} description={copy.empty[tab].body} />
-                )
-              }
-            />
+            {/* Partners: Published and Drafts as image-led cards (owner); Closed stays a table (there are many). */}
+            {scope === "partner" && tab !== "closed" ? (
+              items.length > 0 ? (
+                <OpportunityCards items={items} tab={tab} now={now} onOpen={setSelectedId} label={copy.tabs[tab]} />
+              ) : (
+                emptyState
+              )
+            ) : (
+              <Table
+                columns={columns}
+                rows={items}
+                getRowId={(o) => o.id}
+                onRowClick={(o) => setSelectedId(o.id)}
+                stickyColumns={1}
+                sort={sort}
+                onSortChange={setSort}
+                busy={paramsPending || sortPending || searchState.pending}
+                sortPending={sortPending}
+                aria-label={copy.tabs[tab]}
+                empty={emptyState}
+              />
+            )}
           </TabContentBody>
         </TabsContent>
       </Tabs>

@@ -44,7 +44,6 @@ const Clicks = styled.span`
 const STATUS_VARIANT: Record<MemberStatus, "success" | "warning" | "info" | "neutral"> = {
   active: "success",
   inactive: "warning",
-  never_clicked: "neutral",
   onboarding_incomplete: "info",
   invited: "info",
   unsubscribed: "neutral",

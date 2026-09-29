@@ -5,16 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { css, keyframes, styled } from "next-yak";
 import type { LucideIcon } from "lucide-react";
-import { ChevronsUpDown, LogOut, Menu, UserRound, X } from "lucide-react";
-import { Avatar } from "@/components/ui/Avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/DropdownMenu";
+import { BookOpen, FlaskConical, LogOut, Menu, X } from "lucide-react";
 import { Icon } from "@/components/ui/Icon";
+import { ThemeSwitcher } from "./ThemeSwitcher";
 import { Tooltip } from "@/components/ui/Tooltip";
 
 /**
@@ -53,15 +46,17 @@ export interface SidebarRecentItem {
 }
 
 export interface SidebarConfig {
-  product: { name: string; initials: string };
+  product: { name: string };
   /** Accessible name for the main navigation landmark. */
   navLabel: string;
   items: SidebarNavItem[];
   recent?: { label: string; items: SidebarRecentItem[] };
-  user: { name: string; email: string; initials: string; avatarSrc?: string };
-  /** Opens the My account dialog (`AccountDialog`), rendered by the portal's shell. */
-  onOpenAccount: () => void;
-  onSignOut?: () => void;
+  /** Link to the Documentation page (the user guide), shown above Sign out. */
+  docsHref: string;
+  /** Links shown in the footer, right above Sign out (e.g. the partner portal's Organization). */
+  footerItems?: { href: string; label: string; icon: LucideIcon }[];
+  /** Owner decision: no My account concept (logins can be shared); the footer is just Documentation and a red Sign out. */
+  onSignOut: () => void;
 }
 
 const MOBILE = "@media (max-width: 767px)";
@@ -90,6 +85,18 @@ const fadeIn = keyframes`
   }
   to {
     opacity: 1;
+  }
+`;
+
+/* Switching sections: the new page rises a little and fades in. */
+const pageIn = keyframes`
+  from {
+    opacity: 0;
+    translate: 0 var(--enter-offset);
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
   }
 `;
 
@@ -152,6 +159,20 @@ const Scrim = styled.button`
   }
 `;
 
+/*
+ * Re-keyed per section, so its entrance replays when you move between sections in the nav, not on
+ * tab or filter changes within one. Fill mode "backwards" leaves no translate behind afterwards, so
+ * sticky headers and fixed children inside the page behave normally once it has landed.
+ * The global reduced-motion rule in tokens.ts cuts it to an instant change.
+ */
+const PageTransition = styled.div`
+  animation: ${pageIn} var(--duration-slow) var(--ease) backwards;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+`;
+
 const Main = styled.main`
   animation: ${fadeIn} var(--duration-enter) var(--ease) calc(var(--stagger) * 6) both;
 
@@ -193,24 +214,10 @@ const Brand = styled.span`
   align-items: center;
   gap: var(--space-2);
   min-width: 0;
-  font-size: var(--text-md);
+  /* Owner: the same size as page headings (ListPage's h1). */
+  font-size: var(--text-lg);
   font-weight: var(--weight-medium);
   line-height: var(--leading-heading);
-`;
-
-const BrandMark = styled.span`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  flex-shrink: 0;
-  border-radius: var(--radius-md);
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-  font-size: 10px;
-  font-weight: var(--weight-medium);
-  letter-spacing: 0.02em;
 `;
 
 const iconButton = css`
@@ -384,56 +391,97 @@ const Footer = styled.div`
   border-top: 1px solid var(--color-border);
 `;
 
-const ProfileButton = styled.button`
+const FooterLink = styled(Link)`
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: 36px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  font-size: var(--text-md);
+  line-height: var(--leading-ui);
+  text-decoration: none;
+  transition: background-color var(--duration) var(--ease), color var(--duration) var(--ease);
+
+  &:hover {
+    background: var(--color-bg-hover);
+    color: var(--color-text);
+  }
+  &[aria-current="page"] {
+    background: var(--color-bg-selected);
+    color: var(--color-text);
+  }
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+`;
+
+/* STATE LAB (disposable): a footer item that's a button, styled like FooterLink. */
+const FooterButton = styled.button`
   all: unset;
   box-sizing: border-box;
   display: flex;
   align-items: center;
   gap: var(--space-3);
   width: 100%;
-  padding: var(--space-2);
+  height: 36px;
+  padding: 0 var(--space-2);
   border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  font-size: var(--text-md);
+  line-height: var(--leading-ui);
   cursor: pointer;
-  transition: background-color var(--duration) var(--ease);
+  transition: background-color var(--duration) var(--ease), color var(--duration) var(--ease);
 
-  &:hover,
-  &[data-state="open"] {
+  &:hover {
     background: var(--color-bg-hover);
+    color: var(--color-text);
   }
   &:focus-visible {
     box-shadow: var(--focus-ring);
   }
-
 `;
 
-const ProfileText = styled.span`
+const SignOutButton = styled.button`
+  all: unset;
+  box-sizing: border-box;
   display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-width: 0;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  height: 36px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-md);
+  color: var(--color-danger);
+  font-size: var(--text-md);
   line-height: var(--leading-ui);
+  cursor: pointer;
+  transition: background-color var(--duration) var(--ease);
 
-  span {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  &:hover {
+    background: var(--color-danger-subtle);
+  }
+  &:focus-visible {
+    box-shadow: var(--focus-ring);
   }
 `;
 
-const ProfileName = styled.span`
-  font-size: var(--text-sm);
-  color: var(--color-text);
-`;
-
-const ProfileEmail = styled.span`
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-`;
-
-const Muted = styled.span`
-  display: inline-flex;
-  color: var(--color-text-muted);
-`;
+/*
+ * A 404 inside a portal keeps the sidebar but highlights nothing (owner): the URL may still start with a
+ * section's path (e.g. /admin/opportunities/unknown-id). The 404 page flips this flag while it's shown.
+ */
+let notFoundShown = false;
+const notFoundListeners = new Set<() => void>();
+export function setSidebarNotFound(value: boolean) {
+  notFoundShown = value;
+  notFoundListeners.forEach((listener) => listener());
+}
+function subscribeNotFound(listener: () => void) {
+  notFoundListeners.add(listener);
+  return () => notFoundListeners.delete(listener);
+}
 
 function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -454,15 +502,21 @@ function SidebarContent({
   closeRef: React.Ref<HTMLButtonElement>;
 }) {
   const pathname = usePathname();
-  const profileRef = React.useRef<HTMLButtonElement>(null);
-  /** Set when "My account" is chosen: the dialog opens once the menu has closed and focus is back on the profile button, so closing the dialog returns focus there. */
-  const accountRequested = React.useRef(false);
+  // Highlight the chosen item at once (owner): a slow page would otherwise leave the old item selected
+  // until it loads, so the click looks ignored. Dropped as soon as the URL changes.
+  const [pending, setPending] = React.useState<{ href: string; from: string } | null>(null);
+  const notFound = React.useSyncExternalStore(subscribeNotFound, () => notFoundShown, () => false);
+  const current = pending && pending.from === pathname ? pending.href : notFound ? "" : pathname;
+  const choose = (href: string) => (e: React.MouseEvent) => {
+    // A new tab or window doesn't change this page.
+    if (!(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0)) setPending({ href, from: pathname });
+    onNavigate(href);
+  };
 
   return (
     <>
       <Header>
         <Brand id={brandId}>
-          <BrandMark aria-hidden="true">{config.product.initials}</BrandMark>
           {config.product.name}
         </Brand>
         <CloseButton ref={closeRef} type="button" aria-label="Close menu" onClick={onClose}>
@@ -477,8 +531,8 @@ function SidebarContent({
               key={item.href}
               style={{ "--i": i } as React.CSSProperties}
               href={item.href}
-              aria-current={isActive(pathname, item.href) ? "page" : undefined}
-              onClick={() => onNavigate(item.href)}
+              aria-current={isActive(current, item.href) ? "page" : undefined}
+              onClick={choose(item.href)}
             >
               <Icon icon={item.icon} size={18} />
               <ItemLabel>{item.label}</ItemLabel>
@@ -525,42 +579,38 @@ function SidebarContent({
       )}
 
       <Footer>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <ProfileButton ref={profileRef} type="button" aria-label={`Open account menu for ${config.user.name}`}>
-              <Avatar initials={config.user.initials} src={config.user.avatarSrc} size="sm" />
-              <ProfileText>
-                <ProfileName>{config.user.name}</ProfileName>
-                <ProfileEmail>{config.user.email}</ProfileEmail>
-              </ProfileText>
-              <Muted>
-                <Icon icon={ChevronsUpDown} size={16} />
-              </Muted>
-            </ProfileButton>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            side="top"
-            align="start"
-            style={{ minWidth: 220 }}
-            onCloseAutoFocus={(event) => {
-              if (!accountRequested.current) return;
-              accountRequested.current = false;
-              event.preventDefault();
-              profileRef.current?.focus();
-              config.onOpenAccount();
+        {process.env.NODE_ENV !== "production" && ( // STATE LAB (disposable): opens src/dev/state-lab
+          <FooterButton
+            type="button"
+            onClick={() => {
+              onClose();
+              window.dispatchEvent(new Event("state-lab:open"));
             }}
           >
-            <DropdownMenuItem onSelect={() => (accountRequested.current = true)}>
-              <Icon icon={UserRound} size={16} />
-              My account
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={config.onSignOut}>
-              <Icon icon={LogOut} size={16} />
-              Sign out
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+            <Icon icon={FlaskConical} size={18} />
+            State lab
+          </FooterButton>
+        )}
+        <FooterLink href={config.docsHref} aria-current={isActive(current, config.docsHref) ? "page" : undefined} onClick={choose(config.docsHref)}>
+          <Icon icon={BookOpen} size={18} />
+          Documentation
+        </FooterLink>
+        <ThemeSwitcher />
+        {config.footerItems?.map((item) => (
+          <FooterLink
+            key={item.href}
+            href={item.href}
+            aria-current={isActive(current, item.href) ? "page" : undefined}
+            onClick={choose(item.href)}
+          >
+            <Icon icon={item.icon} size={18} />
+            {item.label}
+          </FooterLink>
+        ))}
+        <SignOutButton type="button" onClick={config.onSignOut}>
+          <Icon icon={LogOut} size={18} />
+          Sign out
+        </SignOutButton>
       </Footer>
     </>
   );
@@ -596,6 +646,8 @@ export function SidebarLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  // "/admin/community/…" → "/admin/community": the page entrance replays only when the section changes.
+  const section = pathname.split("/").slice(0, 3).join("/");
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const asideId = React.useId();
   const brandId = React.useId();
@@ -711,7 +763,7 @@ export function SidebarLayout({
           </IconButton>
           <Brand>{config.product.name}</Brand>
         </MobileBar>
-        {children}
+        <PageTransition key={section}>{children}</PageTransition>
       </Main>
     </Shell>
   );

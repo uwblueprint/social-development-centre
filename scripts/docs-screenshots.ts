@@ -72,15 +72,6 @@ const alert = (p: Page) => p.getByRole("alertdialog").last();
 const menu = (p: Page) => p.getByRole("menu").last();
 const sidebar = (p: Page) => p.getByRole("navigation").first();
 
-async function openAccountMenu(p: Page) {
-  await btn(p, /^Open account menu for /).click();
-  await menu(p).waitFor();
-}
-async function openAccountDialog(p: Page) {
-  await openAccountMenu(p);
-  await item(p, "My account").click();
-  await dialog(p).waitFor();
-}
 async function openMoreActions(p: Page) {
   await dialog(p).getByRole("button", { name: "More actions" }).click();
   await menu(p).waitFor();
@@ -101,33 +92,6 @@ async function openCommunityPanel(p: Page, row = 0) {
 }
 
 // ---------- shots, one per task, in guide order ----------
-
-function accountShots(guide: string, home: string): Shot[] {
-  return [
-    {
-      guide, slug: "go-to-your-account-or-sign-out", url: home,
-      act: openAccountMenu,
-      target: (p) => item(p, "My account"),
-      region: (p) => [menu(p), btn(p, /^Open account menu for /)],
-    },
-    {
-      guide, slug: "change-your-name-or-profile-picture", url: home,
-      act: openAccountDialog,
-      target: (p) => dialog(p).getByRole("button", { name: "Save changes" }),
-      region: (p) => [dialog(p)],
-    },
-    {
-      guide, slug: "delete-your-account", url: home,
-      act: async (p) => {
-        await openAccountDialog(p);
-        await dialog(p).getByRole("button", { name: "Delete account" }).click();
-        await alert(p).waitFor();
-      },
-      target: (p) => alert(p).getByRole("button", { name: "Delete account" }),
-      region: (p) => [alert(p)],
-    },
-  ];
-}
 
 function opportunityShots(guide: string, base: string, orgFilter: boolean): Shot[] {
   const newUrl = `${base}/new?kind=event`;
@@ -240,7 +204,6 @@ const SHOTS: Shot[] = [
     target: (p) => sidebar(p).getByRole("link", { name: "Partners" }),
     region: (p) => [sidebar(p)],
   },
-  ...accountShots(gettingAround, "/admin/opportunities"),
 
   // ---- Admin: opportunities ----
   ...opportunityShots(adminOpps, "/admin/opportunities", true),
@@ -270,9 +233,9 @@ const SHOTS: Shot[] = [
   },
   {
     guide: partners, slug: "post-an-opportunity-for-a-partner", url: ORG,
-    target: (p) => dialog(p).getByRole(/* link or button */ "link", { name: "Post an opportunity for them" })
-      .or(dialog(p).getByRole("button", { name: "Post an opportunity for them" })),
-    region: (p) => [dialog(p).getByRole("heading").first(), dialog(p).getByText("Post an opportunity for them")],
+    target: (p) => dialog(p).getByRole(/* link or button */ "link", { name: "Post for them" })
+      .or(dialog(p).getByRole("button", { name: "Post for them" })),
+    region: (p) => [dialog(p).getByRole("heading").first(), dialog(p).getByText("Post for them")],
     pad: 32,
   },
   {
@@ -302,7 +265,8 @@ const SHOTS: Shot[] = [
   {
     guide: partners, slug: "edit-a-partners-details", url: ORG,
     act: async (p) => {
-      await btn(p, "Edit details").click();
+      await openMoreActions(p);
+      await item(p, "Edit profile").click();
       await p.getByLabel("Organization name").waitFor();
       await btn(p, "Save changes").scrollIntoViewIfNeeded();
     },
@@ -346,7 +310,8 @@ const SHOTS: Shot[] = [
   {
     guide: partners, slug: "remove-a-partners-access", url: ORG,
     act: async (p) => {
-      await dialog(p).getByRole("button", { name: "Remove access" }).click();
+      await openMoreActions(p);
+      await item(p, "Remove access").click();
       await alert(p).waitFor();
     },
     target: (p) => alert(p).getByRole("button", { name: "Remove access" }),
@@ -544,7 +509,6 @@ const SHOTS: Shot[] = [
     target: (p) => sidebar(p).getByRole("link", { name: "Organization" }),
     region: () => ["viewport"],
   },
-  ...accountShots(partnerStart, "/partner/opportunities"),
   {
     guide: partnerStart, slug: "update-your-organizations-details", url: "/partner/organization",
     target: (p) => btn(p, "Save changes"),

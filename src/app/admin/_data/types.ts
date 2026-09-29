@@ -3,6 +3,4 @@ export type AdminSection = "opportunities" | "partners" | "community" | "insight
 export interface AdminUser {
   name: string;
   email: string;
-  initials: string;
-  avatarUrl?: string;
 }

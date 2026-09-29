@@ -1,9 +1,9 @@
 # Booth kiosk: decision log
 
-Decisions and assumptions behind `/kiosk`, the tablet sign-up page for SDC booths. Each can be revisited. All kiosk copy is new and needs approval (see [portal.md, "Booth kiosk"](../ux/portal.md#booth-kiosk)).
+Decisions and assumptions behind `/kiosk`, the tablet sign-up page for SDC booths. Each can be revisited. All kiosk copy is new and needs approval.
 
 ## 1. Why a kiosk
-- **Decision:** Booths (Kitchener Market and similar) are one of the main ways people join the email list ([community member](../users/community-member.md)). A tablet page lets people add themselves straight into Community, instead of a paper sheet an admin retypes or imports later.
+- **Decision:** Booths (Kitchener Market and similar) are one of the main ways people join the email list ([community member](../users.md#community-member-subscriber)). A tablet page lets people add themselves straight into Community, instead of a paper sheet an admin retypes or imports later.
 - **Scope:** Name and Email only. It adds a general member; it is not a second SDC registration form for events, and it collects nothing beyond what the email list needs.
 
 ## 2. Where it lives and who can open it
@@ -45,3 +45,10 @@ Decisions and assumptions behind `/kiosk`, the tablet sign-up page for SDC booth
 ## Open questions
 - Should a booth signup that matches someone who unsubscribed themselves resubscribe them? The assumption is no: they see the same confirmation and stay unsubscribed until they resubscribe by email link. Confirm with SDC.
 - The kit's largest control is 44px with 16px text; the kiosk scales kit components with tokens. If other touch screens appear, consider an `xl` Button and Input size in the kit (design-system owner).
+
+## Poster layout (28 Sep 2026)
+**What:** The heading sits in a large solid block, left of the form on screens 900px or wider (any orientation) and above it on narrower ones. The fields don't show "(required)": both are required, and the error says so.
+**Why:** People pass the kiosk in a busy space; the ask has to land in about two seconds.
+Below 900px (owner, 28 Sep): no poster. A plain heading and a shorter, muted intro sit in the form's column, then a 48px gap, then the fields.
+Success (owner, 28 Sep): its own centred screen (no sign-up heading) on the success tint, with a confetti burst in token colors; skipped for reduced motion.
+Wide kiosk (owner, 28 Sep): the poster is full height and the heading uses --text-xl, not the display size. Both intros say people can unsubscribe at any time.

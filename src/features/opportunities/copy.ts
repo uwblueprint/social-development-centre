@@ -10,21 +10,34 @@ export const copy = {
   tabs: { published: "Published", drafts: "Drafts", closed: "Closed" },
   toolbar: {
     searchLabel: "Search opportunities",
-    searchPlaceholder: "Search by title or organization",
+    /** Partners only see their own organization's listings, so their search is by title only. */
+    searchPlaceholder: { admin: "Search by title or organization", partner: "Search by title" },
     /** Column filter names: "Filter Type", "Show type". */
     typeLabel: "Type",
     organizationLabel: "Organization",
   },
   table: {
-    caption: "Opportunities",
     opportunity: "Opportunity",
     type: "Type",
     organization: "Organization",
-    date: "Date",
+    /** NEW, NEEDS APPROVAL: one column for the event date, deadline or apply-by date, with the same wording for every type. */
+    date: "Closes",
+    noCloseDate: "No end date",
+    /** NEW, NEEDS APPROVAL: email reach columns. */
+    sentTo: "Sent to",
+    clicks: "Clicks",
+    notSent: "Not sent yet",
+    openRow: "Open details",
     /** NEW, NEEDS APPROVAL: header and cells ("Created today", "Edited 3d ago"). */
     lastChange: "Last change",
     created: (when: string) => `Created ${when}`,
     edited: (when: string) => `Edited ${when}`,
+  },
+  /** NEW, NEEDS APPROVAL: the partner portal's opportunity cards. */
+  cards: {
+    untitled: "Untitled",
+    closes: (when: string) => `Closes ${when}`,
+    reach: (sent: string, clicks: string) => `Sent to ${sent} · ${clicks} clicks`,
   },
   empty: {
     published: { title: "Nothing published right now", body: "Publish an opportunity and it will show up here." },
@@ -33,6 +46,19 @@ export const copy = {
     noResults: { title: "No matches", body: "Try a different search or clear the filters.", clear: "Clear filters" },
   },
   panel: {
+    /** NEW, NEEDS APPROVAL: reach tiles, the "soon but not sent" warning and the details heading. */
+    sentTo: "Sent to",
+    clicks: "Clicks",
+    people: (n: string) => `${n} people`,
+    /** Read after the click rate by screen readers only; the rate shows beside the count. */
+    clickRateOf: "of people it was sent to",
+    notSentYet: "Not sent yet",
+    soonNotSent: (days: number) =>
+      days <= 0 ? "Happening today and not emailed to anyone yet." : `In ${days} ${days === 1 ? "day" : "days"} and not emailed to anyone yet.`,
+    whenIn: (days: number) => (days === 0 ? "Today" : days === 1 ? "Tomorrow" : `In ${days} days`),
+    when: "When",
+    tagsLabel: "Status, type and topics",
+    details: "Details",
     edit: "Edit",
     moreActions: "More actions",
     openLink: "Open link",
@@ -74,20 +100,12 @@ export const copy = {
     previous: "Back",
     /** The first field. Editable on new listings and drafts; plain text once published or closed. */
     kind: { label: "Type" },
-    /**
-     * One muted line under Type describing the selected type.
-     * NEEDS OWNER APPROVAL: proposed copy, not yet confirmed by the owner.
-     */
-    kindDescription: {
-      event: "People attend at a set time.",
-      petition: "People add their name to support a cause.",
-      volunteer: "People give their time to help.",
-      job: "A paid position.",
-      other: "Anything else, like a survey or a program.",
-    },
     /** Placeholder for pickers with nothing chosen yet (organization, employment type, area). */
     choose: "Choose one",
     sections: {
+      /** NEW, NEEDS APPROVAL: the Details step after an Eventbrite fill. */
+      fromEventbrite: "From Eventbrite",
+      fromYou: "Add the rest",
       basics: "Basics",
       event: "Date and place",
       petition: "Petition details",
@@ -97,14 +115,34 @@ export const copy = {
     },
     /** Events only, the first field after Type (decision 18). NEW, NEEDS APPROVAL: label, hint and button. */
     eventbrite: {
-      label: "Eventbrite link (optional)",
-      hint: "We copy the title, description, date, time and place from it. You can change them after.",
+      found: "This is an Eventbrite page",
+      hint: "We can fill in the title, description, date, time and place from it. You can change them after.",
       fill: "Fill in details",
+      /** NEW, NEEDS APPROVAL: the owner's wording for a slow Eventbrite. */
+      timedOut: "Timed out. Couldn't fetch details from Eventbrite.",
+    },
+    /** NEW, NEEDS APPROVAL: unsaved work kept in the browser. */
+    draft: {
+      restored: (when?: string) => (when ? `We restored your unsaved changes from ${when}.` : "We restored your unsaved changes."),
+      discard: "Discard",
+    },
+    /** NEW, NEEDS APPROVAL: the listing's image. */
+    image: {
+      label: "Image",
+      add: "Add an image",
+      dropHint: "Click or drag one here. Wide JPG, PNG or WebP works best.",
+      replace: "Replace",
+      remove: "Remove",
+      previewAlt: "The listing's image",
+      wrongType: "Choose a JPG, PNG or WebP image.",
+      unreadable: "We couldn't read that image. Try another JPG, PNG or WebP file.",
+      tooWide: "This image is too wide to show well. Choose one no more than 8 times wider than it is tall.",
+      tooTall: "This image is too tall to show well. Choose one no more than 8 times taller than it is wide.",
     },
     /** Hints only where they prevent a mistake (decision 22). */
     organization: { label: "Organization" },
     title: { label: "Title" },
-    summary: { label: "Short description", hint: "One or two sentences for the email. Full details stay on your page." },
+    summary: { label: "Short description", hint: "One or two sentences for the email." },
     topics: {
       label: "Topics",
       /** NEW, NEEDS APPROVAL. Beside the label. */
@@ -112,19 +150,28 @@ export const copy = {
       /** Owner's words (27 Sep): the disabled reason on unselected topics at the cap. */
       capReason: "You can choose up to 3 topics. Unselect one to choose another.",
     },
+    /**
+     * Required for every type (owner: a click is how we know it worked). Volunteer roles and jobs may
+     * only have an email, so those accept one. NEW, NEEDS APPROVAL: labels and hints.
+     */
     link: {
-      label: "Link",
+      label: {
+        event: "Link",
+        petition: "Link",
+        volunteer: "Link or email",
+        job: "Link or email",
+        other: "Link",
+      },
       hint: {
-        event: "Where people register, like your Eventbrite or Luma page.",
+        event: "Where people register, like an Eventbrite or Luma page.",
         petition: "Where people sign the petition.",
-        volunteer: "Where people sign up to volunteer.",
-        job: "Where people apply.",
+        volunteer: "Where people sign up: a web page or an email address.",
+        job: "Where people apply: a web page or an email address.",
         other: "Where people take part.",
       },
     },
     /** Structured place for matching (decision 19). NEW, NEEDS APPROVAL. */
     area: { label: "Area" },
-    address: { label: "Address or venue" },
     event: {
       date: "Date",
       startTime: "Start time",
@@ -133,7 +180,10 @@ export const copy = {
       cost: "Cost",
       free: "Free",
       paid: "Paid",
-      costDetails: { label: "Cost details" },
+      /** NEW, NEEDS APPROVAL: a price or a range instead of free text (owner, 28 Sep). */
+      priceMin: { label: "From ($)" },
+      priceMax: { label: "To ($)" },
+      price: "Price",
       /** NEW, NEEDS APPROVAL: checkbox group and note labels. */
       accessibility: { label: "Accessibility" },
       accessibilityNote: { label: "Accessibility note" },
@@ -170,12 +220,12 @@ export const copy = {
     },
     /** Step 3: the email preview (decision 17). NEW, NEEDS APPROVAL. */
     review: {
-      intro: "This is how the listing looks in members' emails.",
       previewLabel: "Email preview",
-      postedBy: (org: string) => `From ${org}`,
+      /** NEW, NEEDS APPROVAL: the preview's host line and the email's share button. */
+      hostedBy: (org: string) => `Hosted by ${org}`,
+      share: "Send to a friend",
       noTitle: "No title yet",
       noSummary: "No description yet",
-      noTopics: "No topics yet",
       editType: "Edit type and link",
       editDetails: "Edit details",
       /** The email's button when a type has no call to action of its own. */

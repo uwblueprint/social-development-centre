@@ -46,3 +46,5 @@ Full ARIA tabs pattern via Radix (roving tabindex, arrow-key navigation). `TabsC
 2. Using `Tabs` for unrelated page sections better served by real navigation/routes.
 3. Using `Tabs` when there's no distinct content per option — that's `ToggleGroup`.
 4. Putting a count in the label string instead of `TabsCount` — it needs to read as muted regardless of active state.
+
+Motion: `TabsList` draws one sliding active line (measured from the selected tab, spring easing, `--duration-slow`); it jumps into place on first render and slides on later changes. Reduced motion is handled globally.

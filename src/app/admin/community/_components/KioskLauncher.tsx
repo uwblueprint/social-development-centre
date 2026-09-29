@@ -4,6 +4,7 @@ import * as React from "react";
 import { styled } from "next-yak";
 import { ExternalLink, Tablet } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { HeaderAction } from "./HeaderAction";
 import { Dialog, DialogActions, DialogClose, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/Dialog";
 import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
@@ -34,10 +35,7 @@ export function KioskLauncher() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button type="button" $variant="secondary">
-          <Icon icon={Tablet} size={16} />
-          {copy.toolbar.openKiosk}
-        </Button>
+        <HeaderAction type="button" $variant="secondary" iconOnly icon={Tablet} label={copy.toolbar.openKiosk} />
       </DialogTrigger>
       {/* No description: the title and one field say it all. */}
       <DialogContent aria-describedby={undefined}>

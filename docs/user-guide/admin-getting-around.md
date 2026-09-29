@@ -11,32 +11,22 @@ For SDC admins.
 
 On a phone, tap the menu button (**Open menu**) at the top left to open the sidebar, then choose a section. To close it without choosing, tap the **X** (**Close menu**), tap the dimmed page beside it, or press Escape.
 
-## Go to your account or sign out
+## Read the documentation
+1. Click **Documentation** at the bottom of the sidebar.
+2. Choose a guide from the tabs at the top of the page.
 
-![The account menu open above your name, with My account and Sign out](img/admin-getting-around/go-to-your-account-or-sign-out.png)
+## Switch between light and dark mode
+The app follows your device's light or dark setting.
+1. To change it, click **Dark mode** (or **Light mode**) at the bottom of the sidebar, above **Sign out**.
 
-1. Click your name at the bottom of the sidebar.
-2. Choose **My account** to change your name or profile picture, or **Sign out**.
+The label always names the mode you'd switch to. Your choice is saved in this browser.
 
-When you sign out, you go back to the sign-in page, which says **You're signed out. See you soon.**
+## Sign out
+1. Click **Sign out** (in red) at the bottom of the sidebar.
 
-## Change your name or profile picture
+You go back to the sign-in page, which says **You're signed out. See you soon.**
 
-![The My account dialog with Upload photo, the Name field and the Save changes button highlighted](img/admin-getting-around/change-your-name-or-profile-picture.png)
-
-1. Click your name at the bottom of the sidebar, then choose **My account**.
-2. To add or change your picture, click **Upload photo** (or **Change photo**) and choose a JPG, PNG or WebP image. It's cropped to a square. To go back to your initials, click **Remove photo**.
-3. Edit **Name**.
-4. Click **Save changes**. You'll see **Changes saved**.
-
-Your email address can't be changed here yet.
-
-## Delete your account
-
-![The Delete your account? confirmation with Keep account and the Delete account button highlighted](img/admin-getting-around/delete-your-account.png)
-
-1. Click your name at the bottom of the sidebar, then choose **My account**.
-2. Under **Danger zone**, click **Delete account**.
-3. Click **Delete account** again to confirm, or **Keep account** to go back.
-
-You're signed out and lose access right away. This can't be undone. What you did in SDC Admin stays in SDC's records, shown as "Former admin".
+## If a page won't load
+Sometimes a page can't load and you see **We couldn't load {page}.** in the middle of the screen, with "Your data is safe; this is a loading problem." Nothing was changed or lost.
+1. Click **Try again**.
+2. If the same message comes back, email {BSF email} and say which page it was and roughly when you saw it. The address is in the same message, above **Try again**.

@@ -4,7 +4,7 @@ import * as React from "react";
 import { useActionState } from "react";
 import Link from "next/link";
 import { styled } from "next-yak";
-import { ArrowRight, Ban, Copy, Pencil, Plus, Send, UserPlus } from "lucide-react";
+import { ArrowRight, Ban, Copy, MoreHorizontal, Pencil, Plus, Send, UserPlus } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,6 +16,13 @@ import {
 } from "@/components/ui/AlertDialog";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/DropdownMenu";
 import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
 import { Input } from "@/components/ui/Input";
@@ -26,15 +33,55 @@ import { Textarea } from "@/components/ui/Textarea";
 import { useToast } from "@/components/ui/Toast";
 import { fieldError, idleState } from "@/lib/forms";
 import { partnersCopy } from "../_copy";
-import { removePartner, saveOrganizationNotes, updateOrganization } from "../_data/actions";
+import { dismissHealth, removePartner, saveOrganizationNotes, updateOrganization } from "../_data/actions";
 import { ORGANIZATION_DESCRIPTION_MAX, ORGANIZATION_NOTES_MAX, type AdminPartnerOrganization } from "../_data/types";
-import { formatDate, formatDateTimeTitle, formatRelativeCell, formatRelativeInSentence } from "../_lib/format";
+import { formatDate, formatDateTimeTitle, formatRelativeCell } from "../_lib/format";
 import { useFocusFirstInvalid } from "../_lib/useFocusFirstInvalid";
 import { ContactRow } from "./ContactRow";
 import { copyEmails } from "./CopyableEmail";
 import { HealthBadge } from "./HealthBadge";
 
 const copy = partnersCopy.organizationPanel;
+
+/*
+ * Layout: the header holds only identity (name, health) and a ⋯ menu for org-wide actions. The body is
+ * four sections, each with a heading row whose action sits beside it: Activity, People, Profile, Notes.
+ * Sections are separated by a rule so the groups read at a glance.
+ */
+const Sections = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+const Section = styled.section`
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5) 0;
+
+  &:first-child {
+    padding-top: 0;
+  }
+  & + & {
+    border-top: 1px solid var(--color-border);
+  }
+`;
+
+const SectionHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: 32px;
+`;
+
+const SectionTitle = styled.h3`
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-ui);
+  color: var(--color-text);
+`;
 
 const MetaRow = styled.div`
   display: flex;
@@ -45,125 +92,132 @@ const MetaRow = styled.div`
   color: var(--color-text-muted);
 `;
 
-/* Visible under the title (not tucked beside the close button); wraps at 360px. */
-const ActionBar = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
-`;
+const DangerMenuItem = styled(DropdownMenuItem)`
+  color: var(--color-danger);
 
-const TextLink = styled(Link)`
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  width: fit-content;
-  font-size: var(--text-sm);
-  color: var(--color-text);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  text-decoration-color: var(--color-border-strong);
-
-  &:hover {
-    text-decoration-color: currentColor;
-  }
-  &:focus-visible {
-    outline: none;
-    box-shadow: var(--focus-ring);
-    border-radius: var(--radius-sm);
+  & > svg {
+    color: inherit;
   }
 `;
 
-const SectionTitle = styled.h3`
-  margin: 0 0 var(--space-2);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-medium);
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+/* One joined strip, cells split by hairlines: reads as a single snapshot rather than three cards. */
+const Stats = styled.dl`
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+
+  & > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--space-3);
+    min-width: 0;
+  }
+  & > div + div {
+    border-left: 1px solid var(--color-border);
+  }
+  & dt {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+  }
+  & dd {
+    margin: 0;
+    font-size: var(--text-lg);
+    font-weight: var(--weight-medium);
+    line-height: var(--leading-heading);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 `;
 
-const Sections = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
+/* The organization header flows straight into its numbers: no rule and no bottom padding (owner). */
+const FlushHeader = styled(SheetHeader)`
+  border-bottom: 0;
+  padding-bottom: 0;
 `;
 
-const Stack = styled.div`
+/* Description, then the badges a clear step below. */
+const Identity = styled.div`
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: var(--space-3);
+`;
 
-  & > * {
-    max-width: 100%;
+/* Pulled up so the description sits tight under the name. */
+const Description = styled.p`
+  margin: calc(var(--space-1) * -1) 0 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-body);
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+`;
+
+const ActionRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+`;
+
+/* A navigation link dressed as the kit's small secondary button. */
+const ButtonLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 32px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  background: var(--color-secondary);
+  color: var(--color-text);
+  text-decoration: none;
+  transition: background-color var(--duration) var(--ease);
+
+  &:hover {
+    background: var(--color-secondary-hover);
   }
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+`;
+
+const HealthCallout = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--radius-md);
+  background: var(--color-warning-subtle);
+`;
+
+const CalloutActions = styled.div`
+  display: flex;
+  margin-top: var(--space-1);
 `;
 
 const Paragraph = styled.p`
   margin: 0;
   font-size: var(--text-sm);
-  line-height: var(--leading-body);
+  line-height: var(--leading-ui);
   color: var(--color-text);
-`;
-
-const Muted = styled.p`
-  margin: 0;
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
 `;
 
 const NextStep = styled.p`
   margin: 0;
   font-size: var(--text-sm);
-  line-height: var(--leading-body);
+  line-height: var(--leading-ui);
   color: var(--color-text-muted);
 
   & > strong {
     font-weight: var(--weight-medium);
     color: var(--color-text);
-  }
-`;
-
-const Stats = styled.dl`
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-3);
-  width: 100%;
-  margin: 0;
-
-  & > div {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-1);
-  }
-  & dt {
-    font-size: var(--text-xs);
-    color: var(--color-text-muted);
-  }
-  & dd {
-    margin: 0;
-    font-size: var(--text-sm);
-    font-weight: var(--weight-medium);
-    color: var(--color-text);
-  }
-`;
-
-const Details = styled.dl`
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  margin: 0;
-
-  & dt {
-    font-size: var(--text-xs);
-    color: var(--color-text-muted);
-  }
-  & dd {
-    margin: 0;
-    font-size: var(--text-sm);
-    color: var(--color-text);
-    overflow-wrap: anywhere;
   }
 `;
 
@@ -222,125 +276,160 @@ export function PartnerSheetContent({
   const [editing, setEditing] = React.useState(false);
   const [confirmOpen, setConfirmOpen] = React.useState(false);
   const keepRef = React.useRef<HTMLButtonElement>(null);
-  // Not opened through a Radix Trigger, so Radix has nothing to return focus to on close; this button
-  // stays mounted (the panel is still open), so we can return focus to it directly.
-  const removeAccessRef = React.useRef<HTMLButtonElement>(null);
+  // Remove access is opened from the ⋯ menu, which is gone by the time the confirm closes; the menu's
+  // trigger stays mounted (the panel is still open), so focus returns to it directly.
+  const moreActionsRef = React.useRef<HTMLButtonElement>(null);
 
   async function handleRemove() {
     const result = await removePartner(org.id);
     if (result.message) toast({ title: result.message });
   }
 
+  async function handleDismissHealth() {
+    const result = await dismissHealth(org.id);
+    if (result.message) toast({ title: result.message });
+  }
+
   async function handleCopyEmails() {
-    toast({ title: await copyEmails(org.contacts.map((c) => c.email)) });
+    toast({ title: await copyEmails(org.contacts.map((c) => c.email), org.name) });
   }
 
   const removed = org.status === "removed";
   const activeCount = org.contacts.filter((c) => c.status === "active").length;
   const reason = reasonFor(org);
-  const ids = { health: `health-${org.id}`, summary: `summary-${org.id}`, people: `people-${org.id}`, profile: `profile-${org.id}` };
+  const ids = { summary: `summary-${org.id}`, people: `people-${org.id}`, profile: `profile-${org.id}` };
 
   return (
     <>
-      <SheetHeader>
+      {/* Header: who the organization is. Rare and destructive actions live in the ⋯ menu. */}
+      <FlushHeader
+        actions={
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button ref={moreActionsRef} type="button" $variant="ghost" $size="sm" aria-label={copy.moreActions}>
+                <Icon icon={MoreHorizontal} size={16} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={() => setEditing(true)}>
+                <Icon icon={Pencil} size={16} />
+                {copy.editProfile}
+              </DropdownMenuItem>
+              {org.contacts.length > 0 && (
+                <DropdownMenuItem onSelect={() => void handleCopyEmails()}>
+                  <Icon icon={Copy} size={16} />
+                  {partnersCopy.emails.copyOrganization}
+                </DropdownMenuItem>
+              )}
+              {!removed && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DangerMenuItem onSelect={() => setConfirmOpen(true)}>
+                    <Icon icon={Ban} size={16} />
+                    {partnersCopy.removeAccess.action}
+                  </DangerMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        }
+      >
         <SheetTitle>{org.name}</SheetTitle>
-        {(removed || org.health) && (
-          <MetaRow>
-            {removed ? (
-              <>
-                <Badge $variant="outline">{partnersCopy.badges.removed}</Badge>
-                {org.removedAt && <span>{copy.removedOn(formatDate(org.removedAt))}</span>}
-              </>
-            ) : (
-              org.health && <HealthBadge tag={org.health.tag} />
-            )}
-          </MetaRow>
-        )}
-        <ActionBar role="group" aria-label={copy.actionsLabel}>
-          <Button type="button" $variant="secondary" $size="sm" onClick={() => setEditing(true)}>
-            <Icon icon={Pencil} size={16} />
-            {copy.editDetails}
-          </Button>
-          {removed ? (
-            <Button type="button" $variant="secondary" $size="sm" onClick={onAddPerson}>
-              <Icon icon={Send} size={16} />
-              {copy.reinvite}
-            </Button>
-          ) : (
-            <Button type="button" $variant="secondary" $size="sm" onClick={onAddPerson}>
-              <Icon icon={UserPlus} size={16} />
-              {copy.addPerson}
-            </Button>
+        <Identity>
+          {org.description && <Description>{org.description}</Description>}
+          {(removed || org.health) && (
+            <MetaRow>
+              {removed ? (
+                <>
+                  <Badge $variant="outline">{partnersCopy.badges.removed}</Badge>
+                  {org.removedAt && <span>{copy.removedOn(formatDate(org.removedAt))}</span>}
+                </>
+              ) : (
+                org.health && <HealthBadge tag={org.health.tag} />
+              )}
+            </MetaRow>
           )}
-          {org.contacts.length > 0 && (
-            <Button type="button" $variant="secondary" $size="sm" onClick={() => void handleCopyEmails()}>
-              <Icon icon={Copy} size={16} />
-              {partnersCopy.emails.copyOrganization}
-            </Button>
-          )}
-          {!removed && (
-            <Button ref={removeAccessRef} type="button" $variant="danger" $size="sm" onClick={() => setConfirmOpen(true)}>
-              <Icon icon={Ban} size={16} />
-              {partnersCopy.removeAccess.action}
-            </Button>
-          )}
-        </ActionBar>
-      </SheetHeader>
+        </Identity>
+      </FlushHeader>
 
       <SheetBody>
         <Sections>
-          {org.health && reason && (
-            <section aria-labelledby={ids.health}>
-              <SectionTitle id={ids.health}>{copy.healthHeading}</SectionTitle>
-              <Stack>
+          {editing && (
+            <Section aria-labelledby={ids.profile}>
+              <SectionHeader>
+                <SectionTitle id={ids.profile}>{copy.editProfile}</SectionTitle>
+              </SectionHeader>
+              <ProfileForm key={org.id} org={org} labelledBy={ids.profile} onDone={() => setEditing(false)} />
+            </Section>
+          )}
+
+          {/* Opportunities: how they're doing, then the two things an admin does next. */}
+          {/* Owner: the numbers sit right under the name, so no visible heading here (still a named region). */}
+          <Section aria-label={copy.summaryHeading}>
+            <Stats>
+              <div>
+                <dt>{copy.published}</dt>
+                <dd>{org.opportunityCount}</dd>
+              </div>
+              <div>
+                <dt>{copy.totalClicks}</dt>
+                <dd>{org.totalClicks}</dd>
+              </div>
+              <div>
+                <dt>{copy.lastPosted}</dt>
+                <dd>
+                  {org.lastPostedAt ? (
+                    <time dateTime={org.lastPostedAt} title={formatDateTimeTitle(org.lastPostedAt)}>
+                      {formatRelativeCell(org.lastPostedAt, now)}
+                    </time>
+                  ) : (
+                    partnersCopy.table.never
+                  )}
+                </dd>
+              </div>
+            </Stats>
+            {/* No leading icon (owner): every line starts at the same edge. The health badge in the header
+                carries the status in words, so the tint isn't the only signal. */}
+            {org.health && reason && (
+              <HealthCallout role="note" aria-label={copy.healthHeading}>
                 <Paragraph>{reason}</Paragraph>
                 <NextStep>
                   <strong>{partnersCopy.health.nextStepLabel}:</strong> {partnersCopy.health.nextSteps[org.health.tag]}
                 </NextStep>
-              </Stack>
-            </section>
-          )}
-
-          <section aria-labelledby={ids.summary}>
-            <SectionTitle id={ids.summary}>{copy.summaryHeading}</SectionTitle>
-            <Stack>
-              <Stats>
-                <div>
-                  <dt>{copy.published}</dt>
-                  <dd>{org.opportunityCount}</dd>
-                </div>
-                <div>
-                  <dt>{copy.totalClicks}</dt>
-                  <dd>{org.totalClicks}</dd>
-                </div>
-                <div>
-                  <dt>{copy.lastPosted}</dt>
-                  <dd>
-                    {org.lastPostedAt ? (
-                      <time dateTime={org.lastPostedAt} title={formatDateTimeTitle(org.lastPostedAt)}>
-                        {formatRelativeCell(org.lastPostedAt, now)}
-                      </time>
-                    ) : (
-                      partnersCopy.table.never
-                    )}
-                  </dd>
-                </div>
-              </Stats>
-              <TextLink href={`/admin/opportunities?org=${org.id}`}>
-                {copy.viewOpportunities(org.opportunityCount)}
-                <Icon icon={ArrowRight} size={14} />
-              </TextLink>
-              {!removed && (
-                <TextLink href={`/admin/opportunities/new?org=${org.id}`}>
-                  <Icon icon={Plus} size={14} />
-                  {copy.postForThem}
-                </TextLink>
+                <CalloutActions>
+                  <Button type="button" $variant="outline" $size="sm" onClick={() => void handleDismissHealth()}>
+                    {partnersCopy.health.dismiss}
+                  </Button>
+                </CalloutActions>
+              </HealthCallout>
+            )}
+            {/* The two things an admin does next here, as real buttons (owner: not a text link). */}
+            <ActionRow>
+              {org.opportunityCount > 0 && (
+                <ButtonLink href={`/admin/opportunities?org=${org.id}`}>
+                  {copy.viewOpportunities(org.opportunityCount)}
+                  <Icon icon={ArrowRight} size={16} />
+                </ButtonLink>
               )}
-            </Stack>
-          </section>
+              {!removed && (
+                <ButtonLink href={`/admin/opportunities/new?org=${org.id}`}>
+                  <Icon icon={Plus} size={16} />
+                  {copy.postForThem}
+                </ButtonLink>
+              )}
+            </ActionRow>
+          </Section>
 
-          <section aria-labelledby={ids.people}>
-            <SectionTitle id={ids.people}>{copy.peopleHeading}</SectionTitle>
+          <Section aria-labelledby={ids.people}>
+            <SectionHeader>
+              <SectionTitle id={ids.people}>
+                {copy.peopleHeading} ({org.contacts.length})
+              </SectionTitle>
+              <Button type="button" $variant="ghost" $size="sm" onClick={onAddPerson}>
+                <Icon icon={removed ? Send : UserPlus} size={16} />
+                {removed ? copy.reinvite : copy.addPerson}
+              </Button>
+            </SectionHeader>
             <List>
               {org.contacts.map((contact) => (
                 <ContactRow
@@ -352,31 +441,11 @@ export function PartnerSheetContent({
                 />
               ))}
             </List>
-          </section>
+          </Section>
 
-          <NotesForm key={org.id} org={org} now={now} />
-
-          <section aria-labelledby={ids.profile}>
-            <SectionTitle id={ids.profile}>{copy.profileHeading}</SectionTitle>
-            {editing ? (
-              <ProfileForm key={org.id} org={org} labelledBy={ids.profile} onDone={() => setEditing(false)} />
-            ) : (
-              <Details>
-                <div>
-                  <dt>{copy.nameLabel}</dt>
-                  <dd>{org.name}</dd>
-                </div>
-                <div>
-                  <dt>{copy.websiteLabel}</dt>
-                  <dd>{org.website ? org.website.replace(/^https:\/\//, "") : copy.notAdded}</dd>
-                </div>
-                <div>
-                  <dt>{copy.descriptionLabel}</dt>
-                  <dd>{org.description || copy.notAdded}</dd>
-                </div>
-              </Details>
-            )}
-          </section>
+          <Section>
+            <NotesForm key={org.id} org={org} now={now} />
+          </Section>
         </Sections>
       </SheetBody>
 
@@ -389,7 +458,7 @@ export function PartnerSheetContent({
           }}
           onCloseAutoFocus={(event) => {
             event.preventDefault();
-            removeAccessRef.current?.focus();
+            moreActionsRef.current?.focus();
           }}
         >
           <AlertDialogTitle>{partnersCopy.removeAccess.title(org.name)}</AlertDialogTitle>
@@ -465,40 +534,67 @@ function ProfileForm({ org, labelledBy, onDone }: { org: AdminPartnerOrganizatio
 }
 
 /** SDC notes: admins only, saved with who edited them and when. */
-function NotesForm({ org, now }: { org: AdminPartnerOrganization; now: string }) {
-  const { toast } = useToast();
-  const [state, action] = useActionState(saveOrganizationNotes.bind(null, org.id), idleState);
+/** How long typing must pause before notes save. */
+const NOTES_SAVE_DELAY_MS = 800;
+
+/**
+ * Owner: notes save themselves (no Save button, no edit history). A save runs once typing pauses and
+ * when the field loses focus; a quiet status says Saving… / Saved, and errors show on the field.
+ */
+function NotesForm({ org }: { org: AdminPartnerOrganization; now: string }) {
   const [notes, setNotes] = React.useState(org.notes?.text ?? "");
-  const formRef = React.useRef<HTMLFormElement>(null);
-  useFocusFirstInvalid(formRef, state);
+  const [status, setStatus] = React.useState<"idle" | "saving" | "saved">("idle");
+  const [error, setError] = React.useState<string>();
+  const saved = React.useRef(org.notes?.text ?? "");
+  const timer = React.useRef<number>(undefined);
 
-  React.useEffect(() => {
-    if (state.status !== "idle" && !state.fieldErrors && state.message) toast({ title: state.message });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state]);
+  const save = React.useCallback(
+    async (value: string) => {
+      window.clearTimeout(timer.current);
+      if (value === saved.current) return;
+      setStatus("saving");
+      const fd = new FormData();
+      fd.set("notes", value);
+      const result = await saveOrganizationNotes(org.id, idleState, fd);
+      if (result.status === "success") {
+        saved.current = value;
+        setError(undefined);
+        setStatus("saved");
+      } else {
+        setError(result.fieldErrors?.notes ?? result.message);
+        setStatus("idle");
+      }
+    },
+    [org.id],
+  );
 
-  const edited = org.notes ? copy.notesEdited(org.notes.editedBy, formatRelativeInSentence(org.notes.editedAt, now)) : undefined;
+  React.useEffect(() => () => window.clearTimeout(timer.current), []);
 
   return (
-    <Form ref={formRef} action={action} noValidate>
-      <Field label={copy.notesLabel} error={fieldError(state, "notes")}>
-        {(p) => (
-          <Textarea
-            {...p}
-            name="notes"
-            rows={4}
-            maxLength={ORGANIZATION_NOTES_MAX}
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-          />
-        )}
-      </Field>
-      {edited && org.notes && <Muted title={formatDateTimeTitle(org.notes.editedAt)}>{edited}</Muted>}
-      <FormActions data-form-actions="">
-        <SubmitButton $variant="secondary" $size="sm">
-          {copy.notesSave}
-        </SubmitButton>
-      </FormActions>
-    </Form>
+    <Field
+      label={copy.notesLabel}
+      error={error}
+      hint={<span aria-live="polite">{status === "saving" ? copy.notesSaving : status === "saved" ? copy.notesSaved : ""}</span>}
+    >
+      {(p) => (
+        <Textarea
+          {...p}
+          name="notes"
+          rows={4}
+          maxLength={ORGANIZATION_NOTES_MAX}
+          value={notes}
+          onChange={(e) => {
+            const value = e.target.value;
+            setNotes(value);
+            setStatus("idle");
+            window.clearTimeout(timer.current);
+            timer.current = window.setTimeout(() => void save(value), NOTES_SAVE_DELAY_MS);
+          }}
+          onBlur={() => void save(notes)}
+        />
+      )}
+    </Field>
+
   );
 }
+

@@ -6,7 +6,7 @@ import { isAuthApiError, isAuthRetryableFetchError } from "@supabase/supabase-js
 import { createClient } from "@/lib/supabase/server";
 
 /**
- * Why a sign-in link request ended. The form maps each outcome to copy from docs/ux/portal.md
+ * Why a sign-in link request ended. The form maps each outcome to copy from the owner's UX spec (retired)
  * ("Shared sign-in"); provider messages are logged, never shown.
  */
 export type SignInResult =

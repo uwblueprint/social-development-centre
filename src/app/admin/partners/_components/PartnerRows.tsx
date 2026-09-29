@@ -38,10 +38,18 @@ const TagLine = styled.span`
 `;
 
 /* The Organization cell opens that organization's panel (Organizations view). */
+/* Reads as the cell's text; a ghost hover fill shows it opens the organization. Padding is cancelled by
+   an equal negative margin so the name lines up with the other cells. */
 const OrganizationLink = styled(Button)`
   min-width: 0;
   max-width: 100%;
+  height: auto;
+  min-height: 24px;
+  margin: 0 calc(var(--space-1) * -1);
+  padding: 0 var(--space-1);
+  justify-content: flex-start;
   font-size: var(--text-sm);
+  font-weight: var(--weight-regular);
 `;
 
 const Badged = styled.span`
@@ -197,7 +205,7 @@ export function personColumns(
       render: (person) => (
         <OrganizationLink
           type="button"
-          $variant="link"
+          $variant="ghost"
           aria-label={partnersCopy.person.openOrganization(person.organization.name)}
           onClick={() => onOpenOrganization(person.organization.id)}
         >

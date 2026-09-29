@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { styled } from "next-yak";
+import { keyframes, styled } from "next-yak";
 import { ArrowRight, FunnelX, SearchX, X, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -11,7 +11,7 @@ import type { TableSort } from "@/components/ui/Table";
 
 /**
  * Every string the list pattern writes itself (not the caller's nouns, scopes or filter names).
- * The owner edits them here. See docs/ux/portal.md, "Empty and error states".
+ * The owner edits them here. See the owner's UX spec (retired), "Empty and error states".
  */
 export const listEmptyCopy = {
   /** "No paying members match “ada”", or with filters: "No closed jobs from Northside Food Bank match “ada”". */
@@ -34,13 +34,34 @@ export const listEmptyCopy = {
   noResults: "No results",
 } as const;
 
-/** Page body for a list page: fills the available width (no max-width), so tables use wide monitors. */
+/* Content arriving after a load (owner): fades in and rises slightly. Reduced motion is handled globally. */
+export const contentIn = keyframes`
+  from {
+    opacity: 0;
+    translate: 0 var(--space-2);
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+`;
+
+/**
+ * Page body for a list page: fills the available width (no max-width), so tables use wide monitors.
+ * Everything under the header animates in when the page mounts (i.e. when data replaces the loading
+ * state); the header stays put so the title doesn't move. The loading state itself (aria-busy) doesn't.
+ */
 export const ListPage = styled.div`
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
+  /* Owner: 16px max between the header and the page's blocks, product-wide. */
+  gap: var(--space-4);
   min-width: 0;
   padding: var(--space-5) var(--space-6);
+
+  &:not([aria-busy]) > :not(:first-child) {
+    animation: ${contentIn} var(--duration-slow) var(--ease) backwards;
+  }
 
   @media (max-width: 767px) {
     gap: var(--space-4);

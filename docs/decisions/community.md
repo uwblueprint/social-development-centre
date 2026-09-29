@@ -85,19 +85,19 @@ Assumptions made while building the UI from the Community PRD. Each can be revis
 ## 13. Convert to paying member has no subscription gate
 - **Decision (owner, decision 7):** **Convert to paying member** works for anyone who isn't paying, including unsubscribed people (found by search). Subscribed people get the **Paying membership added** email and the toast ends "Paying member email sent." only when delivery succeeded; if it wasn't delivered the toast says so and asks to check the address. Unsubscribed people get paying access and no email, and the toast says "No email sent because they're unsubscribed." The old eligibility error is gone. **Remove paying access** likewise emails only subscribed people.
 - **Status badges:** because an unsubscribed person can now be paying, the panel shows the tier badge (**General member** / **Paying member**) plus an **Unsubscribed** badge when it applies.
-- **Open question:** an admin **Unsubscribe** still removes paying access (existing behaviour), while `docs/ux/portal.md` says subscription is independent of paying access. Confirm with the owner.
+- **Open question:** an admin **Unsubscribe** still removes paying access (existing behaviour), while the owner's UX spec (retired) says subscription is independent of paying access. Confirm with the owner.
 - **Page:** Admin → Community → row and panel **⋯** menus.
 - **When encountered:** Giving someone paying access.
 
 ## 14. Email names and delivery
-- **Decision (portal.md copy table):** the conversion email is **Paying membership added** (was "Paid-access upgrade") and the removal email is **Paying access removed** (was "Paid access revoked"). A failed delivery shows **Not delivered** (was **Bounced**) in the person's Emails list; **Edit details** in the same panel corrects the address.
+- **Decision (retired UX spec, copy table):** the conversion email is **Paying membership added** (was "Paid-access upgrade") and the removal email is **Paying access removed** (was "Paid access revoked"). A failed delivery shows **Not delivered** (was **Bounced**) in the person's Emails list; **Edit details** in the same panel corrects the address.
 - **Page:** Admin → Community → person panel → Emails.
 
 ## 15. Forms show errors inline
-- **Decision (portal.md shared rules):** Add member, Import members and Edit details show errors beside the field, keep what was typed, and move focus to the first invalid field. No validation toast.
+- **Decision (retired UX spec, shared rules):** Add member, Import members and Edit details show errors beside the field, keep what was typed, and move focus to the first invalid field. No validation toast.
 
 ## Unsubscribing doesn't end paying access
-- **Decision (27 Sep, follows owner decision 7 and docs/ux/portal.md "Email subscription is independent of paying access"):** **Unsubscribe** stops emails only. A paying member who unsubscribes stays a paying member. Paying access ends only through **Remove paying access**.
+- **Decision (27 Sep, follows owner decision 7 and the owner's UX spec (retired) "Email subscription is independent of paying access"):** **Unsubscribe** stops emails only. A paying member who unsubscribes stays a paying member. Paying access ends only through **Remove paying access**.
 - **Where:** Community, member ⋯ menu and panel; the unsubscribe confirmation says "They stay a paying member."
 - **Revisit when:** SDC says paid benefits depend on receiving emails.
 
@@ -120,7 +120,7 @@ Assumptions made while building the UI from the Community PRD. Each can be revis
 - **Where:** Community table (kit: `Table busy`).
 
 ## 16. One status per person, for where they are in their journey
-- **Decision (owner, 27 Sep):** every person has exactly one derived status, checked in this order: **Unsubscribed**; **Invited** (onboarding not started); **Onboarding incomplete**; **Never clicked** (onboarded, never clicked a primary action); **Active** (clicked a primary action in the last 60 days); **Inactive** (clicked before, not in 60 days). A primary action is an opportunity's main button in an email (signed up or did it). Shares ("Invite a friend") are recorded but don't change status. **Opens never count**: they're unreliable and don't show intent.
+- **Decision (owner, 27 Sep):** every person has exactly one derived status, checked in this order: **Unsubscribed**; **Invited** (onboarding not started); **Onboarding incomplete**; **Active** (clicked a primary action in the last 60 days); **Inactive** (no primary-action click in the last 60 days, including never; owner, 28 Sep: **Never clicked** was folded into **Inactive**). A primary action is an opportunity's main button in an email (signed up or did it). Shares ("Invite a friend") are recorded but don't change status. **Opens never count**: they're unreliable and don't show intent.
 - **Page:** Community table (**Status** column, one badge per person, text plus color), member panel header (as text), exports.
 - **Affects:** Backend derives it (docs/backend/community.md, "Status"); it's never stored.
 - **When encountered:** Every visit.
@@ -181,3 +181,10 @@ Assumptions made while building the UI from the Community PRD. Each can be revis
 ## 31. Open sign-up kiosk is a dialog with an optional Location
 - **Decision (owner, 27 Sep, replaces the popover in 25):** **Open sign-up kiosk** opens a dialog titled "Open sign-up kiosk" with one optional field, **Location** (no example, no question), and **Cancel** and **Open kiosk**. **Open kiosk** opens `/kiosk?location=…` (or `/kiosk` when blank) in a new tab and closes the dialog. The location stays export only (24) and is no longer shown on the kiosk.
 - **Page:** Admin → Community header.
+
+## Header actions shrink to icons on phones (28 Sep 2026)
+**What:** **Open sign-up kiosk**, **Add members** and **Export members** show icon and label on screens 768px or wider. Below that they're icon buttons, with the label as a tooltip and accessible name (`HeaderAction`).
+**Why:** Keeps the header on one line on phones without hiding the labels on desktop.
+Add members, file import (owner, 28 Sep): one big Choose a CSV file target (click or drop), with Download template and Paste rows instead under it; the rows box appears only once there's something to check.
+Header (owner, 28 Sep): **Open sign-up kiosk** and **Add members** are icon buttons with tooltips at every width; **Export members** keeps its label (icon-only only on small screens).
+Add members file flow (owner, 28 Sep): no link-style buttons; the dialog says "Step 1 of 2 · Upload", then "Step 2 of 2 · Review and edit" once rows are loaded.

@@ -21,7 +21,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 
 /**
  * /admin/opportunities/new, optionally ?kind=job to preselect a type and ?org={id} to preselect who it's
- * posted as (Partners → "Post an opportunity for them"). Only an organization admins can post as is used.
+ * posted as (Partners → "Post for them"). Only an organization admins can post as is used.
  */
 export default async function NewOpportunityPage({ searchParams }: Props) {
   const params = await searchParams;

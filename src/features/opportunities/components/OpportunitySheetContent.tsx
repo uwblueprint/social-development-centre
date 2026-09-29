@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { styled } from "next-yak";
-import { CircleOff, Copy, ExternalLink as ExternalLinkIcon, MoreHorizontal, RotateCcw, Trash2 } from "lucide-react";
+import { CircleAlert, CircleOff, Copy, ExternalLink as ExternalLinkIcon, Pencil, RotateCcw, Trash2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,23 +15,16 @@ import {
 } from "@/components/ui/AlertDialog";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/DropdownMenu";
 import { Icon } from "@/components/ui/Icon";
 import { SheetBody, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/Sheet";
-import { Tag, TagList } from "@/components/ui/Tag";
+import { TagList } from "@/components/ui/Tag";
 import { useToast } from "@/components/ui/Toast";
+import { Tooltip } from "@/components/ui/Tooltip";
 import type { ActionState } from "@/lib/forms";
 import {
   ACCESSIBILITY_LABEL,
   EMPLOYMENT_TYPE_LABEL,
   EVENT_FORMAT_LABEL,
-  KIND_LABEL,
   KIND_NOUN,
   SKILL_LABEL,
   TIME_COMMITMENT_LABEL,
@@ -40,28 +33,14 @@ import {
   WORKPLACE_LABEL,
 } from "../catalog";
 import { copy } from "../copy";
-import { formatDate, formatTime, formatWhere } from "../format";
+import { closesOn, daysUntil, formatDate, formatWhenLine, formatWhere } from "../format";
 import type { Opportunity, OpportunityActions } from "../types";
-import { KindIcon } from "./KindIcon";
-import { closedReasonLabel, formatUpdated, statusLabel } from "./opportunityColumns";
+import { requireOnline } from "@/lib/offline";
+import { ImageMatte } from "./ImageMatte";
+import { closedReasonLabel, formatUpdated, KindBadge, statusLabel } from "./opportunityColumns";
 
 const Title = styled(SheetTitle)`
   overflow-wrap: anywhere;
-`;
-
-const MetaRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex-wrap: wrap;
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-`;
-
-const KindLine = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
 `;
 
 const Body = styled.div`
@@ -77,10 +56,105 @@ const DetailsList = styled.dl`
 `;
 
 const DetailRow = styled.div`
+  display: grid;
+  grid-template-columns: 136px minmax(0, 1fr);
+  gap: var(--space-3);
+
+  @media (max-width: 479px) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+`;
+
+const WhenRelative = styled.span`
+  color: var(--color-text-muted);
+`;
+
+const Warning = styled.p`
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--radius-md);
+  background: var(--color-warning-subtle);
+  color: var(--color-warning);
+  font-size: var(--text-sm);
+`;
+
+const Stats = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+`;
+
+const Stat = styled.div`
   display: flex;
   flex-direction: column;
   gap: 2px;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
 `;
+
+const StatLabel = styled.span`
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+`;
+
+const StatValue = styled.span`
+  font-size: var(--text-lg);
+  font-weight: var(--weight-medium);
+  font-variant-numeric: tabular-nums;
+`;
+
+const StatMuted = styled.span`
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+`;
+
+const VisuallyHidden = styled.span`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+`;
+
+const StatHint = styled.span`
+  font-size: var(--text-xs);
+  font-weight: var(--weight-regular);
+  color: var(--color-text-muted);
+`;
+
+const Section = styled.section`
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+`;
+
+const SectionTitle = styled.h3`
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+`;
+
+const Summary = styled.p`
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-body);
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+`;
+
+const SummaryMuted = styled(Summary)`
+  color: var(--color-text-muted);
+`;
+
+const count = new Intl.NumberFormat("en-CA");
+const pct = new Intl.NumberFormat("en-CA", { style: "percent", maximumFractionDigits: 1 });
 
 const DetailLabel = styled.dt`
   font-size: var(--text-xs);
@@ -118,17 +192,62 @@ const Updated = styled.p`
   color: var(--color-text-muted);
 `;
 
-const DangerMenuItem = styled(DropdownMenuItem)`
-  color: var(--color-danger);
+/* Secondary actions stay visible (owner: no ⋯ menu); Edit is the one primary action. */
+/* The listing's image in the same 16:9 taupe matte as partner cards. */
+const Photo = styled(ImageMatte)`
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-3);
+`;
 
-  & > svg {
-    color: inherit;
+const HeaderTags = styled(TagList)`
+  margin-top: var(--space-2);
+`;
+
+const FooterTools = styled.div`
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-right: auto;
+`;
+
+const IconButton = styled(Button)`
+  padding: 0;
+  aspect-ratio: 1;
+  justify-content: center;
+`;
+
+/* Same as the member panel: a secondary icon button with a red icon. */
+const DangerIconButton = styled(IconButton)`
+  color: var(--color-danger);
+`;
+
+const IconLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  background: var(--color-secondary);
+  color: var(--color-text);
+  transition: background-color var(--duration) var(--ease);
+
+  &:hover {
+    background: var(--color-secondary-hover);
+  }
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
   }
 `;
 
 type Detail = { label: string; value: string | number | undefined };
 
 const date = (v?: string) => (v ? formatDate(v) : undefined);
+
+/** "$10" or "$10–$25". */
+const priceText = (min?: number, max?: number) => (min === undefined ? undefined : max !== undefined ? `$${min}–$${max}` : `$${min}`);
 
 /** Kind-specific rows, in form order; empty values are skipped by the caller. */
 function kindDetails(o: Opportunity): Detail[] {
@@ -137,13 +256,10 @@ function kindDetails(o: Opportunity): Detail[] {
     case "event": {
       const d = o.details;
       return [
-        { label: f.event.date, value: date(d.date) },
-        { label: f.event.startTime, value: d.startTime && formatTime(d.startTime) },
-        { label: f.event.endTime, value: d.endTime && formatTime(d.endTime) },
         { label: f.event.format, value: d.format && EVENT_FORMAT_LABEL[d.format] },
         { label: f.area.label, value: formatWhere(o) },
         { label: f.event.cost, value: d.cost && (d.cost === "paid" ? f.event.paid : f.event.free) },
-        { label: f.event.costDetails.label, value: d.cost === "paid" ? d.costDetails : undefined },
+        { label: f.event.price, value: d.cost === "paid" ? priceText(d.priceMin, d.priceMax) : undefined },
         { label: f.event.accessibility.label, value: d.accessibility?.map((a) => ACCESSIBILITY_LABEL[a]).join(", ") },
         { label: f.event.accessibilityNote.label, value: d.accessibilityNote },
       ];
@@ -216,13 +332,12 @@ export function OpportunitySheetContent({
   const [pending, startTransition] = React.useTransition();
   const [confirmDelete, setConfirmDelete] = React.useState(false);
   const noun = KIND_NOUN[o.kind];
-  // The menu (and its "Delete" item) is gone by the time this confirm closes, so Radix has no trigger to
-  // return focus to; this button stays mounted (the sheet is still open), so we return focus to it directly.
-  const moreActionsRef = React.useRef<HTMLButtonElement>(null);
+  // The confirm isn't opened through a Radix trigger, so focus returns to the Delete button directly.
+  const deleteRef = React.useRef<HTMLButtonElement>(null);
   const keepRef = React.useRef<HTMLButtonElement>(null);
 
   function run<T>(action: () => Promise<ActionState<T>>, after?: (result: ActionState<T>) => void) {
-    if (pending) return;
+    if (pending || !requireOnline()) return;
     startTransition(async () => {
       const result = await action();
       if (result.message) toast({ title: result.message });
@@ -234,87 +349,132 @@ export function OpportunitySheetContent({
   }
 
   const details = kindDetails(o).filter((d) => d.value !== undefined && d.value !== "");
+  const when = formatWhenLine(o);
+  const closing = closesOn(o).ymd;
+  const days = closing ? daysUntil(closing) : undefined;
+  // Worth worrying about: published, happening within a week, and no one has been emailed yet.
+  const soonNotSent = o.status === "published" && !o.performance && days !== undefined && days >= 0 && days <= 7;
 
   return (
     <>
       <SheetHeader>
+        {o.imageUrl && <Photo src={o.imageUrl} />}
         <Title>{o.title}</Title>
-        <MetaRow>
+        {o.summary ? <Summary>{o.summary}</Summary> : <SummaryMuted>{copy.panel.noDescription}</SummaryMuted>}
+        {/* Status and type use the table's badge styles; topics stay plain tags. */}
+        <HeaderTags aria-label={copy.panel.tagsLabel}>
           <Badge $variant={statusVariant(o)}>{statusLabel(o)}</Badge>
           {o.status === "closed" && o.closedReason !== "closed" && <Badge $variant="outline">{closedReasonLabel(o)}</Badge>}
-          <KindLine>
-            <KindIcon kind={o.kind} size={14} />
-            {KIND_LABEL[o.kind]}
-          </KindLine>
-        </MetaRow>
+          <KindBadge kind={o.kind} />
+          {o.topics.map((t) => (
+            // Same size as the status and type badges; plain outline so they read as topics, not state.
+            <Badge key={t} $variant="outline">
+              {TOPIC_LABEL[t]}
+            </Badge>
+          ))}
+        </HeaderTags>
       </SheetHeader>
 
       <SheetBody aria-busy={pending || undefined}>
         <Body>
-          <DetailsList>
-            <DetailRow>
-              <DetailLabel>{copy.form.summary.label}</DetailLabel>
-              {o.summary ? <DetailValue>{o.summary}</DetailValue> : <MutedValue>{copy.panel.noDescription}</MutedValue>}
-            </DetailRow>
-            <DetailRow>
-              <DetailLabel>{copy.panel.postedBy}</DetailLabel>
-              <DetailValue>{o.organization.name}</DetailValue>
-            </DetailRow>
-            <DetailRow>
-              <DetailLabel>{copy.panel.topics}</DetailLabel>
-              {o.topics.length > 0 ? (
-                <DetailValue>
-                  <TagList>
-                    {o.topics.map((t) => (
-                      <Tag key={t}>{TOPIC_LABEL[t]}</Tag>
-                    ))}
-                  </TagList>
-                </DetailValue>
-              ) : (
-                <MutedValue>{copy.panel.notSet}</MutedValue>
+          {soonNotSent && days !== undefined && (
+            <Warning role="status">
+              <Icon icon={CircleAlert} size={16} />
+              {copy.panel.soonNotSent(days)}
+            </Warning>
+          )}
+          {o.status !== "draft" && (
+            <Stats>
+              <Stat>
+                <StatLabel>{copy.panel.sentTo}</StatLabel>
+                {o.performance ? (
+                  <StatValue>{copy.panel.people(count.format(o.performance.sentTo))}</StatValue>
+                ) : (
+                  <StatMuted>{copy.panel.notSentYet}</StatMuted>
+                )}
+              </Stat>
+              <Stat>
+                <StatLabel>{copy.panel.clicks}</StatLabel>
+                {o.performance ? (
+                  <>
+                    {/* The rate sits beside the count; screen readers get what it's a rate of. */}
+                    <StatValue>
+                      {count.format(o.performance.clicks)}{" "}
+                      <StatHint>
+                        ({pct.format(o.performance.sentTo ? o.performance.clicks / o.performance.sentTo : 0)})
+                        <VisuallyHidden> {copy.panel.clickRateOf}</VisuallyHidden>
+                      </StatHint>
+                    </StatValue>
+                  </>
+                ) : (
+                  <StatMuted>{copy.panel.notSentYet}</StatMuted>
+                )}
+              </Stat>
+            </Stats>
+          )}
+          <Section>
+            <SectionTitle>{copy.panel.details}</SectionTitle>
+            <DetailsList>
+              {when && (
+                <DetailRow>
+                  <DetailLabel>{copy.panel.when}</DetailLabel>
+                  <DetailValue>
+                    {when}
+                    {days !== undefined && days >= 0 && <WhenRelative> · {copy.panel.whenIn(days)}</WhenRelative>}
+                  </DetailValue>
+                </DetailRow>
               )}
-            </DetailRow>
-            <DetailRow>
-              <DetailLabel>{copy.form.link.label}</DetailLabel>
-              {o.link ? (
-                <DetailValue>
-                  <ExternalLink href={o.link} target="_blank" rel="noopener noreferrer">
-                    {o.link}
-                  </ExternalLink>
-                </DetailValue>
-              ) : (
-                <MutedValue>{copy.panel.notSet}</MutedValue>
+              {o.topics.length === 0 && (
+                <DetailRow>
+                  <DetailLabel>{copy.panel.topics}</DetailLabel>
+                  <MutedValue>{copy.panel.notSet}</MutedValue>
+                </DetailRow>
               )}
-            </DetailRow>
-            {details.map((d, i) => (
-              <DetailRow key={`${d.label}-${i}`}>
-                <DetailLabel>{d.label}</DetailLabel>
-                <DetailValue>{d.value}</DetailValue>
+              <DetailRow>
+                <DetailLabel>{copy.panel.postedBy}</DetailLabel>
+                <DetailValue>{o.organization.name}</DetailValue>
               </DetailRow>
-            ))}
-          </DetailsList>
+              <DetailRow>
+                <DetailLabel>{copy.form.link.label[o.kind]}</DetailLabel>
+                {o.link ? (
+                  <DetailValue>
+                    <ExternalLink href={o.link} target="_blank" rel="noopener noreferrer">
+                      {o.link.replace(/^https?:\/\//, "")}
+                    </ExternalLink>
+                  </DetailValue>
+                ) : (
+                  <MutedValue>{copy.panel.notSet}</MutedValue>
+                )}
+              </DetailRow>
+              {details.map((d, i) => (
+                <DetailRow key={`${d.label}-${i}`}>
+                  <DetailLabel>{d.label}</DetailLabel>
+                  <DetailValue>{d.value}</DetailValue>
+                </DetailRow>
+              ))}
+            </DetailsList>
+          </Section>
           <Updated>{copy.panel.lastUpdated(formatUpdated(o.updatedAt), o.updatedBy.name)}</Updated>
         </Body>
       </SheetBody>
 
       <SheetFooter>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button ref={moreActionsRef} type="button" $variant="ghost" aria-label={copy.panel.moreActions} aria-busy={pending || undefined}>
-              <Icon icon={MoreHorizontal} size={16} />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" side="top">
-            {o.link && (
-              <DropdownMenuItem asChild>
-                <a href={o.link} target="_blank" rel="noopener noreferrer">
-                  <Icon icon={ExternalLinkIcon} size={16} />
-                  {copy.panel.openLink}
-                </a>
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuItem
-              onSelect={() =>
+        <FooterTools role="group" aria-label={copy.panel.moreActions}>
+          {o.link && (
+            <Tooltip content={copy.panel.openLink} pinOnClick={false}>
+              <IconLink href={o.link} target="_blank" rel="noopener noreferrer" aria-label={copy.panel.openLink}>
+                <Icon icon={ExternalLinkIcon} size={16} />
+              </IconLink>
+            </Tooltip>
+          )}
+          <Tooltip content={copy.panel.duplicate} pinOnClick={false}>
+            <IconButton
+              type="button"
+              $variant="secondary"
+              $size="sm"
+              aria-label={copy.panel.duplicate}
+              aria-busy={pending || undefined}
+              onClick={() =>
                 run(
                   () => actions.duplicate(o.id),
                   (result) => result.data && router.push(`${basePath}/${result.data.id}/edit`),
@@ -322,33 +482,30 @@ export function OpportunitySheetContent({
               }
             >
               <Icon icon={Copy} size={16} />
-              {copy.panel.duplicate}
-            </DropdownMenuItem>
-            {o.status === "published" && (
-              <DropdownMenuItem onSelect={() => run(() => actions.close(o.id))}>
+            </IconButton>
+          </Tooltip>
+          {o.status === "published" && (
+            <Tooltip content={copy.panel.close} pinOnClick={false}>
+              <IconButton type="button" $variant="secondary" $size="sm" aria-label={copy.panel.close} onClick={() => run(() => actions.close(o.id))}>
                 <Icon icon={CircleOff} size={16} />
-                {copy.panel.close}
-              </DropdownMenuItem>
-            )}
-            {o.status === "closed" && (
-              <DropdownMenuItem onSelect={() => run(() => actions.reopen(o.id))}>
+              </IconButton>
+            </Tooltip>
+          )}
+          {o.status === "closed" && (
+            <Tooltip content={copy.panel.reopen} pinOnClick={false}>
+              <IconButton type="button" $variant="secondary" $size="sm" aria-label={copy.panel.reopen} onClick={() => run(() => actions.reopen(o.id))}>
                 <Icon icon={RotateCcw} size={16} />
-                {copy.panel.reopen}
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuSeparator />
-            <DangerMenuItem
-              onSelect={(event) => {
-                event.preventDefault();
-                setConfirmDelete(true);
-              }}
-            >
+              </IconButton>
+            </Tooltip>
+          )}
+          <Tooltip content={copy.panel.delete} pinOnClick={false}>
+            <DangerIconButton ref={deleteRef} type="button" $variant="secondary" $size="sm" aria-label={copy.panel.delete} onClick={() => setConfirmDelete(true)}>
               <Icon icon={Trash2} size={16} />
-              {copy.panel.delete}
-            </DangerMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+            </DangerIconButton>
+          </Tooltip>
+        </FooterTools>
         <Button type="button" onClick={() => router.push(`${basePath}/${o.id}/edit`)}>
+          <Icon icon={Pencil} size={16} />
           {copy.panel.edit}
         </Button>
       </SheetFooter>
@@ -362,7 +519,7 @@ export function OpportunitySheetContent({
           }}
           onCloseAutoFocus={(event) => {
             event.preventDefault();
-            moreActionsRef.current?.focus();
+            deleteRef.current?.focus();
           }}
         >
           <AlertDialogTitle>{copy.confirmDelete.title(noun)}</AlertDialogTitle>

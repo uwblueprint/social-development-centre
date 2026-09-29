@@ -143,9 +143,13 @@ const TextField = styled.input<{ $invalid?: boolean }>`
   &:disabled {
     background: var(--color-surface);
     color: var(--color-text-muted);
-    border-color: var(--color-border);
-    border-style: dashed;
     cursor: not-allowed;
+    border-color: transparent;
+    background-image: var(--dashed-border);
+    background-size: var(--dashed-border-size);
+    background-position: var(--dashed-border-position);
+    background-repeat: var(--dashed-border-repeat);
+    background-origin: border-box;
   }
 `;
 

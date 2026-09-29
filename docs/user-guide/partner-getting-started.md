@@ -21,43 +21,30 @@ You'll see "Check your email for a sign-in link." after step 2. Use the same ema
 
 ## Get around the portal
 
-![The partner portal with the organization's name at the top of the sidebar, Opportunities and Organization, and Organization highlighted](img/partner-getting-started/get-around-the-portal.png)
+![The partner portal with the organization's name at the top of the sidebar, Opportunities and Insights, and Organization near Sign out](img/partner-getting-started/get-around-the-portal.png)
 
 The sidebar on the left shows your organization's name at the top, and two sections:
 - **Opportunities:** post and manage your events, petitions, volunteer roles, jobs and other asks. See [Partner portal: opportunities](./partner-opportunities.md).
-- **Organization:** your organization's details and who on your team has access.
+- **Insights:** how your opportunities perform. It's empty for now.
+
+**Organization** (your organization's details and who on your team has access) is at the bottom of the sidebar, right above **Sign out**.
 
 The section you're in is highlighted. On a phone, tap the menu button (**Open menu**) at the top left to open the sidebar, then choose a section. To close it without choosing, tap the **X** (**Close menu**), tap the dimmed page beside it, or press Escape.
 
-## Go to your account or sign out
+## Read the documentation
+1. Click **Documentation** at the bottom of the sidebar.
+2. Choose a guide from the tabs at the top of the page.
 
-![The account menu open above your name, with My account and Sign out](img/partner-getting-started/go-to-your-account-or-sign-out.png)
+## Switch between light and dark mode
+The app follows your device's light or dark setting.
+1. To change it, click **Dark mode** (or **Light mode**) at the bottom of the sidebar, above **Sign out**.
 
-1. Click your name at the bottom of the sidebar.
-2. Choose **My account** to change your name or profile picture, or **Sign out**.
+The label always names the mode you'd switch to. Your choice is saved in this browser.
 
-When you sign out, you go back to the sign-in page, which says **You're signed out. See you soon.**
+## Sign out
+1. Click **Sign out** (in red) at the bottom of the sidebar.
 
-## Change your name or profile picture
-
-![The My account dialog with Upload photo, the Name field and the Save changes button highlighted](img/partner-getting-started/change-your-name-or-profile-picture.png)
-
-1. Click your name at the bottom of the sidebar, then choose **My account**.
-2. To add or change your picture, click **Upload photo** (or **Change photo**) and choose a JPG, PNG or WebP image. It's cropped to a square. To go back to your initials, click **Remove photo**.
-3. Edit **Name**.
-4. Click **Save changes**. You'll see **Changes saved**.
-
-Your email address can't be changed here yet.
-
-## Delete your account
-
-![The Delete your account? confirmation with Keep account and the Delete account button highlighted](img/partner-getting-started/delete-your-account.png)
-
-1. Click your name at the bottom of the sidebar, then choose **My account**.
-2. Under **Danger zone**, click **Delete account**.
-3. Click **Delete account** again to confirm, or **Keep account** to go back.
-
-You're signed out and lose access right away. This can't be undone.
+You go back to the sign-in page, which says **You're signed out. See you soon.**
 
 ## Update your organization's details
 
@@ -69,7 +56,7 @@ Keep these current. Your organization's name appears on every opportunity you po
    - **Organization name:** as the community knows it. Required.
    - **Website:** your main web address, for example sdckw.ca. You don't need to type https://.
    - **Short description:** one or two sentences about what your organization does, up to 280 characters.
-3. Click **Save changes**.
+3. Click **Save changes**, just below the fields. It saves only **Profile**; changes under **Team** happen straight away.
 
 You'll see "Changes saved." The new name shows up in the sidebar and on all your opportunities, including ones already published. Emails that already went out keep the old name.
 
@@ -80,7 +67,7 @@ You'll see "Changes saved." The new name shows up in the sidebar and on all your
 ![The Team list showing Amara Okafor (you) and a colleague, with Invite colleague above](img/partner-getting-started/see-who-on-your-team-has-access.png)
 
 1. Go to **Organization**.
-2. Under **Team**, you'll see everyone at your organization who can use the portal or has been invited. Your own row is marked **(you)**. Anyone who hasn't accepted yet shows one of:
+2. Click **Team**, you'll see everyone at your organization who can use the portal or has been invited. Your own row is marked **(you)**. Anyone who hasn't accepted yet shows one of:
    - **Invitation pending** and the date it expires: the email arrived and the link still works.
    - **Invitation not sent**: the email couldn't be delivered. Click **Retry**, or check the address.
    - **Invitation expired** and the date it expired: the link no longer works. Send a new one.
@@ -90,7 +77,7 @@ You'll see "Changes saved." The new name shows up in the sidebar and on all your
 ![The Invite colleague dialog with Name and Email fields and the Send invitation button highlighted](img/partner-getting-started/invite-a-colleague.png)
 
 1. Go to **Organization**.
-2. Under **Team**, click **Invite colleague**.
+2. Click **Team**, click **Invite colleague**.
 3. Enter their **Name** and **Email**.
 4. Click **Send invitation**.
 
@@ -104,7 +91,7 @@ You'll see "Invitation sent to {email}." They appear under **Team** as **Invitat
 
 ## Resend or cancel an invitation
 1. Go to **Organization**.
-2. Under **Team**, click **Actions for {name}** (⋯) on the person's row.
+2. Click **Team**, click **Actions for {name}** (⋯) on the person's row.
 3. Choose:
    - **Resend invitation** (pending), **Send new invitation** (expired) or **Retry** (not sent). You'll see "New invitation sent to {email}. The previous link won't work." If it can't be sent, you'll see "We couldn't send the new invitation. Try again." and a link they already have keeps working.
    - **Cancel invitation**, then **Cancel invitation** in the confirmation, if you invited the wrong person or address. You'll see "Invitation cancelled." To keep it, click **Keep invitation**.
@@ -114,7 +101,7 @@ You'll see "Invitation sent to {email}." They appear under **Team** as **Invitat
 ![The remove confirmation with Keep access and the Remove access button highlighted](img/partner-getting-started/remove-someone-who-has-left.png)
 
 1. Go to **Organization**.
-2. Under **Team**, click **Actions for {name}** (⋯) on the person's row.
+2. Click **Team**, click **Actions for {name}** (⋯) on the person's row.
 3. Choose **Remove from organization**.
 4. Click **Remove access**. To keep their access, click **Keep access**.
 
@@ -127,3 +114,8 @@ You can't remove yourself; there's no menu on your own row. Ask a colleague or S
 - **"Your organization no longer has access. Contact SDC if you think this is a mistake."** Nothing was saved. The message shows SDC's contact email.
 - **You were removed from your organization, or your organization's access ended:** the portal sends you back to the sign-in page. Contact SDC if you think this is a mistake.
 - **You changed jobs within your organization and have a new email:** ask SDC to update your email. They'll send a new invitation to the new address.
+
+## If a page won't load
+Sometimes a page can't load and you see **We couldn't load {page}.** in the middle of the screen, with "Your data is safe; this is a loading problem." Nothing was changed or lost.
+1. Click **Try again**.
+2. If the same message comes back, tell an SDC admin which page it was and roughly when you saw it. The message above **Try again** says the same.

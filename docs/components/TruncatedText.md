@@ -11,7 +11,6 @@ One line of text that ends in an ellipsis when it doesn't fit. `TruncatedEmail` 
 ## API
 ```tsx
 import { TruncatedText, TruncatedEmail } from "@/components/ui/TruncatedText";
-// TruncatedEmail is also importable from "@/components/ui/TruncatedEmail".
 ```
 - `TruncatedText({ children: string; tooltip?: boolean })`: a block-level span with `overflow: hidden`, `text-overflow: ellipsis` and `nowrap`. It fills its container, so the container needs a width (a table column's `width`, or a flex child with `min-width: 0`). With `tooltip`, hovering it shows the full text in a kit `Tooltip`, only when the text is actually cut off (measured when the tooltip would open).
 - `TruncatedEmail({ email })`: two spans. The local part shrinks first and ends in an ellipsis; `@domain` never shrinks until the local part is down to its ellipsis, and then end-truncates. Pure CSS, no tooltip.

@@ -12,7 +12,7 @@ const list = (v: string | string[] | undefined) =>
     .map((x) => x.trim())
     .filter(Boolean);
 
-const SORT_KEYS: OpportunitySortKey[] = ["title", "organization", "date", "updated"];
+const SORT_KEYS: OpportunitySortKey[] = ["title", "organization", "date", "updated", "sentTo", "clicks"];
 
 /** The tab's default order, used when the URL has no `sort`. */
 export function defaultSort(tab: OpportunityTab) {

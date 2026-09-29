@@ -4,6 +4,7 @@ import { styled } from "next-yak";
 import { ButtonDemos, ColorDemos } from "./demos/BasicsDemos";
 import {
   FieldDemo,
+  LabelDemo,
   InputDemo,
   SearchFieldDemo,
   SelectDemo,
@@ -32,6 +33,7 @@ const sections: { id: string; title: string; description: string; demo: ReactNod
   { id: "colors", title: "Colors", description: "Stone neutrals, one accent, and status colors. Tokens live in tokens.ts.", demo: <ColorDemos /> },
   { id: "buttons", title: "Buttons", description: "Primary, secondary, outline, ghost, link and danger actions in three sizes.", demo: <ButtonDemos /> },
   { id: "field", title: "Field", description: "Label, hint and error wired to any control for screen readers.", demo: <FieldDemo /> },
+  { id: "label", title: "Label", description: "The visible text label for a form control, linked by htmlFor.", demo: <LabelDemo /> },
   { id: "input", title: "Input", description: "Single-line text entry.", demo: <InputDemo /> },
   { id: "search-field", title: "Search field", description: "Instant search for a list: results update 300ms after typing stops, Enter searches now, × clears.", demo: <SearchFieldDemo /> },
   { id: "textarea", title: "Textarea", description: "Multi-line text entry.", demo: <TextareaDemo /> },

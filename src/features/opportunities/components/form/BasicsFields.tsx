@@ -9,7 +9,8 @@ import { LIMITS, MAX_TOPICS, TOPICS } from "../../catalog";
 import { copy } from "../../copy";
 import type { OrganizationRef, TopicId } from "../../types";
 import { CountedInput } from "./FormParts";
-import { fieldId, type KindFieldsProps } from "./formValues";
+import { ImageField } from "./ImageField";
+import { fieldId, type KindFieldsProps, type FieldPart } from "./formValues";
 
 const t = copy.form;
 
@@ -39,16 +40,21 @@ export function BasicsFields({
   error,
   topics,
   onToggleTopic,
+  part = "all",
 }: KindFieldsProps & {
+  part?: FieldPart;
   scope: "admin" | "partner";
   organizations?: OrganizationRef[];
   topics: TopicId[];
   onToggleTopic: (id: TopicId) => void;
 }) {
   const atCap = topics.length >= MAX_TOPICS;
+  // Eventbrite gives the title and description; the organization and SDC's topics come from the person.
+  const fromEventbrite = part !== "yours";
+  const fromYou = part !== "eventbrite";
   return (
     <>
-      {scope === "admin" && (
+      {fromYou && scope === "admin" && (
         <Field label={t.organization.label} id={fieldId("organizationId")} error={error("organizationId")} required>
           {(p) => (
             <Select
@@ -62,6 +68,8 @@ export function BasicsFields({
           )}
         </Field>
       )}
+      {fromEventbrite && (
+      <>
       <Field label={t.title.label} id={fieldId("title")} error={error("title")} required>
         {(p) => <CountedInput {...p} name="title" max={LIMITS.title} value={values.title ?? ""} onChange={(e) => set("title", e.target.value)} />}
       </Field>
@@ -70,6 +78,10 @@ export function BasicsFields({
           <Textarea {...p} name="summary" rows={3} maxLength={LIMITS.summary} value={values.summary ?? ""} onChange={(e) => set("summary", e.target.value)} />
         )}
       </Field>
+      <ImageField value={values.imageUrl ?? ""} onChange={(v) => set("imageUrl", v)} error={error("imageUrl")} />
+      </>
+      )}
+      {fromYou && (
       <Field
         label={
           <LabelWithCount>
@@ -108,6 +120,7 @@ export function BasicsFields({
           </TagList>
         )}
       </Field>
+      )}
     </>
   );
 }

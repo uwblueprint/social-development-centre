@@ -63,11 +63,93 @@ const Step = styled.div`
   gap: var(--space-4);
 `;
 
-const UploadRow = styled.div`
+/* Each step of the file flow is one contained, numbered box. */
+const StepBox = styled.div`
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+`;
+
+const StepHead = styled.div`
+  display: flex;
   align-items: center;
-  gap: var(--space-2) var(--space-3);
+  gap: var(--space-3);
+`;
+
+const StepNumber = styled.span`
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-6);
+  height: var(--space-6);
+  border-radius: var(--radius-full);
+  background: var(--color-secondary);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  font-variant-numeric: tabular-nums;
+`;
+
+const StepText = styled.div`
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+`;
+
+const StepTitle = styled.span`
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+`;
+
+const StepHint = styled.span`
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+`;
+
+/*
+ * The drop target is the button itself: one dashed box, 224px tall so a file is easy to drop on it
+ * (owner). No press-shrink: a big target that scales down reads as broken.
+ */
+const DropButton = styled(Button)<{ $dragging?: boolean }>`
+  && {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    width: 100%;
+    height: auto;
+    min-height: calc(var(--space-8) * 3.5);
+    padding: var(--space-5);
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    background-color: ${({ $dragging }) => ($dragging ? "var(--color-bg-hover)" : "transparent")};
+    background-image: var(--dashed-border);
+    background-size: var(--dashed-border-size);
+    background-position: var(--dashed-border-position);
+    background-repeat: var(--dashed-border-repeat);
+    background-origin: border-box;
+    white-space: normal;
+  }
+  &&:hover:not(:disabled) {
+    background-color: var(--color-bg-hover);
+  }
+  &&:active:not(:disabled) {
+    transform: none;
+  }
+`;
+
+const DropTitle = styled.span`
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
+`;
+
+const DropHint = styled.span`
+  font-size: var(--text-sm);
+  font-weight: var(--weight-regular);
+  color: var(--color-text-muted);
 `;
 
 /* Import from a file / Back on the left; Cancel and the main button on the right. */
@@ -85,12 +167,6 @@ const FooterEnd = styled.div`
   flex-wrap: wrap;
   gap: var(--space-2);
   margin-left: auto;
-`;
-
-const Note = styled.p`
-  margin: 0;
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
 `;
 
 const Summary = styled.p`
@@ -243,6 +319,7 @@ export function AddMembersDialog({ open, onOpenChange }: { open: boolean; onOpen
   const { toast } = useToast();
   const [view, setView] = React.useState<View>("single");
   const [step, setStep] = React.useState<"input" | "preview">("input");
+  const [dragging, setDragging] = React.useState(false);
   const [name, setName] = React.useState("");
   const [email, setEmail] = React.useState("");
   const [fileText, setFileText] = React.useState("");
@@ -339,28 +416,31 @@ export function AddMembersDialog({ open, onOpenChange }: { open: boolean; onOpen
     URL.revokeObjectURL(url);
   }
 
+  async function loadCsv(file: File) {
+    setCsvNote(null);
+    setCsvError(null);
+    try {
+      const lines = csvToLines(await file.text());
+      if (!lines.some((l) => l.includes("@"))) {
+        setCsvError(copy.addDialog.csvEmpty(file.name));
+      } else {
+        setFileText((prev) => (prev.trim() ? `${prev.trimEnd()}\n${lines.join("\n")}` : lines.join("\n")));
+        setCsvNote(copy.addDialog.csvLoaded(lines.length, file.name));
+      }
+    } catch {
+      setCsvError(copy.addDialog.csvUnreadable(file.name));
+    }
+    requestAnimationFrame(() => fileTextRef.current?.focus());
+  }
+
   function pickCsv() {
     // Created on demand, never rendered: the visible control is the kit Button.
     const picker = document.createElement("input");
     picker.type = "file";
     picker.accept = ".csv,text/csv,text/plain";
-    picker.onchange = async () => {
+    picker.onchange = () => {
       const file = picker.files?.[0];
-      if (!file) return;
-      setCsvNote(null);
-      setCsvError(null);
-      try {
-        const lines = csvToLines(await file.text());
-        if (!lines.some((l) => l.includes("@"))) {
-          setCsvError(copy.addDialog.csvEmpty(file.name));
-        } else {
-          setFileText((prev) => (prev.trim() ? `${prev.trimEnd()}\n${lines.join("\n")}` : lines.join("\n")));
-          setCsvNote(copy.addDialog.csvLoaded(lines.length, file.name));
-        }
-      } catch {
-        setCsvError(copy.addDialog.csvUnreadable(file.name));
-      }
-      fileTextRef.current?.focus();
+      if (file) void loadCsv(file);
     };
     picker.click();
   }
@@ -432,7 +512,7 @@ export function AddMembersDialog({ open, onOpenChange }: { open: boolean; onOpen
                   </ErrorNote>
                 )}
                 <Footer>
-                  <Button ref={importLinkRef} type="button" $variant="link" onClick={() => switchView("file")}>
+                  <Button ref={importLinkRef} type="button" $variant="ghost" $size="sm" onClick={() => switchView("file")}>
                     <Icon icon={FileUp} size={16} />
                     {copy.addDialog.importFromFile}
                   </Button>
@@ -447,43 +527,101 @@ export function AddMembersDialog({ open, onOpenChange }: { open: boolean; onOpen
               </>
             ) : (
               <>
-                <UploadRow>
-                  <Button ref={uploadRef} type="button" $variant="secondary" $size="sm" onClick={pickCsv}>
-                    <Icon icon={Upload} size={16} />
-                    {copy.addDialog.uploadCsv}
-                  </Button>
-                  <Button type="button" $variant="link" onClick={downloadTemplate}>
-                    <Icon icon={Download} size={16} />
-                    {copy.addDialog.downloadTemplate}
-                  </Button>
-                  <Note role="status">{csvNote}</Note>
-                </UploadRow>
-                <Field
-                  label={copy.addDialog.emailsLabel}
-                  hint={copy.addDialog.fileHint}
-                  error={fieldError(previewState, "emails") ?? csvError ?? undefined}
-                  required
-                >
-                  {(p) => (
-                    <Textarea
-                      {...p}
-                      ref={fileTextRef}
-                      name="emails"
-                      value={fileText}
-                      onChange={(e) => setFileText(e.target.value)}
-                      rows={7}
-                    />
-                  )}
-                </Field>
-                {payingCheckbox}
+                {!fileText ? (
+                  <>
+                    {/* Screen one: the two things people do first, each in its own numbered box. */}
+                    <StepBox>
+                      <StepHead>
+                        <StepNumber aria-hidden="true">1</StepNumber>
+                        <StepText>
+                          <StepTitle>{copy.addDialog.stepTemplateTitle}</StepTitle>
+                          <StepHint>{copy.addDialog.stepTemplateHint}</StepHint>
+                        </StepText>
+                        <Button type="button" $variant="secondary" $size="sm" onClick={downloadTemplate}>
+                          <Icon icon={Download} size={16} />
+                          {copy.addDialog.downloadTemplate}
+                        </Button>
+                      </StepHead>
+                    </StepBox>
+                    <StepBox>
+                      <StepHead>
+                        <StepNumber aria-hidden="true">2</StepNumber>
+                        <StepText>
+                          <StepTitle>{copy.addDialog.stepUploadTitle}</StepTitle>
+                        </StepText>
+                      </StepHead>
+                      <DropButton
+                        ref={uploadRef}
+                        type="button"
+                        $variant="ghost"
+                        $dragging={dragging}
+                        onClick={pickCsv}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          setDragging(true);
+                        }}
+                        onDragLeave={() => setDragging(false)}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          setDragging(false);
+                          const file = e.dataTransfer.files[0];
+                          if (file) void loadCsv(file);
+                        }}
+                      >
+                        <Icon icon={Upload} size={20} />
+                        <DropTitle>{copy.addDialog.chooseFile}</DropTitle>
+                        <DropHint>{copy.addDialog.dropHint}</DropHint>
+                      </DropButton>
+                      {csvError && (
+                        <ErrorNote role="alert">
+                          <ErrorIcon />
+                          <span>{csvError}</span>
+                        </ErrorNote>
+                      )}
+                    </StepBox>
+                  </>
+                ) : (
+                  <StepBox>
+                    {/* Screen two: check the rows and choose membership, then Continue. */}
+                    <StepHead>
+                      <StepNumber aria-hidden="true">3</StepNumber>
+                      <StepText>
+                        <StepTitle>{copy.addDialog.stepReviewTitle}</StepTitle>
+                        {csvNote && <StepHint role="status">{csvNote}</StepHint>}
+                      </StepText>
+                      <Button ref={uploadRef} type="button" $variant="secondary" $size="sm" onClick={pickCsv}>
+                        <Icon icon={Upload} size={16} />
+                        {copy.addDialog.addAnotherFile}
+                      </Button>
+                    </StepHead>
+                    <Field
+                      label={copy.addDialog.emailsLabel}
+                      hint={copy.addDialog.fileHint}
+                      error={fieldError(previewState, "emails") ?? csvError ?? undefined}
+                    >
+                      {(p) => (
+                        <Textarea
+                          {...p}
+                          ref={fileTextRef}
+                          name="emails"
+                          aria-required="true"
+                          value={fileText}
+                          onChange={(e) => setFileText(e.target.value)}
+                          rows={6}
+                        />
+                      )}
+                    </Field>
+                    {payingCheckbox}
+                  </StepBox>
+                )}
                 <Footer>
-                  <Button type="button" $variant="link" onClick={() => switchView("single")}>
+                  <Button type="button" $variant="ghost" $size="sm" onClick={() => switchView("single")}>
                     <Icon icon={ArrowLeft} size={16} />
                     {copy.addDialog.backToAdd}
                   </Button>
                   <FooterEnd>
                     {cancel}
-                    <SubmitButton>{copy.addDialog.continue}</SubmitButton>
+                    {fileText && <SubmitButton>{copy.addDialog.continue}</SubmitButton>}
                   </FooterEnd>
                 </Footer>
               </>

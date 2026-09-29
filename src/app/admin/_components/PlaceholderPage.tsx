@@ -24,11 +24,11 @@ const Description = styled.p`
   line-height: var(--leading-body);
 `;
 
-export function PlaceholderPage({ title, description }: { title: string; description: string }) {
+export function PlaceholderPage({ title, description }: { title: string; description?: string }) {
   return (
     <Wrapper>
       <Title>{title}</Title>
-      <Description>{description}</Description>
+      {description && <Description>{description}</Description>}
     </Wrapper>
   );
 }

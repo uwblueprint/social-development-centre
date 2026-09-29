@@ -14,7 +14,7 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 /** Which portal is asking: the refusals point partners to SDC and admins to the action they have. */
 export type Audience = "admin" | "partner";
 
-/** Server messages about people and invitations (docs/ux/portal.md, Team and invitations). */
+/** Server messages about people and invitations (the owner's UX spec (retired), Team and invitations). */
 export const contactMessages = {
   nameMissing: "Enter their name.",
   emailInvalid: "Enter an email address like name@example.org.",
@@ -26,7 +26,7 @@ export const contactMessages = {
   notSent: "We couldn't send the invitation. Try again.",
   resent: (email: string) => `New invitation sent to ${email}. The previous link won't work.`,
   resendFailed: "We couldn't send the new invitation. Try again.",
-  cancelled: "Invitation cancelled.",
+  cancelled: (email: string) => `Invitation to ${email} cancelled.`,
   personMissing: "This person could not be found.",
   invitationClosed: "This invitation is no longer open. Refresh the team list.",
   removeRefusedPending: "This person doesn't have access yet. Cancel their invitation instead.",
@@ -81,9 +81,6 @@ function organizationUsing(email: string, exceptContactId?: string) {
       currentContacts(o).some((c) => c.id !== exceptContactId && c.email.toLowerCase() === email.toLowerCase()),
   );
 }
-
-/** True if the email belongs to a current person at a current organization. */
-export const emailInUse = (email: string, exceptContactId?: string) => !!organizationUsing(email, exceptContactId);
 
 /**
  * Field errors for a person's name and email. `org` is the organization they're joining (undefined for a
@@ -183,7 +180,7 @@ export function cancelContactInvitation(org: StoredOrg, contactId: string): Acti
   } else if (currentContacts(org).length === 0 && !org.removedAt) {
     org.removedAt = new Date().toISOString();
   }
-  return ok(contactMessages.cancelled);
+  return ok(contactMessages.cancelled(contact.email));
 }
 
 /**

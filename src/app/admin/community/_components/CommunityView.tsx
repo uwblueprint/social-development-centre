@@ -28,6 +28,7 @@ import { communityCopy as copy } from "../_copy";
 import { statusParam } from "../_lib/statusParam";
 import { AddMembersDialog } from "./AddMembersDialog";
 import { ExportDialog } from "./ExportDialog";
+import { HeaderAction } from "./HeaderAction";
 import { KioskLauncher } from "./KioskLauncher";
 import { memberColumns } from "./MemberRows";
 import { MemberSheetContent } from "./MemberSheetContent";
@@ -257,14 +258,8 @@ export function CommunityView({
         actions={
           <>
             <KioskLauncher />
-            <Button type="button" $variant="secondary" onClick={openAdd}>
-              <Icon icon={UserPlus} size={16} />
-              {copy.toolbar.addMembers}
-            </Button>
-            <Button type="button" onClick={openExport}>
-              <Icon icon={Download} size={16} />
-              {copy.toolbar.export}
-            </Button>
+            <HeaderAction type="button" $variant="secondary" iconOnly icon={UserPlus} label={copy.toolbar.addMembers} onClick={openAdd} />
+            <HeaderAction type="button" icon={Download} label={copy.toolbar.export} onClick={openExport} />
           </>
         }
       />

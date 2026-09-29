@@ -21,14 +21,14 @@ export interface MemberActivity {
 /**
  * One status per person, first match wins:
  * 1. Unsubscribed. 2. Invited (onboarding not started). 3. Onboarding incomplete.
- * 4. Never clicked (onboarded, no CTA clicks ever). 5. Active (a CTA click in the last 60 days).
- * 6. Inactive (clicked before, but not in 60 days).
+ * 4. Active (a CTA click in the last 60 days). 5. Inactive (no CTA click in the last 60 days,
+ * including people who have never clicked; owner, 28 Sep: "Never clicked" folded into Inactive).
  */
 export function deriveStatus(m: Pick<MemberRecord, "subscribed" | "onboarding">, lastClickAt: string | undefined, now: number): MemberStatus {
   if (!m.subscribed) return "unsubscribed";
   if (m.onboarding === "not_started") return "invited";
   if (m.onboarding === "in_progress") return "onboarding_incomplete";
-  if (!lastClickAt) return "never_clicked";
+  if (!lastClickAt) return "inactive";
   return now - new Date(lastClickAt).getTime() <= ACTIVE_WINDOW_DAYS * 86_400_000 ? "active" : "inactive";
 }
 

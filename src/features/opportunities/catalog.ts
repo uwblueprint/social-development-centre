@@ -113,7 +113,7 @@ export const ACCESSIBILITY_LABEL = Object.fromEntries(ACCESSIBILITY_FEATURES.map
   string
 >;
 
-export const LIMITS = { title: 100, summary: 280, address: 120, accessibilityNote: 200, customDetails: 5, customLabel: 40, customValue: 120 } as const;
+export const LIMITS = { title: 100, summary: 280, accessibilityNote: 200, customDetails: 5, customLabel: 40, customValue: 120 } as const;
 
 /** SDC itself as a publisher; admins can post as SDC. */
 export const SDC_ORG = { id: "sdc", name: "Social Development Centre" } as const;

@@ -16,10 +16,11 @@ import { formatDate } from "../_lib/format";
 
 export const ContactRowFrame = styled.div<{ $highlighted?: boolean }>`
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  padding: var(--space-2) var(--space-1);
+  /* No side padding: rows line up with the section heading above them. */
+  padding: var(--space-3) 0;
   border-radius: var(--radius-md);
   transition: background-color var(--duration) var(--ease);
 
@@ -53,12 +54,6 @@ export const ContactEmail = styled.p`
   font-size: var(--text-xs);
   color: var(--color-text-muted);
   overflow-wrap: anywhere;
-`;
-
-export const ContactMeta = styled.p`
-  margin: 0;
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
 `;
 
 export const ContactMenuTrigger = styled(Button)`

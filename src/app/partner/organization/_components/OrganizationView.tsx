@@ -4,7 +4,7 @@ import * as React from "react";
 import { useActionState } from "react";
 import { styled } from "next-yak";
 import { UserPlus } from "lucide-react";
-import { ListPageHeader } from "@/components/patterns/ListPage";
+import { contentIn, ListPageHeader } from "@/components/patterns/ListPage";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
@@ -25,16 +25,28 @@ import { TeamMemberRow } from "./TeamMemberRow";
 const copy = partnerCopy.organization;
 const initialState: PartnerResult = { status: "idle" };
 
+/*
+ * One flat, centred column (owner, after Mobbin: Loops, Basecamp, Firecrawl): no cards, no tabs.
+ * Profile's fields with their own Save right under them; a hairline; then Team, whose actions
+ * (invite, remove) take effect right away. Teams are 1–10 people, so a plain list, not a table.
+ */
 const Page = styled.div`
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  /* 16px between blocks, like ListPage (owner). */
+  gap: var(--space-4);
+  width: 100%;
   max-width: 640px;
-  padding: var(--space-5) var(--space-6);
+  margin: 0 auto;
+  padding: var(--space-7) var(--space-6) var(--space-8);
+
+  /* Like ListPage: sections animate in after loading; the title stays put. */
+  & > :not(:first-child) {
+    animation: ${contentIn} var(--duration-slow) var(--ease) backwards;
+  }
 
   @media (max-width: 767px) {
-    gap: var(--space-5);
-    padding: var(--space-4);
+    padding: var(--space-5) var(--space-4) var(--space-7);
   }
 `;
 
@@ -42,6 +54,19 @@ const Section = styled.section`
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+
+  & + & {
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--color-border);
+  }
+`;
+
+const SectionHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: var(--space-6);
 `;
 
 const SectionTitle = styled.h2`
@@ -54,19 +79,12 @@ const SectionTitle = styled.h2`
 const Form = styled.form`
   display: flex;
   flex-direction: column;
+  align-items: stretch;
   gap: var(--space-5);
 `;
 
 const Actions = styled.div`
   display: flex;
-`;
-
-const SectionHeader = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-3);
 `;
 
 export function OrganizationView({ org, currentContactId }: { org: PartnerOrganization; currentContactId: string }) {
@@ -105,24 +123,19 @@ export function OrganizationView({ org, currentContactId }: { org: PartnerOrgani
         {blocked && <BlockedNotice blocked={blocked} />}
 
         <Section aria-labelledby="profile-heading">
-          <SectionTitle id="profile-heading">{copy.profileHeading}</SectionTitle>
+          <SectionHeader>
+            <SectionTitle id="profile-heading">{copy.profileHeading}</SectionTitle>
+          </SectionHeader>
           <Form ref={formRef} action={action} noValidate>
             <Field label={copy.nameLabel} error={fieldError(state, "name")} required>
               {(p) => <Input {...p} name="name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="organization" />}
             </Field>
-            <Field label={copy.websiteLabel} hint={copy.websiteHint} error={fieldError(state, "website")}>
+            <Field label={copy.websiteLabel} error={fieldError(state, "website")}>
               {(p) => (
-                <Input
-                  {...p}
-                  name="website"
-                  inputMode="url"
-                  autoComplete="url"
-                  value={website}
-                  onChange={(e) => setWebsite(e.target.value)}
-                />
+                <Input {...p} name="website" inputMode="url" autoComplete="url" value={website} onChange={(e) => setWebsite(e.target.value)} />
               )}
             </Field>
-            <Field label={copy.descriptionLabel} hint={copy.descriptionHint} error={fieldError(state, "description")}>
+            <Field label={copy.descriptionLabel} error={fieldError(state, "description")}>
               {(p) => (
                 <Textarea
                   {...p}

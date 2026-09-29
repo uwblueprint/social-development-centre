@@ -13,43 +13,77 @@ const STEPS: { step: Step; label: string }[] = [
 ];
 
 const List = styled.ol`
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-1) var(--space-2);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
   margin: 0;
   padding: 0;
   list-style: none;
   font-size: var(--text-sm);
 `;
 
-const Item = styled.li<{ $current?: boolean }>`
+/*
+ * One segment per step: a thin bar, then "1 Type". Done and current bars are filled; the current label is
+ * the text colour and medium weight, done labels add a check. Quiet by design (owner: no big black circle).
+ */
+const Item = styled.li<{ $state: "done" | "current" | "todo" }>`
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+  color: ${({ $state }) => ($state === "current" ? "var(--color-text)" : "var(--color-text-muted)")};
+  font-weight: ${({ $state }) => ($state === "current" ? "var(--weight-medium)" : "var(--weight-regular)")};
+
+`;
+
+/* The segment's track, with a fill that grows left to right like a loading bar when the step is reached. */
+const Track = styled.span`
+  position: relative;
+  height: 3px;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--color-border);
+`;
+
+const Fill = styled.span<{ $filled: boolean }>`
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--color-primary);
+  transform-origin: left center;
+  scale: ${({ $filled }) => ($filled ? "1 1" : "0 1")};
+  transition: scale var(--duration-enter) var(--ease);
+`;
+
+const Label = styled.span`
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  color: ${({ $current }) => ($current ? "var(--color-text)" : "var(--color-text-muted)")};
-  font-weight: ${({ $current }) => ($current ? "var(--weight-medium)" : "var(--weight-regular)")};
+  min-width: 0;
 `;
 
-const Separator = styled.span`
-  color: var(--color-text-muted);
+const Number = styled.span`
+  font-variant-numeric: tabular-nums;
 `;
 
-/**
- * "1 Type · 2 Details · 3 Review". The current step is marked by weight and aria-current, done steps by a
- * check after the label (never color alone). Not clickable: Back, Next and the Review step's Edit links move between steps.
- */
 export function StepIndicator({ step }: { step: Step }) {
   return (
     <List aria-label={copy.form.stepsLabel}>
-      {STEPS.map((s, i) => (
-        <Item key={s.step} $current={s.step === step} aria-current={s.step === step ? "step" : undefined}>
-          {i > 0 && <Separator aria-hidden="true">·</Separator>}
-          <span>{s.step}</span>
-          {s.label}
-          {s.step < step && <Icon icon={Check} size={14} label={copy.form.stepDone} />}
-        </Item>
-      ))}
+      {STEPS.map((s) => {
+        const state = s.step < step ? "done" : s.step === step ? "current" : "todo";
+        return (
+          <Item key={s.step} $state={state} aria-current={state === "current" ? "step" : undefined}>
+            <Track aria-hidden="true">
+              <Fill $filled={state !== "todo"} />
+            </Track>
+            <Label>
+              <Number>{s.step}</Number>
+              {s.label}
+              {state === "done" && <Icon icon={Check} size={14} label={copy.form.stepDone} />}
+            </Label>
+          </Item>
+        );
+      })}
     </List>
   );
 }

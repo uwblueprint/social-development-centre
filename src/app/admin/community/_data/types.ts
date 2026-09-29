@@ -15,7 +15,7 @@ export type OnboardingState = "not_started" | "in_progress" | "completed";
  * Where each person is in their journey. Derived on the server (see `deriveStatus`), never stored, and
  * checked in this order; the first that applies wins.
  */
-export const MEMBER_STATUSES = ["unsubscribed", "invited", "onboarding_incomplete", "never_clicked", "active", "inactive"] as const;
+export const MEMBER_STATUSES = ["unsubscribed", "invited", "onboarding_incomplete", "active", "inactive"] as const;
 export type MemberStatus = (typeof MEMBER_STATUSES)[number];
 
 /** Shown by default: every status except Unsubscribed (owner decision). */

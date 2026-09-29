@@ -1,9 +1,9 @@
 "use client";
 
+import type * as React from "react";
 import { styled } from "next-yak";
-import { Field } from "@/components/ui/Field";
-import { RadioGroup, RadioGroupOption } from "@/components/ui/RadioGroup";
-import { KIND_LABEL, KINDS } from "../../catalog";
+import { RadioCard, RadioCardGroup } from "@/components/ui/RadioGroup";
+import { KIND_CATEGORY, KIND_LABEL, KINDS } from "../../catalog";
 import { copy } from "../../copy";
 import type { OpportunityKind } from "../../types";
 import { KindIcon } from "../KindIcon";
@@ -11,22 +11,37 @@ import { fieldId } from "./formValues";
 
 const t = copy.form.kind;
 
-/* Layout only: the kit's options in a row that wraps (two or three per line at 360px). */
-const Options = styled(RadioGroup)`
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: var(--space-1) var(--space-2);
+const Cards = RadioCardGroup;
 
-  & > label {
-    width: auto;
+/* The type's icon in its own tile, in the type's colour (the table's badge colours). Selected cards are
+   filled with the light shade, so the tile steps up one shade to stay distinct. */
+const IconTile = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  /* Smaller than the card's radius, so the corners nest (inner radius = outer minus the inset). */
+  border-radius: var(--radius-sm);
+  background: var(--card-accent-subtle);
+  color: var(--card-accent);
+  transition: background-color var(--duration) var(--ease);
+
+  [data-state="checked"] > & {
+    background: var(--card-accent-strong);
   }
 `;
 
-const OptionLabel = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  white-space: nowrap;
+const CardName = styled.span`
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+`;
+
+const ErrorText = styled.p`
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-sm);
+  color: var(--color-danger);
 `;
 
 /* Read-only Type for published and closed listings: plain text, never a disabled control. */
@@ -51,7 +66,7 @@ const ReadOnlyValue = styled.span`
 `;
 
 /**
- * The form's first field. New listings and drafts choose a type here (the hint describes the selected one);
+ * The form's first field. New listings and drafts pick a type card (icon and name; owner: no descriptions);
  * published and closed listings show it as text, since their type can't change (service.ts enforces it).
  */
 export function TypeField({
@@ -76,31 +91,42 @@ export function TypeField({
       </ReadOnly>
     );
   }
+  // The step's "Type" heading is the visible label; the cards carry each type's description.
   return (
-    <Field id={fieldId("kind")} label={t.label} hint={copy.form.kindDescription[kind]} error={error} required>
-      {(p) => (
-        <Options
-          id={p.id}
-          value={kind}
-          onValueChange={(v) => onChange(v as OpportunityKind)}
-          aria-label={t.label}
-          aria-describedby={p["aria-describedby"]}
-          aria-invalid={p["aria-invalid"]}
-        >
-          {KINDS.map((k) => (
-            <RadioGroupOption
-              key={k}
-              value={k}
-              label={
-                <OptionLabel>
-                  <KindIcon kind={k} />
-                  {KIND_LABEL[k]}
-                </OptionLabel>
-              }
-            />
-          ))}
-        </Options>
+    <div>
+      <Cards
+        id={fieldId("kind")}
+        value={kind}
+        onValueChange={(v) => onChange(v as OpportunityKind)}
+        aria-label={t.label}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? `${fieldId("kind")}-error` : undefined}
+      >
+        {KINDS.map((k) => (
+          <RadioCard
+            key={k}
+            value={k}
+            style={
+              {
+                "--card-accent": `var(--color-category-${KIND_CATEGORY[k]})`,
+                "--card-accent-subtle": `var(--color-category-${KIND_CATEGORY[k]}-subtle)`,
+                "--card-accent-strong": `var(--color-category-${KIND_CATEGORY[k]}-border)`,
+                "--card-accent-line": `var(--color-category-${KIND_CATEGORY[k]}-line)`,
+              } as React.CSSProperties
+            }
+          >
+            <IconTile>
+              <KindIcon kind={k} size={18} />
+            </IconTile>
+            <CardName>{KIND_LABEL[k]}</CardName>
+          </RadioCard>
+        ))}
+      </Cards>
+      {error && (
+        <ErrorText id={`${fieldId("kind")}-error`} role="alert">
+          {error}
+        </ErrorText>
       )}
-    </Field>
+    </div>
   );
 }

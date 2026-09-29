@@ -1,10 +1,9 @@
 import { styled } from "next-yak";
 import { SignInForm } from "./SignInForm";
 
-/** New, needs approval: docs/ux/portal.md, "Account and sign-out". */
+/** New, needs approval: the owner's UX spec (retired), "Account and sign-out". */
 const goodbyeCopy = {
   signedOut: (name?: string) => (name ? `You're signed out. See you soon, ${name}.` : "You're signed out. See you soon."),
-  accountDeleted: "Your account is deleted and you're signed out.",
 };
 
 const Main = styled.main`
@@ -30,17 +29,13 @@ const Goodbye = styled.p`
   color: var(--color-text-muted);
 `;
 
-type LoginSearchParams = { error?: string; signedOut?: string; accountDeleted?: string; name?: string };
+type LoginSearchParams = { error?: string; signedOut?: string; name?: string };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<LoginSearchParams> }) {
   // `error` comes from a sign-in link that failed; its detail is logged by /auth/confirm, never shown.
-  // `signedOut` / `accountDeleted` (with an optional first `name`) come from the sign-out and delete-account actions.
-  const { error, signedOut, accountDeleted, name } = await searchParams;
-  const goodbye = accountDeleted
-    ? goodbyeCopy.accountDeleted
-    : signedOut
-      ? goodbyeCopy.signedOut(name?.trim().slice(0, 40) || undefined)
-      : null;
+  // `signedOut` (with an optional first `name`) comes from the sign-out action.
+  const { error, signedOut, name } = await searchParams;
+  const goodbye = signedOut ? goodbyeCopy.signedOut(name?.trim().slice(0, 40) || undefined) : null;
 
   return (
     <Main>

@@ -4,7 +4,7 @@ import { PartnerShell } from "./_components/PartnerShell";
 import { getCurrentPartner } from "./_data/session";
 
 export const metadata: Metadata = {
-  title: { template: "%s · SDC Partner", default: "SDC Partner" },
+  title: { template: "%s · Nexus", default: "Nexus" },
 };
 
 export default async function PartnerLayout({ children }: LayoutProps<"/partner">) {

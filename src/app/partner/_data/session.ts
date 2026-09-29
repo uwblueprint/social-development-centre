@@ -1,5 +1,5 @@
 import { currentContacts, orgs, statusOf } from "@/app/admin/partners/_data/store";
-import { withDevAccount } from "@/features/account/devAccount";
+import { labWrite } from "@/dev/state-lab/write"; // STATE LAB (disposable)
 import type { PartnerUser } from "./types";
 
 /**
@@ -11,11 +11,10 @@ export async function getCurrentPartner(): Promise<PartnerUser | null> {
   if (process.env.NODE_ENV === "production") {
     throw new Error("getCurrentPartner is not implemented: add the partner role check before shipping.");
   }
+  if ((await labWrite()) === "signed-out") return null; // STATE LAB (disposable)
   // Dev: sign in as the first active contact of the first active organization (Amara at Northside Food Bank).
   const org = orgs().find((o) => statusOf(o) === "active");
   const contact = org && currentContacts(org).find((c) => c.status === "active");
   if (!org || !contact) return null;
-  const initials = contact.name.split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase();
-  // Name and picture changes from My account apply on top (in memory).
-  return withDevAccount({ contactId: contact.id, name: contact.name, email: contact.email, initials, organization: { id: org.id, name: org.name } });
+  return { contactId: contact.id, name: contact.name, email: contact.email, organization: { id: org.id, name: org.name } };
 }

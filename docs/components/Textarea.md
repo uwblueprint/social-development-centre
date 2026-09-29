@@ -12,7 +12,7 @@ Multi-line text entry with an optional live character counter.
 import { Textarea } from "@/components/ui/Textarea";
 ```
 - Forwards all native `<textarea>` props and `ref`.
-- `maxLength?: number` — turns on a "N characters left" counter, wired via `aria-describedby`.
+- `maxLength?: number` — turns on a "N characters left" counter, wired via `aria-describedby`. Inside a `Field` it shows only in the last 25% of the limit.
 - `aria-invalid?: boolean | "true" | "false"` — shows the error icon; drive from `Field`'s `error` prop.
 - Wrap in `Field`.
 

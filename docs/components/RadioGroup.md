@@ -35,3 +35,14 @@ Full arrow-key navigation between options (Radix roving tabindex). Checked state
 1. Using `RadioGroupItem` without a `Label` next to it — prefer `RadioGroupOption`, which pairs them for you.
 2. Disabling an option without `disabledReason`.
 3. Using this for a non-exclusive multi-select — that's `Checkbox` rows or `SelectableTag`.
+
+## Cards: `RadioCardGroup` + `RadioCard`
+For choosing one of a few options that read better as big, colourful targets than as a list (an opportunity's type). Each card holds an icon and a name, and can add a short description; the whole card is the radio.
+- The group needs a visible label nearby (a section heading) plus `aria-label`.
+- Selected is a thicker primary border and a check in the corner, never color alone.
+- Don't use for more than about six options, or when the options need no description (use `RadioGroup`).
+```tsx
+<RadioCardGroup value={kind} onValueChange={setKind} aria-label="Type">
+  <RadioCard value="event"><KindIcon kind="event" size={20} /><span>Event</span><span>People attend at a set time.</span></RadioCard>
+</RadioCardGroup>
+```

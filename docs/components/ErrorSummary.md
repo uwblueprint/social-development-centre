@@ -3,7 +3,7 @@
 A persistent box above a long form that lists every invalid field after a failed submit. Each item links to its field and moves focus there.
 
 ## Use when / Don't use when
-- A long form (more than one screen, or several sections) fails validation, so some errors are out of view. See the shared rule in `docs/ux/portal.md`: "For long forms, use a persistent error summary linked to the invalid fields."
+- A long form (more than one screen, or several sections) fails validation, so some errors are out of view. See the shared rule in the owner's UX spec (retired): "For long forms, use a persistent error summary linked to the invalid fields."
 - A short form (a dialog, a sign-in box): use `Field`'s `error` beside each field and move focus to the first invalid field. No summary.
 - A failure that isn't about a field (lost access, signed out): show a persistent message that says what to do next, not a summary.
 - Never as a toast, and never as well as a generic "Check the highlighted fields" toast.

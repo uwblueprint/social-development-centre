@@ -42,7 +42,9 @@ test.describe("Partners", () => {
 
   test("remove access confirm open", async ({ page }) => {
     await page.goto("/admin/partners?org=org_1");
-    await page.getByRole("button", { name: /remove access/i }).click();
+    // Remove access lives in the panel's ⋯ menu.
+    await page.getByRole("dialog").getByRole("button", { name: /more actions/i }).click();
+    await page.getByRole("menuitem", { name: /remove access/i }).click();
     await expectNoViolations(page);
   });
 });
@@ -60,8 +62,8 @@ test.describe("Opportunities", () => {
 
   test("delete confirm open", async ({ page }) => {
     await page.goto("/admin/opportunities?opportunity=opp_11&tab=drafts");
-    await page.getByRole("button", { name: /more actions/i }).click();
-    await page.getByRole("menuitem", { name: /delete/i }).click();
+    // Owner: no ⋯ menu in the opportunity panel; Delete is a visible button.
+    await page.getByRole("dialog").getByRole("button", { name: /^delete$/i }).click();
     await expectNoViolations(page);
   });
 

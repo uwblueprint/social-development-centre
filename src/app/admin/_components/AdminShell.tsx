@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { OfflineWatcher } from "@/app/_components/OfflineWatcher";
+import type { ReactNode } from "react";
 import { BriefcaseBusiness, Building, ChartColumnIncreasing, UsersRound } from "lucide-react";
 import { AppToastProvider } from "@/components/ui/Toast";
-import { AccountDialog, accountDialogCopy } from "@/components/patterns/AccountDialog";
 import { SidebarLayout, type SidebarNavItem } from "@/components/patterns/Sidebar";
-import { deleteAccount, updateAccount } from "@/features/account/actions";
 import type { AdminSection, AdminUser } from "../_data/types";
 import { signOut } from "@/app/login/actions";
 
@@ -30,36 +29,21 @@ export function AdminShell({ user, children }: { user: AdminUser; children: Reac
     description: s.description,
     icon: s.icon,
   }));
-  const [accountOpen, setAccountOpen] = useState(false);
-  const actions = useMemo(
-    () => ({ update: updateAccount.bind(null, "admin"), remove: deleteAccount.bind(null, "admin") }),
-    [],
-  );
-  const profile = { name: user.name, email: user.email, initials: user.initials, avatarSrc: user.avatarUrl };
   return (
-    // One provider for the whole portal so a toast survives navigating from a form back to its list,
-    // and the account dialog can confirm a save.
+    // One provider for the whole portal so a toast survives navigating from a form back to its list.
     <AppToastProvider>
+      <OfflineWatcher />
       <SidebarLayout
         config={{
-          product: { name: "SDC Admin", initials: "SDC" },
+          product: { name: "Nexus" },
           navLabel: "Admin navigation",
           items,
-          user: profile,
-          onOpenAccount: () => setAccountOpen(true),
+          docsHref: "/admin/documentation",
           onSignOut: () => void signOut(user.name.split(/\s+/)[0]),
         }}
       >
         {children}
       </SidebarLayout>
-      <AccountDialog
-        open={accountOpen}
-        onOpenChange={setAccountOpen}
-        user={profile}
-        updateAction={actions.update}
-        deleteAction={actions.remove}
-        deleteDescription={accountDialogCopy.deleteAdmin}
-      />
     </AppToastProvider>
   );
 }

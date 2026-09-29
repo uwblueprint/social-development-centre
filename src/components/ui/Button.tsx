@@ -1,6 +1,7 @@
 import { css, styled } from "next-yak";
 
-type Variant = "primary" | "secondary" | "outline" | "ghost" | "danger" | "link";
+/** No "link" variant (owner): every action is a box. Text-like actions use `ghost`. */
+type Variant = "primary" | "secondary" | "outline" | "ghost" | "danger";
 type Size = "sm" | "md" | "lg";
 
 export const Button = styled.button<{ $variant?: Variant; $size?: Size }>`
@@ -85,25 +86,6 @@ export const Button = styled.button<{ $variant?: Variant; $size?: Size }>`
       }
     `}
 
-  /* Inline text action inside content ("Import from a file", "Back"): underlined, no fill, no box. */
-  ${({ $variant }) =>
-    $variant === "link" &&
-    css`
-      height: auto;
-      padding: 0;
-      border: 0;
-      border-radius: var(--radius-sm);
-      background: transparent;
-      color: var(--color-text);
-      line-height: var(--leading-ui);
-      text-decoration: underline;
-      text-underline-offset: 3px;
-      text-decoration-color: var(--color-border-strong);
-      &:hover:not(:disabled) {
-        background: transparent;
-        text-decoration-color: currentColor;
-      }
-    `}
 
   &:active:not(:disabled) {
     transform: scale(0.96);

@@ -3,7 +3,7 @@
 A transient, bottom-right notification confirming an action, with an optional undo/action link.
 
 ## Use when / Don't use when
-- Confirming a completed action that doesn't need a decision ("Changes saved").
+- Confirming a completed action that doesn't need a decision. **Always name what it was about** (owner): "“Film night” saved as a draft", "Copied 3 email addresses from Northside Food Bank", never a bare "Changes saved" or "Copied".
 - Anything requiring a decision before proceeding — use `AlertDialog`.
 - An error blocking progress — show it inline (`Field` `error`) so it doesn't disappear before it's read.
 
@@ -19,7 +19,7 @@ import { AppToastProvider, useToast } from "@/components/ui/Toast";
 ```tsx
 const { toast } = useToast();
 toast({
-  title: "Changes saved",
+  title: "Changes to “Film night” saved.",
   description: "Your profile has been updated successfully.",
   actionLabel: "Undo",
   onAction: handleUndo,
@@ -39,3 +39,5 @@ Announced via a Radix live region; swipeable to dismiss, closable via the labele
 1. Using a toast for anything requiring action before continuing — it can disappear unread.
 2. Writing a vague title like "Success" — say what succeeded.
 3. Mounting more than one `AppToastProvider`.
+
+Action and close (owner, 28 Sep 2026): the optional action is a kit `Button` (outline, small), right-aligned on its own row. The close (X) sits tucked into the top-right corner.

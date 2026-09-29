@@ -138,3 +138,9 @@ A list page's search field above a `Table` is one documented exception to "every
 4. Adding a filter `Select` to the toolbar for a value that has a column — put a `filter` on that column instead.
 5. Freezing more than two columns, or freezing actions.
 6. Leaving off `getRowId` in favor of array index — breaks focus/selection identity when rows reorder or filter.
+
+## Column filter with many options
+- More than 8 options: a search box ("Search {label}s") appears at the top and takes focus; the list filters as you type, with "Nothing matches that search." when empty.
+- Options already selected when the popover opens are pinned to the top (pinned at open, so rows don't jump while you check).
+- One 36px line per option: long labels truncate with the full name on hover; counts sit in a right-aligned column with a gap before the scrollbar.
+- The list shows 6½ rows, so the last row is cut in half and the list reads as scrollable even where scrollbars are hidden. The scrollbar is thin, arrowless and has a reserved gutter.

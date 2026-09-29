@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { styled } from "next-yak";
 import { Button } from "@/components/ui/Button";
-import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/Card";
 import { Progress } from "@/components/ui/Progress";
@@ -36,29 +35,6 @@ const Stack = styled.div`
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
-`;
-
-const AvatarGroup = styled.div`
-  display: flex;
-
-  & > * {
-    margin-left: -8px;
-    border: 2px solid var(--color-surface-raised) !important;
-    position: relative;
-  }
-  & > *:first-child {
-    margin-left: 0;
-    z-index: 4;
-  }
-  & > *:nth-child(2) {
-    z-index: 3;
-  }
-  & > *:nth-child(3) {
-    z-index: 2;
-  }
-  & > *:nth-child(4) {
-    z-index: 1;
-  }
 `;
 
 const Row = styled.div`
@@ -427,12 +403,6 @@ export function DisplayDemos() {
           <CardContent>
             <Stack style={{ gap: "var(--space-4)" }}>
               <MetaRow>
-                <AvatarGroup>
-                  <Avatar initials="AK" size="md" />
-                  <Avatar initials="RM" size="md" />
-                  <Avatar initials="TS" size="md" />
-                  <Avatar initials="+8" size="md" />
-                </AvatarGroup>
                 <Badge $variant="outline">11 members</Badge>
               </MetaRow>
               <div>

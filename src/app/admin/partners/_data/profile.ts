@@ -14,11 +14,14 @@ export const profileMessages = {
   nameTaken: "Another organization already has this name.",
   websiteInvalid: "Enter a valid website, like sdckw.ca.",
   descriptionTooLong: `Shorten the description to ${ORGANIZATION_DESCRIPTION_MAX} characters or fewer.`,
-  saved: "Changes saved.",
+  /** Names what changed (owner). */
+  saved: (what: string) => `Changes to ${what} saved.`,
 } as const;
 
 /** Organization-level results on Partners (admin only). */
 export const organizationMessages = {
+  /** NEW, NEEDS APPROVAL: toast after dismissing a health tag. */
+  healthDismissed: (organization: string) => `Dismissed the warning for ${organization}. It comes back only if something else changes.`,
   chooseOrganization: "Choose an organization, or add a new one.",
   nameExists: "An organization with this name already exists. Choose it from the list.",
   removed: (organization: string) => `${organization} no longer has access. Its opportunities are closed.`,
@@ -27,9 +30,9 @@ export const organizationMessages = {
   reinvited: (email: string, organization: string) => `Invitation sent to ${email}. ${organization} is awaiting a response.`,
 } as const;
 
-/** SDC notes on an organization (admin only). New, needs approval: docs/ux/portal.md → Partners. */
+/** SDC notes on an organization (admin only). New, needs approval: the owner's UX spec (retired) → Partners. */
 export const notesMessages = {
-  saved: "Notes saved.",
+  saved: (organization: string) => `Notes for ${organization} saved.`,
   tooLong: `Shorten the notes to ${ORGANIZATION_NOTES_MAX.toLocaleString("en-CA")} characters or fewer.`,
 } as const;
 

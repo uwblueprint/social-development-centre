@@ -1,13 +1,15 @@
 "use client";
 
 import { styled } from "next-yak";
+import { ChevronRight } from "lucide-react";
+import { Icon } from "@/components/ui/Icon";
 import { Badge } from "@/components/ui/Badge";
 import type { TableColumn, TableColumnFilter } from "@/components/ui/Table";
 import { TruncatedText } from "@/components/ui/TruncatedText";
 import { formatRelative } from "@/lib/date";
 import { KIND_CATEGORY, KIND_LABEL } from "../catalog";
 import { copy } from "../copy";
-import { formatWhen } from "../format";
+import { closesOn } from "../format";
 import type { Opportunity, OpportunityTab } from "../types";
 import { KindIcon } from "./KindIcon";
 
@@ -26,6 +28,42 @@ const TitleCell = styled.span`
 const Nowrap = styled.span`
   white-space: nowrap;
 `;
+
+const Muted = styled.span`
+  color: var(--color-text-muted);
+  white-space: nowrap;
+`;
+
+const DateCell = styled.span`
+  display: flex;
+  gap: var(--space-2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+`;
+
+const Numeric = styled.span`
+  display: block;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+`;
+
+/** Row affordance: the whole row opens the details panel. */
+const RowArrow = styled.span`
+  display: flex;
+  justify-content: flex-end;
+  color: var(--color-text-muted);
+`;
+
+const VisuallyHidden = styled.span`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+`;
+
+const count = new Intl.NumberFormat("en-CA");
 
 const shortDate = new Intl.DateTimeFormat("en-CA", { month: "short", day: "numeric" });
 const shortDateYear = new Intl.DateTimeFormat("en-CA", { month: "short", day: "numeric", year: "numeric" });
@@ -110,7 +148,22 @@ export function opportunityColumns(
     });
   }
   columns.push(
-    { key: "date", header: copy.table.date, width: "176px", sortKey: "date", render: (o) => <TruncatedText tooltip>{formatWhen(o)}</TruncatedText> },
+    {
+      key: "date",
+      header: copy.table.date,
+      width: "176px",
+      sortKey: "date",
+      render: (o) => {
+        const { date, time } = closesOn(o);
+        if (!date) return <Muted>{copy.table.noCloseDate}</Muted>;
+        return (
+          <DateCell>
+            {date}
+            {time && <Muted>{time}</Muted>}
+          </DateCell>
+        );
+      },
+    },
     {
       key: "updated",
       header: copy.table.lastChange,
@@ -120,5 +173,23 @@ export function opportunityColumns(
       render: (o) => <Nowrap>{formatLastChange(o, now)}</Nowrap>,
     },
   );
+  if (tab !== "drafts") {
+    const reach = (o: Opportunity, n: (p: NonNullable<Opportunity["performance"]>) => number) =>
+      o.performance ? <Numeric>{count.format(n(o.performance))}</Numeric> : <Muted>{copy.table.notSent}</Muted>;
+    columns.splice(1, 0,
+      { key: "sentTo", header: copy.table.sentTo, width: "112px", align: "right", sortKey: "sentTo", defaultSortDirection: "desc", render: (o) => reach(o, (p) => p.sentTo) },
+      { key: "clicks", header: copy.table.clicks, width: "96px", align: "right", sortKey: "clicks", defaultSortDirection: "desc", render: (o) => (o.performance ? reach(o, (p) => p.clicks) : null) },
+    );
+  }
+  columns.push({
+    key: "open",
+    header: <VisuallyHidden>{copy.table.openRow}</VisuallyHidden>,
+    width: "40px",
+    render: () => (
+      <RowArrow>
+        <Icon icon={ChevronRight} size={16} />
+      </RowArrow>
+    ),
+  });
   return columns;
 }

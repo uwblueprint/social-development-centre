@@ -34,7 +34,6 @@ Each doc covers when to use it, its API, a working example, content rules, and a
 ## Display & navigation
 - [Card](./Card.md) — a bordered container for a block of content.
 - [Badge](./Badge.md) — a small inline status or category label.
-- [Avatar](./Avatar.md) — a circular image with an initials fallback.
 - [Progress](./Progress.md) — a determinate completion bar.
 - [Separator](./Separator.md) — a 1px hairline divider.
 - [ScrollArea](./ScrollArea.md) — a styled scrollable region.

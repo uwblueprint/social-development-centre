@@ -1,4 +1,6 @@
-import type { Opportunity } from "./types";
+import { SAMPLE_ORG_NAMES } from "@/app/admin/partners/_data/store";
+import type { Opportunity, TopicId } from "./types";
+import { labList, labLong } from "@/dev/state-lab/state"; // STATE LAB (disposable)
 
 /*
  * In-memory stand-in for the backend so both portals work end to end in development.
@@ -40,7 +42,7 @@ function seed(): Opportunity[] {
       title: "Film night: Housing for people, not profit",
       summary: "A free screening of Dr. Brian Doucet's documentary on affordable housing, followed by a panel and Q&A with local tenants and organizers.",
       topics: ["housing", "civic"], link: "https://www.eventbrite.ca/e/sdc-film-night",
-      details: { date: dayOffset(9), startTime: "18:30", endTime: "21:00", format: "in_person", area: "kitchener", address: "Civic Hub, 97 Victoria St N", cost: "free", accessibility: ["step_free", "accessible_washroom", "asl"], accessibilityNote: "ASL with one week's notice." },
+      details: { date: dayOffset(9), startTime: "18:30", endTime: "21:00", format: "in_person", area: "kitchener", cost: "free", accessibility: ["step_free", "accessible_washroom", "asl"], accessibilityNote: "ASL with one week's notice." },
     },
     {
       id: "opp_2", kind: "petition", status: "published", organization: org.sdc, updatedBy: admin, ...stamp(20, 5),
@@ -54,14 +56,14 @@ function seed(): Opportunity[] {
       title: "Saturday food sorting crew",
       summary: "Sort and pack donated food for weekly hampers. No experience needed; we train on your first shift.",
       topics: ["food"], link: "https://forms.gle/northside-volunteer",
-      details: { timeCommitment: "under_2", format: "in_person", area: "kitchener", address: "Northside Food Bank, 55 Bridge St", skills: ["no_experience"], minimumAge: 14 },
+      details: { timeCommitment: "under_2", format: "in_person", area: "kitchener", skills: ["no_experience"], minimumAge: 14 },
     },
     {
       id: "opp_4", kind: "event", status: "published", organization: org.northside, updatedBy: amara, ...stamp(6),
       title: "Community harvest dinner",
       summary: "Share a free meal made with donated produce, meet neighbours and hear how the food bank works.",
       topics: ["food", "health"], link: "https://lu.ma/northside-harvest",
-      details: { date: dayOffset(4), startTime: "17:30", endTime: "19:30", format: "in_person", area: "kitchener", address: "St. John the Evangelist, 23 Water St N", cost: "free" },
+      details: { date: dayOffset(4), startTime: "17:30", endTime: "19:30", format: "in_person", area: "kitchener", cost: "free" },
     },
     {
       id: "opp_5", kind: "job", status: "published", organization: org.eastside, updatedBy: omar, ...stamp(8, 1),
@@ -82,7 +84,7 @@ function seed(): Opportunity[] {
       title: "Homework club mentor",
       summary: "Support students in grades 6–9 with homework and study skills after school.",
       topics: ["youth"], link: "https://riverbendyouth.ca/volunteer",
-      details: { timeCommitment: "2_to_5", format: "in_person", area: "cambridge", address: "Riverbend Community Centre", startDate: dayOffset(10), skills: ["tech", "writing"], minimumAge: 18, applyBy: dayOffset(7) },
+      details: { timeCommitment: "2_to_5", format: "in_person", area: "cambridge", startDate: dayOffset(10), skills: ["tech", "writing"], minimumAge: 18, applyBy: dayOffset(7) },
     },
     {
       id: "opp_8", kind: "other", status: "published", organization: org.sdc, updatedBy: admin, ...stamp(10, 4),
@@ -96,7 +98,7 @@ function seed(): Opportunity[] {
       title: "Youth voices on climate: open mic",
       summary: "Young people share poems, songs and stories about climate and the future of Waterloo Region.",
       topics: ["youth", "environment", "arts"], link: "https://www.eventbrite.ca/e/youth-voices-climate",
-      details: { date: dayOffset(16), startTime: "18:00", format: "hybrid", area: "kitchener", address: "Kitchener Public Library, Central", cost: "paid", costDetails: "$5, or free for students" },
+      details: { date: dayOffset(16), startTime: "18:00", format: "hybrid", area: "kitchener", cost: "paid", priceMin: 10, priceMax: 25 },
     },
     {
       id: "opp_10", kind: "job", status: "published", organization: org.sdc, updatedBy: admin, ...stamp(14, 6),
@@ -129,14 +131,14 @@ function seed(): Opportunity[] {
       title: "Fall food drive at Kitchener Market",
       summary: "Drop off non-perishables at our booth and learn how to get involved with the food bank.",
       topics: ["food"], link: "https://lu.ma/northside-food-drive",
-      details: { date: dayOffset(-6), startTime: "08:00", endTime: "13:00", format: "in_person", area: "kitchener", address: "Kitchener Market, 300 King St E", cost: "free" },
+      details: { date: dayOffset(-6), startTime: "08:00", endTime: "13:00", format: "in_person", area: "kitchener", cost: "free" },
     },
     {
       id: "opp_15", kind: "volunteer", status: "closed", closedReason: "closed", organization: org.riverbend, updatedBy: priya, ...stamp(60, 9),
       title: "Summer camp counsellor",
       summary: "Lead games and crafts for kids aged 6–12 at our free summer day camp.",
       topics: ["youth"], link: "https://riverbendyouth.ca/camp",
-      details: { timeCommitment: "one_time", format: "in_person", area: "cambridge", address: "Riverbend Community Centre", skills: ["childcare"] },
+      details: { timeCommitment: "one_time", format: "in_person", area: "cambridge", skills: ["childcare"] },
     },
     {
       id: "opp_16", kind: "petition", status: "published", organization: org.greenway, updatedBy: admin, ...stamp(90, 40),
@@ -151,11 +153,51 @@ function seed(): Opportunity[] {
       title: "Garden bed builders",
       summary: "Help build raised garden beds for the fall planting at three community gardens.",
       topics: ["environment"], link: "https://greenwaygardens.org/volunteer",
-      details: { timeCommitment: "under_2", format: "in_person", area: "kitchener", address: "Victoria Park", skills: ["event_setup"] },
+      details: { timeCommitment: "under_2", format: "in_person", area: "kitchener", skills: ["event_setup"] },
     },
+    ...sampleOpportunities(),
   ];
 }
 
+/**
+ * One or two listings for most of the 42 sample organizations (`SAMPLE_ORG_NAMES`, org_101…), so the
+ * Organization filter can be tried at SDC's real scale. Every seventh organization has none.
+ */
+function sampleOpportunities(): Opportunity[] {
+  const out: Opportunity[] = [];
+  let n = 100;
+  SAMPLE_ORG_NAMES.forEach((name, i) => {
+    if (i % 7 === 6) return;
+    const organization = { id: `org_${101 + i}`, name };
+    const updatedBy = { name: "Partner contact", role: "partner" as const };
+    const topics: TopicId[] = [(["food", "housing", "civic", "environment", "newcomers"] as TopicId[])[i % 5]];
+    out.push({
+      id: `opp_${++n}`, kind: "event", status: "published", organization, updatedBy, ...stamp(5 + i, 1 + (i % 4)),
+      title: `${name}: community meetup`, summary: `Meet the ${name} team and find out how to get involved this season.`,
+      topics, link: `https://example.org/${n}`,
+      details: { date: dayOffset(3 + (i % 20)), startTime: "18:00", endTime: "19:30", format: "in_person", area: "kitchener", cost: "free" },
+    });
+    if (i % 2 === 0) {
+      out.push({
+        id: `opp_${++n}`, kind: "volunteer", status: "published", organization, updatedBy, ...stamp(10 + i, 3),
+        title: `Volunteers wanted at ${name}`, summary: `Give a couple of hours a week to help ${name} run its programs.`,
+        topics, link: `https://example.org/${n}`,
+        details: { timeCommitment: "2_to_5", format: "in_person", area: "kitchener", skills: ["no_experience"], applyBy: dayOffset(10 + (i % 25)) },
+      });
+    }
+  });
+  return out;
+}
+
 // Versioned key: a store left over from an older shape (e.g. the "live" status, or free-text locations) is dropped on hot reload.
-const globalStore = globalThis as unknown as { __opportunitiesStoreV3?: Opportunity[] };
-export const opportunities = (): Opportunity[] => (globalStore.__opportunitiesStoreV3 ??= seed());
+const globalStore = globalThis as unknown as { __opportunitiesStoreV6?: Opportunity[] };
+export const opportunities = (): Opportunity[] =>
+  labList((globalStore.__opportunitiesStoreV6 ??= seed().map(withPerformance)), (o) => ({ ...o, title: labLong(o.title) })); // STATE LAB (disposable)
+
+/** Mock email reach, stable per id. The newest published listing hasn't gone out yet, to show the "not sent" state. */
+function withPerformance(o: Opportunity): Opportunity {
+  if (o.status === "draft" || o.id === "opp_4") return o;
+  const n = Number(o.id.replace(/\D/g, ""));
+  const sentTo = 400 + ((n * 137) % 900);
+  return { ...o, performance: { sentTo, clicks: Math.round(sentTo * (((n * 7) % 13) / 100)), lastSentAt: iso(-((n % 5) + 1)) } };
+}

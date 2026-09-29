@@ -4,7 +4,7 @@ import * as React from "react";
 import { styled } from "next-yak";
 import { Label } from "@/components/ui/Label";
 import { Checkbox } from "@/components/ui/Checkbox";
-import { RadioGroup, RadioGroupOption } from "@/components/ui/RadioGroup";
+import { RadioCard, RadioCardGroup, RadioGroup, RadioGroupOption } from "@/components/ui/RadioGroup";
 import { Switch } from "@/components/ui/Switch";
 import { SliderField } from "@/components/ui/Slider";
 import { Toggle } from "@/components/ui/Toggle";
@@ -91,6 +91,21 @@ export function RadioGroupDemo() {
         <RadioGroupOption value="pro" label="Pro" />
         <RadioGroupOption value="team" label="Team" disabled disabledReason="Team plan is coming soon." />
       </RadioGroup>
+      <Label id="ctrl-radio-card-label">Type (cards)</Label>
+      <RadioCardGroup defaultValue="event" aria-labelledby="ctrl-radio-card-label">
+        <RadioCard value="event">
+          <strong>Event</strong>
+          <span>People attend at a set time.</span>
+        </RadioCard>
+        <RadioCard value="petition">
+          <strong>Petition</strong>
+          <span>People add their name to support a cause.</span>
+        </RadioCard>
+        <RadioCard value="job">
+          <strong>Job</strong>
+          <span>A paid position.</span>
+        </RadioCard>
+      </RadioCardGroup>
     </Section>
   );
 }

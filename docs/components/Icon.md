@@ -4,7 +4,7 @@ Wraps a `lucide-react` glyph with the kit's fixed stroke and default size.
 
 ## Use when / Don't use when
 - Rendering any icon in the app — never import a `lucide-react` icon directly.
-- Don't use for photographic or brand imagery — use `Avatar` or a plain `<img>`.
+- Don't use for photographic or brand imagery — use a plain `<img>`.
 - Don't use it to convey status alone — pair with a text label per the "never color alone" rule.
 
 ## API

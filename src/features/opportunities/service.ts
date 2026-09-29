@@ -30,10 +30,10 @@ import type {
  *   intent         draft | publish | save   (save keeps the current status)
  *   organizationId admin only; ignored for partners
  *   title, summary, link, topics (multiple)
- *   event:      date, startTime, endTime, format, area, address, cost, costDetails, accessibility (multiple), accessibilityNote
+ *   event:      date, startTime, endTime, format, area (unless online), cost, priceMin, priceMax, accessibility (multiple), accessibilityNote
  *   petition:   target, deadline, signatureGoal
- *   volunteer:  timeCommitment, format, area, address, startDate, skills (multiple), minimumAge, applyBy
- *   job:        employmentType, workplace, area, address, pay, applyBy, qualifications
+ *   volunteer:  timeCommitment, format, area, startDate, skills (multiple), minimumAge, applyBy
+ *   job:        employmentType, workplace, area, pay, applyBy, qualifications
  * area is one of AREAS; timeCommitment, skills and accessibility are ids from catalog.ts. Unknown list ids are dropped.
  *   other:      callToAction, deadline, detailLabel (multiple), detailValue (multiple)
  */
@@ -61,6 +61,8 @@ function revalidate() {
   revalidatePath("/admin/partners");
 }
 
+/** About 2 MB of image as base64 (the browser scales images to 1200px wide first, so real ones are far smaller). */
+const IMAGE_MAX_CHARS = 2_800_000;
 const fail = (message: string, fieldErrors?: ActionState["fieldErrors"]): ActionState<never> => ({ status: "error", message, fieldErrors });
 
 const MISSING = "This opportunity no longer exists.";
@@ -108,14 +110,13 @@ function readDetails(kind: OpportunityKind, fd: FormData, errors: Errors, strict
     if (v && !(Number.isInteger(Number(v)) && Number(v) > 0)) errors[key] = message;
   };
 
-  // Area: one of AREAS; address is optional and dropped for online. Shared by event, volunteer role and job.
+  // Area: one of AREAS. No street address (owner, 28 Sep: nothing uses it). Shared by event, volunteer role and job.
   const place = () => {
     need("area", "Choose the area.");
     const raw = opt(fd, "area");
     if (raw && !AREA_IDS.has(raw)) errors.area = "Choose the area.";
     const area = raw && AREA_IDS.has(raw) ? (raw as Area) : undefined;
-    const address = area === "online" ? undefined : opt(fd, "address")?.slice(0, LIMITS.address);
-    return { area, address };
+    return { area };
   };
   /** Repeated values from a fixed list; unknown ids and duplicates are dropped. */
   const pick = <T extends string>(key: string, allowed: Set<string>) => {
@@ -134,12 +135,27 @@ function readDetails(kind: OpportunityKind, fd: FormData, errors: Errors, strict
       const start = text(fd, "startTime");
       const end = text(fd, "endTime");
       if (start && end && TIME.test(start) && TIME.test(end) && end <= start) errors.endTime = "End time must be after the start time.";
-      const where = place();
+      // Online events need no area; in person and hybrid need one (and never a street address).
+      const where = format === "online" ? { area: "online" as Area } : { area: place().area };
+      if (strict && format && format !== "online" && where.area === "online") errors.area = "Choose where the event is.";
       const cost = (opt(fd, "cost") ?? "free") as "free" | "paid";
-      if (cost === "paid") need("costDetails", "Say what it costs, for example “$10, pay what you can”.");
+      const price = (key: string) => {
+        const raw = text(fd, key).replace(/^\$/, "");
+        if (!raw) return undefined;
+        const n = Number(raw);
+        if (!Number.isFinite(n) || n < 0) {
+          errors[key] = "Enter a dollar amount, like 10.";
+          return undefined;
+        }
+        return Math.round(n);
+      };
+      const priceMin = cost === "paid" ? price("priceMin") : undefined;
+      const priceMax = cost === "paid" ? price("priceMax") : undefined;
+      if (cost === "paid") need("priceMin", "Enter the price, or the lowest price if it varies.");
+      if (priceMin !== undefined && priceMax !== undefined && priceMax < priceMin) errors.priceMax = "The highest price can't be lower than the lowest.";
       return {
         date: opt(fd, "date"), startTime: opt(fd, "startTime"), endTime: opt(fd, "endTime"), format, ...where, cost,
-        costDetails: cost === "paid" ? opt(fd, "costDetails") : undefined,
+        priceMin, priceMax: priceMax !== undefined && priceMax !== priceMin ? priceMax : undefined,
         accessibility: pick<AccessibilityFeature>("accessibility", ACCESSIBILITY_IDS),
         accessibilityNote: opt(fd, "accessibilityNote")?.slice(0, LIMITS.accessibilityNote),
       };
@@ -216,8 +232,16 @@ export async function saveOpportunity(actor: Actor, fd: FormData): Promise<Actio
 
   const title = text(fd, "title");
   const summary = text(fd, "summary");
+  // The image: a browser-scaled JPEG/PNG/WebP data URL, or an https address (e.g. from Eventbrite).
+  const rawImage = text(fd, "imageUrl");
+  const imageOk = !rawImage || /^data:image\/(jpeg|png|webp);base64,/.test(rawImage) || /^https:\/\//.test(rawImage);
+  if (!imageOk) errors.imageUrl = "Choose a JPG, PNG or WebP image.";
+  else if (rawImage.length > IMAGE_MAX_CHARS) errors.imageUrl = "Choose a smaller image, up to about 2 MB.";
   const rawLink = text(fd, "link");
-  const link = rawLink ? normalizeWebAddress(rawLink) : "";
+  // Volunteer roles and jobs may only have an email: stored as mailto: so the email button still works.
+  const emailOk = kind === "volunteer" || kind === "job";
+  const isEmail = emailOk && /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(rawLink);
+  const link = !rawLink ? "" : isEmail ? `mailto:${rawLink}` : normalizeWebAddress(rawLink);
   const topics = [...new Set(all(fd, "topics"))].filter((t) => TOPIC_IDS.has(t)) as TopicId[];
 
   if (!title) errors.title = "Enter a title.";
@@ -227,7 +251,7 @@ export async function saveOpportunity(actor: Actor, fd: FormData): Promise<Actio
   if (strict && topics.length === 0) errors.topics = "Choose at least one topic.";
   if (topics.length > MAX_TOPICS) errors.topics = `Choose up to ${MAX_TOPICS} topics.`;
   if (strict && !rawLink) errors.link = "Add the link where people take action.";
-  else if (link === null) errors.link = "Enter a web address, like sdckw.ca.";
+  else if (link === null) errors.link = emailOk ? "Enter a web address, like sdckw.ca, or an email address." : "Enter a web address, like sdckw.ca.";
 
   const details = readDetails(kind, fd, errors, strict);
   const noun = KIND_NOUN[kind];
@@ -241,6 +265,7 @@ export async function saveOpportunity(actor: Actor, fd: FormData): Promise<Actio
     kind,
     title,
     summary,
+    imageUrl: imageOk && rawImage ? rawImage : undefined,
     topics,
     link: link ?? "",
     organization: organization!,
@@ -265,12 +290,14 @@ export async function saveOpportunity(actor: Actor, fd: FormData): Promise<Actio
   else list.push(record);
   revalidate();
 
+  // Every confirmation names the listing (owner: "Draft saved" alone doesn't say which).
+  const name = `“${record.title}”`;
   const message =
     nextStatus === "draft"
-      ? "Draft saved."
+      ? `${name} saved as a draft.`
       : !existing || existing.status === "draft"
-        ? `Published. Members can now see this ${noun}.`
-        : "Changes saved.";
+        ? `${name} is published. Members can now see this ${noun}.`
+        : `Changes to ${name} saved.`;
   const removedAt = orgs().find((o) => o.id === record.organization.id)?.removedAt;
   const shown = effectiveStatus(record, new Date(), removedAt).status;
   return { status: "success", message, data: { id: record.id, tab: shown === "draft" ? "drafts" : shown } };
@@ -289,7 +316,7 @@ export async function closeOpportunity(actor: Actor, id: string): Promise<Action
   o.updatedAt = new Date().toISOString();
   o.updatedBy = { name: actor.name, role: actor.role };
   revalidate();
-  return { status: "success", message: "Closed. This opportunity won't be recommended to members or included in emails." };
+  return { status: "success", message: `“${o.title}” is closed. It won't be recommended to members or included in emails.` };
 }
 
 export async function reopenOpportunity(actor: Actor, id: string): Promise<ActionState> {
@@ -304,7 +331,7 @@ export async function reopenOpportunity(actor: Actor, id: string): Promise<Actio
   o.updatedAt = new Date().toISOString();
   o.updatedBy = { name: actor.name, role: actor.role };
   revalidate();
-  return { status: "success", message: "Reopened. Members can see this opportunity again." };
+  return { status: "success", message: `“${o.title}” is open again. Members can see it.` };
 }
 
 export async function duplicateOpportunity(actor: Actor, id: string): Promise<ActionState<{ id: string }>> {
@@ -324,7 +351,7 @@ export async function duplicateOpportunity(actor: Actor, id: string): Promise<Ac
   } as Opportunity;
   opportunities().push(copy);
   revalidate();
-  return { status: "success", message: "Duplicated as a draft.", data: { id: copy.id } };
+  return { status: "success", message: `Duplicated “${o.title}” as a draft.`, data: { id: copy.id } };
 }
 
 export async function deleteOpportunity(actor: Actor, id: string): Promise<ActionState> {

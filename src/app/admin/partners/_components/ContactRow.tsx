@@ -157,6 +157,7 @@ export function ContactRow({
   const state = contact.invitationState;
   const removeItem = (
     <DropdownMenuItem
+      $variant="danger"
       disabled={lastWithAccess}
       onSelect={(event) => {
         event.preventDefault();
@@ -197,6 +198,7 @@ export function ContactRow({
             )}
             {state ? (
               <DropdownMenuItem
+                $variant="danger"
                 onSelect={(event) => {
                   event.preventDefault();
                   actions.requestCancel();

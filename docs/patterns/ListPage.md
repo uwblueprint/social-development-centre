@@ -13,7 +13,7 @@ import {
   ListPage, ListPageHeader, ListPageToolbar, ListEmptyState, listEmptyCopy, useListParams, useListSearch, useListSort,
 } from "@/components/patterns/ListPage";
 ```
-- `ListPage`: the page body. Full width, **no `max-width`**, so tables use wide monitors. Padding `--space-5`/`--space-6` (`--space-4` under 768px).
+- `ListPage`: the page body. Full width, **no `max-width`**, so tables use wide monitors. Padding `--space-5`/`--space-6` (`--space-4` under 768px); 16px (`--space-4`) between the header and each block (owner: 16px max, product-wide).
 - `ListPageHeader({ title, search?, actions?, results? })`: an `h1` in `--text-lg` medium on the left; on the right, `search` (a `SearchField`) at a fixed `--search-width` (280px) just left of the `actions`. When the header is narrower than 640px, the search wraps to its own full-width row under the title and actions. No description: what the section is for lives in the sidebar item's `description` tooltip. `results: { query, count, pending }` (the server's `q`, the rows it matched in the current view, and `useListSearch`'s `pending`) adds a polite live region that announces "{n} results" or "No results" once a search settles. Nothing is announced on first load or while the search is loading.
 - `ListPageToolbar({ tabs, results? })`: the tabs only, full width. Render it inside `<Tabs>` and pass the `TabsList`. `results` works as on the header; pass it in one place. Its `search` prop is deprecated and ignored.
 - **Why search is in the header:** search filters the whole page across tabs (tab counts follow it, and `ListEmptyState` points to matches in other tabs), so it belongs with the page, not with one tab's toolbar.
@@ -99,7 +99,7 @@ The buttons remove the empty state, so the caller moves focus somewhere sensible
 
 ## Error boundaries
 
-Each portal section has an `error.tsx` that renders `RouteError` (`src/components/patterns/RouteError.tsx`): an alert icon, an `h1` "We couldn't load {section}.", "Your data is safe; this is a loading problem.", in the partner portal a line with `SDC_CONTACT_EMAIL`, and **Try again** (Next's `retry`, which fetches the segment again). It never shows the raw error. Strings live in the area's copy file (Community: `communityCopy.loadError`) or in `src/lib/errorCopy.ts`.
+Each portal section has an `error.tsx` that renders `RouteError` (`src/components/patterns/RouteError.tsx`). It is centred vertically and horizontally in the content area, like the 404: an alert icon (where the 404 has its illustration), an `h1` "We couldn't load {section}.", "Your data is safe; this is a loading problem.", and an escalation sentence for when it keeps happening, in the same paragraph, then **Try again** (Next's `retry`, which fetches the segment again). Admins see "If it keeps happening, email {BSF_SUPPORT_EMAIL}." (`src/lib/contact.ts`); partners see "If it keeps happening, tell an SDC admin." The boundary requires `escalation`, so a new section can't ship without one. It never shows the raw error. Strings live in the area's copy file (Community: `communityCopy.loadError`) or in `src/lib/errorCopy.ts`.
 
 Opportunity edit pages call `notFound()` for a missing id, which renders `[id]/not-found.tsx` with a 404 status.
 
@@ -116,3 +116,5 @@ Opportunity edit pages call `notFound()` for a missing id, which renders `[id]/n
 - Focus order is title area, search, actions, then tabs. At full width the visual order matches; below 640px the search sits on its own row under the actions, the one place visual order and focus order differ (search is still the first control).
 - Search results are announced politely through `ListPageHeader`'s (or `ListPageToolbar`'s) `results`, not by moving focus.
 - `ListEmptyState` is plain text plus one button with a leading or trailing icon and a verb label; the icon above the title is decorative.
+
+Motion: everything under the header animates in (`contentIn`: fade plus an 8px rise) when the page mounts after its loading state. The header stays put so the title never moves; `PageLoading` (aria-busy) doesn't animate.

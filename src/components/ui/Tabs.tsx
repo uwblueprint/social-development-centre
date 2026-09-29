@@ -1,13 +1,14 @@
 "use client";
 
-import { forwardRef, useCallback } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from "react";
 import type { FocusEvent } from "react";
 import { styled } from "next-yak";
 import { Tabs as TabsPrimitive } from "radix-ui";
 
 export const Tabs = TabsPrimitive.Root;
 
-export const TabsList = styled(TabsPrimitive.List)`
+const StyledTabsList = styled(TabsPrimitive.List)`
+  position: relative;
   display: flex;
   align-items: flex-end;
   gap: var(--space-4);
@@ -22,7 +23,77 @@ export const TabsList = styled(TabsPrimitive.List)`
   &::-webkit-scrollbar {
     display: none;
   }
+
+  /* Once the sliding indicator is measured, it replaces the active tab's own underline. */
+  &[data-indicator] [aria-selected="true"] {
+    border-bottom-color: transparent;
+  }
 `;
+
+/*
+ * The active line slides between tabs (owner: subtle but fun), with a slight spring. Positioned from the
+ * selected tab's box via --tab-x / --tab-w. Reduced motion is handled globally.
+ */
+const Indicator = styled.span`
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: var(--tab-w, 0);
+  height: 2px;
+  background: var(--color-text);
+  translate: var(--tab-x, 0) 0;
+  pointer-events: none;
+
+  [data-indicator="ready"] > & {
+    transition:
+      translate var(--duration-slow) var(--ease-spring),
+      width var(--duration-slow) var(--ease-spring);
+  }
+`;
+
+/** Every tab set shares the sliding active line. */
+export const TabsList = forwardRef<HTMLDivElement, TabsPrimitive.TabsListProps>(function TabsList({ children, ...props }, ref) {
+  const listRef = useRef<HTMLDivElement>(null);
+  useImperativeHandle(ref, () => listRef.current as HTMLDivElement);
+
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    let frame = 0;
+    const place = () => {
+      const tab = list.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]');
+      if (!tab) {
+        list.removeAttribute("data-indicator");
+        return;
+      }
+      list.style.setProperty("--tab-x", `${tab.offsetLeft}px`);
+      list.style.setProperty("--tab-w", `${tab.offsetWidth}px`);
+      // The first placement jumps into position; only later changes slide.
+      if (!list.hasAttribute("data-indicator")) {
+        list.setAttribute("data-indicator", "");
+        frame = window.setTimeout(() => list.setAttribute("data-indicator", "ready"), 50);
+      }
+    };
+    place();
+    const mutations = new MutationObserver(place);
+    mutations.observe(list, { subtree: true, attributes: true, attributeFilter: ["aria-selected"], childList: true, characterData: true });
+    const resize = new ResizeObserver(place);
+    resize.observe(list);
+    list.querySelectorAll('[role="tab"]').forEach((tab) => resize.observe(tab));
+    return () => {
+      window.clearTimeout(frame);
+      mutations.disconnect();
+      resize.disconnect();
+    };
+  }, []);
+
+  return (
+    <StyledTabsList {...props} ref={listRef}>
+      {children}
+      <Indicator aria-hidden="true" />
+    </StyledTabsList>
+  );
+});
 
 const StyledTabsTrigger = styled(TabsPrimitive.Trigger)`
   all: unset;

@@ -42,17 +42,22 @@ Each organization has at most one tag in the **Health** column:
 ![The Partners page header with the Copy all emails button highlighted next to Invite partner](img/admin-partners/copy-partners-email-addresses.png)
 
 - **Everyone:** on **Partners**, click **Copy all emails** (top right). Every person who isn't removed is copied, separated by commas, ready to paste into your email's To or Bcc field. You'll see "Copied {n} email addresses".
-- **One organization:** open it and click **Copy emails**.
+- **One organization:** open it, click **More actions** (⋯) next to its name, and choose **Copy emails**.
 - **One person:** on **People**, click their email address. A checkmark shows it was copied.
+
+## Dismiss a "needs support" warning
+If a partner is flagged (for example **No recent posts**) and you don't need to act:
+1. Open the organization and click **Dismiss** in the warning under its numbers. The warning and its tag go away. They come back only if the organization's situation changes to a different warning.
+2. To hide the "{n} partners might need support" banner above the list, click **Dismiss** on it. It stays hidden in this browser until the number of partners needing support changes.
 
 ## Keep notes about a partner
 
 ![The SDC notes (only admins see these) box with the Save notes button highlighted](img/admin-partners/keep-notes-about-a-partner.png)
 
 1. Open the organization.
-2. Type in **SDC notes (only admins see these)** and click **Save notes**. You'll see "Notes saved."
+2. Type in **SDC notes**. Notes save on their own when you stop typing or click away; you'll see **Saving…** then **Saved**.
 
-Under the notes you'll see who last edited them and when. Partners never see these notes. To delete them, clear the box and save.
+Partners never see these notes. To delete them, clear the box.
 
 ## Post an opportunity for a partner
 
@@ -86,7 +91,7 @@ Every new organization starts this way, with its first person.
 ![The Invite partner dialog with Organization already set to Northside Food Bank and Send invitation highlighted](img/admin-partners/add-another-person-to-an-existing-partner.png)
 
 1. Open the organization (click its row).
-2. Click **Add person** (under the organization's name). The organization is already filled in.
+2. Click **Add person** (next to **People** in the panel). The organization is already filled in.
 3. Enter their **Contact name** and **Email** and click **Send invitation**.
 
 ## Resend, retry or cancel an invitation
@@ -101,10 +106,7 @@ Every new organization starts this way, with its first person.
 You can do the same from the organization's panel: find the person under **People** and open **Actions for {name}** (⋯).
 
 ## Edit a partner's details
-
-![The Profile fields Organization name, Website and Short description with the Save changes button highlighted](img/admin-partners/edit-a-partners-details.png)
-
-1. Open the organization and click **Edit details** (under the organization's name).
+1. Open the organization, click **More actions** (⋯) next to its name, and choose **Edit profile**.
 2. Under **Profile**, change **Organization name**, **Website** (for example, sdckw.ca; you don't need to type https://) or **Short description**.
 3. Click **Save changes**. You'll see "Changes saved." To stop without saving, click **Cancel**.
 
@@ -146,10 +148,7 @@ An organization always has at least one person. You can't remove the only person
 2. Invite their email under the new organization (see **Invite a person**).
 
 ## Remove a partner's access (the partnership ended or the organization dissolved)
-
-![The Remove Northside Food Bank's access? confirmation with the Remove access button highlighted](img/admin-partners/remove-a-partners-access.png)
-
-1. Open the organization and click **Remove access** (under the organization's name).
+1. Open the organization, click **More actions** (⋯) next to its name, and choose **Remove access**.
 2. Read the confirmation and click **Remove access**. To cancel, click **Keep access**.
 
 What happens right away:

@@ -120,10 +120,11 @@ export function CopyableEmail({ email }: { email: string }) {
 }
 
 /** Copies a list of emails, comma-separated, and returns the toast title. */
-export async function copyEmails(emails: string[]): Promise<string> {
+/** `from` names whose addresses these are, for the toast ("from Northside Food Bank", "from 12 partners"). */
+export async function copyEmails(emails: string[], from: string): Promise<string> {
   try {
     await navigator.clipboard.writeText(emails.join(", "));
-    return copy.copied(emails.length);
+    return copy.copied(emails.length, from);
   } catch {
     return copy.copyFailed;
   }

@@ -20,7 +20,7 @@ import { Field } from "@/components/ui/Field";
 - `children: (props: FieldControlProps) => ReactNode` — spread `props` onto the inner control.
 
 ## Hint line
-One line under the control: the hint on the left, the character counter on the right ("120 characters left"). The counter only shows when the control has a `maxLength` (today: `Textarea`, which hands its counter to the Field through `useFieldCounter`). An error replaces the hint on the left; the counter stays on the right. Near the limit (last 10%) the counter turns `--color-danger` and medium weight; the number itself carries the meaning. Outside a `Field`, `Textarea` shows its own counter under the box.
+One line under the control: the hint on the left, the character counter on the right ("120 characters left"). The counter exists only when the control has a `maxLength` (today: `Textarea`, which hands its counter to the Field through `useFieldCounter`), and inside a Field it appears only once a quarter or less of the limit is left (`visible`), to keep the form quiet. An error replaces the hint on the left; the counter stays on the right. Near the limit (last 10%) the counter turns `--color-danger` and medium weight; the number itself carries the meaning. Outside a `Field`, `Textarea` shows its own counter under the box.
 
 ## Example
 ```tsx

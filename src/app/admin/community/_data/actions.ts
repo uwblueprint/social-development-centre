@@ -176,7 +176,7 @@ export async function updateMember(id: string, _prev: ActionState, fd: FormData)
   }
   m.name = name || undefined;
   m.email = email;
-  return done("Changes saved.");
+  return done(`Changes to ${m.name ?? m.email} saved.`);
 }
 
 /**

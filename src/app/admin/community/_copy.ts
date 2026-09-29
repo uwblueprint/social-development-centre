@@ -1,16 +1,17 @@
 /**
  * Every user-facing string for the Community admin page. Components import
  * from here instead of writing copy inline. The owner edits copy here; it's
- * applied back to the product from this file. IDs in docs/ux/portal.md's
+ * applied back to the product from this file. IDs in the retired UX spec's
  * Community copy table match this object's key paths.
  *
  * Server-returned strings (`ActionState.message`, from `_data/actions.ts`)
  * are backend copy, not covered here — that contract is fixed.
  */
+import { adminEscalation } from "@/lib/errorCopy";
 import type { MemberStatus } from "./_data/types";
 
 /**
- * The paid benefit beyond the members-only feed, until SDC decides it (docs/users/paying-member.md).
+ * The paid benefit beyond the members-only feed, until SDC decides it (docs/users.md, Paying member).
  * TODO: replace once SDC confirms. Import this constant; never hard-code the benefit elsewhere.
  */
 export const PAID_BENEFIT = "{paid benefit}";
@@ -20,7 +21,6 @@ const statusLabels: Record<MemberStatus, string> = {
   unsubscribed: "Unsubscribed",
   invited: "Invited",
   onboarding_incomplete: "Onboarding incomplete",
-  never_clicked: "Never clicked",
   active: "Active",
   inactive: "Inactive",
 };
@@ -109,12 +109,21 @@ export const communityCopy = {
     add: "Add member",
     importFromFile: "Import from a file",
     /** File view (CSV upload, then the rows to check). */
-    fileHint: "Upload a CSV file with name and email columns, then check the rows. You can edit them here.",
+    fileHint: "One person per line: name, email. Fix anything here before you continue.",
     downloadTemplate: "Download template",
     templateFilename: "sdc-members-template.csv",
     backToAdd: "Back",
-    emailsLabel: "Rows to add",
+    emailsLabel: "People to add",
     uploadCsv: "Upload CSV",
+    /** NEW, NEEDS APPROVAL: the simplified file step. */
+    /** NEW, NEEDS APPROVAL: the numbered file steps. */
+    stepTemplateTitle: "Download the template",
+    stepTemplateHint: "A CSV with name and email columns.",
+    stepUploadTitle: "Upload your file",
+    stepReviewTitle: "Review",
+    chooseFile: "Choose a CSV file",
+    dropHint: "or drag it here",
+    addAnotherFile: "Add another file",
     csvLoaded: (n: number, file: string) => `Added ${n} ${n === 1 ? "row" : "rows"} from ${file}. Check them before you continue.`,
     csvEmpty: (file: string) => `${file} has no email addresses. Check the file and try again.`,
     csvUnreadable: (file: string) => `${file} couldn't be read. Upload a CSV file.`,
@@ -151,7 +160,7 @@ export const communityCopy = {
       alreadyMembersDetail: (payingLabel: string) => `To make them paying, go back and check ${payingLabel}.`,
       duplicates: (n: number) => `${n} ${n === 1 ? "address" : "addresses"} entered more than once, merged`,
       invalid: (n: number) => `${n} invalid ${n === 1 ? "entry" : "entries"}, skipped`,
-      invalidDetail: "Go back to fix them, or confirm without them.",
+      invalidDetail: "They won't be imported. Fix them in your file and upload it again, or continue without them.",
       unsubscribedSelf: (n: number) => `${n} unsubscribed themselves, not resubscribed`,
       unsubscribedSelfDetail: (converting: number) =>
         `Only they can resubscribe.${converting ? ` ${converting} will still become paying, without an email.` : ""}`,
@@ -162,7 +171,7 @@ export const communityCopy = {
       deleted: (n: number) => `${n} deleted earlier, skipped`,
       deletedDetail: "They were deleted from Community. Only they can sign up again.",
     },
-    addedFallback: "Changes saved.",
+    addedFallback: "Members added.",
   },
 
   exportDialog: {
@@ -270,6 +279,7 @@ export const communityCopy = {
     title: "We couldn't load Community.",
     body: "Your data is safe; this is a loading problem.",
     retry: "Try again",
+    escalation: adminEscalation,
   },
 
   toast: {

@@ -23,17 +23,21 @@ Each admin page (`src/app/admin/<section>/page.tsx`) is a Server Component. Fetc
 Without Supabase credentials, `next dev` skips the sign-in redirect (`src/lib/supabase/proxy.ts`) and `getCurrentAdmin()` returns a placeholder admin. Production always requires both.
 
 ## 5. Accounts
-My account (a dialog in both portals; see `docs/patterns/AccountDialog.md`) and sign-out need these. Actions live in `src/features/account/actions.ts`; each throws in production until implemented. In development they change an in-memory override (`src/features/account/devAccount.ts`) that `getCurrentAdmin()` and `getCurrentPartner()` apply on top of the dev user.
+There is no My account screen (owner decision, 28 Sep 2026: logins can be shared, and the app doesn't use the name). The sidebar footer is **Documentation** (`/admin/documentation`, `/partner/documentation`, rendered from `docs/user-guide/`) and a red **Sign out**. Only `signOut` (`src/app/login/actions.ts`) is needed. Profile pictures, name editing and account deletion are **not** needed (that code has been removed).
 
-- **Profile picture storage.** `updateAccount` receives `avatar`: a JPG, PNG or WebP file the browser has already scaled (shorter side 512px, well under 1 MB). Store it (e.g. a Supabase Storage bucket, one object per user, replaced on upload), and return its URL as `avatarUrl` on `AdminUser` / `PartnerUser`. `removeAvatar=1` deletes it; the UI falls back to initials. Re-check type and size on the server (the action already does). The avatar crops to a square in CSS, so store the image uncropped.
-- **Name.** `name` is required, trimmed, up to 80 characters. It's the person's own display name: for a partner contact it's the same `name` admins see and edit in Partners, so both must write one field.
-- **Delete account.** `deleteAccount(portal)` must, for the signed-in user only: remove their sign-in (Supabase auth user) and their access (admin role, or their partner contact), end every session, then redirect to `/login?accountDeleted=1`.
-  - **Admins:** keep their past actions (audit entries, created or edited records) and show the actor as "Former admin" instead of their name. Don't cascade-delete their rows; null or anonymize the person reference.
-  - **Partners:** remove the contact from their organization's team. Open question for the owner: what happens when they're the organization's last active contact.
-- **No email or password changes.** Sign-in is by email link, so there's no password. Email changes aren't offered yet (docs/decisions/platform.md, decision 3).
-- **Sign-out.** `signOut(firstName?)` ends the Supabase session and redirects to `/login?signedOut=1&name={first name}`. Nothing else is needed from the backend.
+## Dates and times (owner, 28 Sep 2026)
+Every timestamp and date-time the backend sends or stores is UTC, as ISO 8601 with a `Z` (e.g. `2026-10-02T21:30:00Z`). The UI converts to the person's own time zone for display and converts their input back to UTC before saving. Date-only values with no time (e.g. a petition deadline) are plain `yyyy-mm-dd` and mean "until the end of that day in Waterloo Region" (America/Toronto). To avoid server/browser mismatches, the time zone should come from the browser (saved in a cookie on first visit) so server-rendered pages format in the same zone.
+
+## Duplicate submits (owner, 28 Sep 2026)
+The UI blocks a second click or Enter while a save is pending (`SubmitButton`: busy state, aria-busy, repeat clicks ignored). The backend should still be idempotent: each form render gets a one-time token sent with the save, and a repeated token returns the first result instead of creating a second record (a double Publish never makes two listings).
+
+## Offline (owner, 28 Sep 2026)
+No backend work. When there's no connection, what's on screen stays readable; submits and page changes are stopped with the "Goose stole your wifi." screen; route errors while offline show the same screen. The opportunity form also keeps unsaved work in the browser (`localStorage`, key `nexus-draft:{scope}:{id or new}`) until it saves.
 
 ## Feature requirements
 - [Partners](./partners.md)
 - [Opportunities](./opportunities.md) (both portals, plus the partner session)
 - [Community](./community.md)
+
+## Support address
+`BSF_SUPPORT_EMAIL` (`src/lib/contact.ts`) is where admins escalate a page that keeps failing to load. It is still the placeholder `{BSF email}`; set the real address there, and the load-error page turns it into a mailto link automatically.

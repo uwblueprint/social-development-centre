@@ -23,23 +23,12 @@ import { MemberConfirmDialog } from "./MemberConfirmDialog";
 import { MemberEmails } from "./MemberEmails";
 import { useMemberActions } from "./useMemberActions";
 
-/* The same padding as the page (ListPage), so the panel's content lines up with what's behind it. */
+/* Padding comes from the kit's Sheet (header top matches the sides). */
 const Header = styled(SheetHeader)`
   gap: var(--space-3);
-  padding: var(--space-5) var(--space-6);
-
-  @media (max-width: 767px) {
-    padding: var(--space-4);
-  }
 `;
 
-const Body = styled(SheetBody)`
-  padding: var(--space-5) var(--space-6);
-
-  @media (max-width: 767px) {
-    padding: var(--space-4);
-  }
-`;
+const Body = SheetBody;
 
 const Title = styled(SheetTitle)`
   overflow-wrap: anywhere;
@@ -81,6 +70,11 @@ const ActionRow = styled.div`
 const IconButton = styled(Button)`
   aspect-ratio: 1;
   padding: 0;
+`;
+
+/** Delete reads as destructive before it's clicked (the confirm dialog still guards it). */
+const DangerIconButton = styled(IconButton)`
+  color: var(--color-danger);
 `;
 
 const EditForm = styled.form`
@@ -201,9 +195,9 @@ export function MemberSheetContent({ member, now, onChange }: { member: Member; 
             </IconButton>
           </Tooltip>
           <Tooltip content={p.delete} pinOnClick={false}>
-            <IconButton type="button" $variant="secondary" $size="sm" aria-label={p.delete} onClick={() => setConfirm("delete")}>
+            <DangerIconButton type="button" $variant="secondary" $size="sm" aria-label={p.delete} onClick={() => setConfirm("delete")}>
               <Icon icon={Trash2} size={16} />
-            </IconButton>
+            </DangerIconButton>
           </Tooltip>
         </ActionRow>
       </Header>

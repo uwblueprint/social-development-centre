@@ -1,3 +1,4 @@
+import { labList, labLong } from "@/dev/state-lab/state"; // STATE LAB (disposable)
 import type { CtaKind, EmailKind, EmailOpportunity, MemberRecord, MemberSource, OnboardingState, SentEmail } from "./types";
 
 /*
@@ -149,10 +150,10 @@ function seedEmails(m: MemberRecord, r: () => number, onboarding: OnboardingStat
   return out.reverse();
 }
 
-const g = globalThis as unknown as { __communityStoreV3?: Store };
-const store = (): Store => (g.__communityStoreV3 ??= seed()); // V3: reseeds with source, onboarding and clicks
+const g = globalThis as unknown as { __communityStoreV4?: Store };
+const store = (): Store => (g.__communityStoreV4 ??= seed()); // V3: reseeds with source, onboarding and clicks
 
-export const members = (): MemberRecord[] => store().members;
+export const members = (): MemberRecord[] => labList(store().members, (m) => ({ ...m, name: m.name && labLong(m.name) })); // STATE LAB (disposable)
 export const nextMemberId = () => `m_${++store().seq}`;
 export const findByEmail = (email: string) => members().find((m) => m.email.toLowerCase() === email.toLowerCase());
 export const emailsFor = (m: MemberRecord): SentEmail[] => store().emails[m.id] ?? [];

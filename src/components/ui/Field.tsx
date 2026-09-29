@@ -16,7 +16,8 @@ const Wrapper = styled.div`
 
 const LabelRow = styled.div`
   display: flex;
-  align-items: center;
+  /* Baseline, not center: "(required)" is smaller text and must sit on the label's line. */
+  align-items: baseline;
   gap: var(--space-1);
 `;
 
@@ -59,6 +60,8 @@ export interface FieldCounterState {
   remaining: number;
   /** Near the limit (the last 10%): the counter turns danger-colored and medium weight. */
   warning: boolean;
+  /** Shown at all (owner: less subtext): only once a quarter or less of the limit is left. */
+  visible: boolean;
 }
 
 const FieldCounterContext = React.createContext<((counter: FieldCounterState | null) => void) | null>(null);
@@ -72,10 +75,11 @@ export function useFieldCounter(counter: FieldCounterState | null): boolean {
   const setCounter = React.useContext(FieldCounterContext);
   const remaining = counter?.remaining;
   const warning = counter?.warning;
+  const visible = counter?.visible;
   React.useLayoutEffect(() => {
     if (!setCounter) return;
-    setCounter(remaining === undefined ? null : { remaining, warning: !!warning });
-  }, [setCounter, remaining, warning]);
+    setCounter(remaining === undefined ? null : { remaining, warning: !!warning, visible: !!visible });
+  }, [setCounter, remaining, warning, visible]);
   React.useLayoutEffect(() => (setCounter ? () => setCounter(null) : undefined), [setCounter]);
   return setCounter !== null;
 }
@@ -171,7 +175,7 @@ export function Field({
           "aria-invalid": error ? true : undefined,
         })}
       </FieldCounterContext.Provider>
-      {(hint || error || counter) && (
+      {(hint || error || counter?.visible) && (
         <Footer>
           {error ? (
             <ErrorMessage id={errorId}>
@@ -182,7 +186,7 @@ export function Field({
             hint && <Hint id={hintId}>{hint}</Hint>
           )}
           {/* The control adds this id to its own aria-describedby. */}
-          {counter && (
+          {counter?.visible && (
             <Counter id={`${controlId}-counter`} data-warning={counter.warning ? "" : undefined}>
               {characterCountText(counter.remaining)}
             </Counter>

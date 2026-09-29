@@ -11,14 +11,11 @@ This file is for AI coding agents and humans alike. Read it before writing any U
 - `src/features/`: feature code shared by both portals, e.g. `src/features/opportunities/` (the Opportunities contract, copy and UI).
 - `src/components/ui/tokens.ts`: every color, space, radius, type size, line height, shadow and duration.
 - `docs/product/`: product context condensed from Notion. Read it first.
-- `docs/ux/portal.md`: the owner's UX flows and copy for both portals (admin and partner, plus shared sign-in). Follow it; the owner decisions at the top override the body.
-- `docs/users/`: one file per user type. Read the file for a user before designing for them.
-- `docs/plan/`: build plans, with the questions asked upfront and the assumptions taken.
+- `docs/users.md`: one section per user type. Read the section for a user before designing for them.
 - `docs/components/<Component>.md`: when to use each component, when not to, content rules and accessibility notes. Read the doc before using a component for the first time.
-- `docs/design/principles.md`: the design rules behind the kit. `docs/design/research.md`: the evidence (Linear, Ramp, NN/g).
+- `docs/design/principles.md`: the design rules behind the kit.
 - `docs/backend/`: how the backend connects (data seams, server actions returning `ActionState`, `SubmitButton`) and per-feature backend requirements. `/components/form-contract` shows exactly what a form submits.
 - `docs/user-guide/`: task-based user guide ("to do X, click Y"). The source for end-user documentation.
-- `docs/emails/`: drafts of product emails per feature.
 - `docs/decisions/`: product decisions per feature (what, which page, what it affects, when users meet it).
 - `/components`: live showcase of every component in every state. Run `pnpm dev` and open http://localhost:3000/components.
 

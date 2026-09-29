@@ -22,7 +22,9 @@ export function activityOf(org: StoredOrg, now = Date.now()): OrganizationActivi
   const lastPostedAt = posts.map((p) => p.publishedAt).sort().at(-1);
   const emailed = posts.filter((p) => p.email.firstEmailedAt);
   const totalClicks = emailed.reduce((sum, p) => sum + p.email.clicks, 0);
-  return { health: healthOf(org, posts, lastPostedAt, now), lastPostedAt, totalClicks };
+  const health = healthOf(org, posts, lastPostedAt, now);
+  // Dismissed by an admin: hidden until the tag changes (e.g. from No recent posts to No clicks).
+  return { health: health?.tag === org.healthDismissed ? undefined : health, lastPostedAt, totalClicks };
 }
 
 function healthOf(

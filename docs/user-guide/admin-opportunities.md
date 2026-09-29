@@ -18,21 +18,19 @@ You can do anything a partner can, for any organization, including posting as SD
    - To filter by type, click the filter icon next to **Type** in the table header (**Filter Type**), tick one or more types and click **Apply**. Each shows how many listings it has.
    - To filter by organization, click the filter icon next to **Organization** (**Filter Organization**), tick one or more and click **Apply**. Partners whose access you removed are listed as "{name} (removed)".
    - An active filter shows the number of choices ticked next to its icon. To remove it, open it, click **Clear**, then **Apply**.
-4. To sort, click a column header: **Opportunity**, **Organization**, **Date** or **Last change**. Click it again to reverse the order. **Type** shows a colored tag with the type's name. **Last change** reads "Created …" or "Edited …". A title that doesn't fit ends in "…"; point at it to see all of it.
+4. To sort, click a column header: **Opportunity**, **Organization**, **Sent to**, **Clicks**, **Closes** or **Last change**. Click it again to reverse the order. **Type** shows a colored tag with the type's name. **Last change** reads "Created …" or "Edited …". A title that doesn't fit ends in "…"; point at it to see all of it.
 5. Click a row to open its details on the right. To share it, copy the page address: it opens with the same details panel open.
 
 If nothing matches, you'll see **No matches**. Click **Clear filters** to start over.
 
 ## Post a new opportunity
 
-![The Type step of New event, with the type choices, Eventbrite link (optional), Link and the Next button highlighted](img/admin-opportunities/post-a-new-opportunity.png)
-
-The form has three steps, shown at the top: **1 Type · 2 Details · 3 Review**. Click **Next** and **Back** to move between them; nothing is lost. You can click **Save as draft** on any step.
+The form has three steps, shown as numbered steps at the top: **Type**, **Details**, **Review**. Click **Next** and **Back** to move between them; nothing is lost. You can click **Save as draft** on any step.
 
 1. Go to **Opportunities** and click **New opportunity** (top right).
-2. **Type:** choose **Event**, **Petition**, **Volunteer role**, **Job** or **Other**.
-   - **For an event on Eventbrite:** paste its address into **Eventbrite link (optional)** and click **Fill in details**. The title, short description, date, times and place are filled in for you, and the Eventbrite page becomes the **Link**. Check them on the next step.
-   - **Link:** the page where people take part, like `sdckw.ca/events`. You don't need to type `https://`.
+2. **Type:** click the card for **Event**, **Petition**, **Volunteer role**, **Job** or **Other**.
+   - **Link:** the page where people take part, like `sdckw.ca/events`. You don't need to type `https://`. It's required for every type. For a volunteer role or a job it's **Link or email**: you can give an email address instead.
+   - **Event on Eventbrite?** Paste its Eventbrite link as the **Link**. A box appears saying **This is an Eventbrite page**; click **Fill in details** (or just press Enter). The title, description, date, time and place are filled in and you go straight to **Details**: check what's under **From Eventbrite**, then fill in **Add the rest** (topics, cost and accessibility). If the link isn't an event page, the box says what to fix. If Eventbrite doesn't answer within a few seconds you'll see **Timed out. Couldn't fetch details from Eventbrite.** and can fill the form in yourself.
 3. Click **Next**.
 4. **Details:**
    - **Organization:** leave it as SDC, or choose the partner you're posting for.
@@ -86,7 +84,7 @@ You can't change an opportunity's type after it's created. To change it, post a 
 
 There's no repeat schedule. Copy the listing instead:
 1. Open the opportunity.
-2. Click **More actions** (⋯) and choose **Duplicate**.
+2. At the bottom of the panel, click **Duplicate** (point at an icon to see its name).
 3. The copy opens as a draft called "Copy of …". Change the title and date, then click **Publish**.
 
 ## Close an opportunity (full, cancelled or no longer needed)
@@ -94,7 +92,7 @@ There's no repeat schedule. Copy the listing instead:
 ![The More actions menu open with Close highlighted](img/admin-opportunities/close-an-opportunity.png)
 
 1. Open the opportunity.
-2. Click **More actions** (⋯) and choose **Close**.
+2. At the bottom of the panel, click **Close** (point at an icon to see its name).
 
 There's no confirmation. It moves to **Closed** and the record is kept. You'll see "Closed. This opportunity won't be recommended to members or included in emails."
 
@@ -105,7 +103,7 @@ Opportunities also close by themselves: an **event** at its start time, and anyt
 ![The More actions menu for a closed opportunity with Reopen highlighted](img/admin-opportunities/reopen-a-closed-opportunity.png)
 
 1. Go to **Closed** and open the opportunity.
-2. Click **More actions** (⋯) and choose **Reopen**.
+2. At the bottom of the panel, click **Reopen** (point at an icon to see its name).
 
 It goes back to **Published**. You'll see "Reopened. Members can see this opportunity again."
 
@@ -117,7 +115,7 @@ It goes back to **Published**. You'll see "Reopened. Members can see this opport
 ![The delete confirmation with Cancel and the Delete button highlighted](img/admin-opportunities/delete-an-opportunity-posted-by-mistake.png)
 
 1. Open the opportunity.
-2. Click **More actions** (⋯) and choose **Delete**.
+2. At the bottom of the panel, click **Delete** (point at an icon to see its name).
 3. Read the confirmation and click **Delete**.
 
 It's removed for everyone and can't be restored. You'll see "Deleted “{title}”." If you only want to stop it being recommended and emailed, **Close** it instead.
@@ -127,7 +125,7 @@ It's removed for everyone and can't be restored. You'll see "Deleted “{title}�
 ![The More actions menu open with Open link highlighted](img/admin-opportunities/open-the-link-people-will-use.png)
 
 1. Open the opportunity.
-2. Click **More actions** (⋯) and choose **Open link**. The page people go to opens, so you can check it works.
+2. At the bottom of the panel, click **Open link** (point at an icon to see its name). The page people go to opens, so you can check it works.
 
 ## See one partner's opportunities
 
@@ -141,10 +139,10 @@ Required fields must be filled in to publish. Everything else is optional.
 
 | Type | Section | Required | Optional |
 |---|---|---|---|
-| **Event** | **Date and place** | **Date**, **Start time**, **How people attend** (**In person**, **Online** or **Hybrid**), **Area** | **End time**, **Address or venue**, **Cost** (**Free** or **Paid**; if paid, **Cost details**), **Accessibility** (tick **Step-free access**, **Accessible washroom**, **ASL on request**, **Childcare**, **Quiet space**), **Accessibility note** |
+| **Event** | **Date and place** | **Date**, **Start time**, **How people attend** (**In person**, **Online** or **Hybrid**), **Area** (in person or hybrid only) | **End time**, **Cost** (**Free** or **Paid**; if paid, **From ($)** and, for a range, **To ($)**), **Accessibility** (tick **Step-free access**, **Accessible washroom**, **ASL on request**, **Childcare**, **Quiet space**), **Accessibility note** |
 | **Petition** | **Petition details** | **Addressed to** | **Deadline**, **Signature goal** |
-| **Volunteer role** | **Role details** | **Time commitment** (**Under 2 hours a week**, **2–5 hours a week**, **5+ hours a week** or **One-time**), **Where volunteers work** (**In person**, **Remote** or **Hybrid**), **Area** | **Address or venue**, **Start date**, **Apply by**, **Skills** (choose any: **No experience needed**, **Driving**, **Languages**, **Tech**, **Childcare**, **Cooking**, **Writing**, **Event setup**), **Minimum age** |
-| **Job** | **Job details** | **Employment type**, **Workplace** (**On-site**, **Remote** or **Hybrid**), **Area** | **Address or venue**, **Pay**, **Apply by**, **Qualifications** |
+| **Volunteer role** | **Role details** | **Time commitment** (**Under 2 hours a week**, **2–5 hours a week**, **5+ hours a week** or **One-time**), **Where volunteers work** (**In person**, **Remote** or **Hybrid**), **Area** | **Start date**, **Apply by**, **Skills** (choose any: **No experience needed**, **Driving**, **Languages**, **Tech**, **Childcare**, **Cooking**, **Writing**, **Event setup**), **Minimum age** |
+| **Job** | **Job details** | **Employment type**, **Workplace** (**On-site**, **Remote** or **Hybrid**), **Area** | **Pay**, **Apply by**, **Qualifications** |
 | **Other** (surveys, programs, calls for input) | **Details** | **Call to action**: the button people see, like "Take the survey" | **Deadline**, and up to 5 **Details**, each a **Label** and a **Value** (click **Add detail**) |
 
 **Area** is one of **Kitchener**, **Waterloo**, **Cambridge**, **North Dumfries**, **Wellesley**, **Wilmot**, **Woolwich** or **Online / remote**. It's how SDC matches listings to members nearby. Choosing **Online** or **Remote** fills in **Online / remote** for you.

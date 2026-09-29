@@ -23,6 +23,7 @@ import {
   profileMessages,
   readOrganizationProfile,
 } from "./profile";
+import { activityOf } from "./health";
 import { currentContacts, newInvitation, nextId, orgs, statusOf, type StoredOrg } from "./store";
 import { ORGANIZATION_NOTES_MAX } from "./types";
 
@@ -131,7 +132,7 @@ export async function updateContact(contactId: string, _prev: ActionState, fd: F
   found.contact.email = email;
   return settle({
     status: "success",
-    message: emailChanged ? `${profileMessages.saved} ${contactMessages.sent(email)}` : profileMessages.saved,
+    message: emailChanged ? `${profileMessages.saved(name)} ${contactMessages.sent(email)}` : profileMessages.saved(name),
   });
 }
 
@@ -142,7 +143,7 @@ export async function updateOrganization(orgId: string, _prev: ActionState, fd: 
   const result = readOrganizationProfile(org, fd);
   if (result.fieldErrors) return profileFieldsError(result.fieldErrors);
   applyOrganizationProfile(org, result.changes);
-  return settle({ status: "success", message: profileMessages.saved });
+  return settle({ status: "success", message: profileMessages.saved(org.name) });
 }
 
 /** Remove access: everyone at the organization loses portal access; its listings close (Partner access removed). */
@@ -160,6 +161,16 @@ export async function removePartner(orgId: string): Promise<ActionState> {
  * Field: notes. SDC-only notes on an organization, saved with the admin's name and the time. Empty clears
  * them. Never returned to the partner portal.
  */
+/** Hides this organization's current health tag (owner: "I don't need to worry about them"). */
+export async function dismissHealth(orgId: string): Promise<ActionState> {
+  const admin = await getCurrentAdmin();
+  if (!admin) return fail(organizationMessages.missing);
+  const org = orgs().find((o) => o.id === orgId);
+  if (!org) return fail(organizationMessages.missing);
+  org.healthDismissed = activityOf(org).health?.tag;
+  return settle({ status: "success", message: organizationMessages.healthDismissed(org.name) });
+}
+
 export async function saveOrganizationNotes(orgId: string, _prev: ActionState, fd: FormData): Promise<ActionState> {
   const admin = await getCurrentAdmin();
   if (!admin) return fail(organizationMessages.missing);
@@ -168,5 +179,5 @@ export async function saveOrganizationNotes(orgId: string, _prev: ActionState, f
   const notes = text(fd, "notes");
   if (notes.length > ORGANIZATION_NOTES_MAX) return { status: "error", fieldErrors: { notes: notesMessages.tooLong } };
   org.notes = notes ? { text: notes, editedBy: admin.name, editedAt: new Date().toISOString() } : undefined;
-  return settle({ status: "success", message: notesMessages.saved });
+  return settle({ status: "success", message: notesMessages.saved(org.name) });
 }

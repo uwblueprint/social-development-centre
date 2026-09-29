@@ -1,5 +1,5 @@
 /**
- * User-facing strings for the partner portal shell, account and organization pages. Opportunities copy
+ * User-facing strings for the partner portal shell and organization pages. Opportunities copy
  * lives in src/features/opportunities/copy.ts. Server-returned messages (ActionState.message and field
  * errors) live with the shared rules: src/app/admin/partners/_data/profile.ts and _data/contacts.ts.
  * Invitation states are shared with the admin portal (`invitationCopy`).
@@ -10,15 +10,13 @@ export const partnerCopy = {
   nav: {
     label: "Partner navigation",
     opportunities: "Opportunities",
+    insights: "Insights",
     organization: "Organization",
     /** Shown as a delayed tooltip on the sidebar item; replaces the old page descriptions. */
     opportunitiesDescription: "What your organization shares with the SDC community.",
     organizationDescription: "How your organization appears to the SDC community.",
-  },
-
-  account: {
-    title: "My account",
-    description: "Your personal details and sign-in settings.",
+    /** NEW, NEEDS APPROVAL: the Insights tooltip. */
+    insightsDescription: "How your opportunities perform.",
   },
 
   organization: {
@@ -26,9 +24,7 @@ export const partnerCopy = {
     profileHeading: "Profile",
     nameLabel: "Organization name",
     websiteLabel: "Website",
-    websiteHint: "Example: sdckw.ca",
     descriptionLabel: "Short description",
-    descriptionHint: "One or two sentences about what your organization does. Up to 280 characters.",
     save: "Save changes",
     /** Persistent (not toasts): the person needs time to act on them. */
     blocked: {

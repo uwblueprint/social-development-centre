@@ -27,7 +27,7 @@ Each entry: the decision, which page it's on, what it affects, and when someone 
 - **When encountered:** Every new invitation, and when an admin looks for a person rather than an organization.
 
 ## 5. An organization is awaiting a response until anyone accepts
-- **Status:** Revised 27 Sep 2026 to match the invitation-state model in `docs/ux/portal.md`. Replaces the organization-level "Pending" badge. **Revised again 27 Sep 2026:** in the admin table and panels the organization-level badge is now the **Not onboarded** health tag (decision 14), which has the same rule. "{organization} is awaiting a response." stays as the reinvite result.
+- **Status:** Revised 27 Sep 2026 to match the invitation-state model in the owner's UX spec (retired). Replaces the organization-level "Pending" badge. **Revised again 27 Sep 2026:** in the admin table and panels the organization-level badge is now the **Not onboarded** health tag (decision 14), which has the same rule. "{organization} is awaiting a response." stays as the reinvite result.
 - **Decision:** **Invitation pending** describes a person, never an organization. An organization nobody has accepted an invitation to yet shows **Awaiting response**. Once anyone accepts it's active (no badge), even if others haven't; each of those people shows their own invitation state (decision 12).
 - **Page:** Admin → Partners → Organizations (Active) and the organization's panel.
 - **Affects:** The organization badge, when the partner can start managing opportunities.
@@ -75,7 +75,7 @@ Each entry: the decision, which page it's on, what it affects, and when someone 
 - **When encountered:** A new colleague needs access, or someone leaves the organization.
 
 ## 11. Two views and a Status filter
-- **Status:** Decided by owner, 26 Sep 2026 (docs/ux/portal.md, owner decision 3). Replaces the Organizations · People · Invitations · Removed tabs. **Revised by owner, 27 Sep 2026:** the toolbar Status select is replaced by header filters (decision 17). Active and Removed are now the Status filter on the Organization column; on People, removed people are a **Removed** option in the Tags filter.
+- **Status:** Decided by owner, 26 Sep 2026 (the owner's UX spec (retired), owner decision 3). Replaces the Organizations · People · Invitations · Removed tabs. **Revised by owner, 27 Sep 2026:** the toolbar Status select is replaced by header filters (decision 17). Active and Removed are now the Status filter on the Organization column; on People, removed people are a **Removed** option in the Tags filter.
 - **Decision:** Partners has two views, **Organizations** and **People** (tabs labelled "Partner views"), and a visibly labelled **Status** filter: **Active** or **Removed**. Each view's count follows the filter and the search.
   - **Removed → Organizations:** organizations whose access was removed. Restore one by inviting someone to it (decision 13).
   - **Removed → People:** people removed from their organization, and people at an organization whose access was removed. Restore one by inviting them again (**Invite again** in their panel).
@@ -86,7 +86,7 @@ Each entry: the decision, which page it's on, what it affects, and when someone 
 - **When encountered:** Every visit to Partners.
 
 ## 12. Three invitation states
-- **Status:** Decided 27 Sep 2026 from docs/ux/portal.md (Team and invitations). Replaces the "Not delivered" and "Expired" badges.
+- **Status:** Decided 27 Sep 2026 from the owner's UX spec (retired) (Team and invitations). Replaces the "Not delivered" and "Expired" badges.
 - **Decision:** A person who hasn't accepted is in exactly one state, shown as text (not colour alone), the same in both portals:
 
   | State | Row text | Actions |
@@ -104,7 +104,7 @@ Each entry: the decision, which page it's on, what it affects, and when someone 
 - **When encountered:** After inviting someone, until they accept; when an email bounces or a link expires.
 
 ## 13. Reinviting a removed organization
-- **Status:** Decided by owner, 26 Sep 2026 (docs/ux/portal.md, owner decision 8).
+- **Status:** Decided by owner, 26 Sep 2026 (the owner's UX spec (retired), owner decision 8).
 - **Decision:** A removed organization is reinvited by inviting a person to it (**Reinvite** in its panel, or choosing it in **Invite partner**). The result says "Invitation sent to {email}. {organization} is awaiting a response." The organization returns to Active, but nobody has access until someone accepts; its other people stay on People → Removed and can be invited again. When someone accepts, access returns and its closed opportunities whose dates haven't passed reopen automatically.
 - **Remove access** confirms: "People at {organization} will lose access to the partner portal. Their opportunities will be closed and won't be recommended or emailed." (**Keep access** / **Remove access**). Result: "{organization} no longer has access. Its opportunities are closed."
 - **Page:** Admin → Partners → organization panel → Remove access / Reinvite; Invite partner dialog.
@@ -185,3 +185,18 @@ Each entry: the decision, which page it's on, what it affects, and when someone 
 - **Page:** Admin → Partners (both views).
 - **Affects:** URL param `org`; the person panel is gone (its actions moved to the row menu); decision 3.
 - **When encountered:** Managing people, and sharing a link to an organization.
+
+## Organization panel layout (owner, 28 Sep 2026)
+**What:** The header holds the name, health or removed badge and a ⋯ menu (Copy emails, Remove access). The body has four sections split by a rule: **Activity** (Published, Total clicks, Last posted tiles; the health callout; links), **People** ({count}, with **Add person** beside the heading), **Profile** (with **Edit** beside the heading) and SDC notes.
+**Why:** The owner found the old panel overwhelming; each action now sits with the thing it changes.
+
+## Organization panel, round two (owner, 28 Sep 2026)
+**What:** Header: name, description tight under it, then the health or removed badge; ⋯ holds Edit profile, Copy emails and Remove access. Body: **Opportunities** (one joined Published / Total clicks / Last posted strip, the health warning with **Dismiss**, then **View opportunities (n)** and **Post for them** as buttons), **People** (avatar, name, email, invite status; **Add person** by the heading; Remove from organization and Cancel invitation in red), and **SDC notes**, which save automatically. No website in the header, no separate Profile section.
+**Why:** The owner found the panel overwhelming; an admin opens it to check health, act on opportunities, manage people and read notes, in that order.
+Round three (owner, 28 Sep): the numbers sit right under the name (no "Opportunities" heading, no header rule); **View opportunities** only shows when there's at least one; the heading reads "People (n)"; the notes' Saving… / Saved status sits on the character counter's line.
+
+## Partner sidebar (owner, 28 Sep 2026)
+Partners get an **Insights** section (blank for now), below Opportunities. **Organization** moves to the bottom of the sidebar, right above **Sign out**, since it's a settings-like page people visit rarely.
+
+## Organization page layout (owner, 28 Sep 2026)
+One simple scrolling page, like small-team settings on Mobbin (Loops, Basecamp, Firecrawl): a centred 640px column, no cards and no tabs. **Profile** (name, website, short description, no hints) with **Save changes** right under its fields; a hairline; then **Team** with **Invite colleague** in its header and the people as a plain list. Teams are 1–10 people (most have 1, some 3–4), so no table, search or filters. Tried and rejected: cards (boxes within boxes) and Profile/Team tabs (hid content people would happily scroll).

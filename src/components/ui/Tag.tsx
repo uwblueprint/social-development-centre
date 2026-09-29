@@ -62,10 +62,14 @@ const SelectableTagRoot = styled.button<{ $selected?: boolean }>`
    */
   &[aria-disabled="true"] {
     background: var(--color-bg);
-    border-style: dashed;
-    border-color: var(--color-border-strong);
     color: var(--color-text-muted);
     cursor: not-allowed;
+    border-color: transparent;
+    background-image: var(--dashed-border);
+    background-size: var(--dashed-border-size);
+    background-position: var(--dashed-border-position);
+    background-repeat: var(--dashed-border-repeat);
+    background-origin: border-box;
   }
 `;
 

@@ -32,12 +32,13 @@ const str = (v: unknown) => (v === undefined || v === null ? "" : String(v));
 /** A type's starting values the first time it's chosen. */
 export const emptyKindValues = (kind: OpportunityKind): FormValues => (kind === "event" ? { cost: "free" } : {});
 
-/** `organizationId` preselects who a new listing is posted as (admin, e.g. from Partners' "Post an opportunity for them"). */
+/** `organizationId` preselects who a new listing is posted as (admin, e.g. from Partners' "Post for them"). */
 export function initialModel(kind: OpportunityKind, opportunity?: Opportunity, organizationId?: string): FormModel {
   const values: FormValues = {
     organizationId: opportunity?.organization.id ?? organizationId ?? SDC_ORG.id,
     title: opportunity?.title ?? "",
     summary: opportunity?.summary ?? "",
+    imageUrl: opportunity?.imageUrl ?? "",
     link: opportunity?.link ?? "",
   };
   if (!opportunity) return { kind, values, byKind: { [kind]: emptyKindValues(kind) }, topics: [], details: [] };
@@ -59,10 +60,10 @@ export const fieldId = (name: string) => `opportunity-${name.replace(/\./g, "-")
 const TYPE_STEP = ["kind", "eventbrite", "link"];
 const BASICS = ["organizationId", "title", "summary", "topics"];
 const KIND_ORDER: Record<OpportunityKind, string[]> = {
-  event: ["date", "startTime", "endTime", "format", "area", "address", "cost", "costDetails", "accessibility", "accessibilityNote"],
+  event: ["date", "startTime", "endTime", "format", "area", "cost", "priceMin", "priceMax", "accessibility", "accessibilityNote"],
   petition: ["target", "deadline", "signatureGoal"],
-  volunteer: ["timeCommitment", "format", "area", "address", "startDate", "applyBy", "skills", "minimumAge"],
-  job: ["employmentType", "workplace", "area", "address", "pay", "applyBy", "qualifications"],
+  volunteer: ["timeCommitment", "format", "area", "startDate", "applyBy", "skills", "minimumAge"],
+  job: ["employmentType", "workplace", "area", "pay", "applyBy", "qualifications"],
   other: ["callToAction", "deadline", "details"],
 };
 
@@ -115,6 +116,7 @@ export function previewOpportunity(model: FormModel, organization: { id: string;
     kind: model.kind,
     title: model.values.title?.trim() ?? "",
     summary: model.values.summary?.trim() ?? "",
+    imageUrl: model.values.imageUrl || undefined,
     topics: model.topics,
     link: model.values.link?.trim() ?? "",
     organization,
@@ -148,3 +150,9 @@ export interface KindFieldsProps {
   set: (name: string, value: string) => void;
   error: (name: string) => string | undefined;
 }
+
+/**
+ * Which fields a Details section shows. "all" is the normal form. After an Eventbrite fill the step is
+ * split: "eventbrite" (what the Eventbrite API provides) first, then "yours" (what only the person knows).
+ */
+export type FieldPart = "all" | "eventbrite" | "yours";

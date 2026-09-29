@@ -1,6 +1,6 @@
 # Design principles
 
-The rules behind the component kit. Evidence and sources: [research.md](./research.md).
+The rules behind the component kit.
 
 ## 1. Calm, paper-like, one accent
 - Neutrals are Tailwind Taupe (warm, paper-like). No other grays.

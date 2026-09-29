@@ -56,6 +56,29 @@ export interface PartnersFilters {
 }
 
 /* A calm, informational note above the table: text and an icon, not colour alone. */
+/* The support banner's dismissal is per browser and lapses when the number of organizations changes. */
+const SUPPORT_DISMISS_KEY = "sdc-partner-support-dismissed";
+const supportListeners = new Set<() => void>();
+function subscribeSupportDismissal(onChange: () => void) {
+  supportListeners.add(onChange);
+  return () => supportListeners.delete(onChange);
+}
+function readSupportDismissal() {
+  try {
+    return localStorage.getItem(SUPPORT_DISMISS_KEY);
+  } catch {
+    return null;
+  }
+}
+function dismissSupport(count: number) {
+  try {
+    localStorage.setItem(SUPPORT_DISMISS_KEY, String(count));
+  } catch {
+    // Storage blocked: the banner just comes back on the next visit.
+  }
+  supportListeners.forEach((l) => l());
+}
+
 const SupportCallout = styled.div`
   display: flex;
   align-items: center;
@@ -199,7 +222,7 @@ export function PartnersView({
   }
 
   async function handleCopyAll() {
-    toast({ title: await copyEmails(activeEmails) });
+    toast({ title: await copyEmails(activeEmails, copy.emails.everyPartner) });
   }
 
   const clearSearch = () => {
@@ -239,7 +262,12 @@ export function PartnersView({
 
   const orgsFiltered = !sameSet(filters.status, ["active"]) || filters.health.length > 0;
   const peopleFiltered = filters.organizations.length > 0 || !sameSet(filters.tags, DEFAULT_PERSON_TAGS);
-  const showSupport = needSupport > 0 && filters.health.length === 0;
+  const supportDismissed = React.useSyncExternalStore(
+    subscribeSupportDismissal,
+    () => readSupportDismissal() === String(needSupport),
+    () => false,
+  );
+  const showSupport = needSupport > 0 && filters.health.length === 0 && !supportDismissed;
 
   const selectedOrg = openOrgId ? directory.organizations.find((o) => o.id === openOrgId) : undefined;
   const activeCounts = new Map(
@@ -320,6 +348,9 @@ export function PartnersView({
                 onClick={() => setParams({ health: PARTNER_HEALTH.join(","), status: undefined })}
               >
                 {copy.health.showThem}
+              </Button>
+              <Button type="button" $variant="ghost" $size="sm" onClick={() => dismissSupport(needSupport)}>
+                {copy.health.dismiss}
               </Button>
             </SupportCallout>
           )}

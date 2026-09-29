@@ -27,8 +27,8 @@ function seed(): EmailInclusion[] {
   ];
 }
 
-const globalStore = globalThis as unknown as { __partnerEmailStatsV1?: EmailInclusion[] };
-const inclusions = () => (globalStore.__partnerEmailStatsV1 ??= seed());
+const globalStore = globalThis as unknown as { __partnerEmailStatsV2?: EmailInclusion[] };
+const inclusions = () => (globalStore.__partnerEmailStatsV2 ??= seed());
 
 export interface OpportunityEmailStats {
   /** The first email the opportunity was in; absent if it was never emailed. */

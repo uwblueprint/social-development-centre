@@ -1,6 +1,6 @@
 # Partners: backend requirements
 
-From the Partners PRD, product decisions and the owner's UX spec (`docs/ux/portal.md`). The UI is built against:
+From the Partners PRD, product decisions and the owner's UX spec (the owner's UX spec (retired)). The UI is built against:
 - **Types:** `src/app/admin/partners/_data/types.ts`
 - **Queries:** `_data/queries.ts`
 - **Server actions:** `_data/actions.ts` (admin) and `src/app/partner/organization/_data/actions.ts` (partner). FormData field names and `ActionState` results are the contract.
@@ -46,8 +46,12 @@ Derived on the server for each organization with access (`_data/health.ts`); rem
 - `joinedAt`: set when the organization's first person accepts (the acceptance handler). Dev seed only; falls back to `createdAt`.
 - Compute at query time for now; a nightly job is fine once click data is large. The tag must match what the filter, sort and callout use.
 
+## Dismissing health
+- `dismissHealth(orgId)`: admin only. Stores the organization's current `health.tag` as `health_dismissed`. `activityOf` hides a tag equal to `health_dismissed`, so the organization drops out of the tag, the filter, the sort and the "{n} need support" count until its computed tag changes. Toast: "Dismissed the warning for {organization}. It comes back only if something else changes."
+- The list banner's Dismiss is per browser (localStorage, keyed to the current count); no backend needed.
+
 ## SDC notes
-- `saveOrganizationNotes(orgId, _prev, fd)`: field `notes`, up to 2,000 characters (`ORGANIZATION_NOTES_MAX`; error "Shorten the notes to 2,000 characters or fewer."). Stores `{ text, editedBy: <admin's name from the session>, editedAt: now }`; empty text clears the note. Success: "Notes saved." Admin only; never readable from the partner portal. Keep history in the audit trail if SDC wants it later (the UI shows the latest edit only).
+- The panel autosaves (after 800ms without typing, and on blur) through the same action; there's no Save button and the UI no longer shows who edited last. `saveOrganizationNotes(orgId, _prev, fd)`: field `notes`, up to 2,000 characters (`ORGANIZATION_NOTES_MAX`; error "Shorten the notes to 2,000 characters or fewer."). Stores `{ text, editedBy: <admin's name from the session>, editedAt: now }`; empty text clears the note. Success: "Notes saved." Admin only; never readable from the partner portal. Keep history in the audit trail if SDC wants it later (the UI shows the latest edit only).
 
 ## Admin actions
 | Action | Rules |

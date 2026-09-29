@@ -12,6 +12,9 @@ const Text = styled.span`
   display: block;
   min-width: 0;
   max-width: 100%;
+  /* Room for descenders inside the clip, without changing the line's height. */
+  margin-block: -2px;
+  padding-block: 2px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -47,6 +50,9 @@ const EmailRoot = styled.span`
   display: flex;
   min-width: 0;
   max-width: 100%;
+  /* Room for descenders (g, p, y) inside the clip, without changing the line's height. */
+  margin-block: -2px;
+  padding-block: 2px;
   overflow: hidden;
   white-space: nowrap;
 `;
@@ -59,6 +65,8 @@ const EmailLocal = styled.span`
   flex: 0 100000 auto;
   /* Room for the ellipsis itself (content-relative, not a spacing value). */
   min-width: 1.5ch;
+  margin-block: -2px;
+  padding-block: 2px;
   overflow: hidden;
   text-overflow: ellipsis;
 `;
@@ -66,6 +74,8 @@ const EmailLocal = styled.span`
 const EmailDomain = styled.span`
   flex: 0 1 auto;
   min-width: 0;
+  margin-block: -2px;
+  padding-block: 2px;
   overflow: hidden;
   text-overflow: ellipsis;
 `;

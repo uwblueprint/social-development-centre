@@ -53,7 +53,7 @@ const Content = styled(DialogPrimitive.Content)<{ $size?: SheetSize }>`
   --sheet-inset: var(--space-6);
   display: flex;
   flex-direction: column;
-  width: ${({ $size }) => ($size === "wide" ? "min(720px, 100vw)" : "420px")};
+  width: ${({ $size }) => ($size === "wide" ? "min(720px, 100vw)" : "480px")};
   max-width: 100vw;
   background: var(--color-surface-raised);
   box-shadow: var(--shadow-lg);
@@ -123,7 +123,8 @@ const Description = styled(DialogPrimitive.Description)`
 const HeaderRoot = styled.div`
   position: relative;
   flex-shrink: 0;
-  padding: var(--space-4) var(--sheet-inset);
+  /* Owner: the header's top padding matches its sides. */
+  padding: var(--sheet-inset) var(--sheet-inset) var(--space-5);
   border-bottom: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
@@ -176,7 +177,7 @@ const Body = styled.div`
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: var(--space-4) var(--sheet-inset);
+  padding: var(--space-5) var(--sheet-inset);
 `;
 
 const Footer = styled.div`

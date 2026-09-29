@@ -4,6 +4,7 @@ import { keyframes, styled } from "next-yak";
 import { Portal, Toast as ToastPrimitive } from "radix-ui";
 import { X } from "lucide-react";
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
+import { Button } from "./Button";
 import { Icon } from "./Icon";
 
 const slideIn = keyframes`
@@ -63,29 +64,32 @@ const Description = styled(ToastPrimitive.Description)`
   margin: var(--space-1) 0 0;
 `;
 
-const Action = styled(ToastPrimitive.Action)`
+/* The action is a kit Button (owner), right-aligned on its own row under the text. */
+const ActionRow = styled.div`
   grid-column: 1 / -1;
-  justify-self: end;
+  display: flex;
+  justify-content: flex-end;
   margin-top: var(--space-3);
-  width: 100%;
-  border: none;
-  background: none;
-  text-align: right;
-  font-size: var(--text-xs);
-  font-weight: var(--weight-medium);
-  color: var(--color-accent);
-  cursor: pointer;
-
-  &:focus-visible {
-    box-shadow: var(--focus-ring);
-    border-radius: var(--radius-sm);
-  }
 `;
+
+function Action({ altText, onClick, children }: { altText: string; onClick?: () => void; children: ReactNode }) {
+  return (
+    <ActionRow>
+      <ToastPrimitive.Action altText={altText} asChild>
+        <Button type="button" $variant="outline" $size="sm" onClick={onClick}>
+          {children}
+        </Button>
+      </ToastPrimitive.Action>
+    </ActionRow>
+  );
+}
 
 const Close = styled(ToastPrimitive.Close)`
   all: unset;
   grid-row: 1;
   grid-column: 2;
+  /* Tucked into the corner (owner): up 4px and right 8px from the padded content box. */
+  margin: calc(var(--space-1) * -1) calc(var(--space-2) * -1) 0 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
