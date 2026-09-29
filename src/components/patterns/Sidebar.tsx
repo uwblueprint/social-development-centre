@@ -55,7 +55,7 @@ export interface SidebarConfig {
   docsHref: string;
   /** Links shown in the footer, right above Sign out (e.g. the partner portal's Organization). */
   footerItems?: { href: string; label: string; icon: LucideIcon }[];
-  /** Owner decision: no My account concept (logins can be shared); the footer is just Documentation and a red Sign out. */
+  /** There is no "My account" (logins can be shared); the footer is just Documentation and a red Sign out. */
   onSignOut: () => void;
 }
 
@@ -214,7 +214,7 @@ const Brand = styled.span`
   align-items: center;
   gap: var(--space-2);
   min-width: 0;
-  /* Owner: the same size as page headings (ListPage's h1). */
+  /* The same size as page headings (ListPage's h1). */
   font-size: var(--text-lg);
   font-weight: var(--weight-medium);
   line-height: var(--leading-heading);
@@ -504,7 +504,7 @@ function SidebarContent({
   closeRef: React.Ref<HTMLButtonElement>;
 }) {
   const pathname = usePathname();
-  // Highlight the chosen item at once (owner): a slow page would otherwise leave the old item selected
+  // Highlight the chosen item at once: a slow page would otherwise leave the old item selected
   // until it loads, so the click looks ignored. Dropped as soon as the URL changes.
   const [pending, setPending] = React.useState<{ href: string; from: string } | null>(null);
   const current = pending && pending.from === pathname ? pending.href : noActiveItem ? "" : pathname;

@@ -41,7 +41,7 @@ export function useMemberActions(member: Member, onChange?: (member: Member | nu
     if (onChange) onChange(await getMemberById(member.id));
   }
 
-  /** Only offered for people an admin unsubscribed (owner decision 6). No confirmation: it restores emails. */
+  /** Only offered for people an admin unsubscribed. No confirmation: it restores emails. */
   async function resubscribe() {
     await finish(await resubscribeMember(member.id));
   }

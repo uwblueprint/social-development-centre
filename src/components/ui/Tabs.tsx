@@ -31,7 +31,7 @@ const StyledTabsList = styled(TabsPrimitive.List)`
 `;
 
 /*
- * The active line slides between tabs (owner: subtle but fun), with a slight spring. Positioned from the
+ * The active line slides between tabs, with a slight spring. Positioned from the
  * selected tab's box via --tab-x / --tab-w. Reduced motion is handled globally.
  */
 const Indicator = styled.span`

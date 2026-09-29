@@ -37,13 +37,13 @@ type HeaderActionProps = Omit<
 > & {
   icon: LucideIcon;
   label: string;
-  /** Icon only at every width (owner: the secondary actions); otherwise only on small screens. */
+  /** Icon only at every width (for secondary actions); otherwise only on small screens. */
   iconOnly?: boolean;
 };
 
 /**
  * A page-header action: icon and label on wider screens; on small screens, icon only, with the label
- * as its accessible name and tooltip (owner: keeps the header on one line on phones).
+ * as its accessible name and tooltip, which keeps the header on one line on phones.
  */
 export const HeaderAction = React.forwardRef<
   HTMLButtonElement,

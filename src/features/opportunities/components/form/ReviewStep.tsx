@@ -22,7 +22,7 @@ const Preview = styled(Card)`
   padding: var(--space-5);
 `;
 
-/* The email shows the image in its own shape (owner), full width, or centred if it's tall. */
+/* The email shows the image in its own shape, full width, or centred if it's tall. */
 const Photo = styled.img`
   display: block;
   max-width: 100%;
@@ -136,7 +136,7 @@ const EditLinks = styled.div`
  * when, where and who hosts it, then Register and Send to a friend; topics aren't shown in the email), with Edit links back to steps 1 and 2. Publish lives in the form's action bar.
  */
 export function ReviewStep({ preview, headingId, onEdit }: { preview: Opportunity; headingId: string; onEdit: (step: Step) => void }) {
-  // A saved image that no longer loads isn't shown at all (owner).
+  // A saved image that no longer loads isn't shown at all.
   const [brokenImage, setBrokenImage] = React.useState<string>();
   const when = formatWhen(preview);
   const where = formatWhere(preview);

@@ -10,7 +10,7 @@ import { fieldId, type KindFieldsProps } from "./formValues";
 const AREA_OPTIONS = AREAS.map((a) => ({ value: a.id, label: a.label }));
 
 /**
- * Area: a fixed list, so listings can be matched to where members live. No street address (owner, 28 Sep).
+ * Area: a fixed list, so listings can be matched to where members live. No street address.
  */
 export function PlaceFields({ values, set, error }: KindFieldsProps) {
   return (

@@ -66,7 +66,7 @@ const ReadOnlyValue = styled.span`
 `;
 
 /**
- * The form's first field. New listings and drafts pick a type card (icon and name; owner: no descriptions);
+ * The form's first field. New listings and drafts pick a type card (icon and name, no descriptions);
  * published and closed listings show it as text, since their type can't change (service.ts enforces it).
  */
 export function TypeField({

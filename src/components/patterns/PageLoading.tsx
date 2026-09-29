@@ -61,10 +61,10 @@ const VisuallyHidden = styled.span`
 /**
  * A route's loading state (`loading.tsx`): the page title (or a bar when it isn't known) above
  * placeholder rows. Without one, Next keeps the old page on screen until the new one is ready, so a
- * sidebar click looks ignored (owner, 28 Sep). `narrow` matches centred 640px pages like Organization.
+ * sidebar click looks ignored. `narrow` matches centred 640px pages like Organization.
  */
 export function PageLoading({ title, narrow }: { title?: string; narrow?: boolean }) {
-  // The real page's wrapper and header, so the title sits exactly where it will when data loads (owner).
+  // The real page's wrapper and header, so the title sits exactly where it will when data loads.
   const Page = narrow ? NarrowPage : ListPage;
   return (
     <Page aria-busy="true">

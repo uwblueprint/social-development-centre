@@ -26,14 +26,14 @@ const copy = partnerCopy.organization;
 const initialState: PartnerResult = { status: "idle" };
 
 /*
- * One flat, centred column (owner, after Mobbin: Loops, Basecamp, Firecrawl): no cards, no tabs.
+ * One flat, centred column no cards, no tabs.
  * Profile's fields with their own Save right under them; a hairline; then Team, whose actions
  * (invite, remove) take effect right away. Teams are 1–10 people, so a plain list, not a table.
  */
 const Page = styled.div`
   display: flex;
   flex-direction: column;
-  /* 16px between blocks, like ListPage (owner). */
+  /* 16px between blocks, like ListPage. */
   gap: var(--space-4);
   width: 100%;
   max-width: 640px;

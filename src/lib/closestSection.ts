@@ -1,5 +1,5 @@
 /**
- * URL correction (owner): a mistyped section name, e.g. /admin/communit, goes to the real section.
+ * URL correction: a mistyped section name, e.g. /admin/communit, goes to the real section.
  * Tightly scoped: only a single segment right after the portal, only when exactly one section is within
  * two typos, and only for segments of 4+ characters. Anything else stays a 404.
  */

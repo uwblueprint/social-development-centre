@@ -7,13 +7,13 @@ import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { BrandIllustration } from "./BrandIllustration";
 
-/** The owner's offline copy. */
+/** Offline copy. */
 export const offlineCopy = {
   title: "Goose stole your wifi.",
   body: "Please reconnect to the internet and try again.",
   retry: "Try again",
   illustration: "A goose running off with a wifi signal",
-  /** NEW, NEEDS APPROVAL: the non-blocking notices. */
+  /** The non-blocking notices. */
   wentOffline: "You're offline. You can keep reading; changes need a connection.",
   backOnline: "You're back online.",
 };
@@ -61,7 +61,7 @@ const Page = styled.div`
 `;
 
 /**
- * Offline, in the 404's style (owner). As a dialog when an action needs the server (people keep their place and
+ * Offline, in the 404's style. As a dialog when an action needs the server (people keep their place and
  * their draft); as a full page only when the page they asked for can't load. `page` picks the full-page ground.
  */
 /** `title` replaces the page heading, e.g. with a DialogTitle when shown in a dialog. */

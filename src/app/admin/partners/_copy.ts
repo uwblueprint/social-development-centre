@@ -1,7 +1,7 @@
 import { EMAIL_WITHIN_DAYS, NO_RECENT_POSTS_DAYS, type PartnerHealth, type PersonTagFilter } from "./_data/types";
 
 /**
- * User-facing strings for the admin Partners page (the owner's UX spec (retired) → Partners). Invitation-state
+ * User-facing strings for the admin Partners page. Invitation-state
  * strings are shared with the partner portal's Team list through `invitationCopy`.
  *
  * Server-returned strings (`ActionState.message` and field errors) live with the rules that produce
@@ -31,7 +31,7 @@ export const partnersCopy = {
   title: "Partners",
 
   search: {
-    /** Also the field's aria-label (owner decision 1: the placeholder is the only text). */
+    /** Also the field's aria-label (the placeholder is the only text). */
     placeholder: "Search by name or email",
     noMatchesTitle: "No matches found.",
     noMatchesDescription: "Try another name or email.",
@@ -55,7 +55,7 @@ export const partnersCopy = {
     removed: "Removed",
   },
 
-  /** New, needs approval (the owner's UX spec (retired) → Partners → Partner health). */
+  /** Partner health tags, their reasons and next steps. */
   health: {
     label: "Health",
     tags: {
@@ -80,11 +80,11 @@ export const partnersCopy = {
     nextStepLabel: "Suggested next step",
     callout: (n: number) => (n === 1 ? "1 partner might need support" : `${n} partners might need support`),
     showThem: "Show them",
-    /** NEW, NEEDS APPROVAL: hides a health tag (panel) or the support banner (list). */
+    /** Hides a health tag (panel) or the support banner (list). */
     dismiss: "Dismiss",
   },
 
-  /** People → Tags. `access` is the filter option for people with no tag. New, needs approval: header, `access`. */
+  /** People → Tags. `access` is the filter option for people with no tag. */
   tags: {
     label: "Tags",
     options: {
@@ -96,7 +96,6 @@ export const partnersCopy = {
     } satisfies Record<PersonTagFilter, string>,
   },
 
-  /** New, needs approval. */
   emails: {
     copyAll: "Copy all emails",
     copyOrganization: "Copy emails",
@@ -151,7 +150,7 @@ export const partnersCopy = {
   },
 
   organizationPanel: {
-    /** Visible actions under the title. New, needs approval: Edit details. */
+    /** Visible actions under the title. Edit details. */
     actionsLabel: "Organization actions",
     editDetails: "Edit details",
     addPerson: "Add person",
@@ -167,9 +166,8 @@ export const partnersCopy = {
     peopleHeading: "People",
     removedOn: (date: string) => `Removed ${date}`,
     viewOpportunities: (n: number) => `View opportunities (${n})`,
-    /** New, needs approval. */
     healthHeading: "Health",
-    /** NEW, NEEDS APPROVAL: panel section heading, ⋯ menu label and the Profile section's edit button. */
+    /** Panel section heading, ⋯ menu label and the Profile section's edit button. */
     summaryHeading: "Opportunities",
     moreActions: "More actions",
     edit: "Edit",
@@ -177,9 +175,9 @@ export const partnersCopy = {
     published: "Published",
     totalClicks: "Total clicks",
     lastPosted: "Last posted",
-    /** NEW, NEEDS APPROVAL: shorter, as a button beside the Opportunities heading. */
+    /** Shorter, as a button beside the Opportunities heading. */
     postForThem: "Post for them",
-    /** NEW, NEEDS APPROVAL: notes save automatically (owner). */
+    /** Notes save automatically. */
     notesLabel: "SDC notes",
     notesSaving: "Saving…",
     notesSaved: "Saved",
@@ -195,9 +193,9 @@ export const partnersCopy = {
   person: {
     rowActions: (name: string) => `Actions for ${name}`,
     edit: "Edit",
-    /** New, needs approval: the People row menu's edit item and its dialog title. */
+    /** The People row menu's edit item and its dialog title. */
     editDetails: "Edit details",
-    /** New, needs approval: the Organization cell's accessible name (it opens that organization's panel). */
+    /** The Organization cell's accessible name (it opens that organization's panel). */
     openOrganization: (organization: string) => `Open ${organization}`,
     cancelEdit: "Cancel",
     saveEdit: "Save changes",

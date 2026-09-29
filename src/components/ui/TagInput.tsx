@@ -7,8 +7,7 @@ import { Icon } from "./Icon";
 import { Tooltip } from "./Tooltip";
 
 /**
- * Screen-reader text and labels the tag input writes itself. The owner edits them here; pass `copy`
- * to override per use.
+ * Screen-reader text and labels the tag input writes itself. Pass `copy` to override per use.
  */
 export const tagInputCopy = {
   /** Accessible name of the list of entered tags. */

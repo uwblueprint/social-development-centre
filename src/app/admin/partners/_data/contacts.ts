@@ -14,7 +14,7 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 /** Which portal is asking: the refusals point partners to SDC and admins to the action they have. */
 export type Audience = "admin" | "partner";
 
-/** Server messages about people and invitations (the owner's UX spec (retired), Team and invitations). */
+/** Server messages about people and invitations. */
 export const contactMessages = {
   nameMissing: "Enter their name.",
   emailInvalid: "Enter an email address like name@example.org.",

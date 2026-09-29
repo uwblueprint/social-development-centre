@@ -60,7 +60,7 @@ export interface FieldCounterState {
   remaining: number;
   /** Near the limit (the last 10%): the counter turns danger-colored and medium weight. */
   warning: boolean;
-  /** Shown at all (owner: less subtext): only once a quarter or less of the limit is left. */
+  /** Shown only once a quarter or less of the limit is left. */
   visible: boolean;
 }
 

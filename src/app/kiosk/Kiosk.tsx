@@ -48,7 +48,7 @@ const Main = styled.main`
 `;
 
 /*
- * Narrow screens (owner): no poster. A plain heading and a short, quieter line sit in the form's
+ * Narrow screens: no poster. A plain heading and a short, quieter line sit in the form's
  * column, then a clear gap, then the fields, so the whole ask fits on a phone.
  * 900px and wider: the poster block on the left, the form on the right.
  */
@@ -79,7 +79,7 @@ const IntroHeading = styled.h1`
   letter-spacing: var(--tracking-tight);
   overflow-wrap: anywhere;
 
-  /* Owner: the display size was too loud; the poster block carries the emphasis. */
+  /* Quieter than the display size: the poster block carries the emphasis. */
   @media (min-width: 900px) {
     max-width: 16ch;
   }

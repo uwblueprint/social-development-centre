@@ -28,13 +28,12 @@ export function formatISODate(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
-/* ------------------------------------------------------------------ */
-/* Month/year range helpers, shared by the day grid's own navigation   */
-/* and the custom month/year picker views below. A month or year only */
-/* counts as "out of range" when it falls *entirely* outside min/max — */
-/* if min/max lands mid-month (or mid-year), that month/year still has */
-/* selectable days, so navigation to it stays enabled.                 */
-/* ------------------------------------------------------------------ */
+/*
+ * Month/year range helpers, shared by the day grid's own navigation and the custom month/year picker views
+ * below. A month or year only counts as "out of range" when it falls *entirely* outside min/max — if
+ * min/max lands mid-month (or mid-year), that month/year still has selectable days, so navigation to it
+ * stays enabled.
+ */
 
 export function monthStart(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), 1);

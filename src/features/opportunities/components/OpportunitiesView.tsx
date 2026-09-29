@@ -220,7 +220,7 @@ export function OpportunitiesView({
 
         <TabsContent value={activeTab}>
           <TabContentBody>
-            {/* Partners: Published and Drafts as image-led cards (owner); Closed stays a table (there are many). */}
+            {/* Partners: Published and Drafts as image-led cards; Closed stays a table (there are many). */}
             {scope === "partner" && tab !== "closed" ? (
               items.length > 0 ? (
                 <OpportunityCards items={items} tab={tab} now={now} onOpen={setSelectedId} label={copy.tabs[tab]} />

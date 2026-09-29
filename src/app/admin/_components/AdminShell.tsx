@@ -21,7 +21,7 @@ const sections: { key: AdminSection; label: string; description: string; icon: S
   { key: "partners", label: "Partners", description: "Civic Hub organizations and the people who post for them.", icon: Building },
 ];
 
-/** No section shows a count badge yet (owner decision 10); a count needs `count` plus a `countLabel` that explains it. */
+/** No section shows a count badge yet; a count needs `count` plus a `countLabel` that explains it. */
 export function AdminShell({ user, children }: { user: AdminUser; children: ReactNode }) {
   const items: SidebarNavItem[] = sections.map((s) => ({
     href: `/admin/${s.key}`,

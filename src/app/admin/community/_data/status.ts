@@ -22,7 +22,7 @@ export interface MemberActivity {
  * One status per person, first match wins:
  * 1. Unsubscribed. 2. Invited (onboarding not started). 3. Onboarding incomplete.
  * 4. Active (a CTA click in the last 60 days). 5. Inactive (no CTA click in the last 60 days,
- * including people who have never clicked; owner, 28 Sep: "Never clicked" folded into Inactive).
+ * including people who have never clicked).
  */
 export function deriveStatus(m: Pick<MemberRecord, "subscribed" | "onboarding">, lastClickAt: string | undefined, now: number): MemberStatus {
   if (!m.subscribed) return "unsubscribed";

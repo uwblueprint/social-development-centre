@@ -216,7 +216,7 @@ export async function unsubscribeMember(id: string): Promise<ActionState> {
 }
 
 /**
- * Resubscribes someone an admin unsubscribed (owner decision 6). People who unsubscribed
+ * Resubscribes someone an admin unsubscribed. People who unsubscribed
  * themselves can only resubscribe themselves. Keeps their tier; sends no welcome.
  */
 export async function resubscribeMember(id: string): Promise<ActionState> {

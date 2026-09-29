@@ -50,7 +50,7 @@ export function usePersonActions<D = undefined>(
   const busy = React.useRef(false);
   const keepRef = React.useRef<HTMLButtonElement>(null);
   // The row's ⋯ menu button has closed by the time this dialog opens, so Radix has nothing to return
-  // focus to on its own; capture it ourselves (decision: explicit return-focus over relying on Radix timing).
+  // focus to on its own; capture it ourselves (more reliable than depending on Radix timing).
   const { capture: captureFocus, restore: restoreFocus } = useReturnFocus();
 
   // Keeps the dialog's copy stable while it plays its close animation (by then `confirm` is null).

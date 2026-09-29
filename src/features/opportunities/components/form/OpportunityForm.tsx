@@ -191,7 +191,7 @@ export function OpportunityForm({
   const noun = KIND_NOUN[kind];
 
   /**
-   * Errors the person has since fixed (owner): changing a field clears its error, inline and in the summary,
+   * Errors the person has since fixed: changing a field clears its error, inline and in the summary
    * until the next save attempt re-checks everything. "details" covers the custom detail rows.
    */
   const [fixed, setFixed] = React.useState<ReadonlySet<string>>(() => new Set());
@@ -312,7 +312,7 @@ export function OpportunityForm({
     if (prefilling || scanPhase === "loading") return;
     // Offline: show the goose instead of trying (and failing) to reach Eventbrite.
     if (!requireOnline()) return;
-    // Owner: go straight to Details; the scan line waits at the top (bouncing) while Eventbrite answers.
+    // Go straight to Details; the scan line waits at the top (bouncing) while Eventbrite answers.
     setPrefillError(undefined);
     setScanPhase("loading");
     setMagicFill((n) => n + 1);
@@ -350,7 +350,7 @@ export function OpportunityForm({
         },
       }));
       setFromEventbrite(true);
-      // No success toast (owner): the scan itself shows the fill.
+      // No success toast: the scan itself shows the fill.
       setScanPhase("scanning");
     });
   }
@@ -439,7 +439,7 @@ export function OpportunityForm({
 
         {/*
           Right to left: the primary action, then Back beside it; the secondary actions sit apart on the
-          left (owner). Enter in a field presses the primary button (onFormKeyDown), not the first in the DOM.
+          left. Enter in a field presses the primary button (onFormKeyDown), not the first in the DOM.
         */}
         <ActionBar>
           {/* Cancel means "throw this away", so the browser's saved draft goes too. */}

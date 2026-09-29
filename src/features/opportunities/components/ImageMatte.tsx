@@ -4,7 +4,7 @@ import * as React from "react";
 import { styled } from "next-yak";
 
 /*
- * A listing's image as partner cards show it (owner): always exactly 16:9, a taupe ground
+ * A listing's image as partner cards show it: always exactly 16:9, a taupe ground
  * (--color-bg-hover is taupe-100) and the whole image inset at least 4px on every side, so any other
  * shape gets taupe bars. The image keeps its own box (not object-fit), so its 4px corners round the
  * picture itself. Pictures smaller than the frame aren't enlarged.
@@ -40,7 +40,7 @@ export function ImageMatte({
   id?: string;
   className?: string;
   loading?: "lazy" | "eager";
-  /** Shown if the image fails to load (owner): cards pass the type's icon; panels and previews show nothing. */
+  /** Shown if the image fails to load: cards pass the type's icon; panels and previews show nothing. */
   fallback?: React.ReactNode;
 }) {
   const [failedSrc, setFailedSrc] = React.useState<string>();

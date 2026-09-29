@@ -14,7 +14,7 @@ import { onlineAreaFor, PlaceFields } from "./PlaceFields";
 const t = copy.form.volunteer;
 const COMMITMENT_OPTIONS = TIME_COMMITMENTS.map((c) => ({ value: c.id, label: c.label }));
 
-/** Role details, all matchable: time commitment, area and skills come from fixed lists (decision 19). */
+/** Role details, all matchable: time commitment, area and skills come from fixed lists. */
 export function VolunteerFields(props: KindFieldsProps) {
   const { values, set, error } = props;
   const skills = listValue(values, "skills");

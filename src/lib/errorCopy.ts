@@ -1,7 +1,7 @@
 /**
  * Strings for the route error boundaries (error.tsx) of areas that don't have a copy file of their own
  * yet, or whose copy file is being edited elsewhere. Community's live in its `_copy.ts` (`loadError`).
- * The owner edits them here. Every boundary carries an `escalation` line (see RouteError). See the owner's UX spec (retired), "Empty and error states".
+ * Every boundary carries an `escalation` line (see RouteError). See.
  */
 import { BSF_SUPPORT_EMAIL } from "./contact";
 

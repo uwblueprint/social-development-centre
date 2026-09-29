@@ -66,13 +66,13 @@ export interface EventDetails {
   format: EventFormat;
   /**
    * Required to publish when people attend in person or hybrid; "online" for online events. Events keep
-   * no street address (owner: the area is what members are matched on; the venue is on the event page).
+   * no street address (the area is what members are matched on; the venue is on the event page).
    */
   area: Area;
   cost: "free" | "paid";
   /**
    * Paid events: whole dollars. One price is `priceMin` alone; a range adds `priceMax`. Matched against
-   * the budget range members give (owner, 28 Sep).
+   * the budget range members give.
    */
   priceMin?: number;
   priceMax?: number;

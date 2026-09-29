@@ -11,7 +11,6 @@ import type { TableSort } from "@/components/ui/Table";
 
 /**
  * Every string the list pattern writes itself (not the caller's nouns, scopes or filter names).
- * The owner edits them here. See the owner's UX spec (retired), "Empty and error states".
  */
 export const listEmptyCopy = {
   /** "No paying members match “ada”", or with filters: "No closed jobs from Northside Food Bank match “ada”". */
@@ -34,7 +33,7 @@ export const listEmptyCopy = {
   noResults: "No results",
 } as const;
 
-/* Content arriving after a load (owner): fades in and rises slightly. Reduced motion is handled globally. */
+/* Content arriving after a load: fades in and rises slightly. Reduced motion is handled globally. */
 export const contentIn = keyframes`
   from {
     opacity: 0;
@@ -54,7 +53,7 @@ export const contentIn = keyframes`
 export const ListPage = styled.div`
   display: flex;
   flex-direction: column;
-  /* Owner: 16px max between the header and the page's blocks, product-wide. */
+  /* 16px max between the header and the page's blocks, product-wide. */
   gap: var(--space-4);
   min-width: 0;
   padding: var(--space-5) var(--space-6);

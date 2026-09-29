@@ -14,7 +14,7 @@ const t = copy.form.image;
 
 /** Longest side the stored image gets; the browser scales larger pictures down before saving. */
 const MAX_SIDE = 1600;
-/** Owner: anything wider than 8:1 or taller than 1:8 can't be shown well, so it's refused. */
+/** Anything wider than 8:1 or taller than 1:8 can't be shown well, so it's refused. */
 const MAX_RATIO = 8;
 const ACCEPT = "image/jpeg,image/png,image/webp";
 
@@ -100,7 +100,7 @@ const Actions = styled.div`
 `;
 
 /**
- * The listing's image (owner: "very, very important"): shown on partner cards, in the side panel and in
+ * The listing's image: shown on partner cards, in the side panel and in
  * members' emails. Optional. Stored as `imageUrl`; see docs/backend/opportunities.md, "Images".
  */
 export function ImageField({ value, onChange, error }: { value: string; onChange: (value: string) => void; error?: string }) {

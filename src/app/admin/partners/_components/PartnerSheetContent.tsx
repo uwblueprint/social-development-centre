@@ -130,7 +130,7 @@ const Stats = styled.dl`
   }
 `;
 
-/* The organization header flows straight into its numbers: no rule and no bottom padding (owner). */
+/* The organization header flows straight into its numbers: no rule and no bottom padding. */
 const FlushHeader = styled(SheetHeader)`
   border-bottom: 0;
   padding-bottom: 0;
@@ -342,7 +342,7 @@ export function PartnerSheetContent({
           )}
 
           {/* Opportunities: how they're doing, then the two things an admin does next. */}
-          {/* Owner: the numbers sit right under the name, so no visible heading here (still a named region). */}
+          {/* The numbers sit right under the name, so there is no visible heading (still a named region). */}
           <Section aria-label={copy.summaryHeading}>
             <Stats>
               <div>
@@ -366,7 +366,7 @@ export function PartnerSheetContent({
                 </dd>
               </div>
             </Stats>
-            {/* No leading icon (owner): every line starts at the same edge. The health badge in the header
+            {/* No leading icon: every line starts at the same edge. The health badge in the header
                 carries the status in words, so the tint isn't the only signal. */}
             {org.health && reason && (
               <HealthCallout role="note" aria-label={copy.healthHeading}>
@@ -381,7 +381,7 @@ export function PartnerSheetContent({
                 </CalloutActions>
               </HealthCallout>
             )}
-            {/* The two things an admin does next here, as real buttons (owner: not a text link). */}
+            {/* The two things an admin does next here, as real buttons, not text links. */}
             <ActionRow>
               {org.opportunityCount > 0 && (
                 <ButtonLink href={`/admin/opportunities?org=${org.id}`}>

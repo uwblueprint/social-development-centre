@@ -15,7 +15,7 @@ const copy = partnersCopy.organizationPanel;
 const NOTES_SAVE_DELAY_MS = 800;
 
 /**
- * Owner: notes save themselves (no Save button, no edit history). A save runs once typing pauses and
+ * Notes save themselves (no Save button, no edit history). A save runs once typing pauses and
  * when the field loses focus; a quiet status says Saving… / Saved, and errors show on the field.
  */
 export function OrganizationNotes({ org }: { org: AdminPartnerOrganization }) {

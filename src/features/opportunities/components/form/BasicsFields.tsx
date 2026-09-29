@@ -30,7 +30,7 @@ const Count = styled.span`
 
 /**
  * Organization (admins), title, short description and topics. Topics are capped at MAX_TOPICS: at the cap,
- * the unselected ones are unavailable with the owner's reason (decision 21); service.ts enforces it too.
+ * the unselected ones are unavailable with an explanatory reason; service.ts enforces it too.
  */
 export function BasicsFields({
   scope,

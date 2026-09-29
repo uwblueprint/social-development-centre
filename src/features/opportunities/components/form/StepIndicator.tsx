@@ -24,7 +24,7 @@ const List = styled.ol`
 
 /*
  * One segment per step: a thin bar, then "1 Type". Done and current bars are filled; the current label is
- * the text colour and medium weight, done labels add a check. Quiet by design (owner: no big black circle).
+ * the text colour and medium weight, done labels add a check. Quiet by design: no big filled circle.
  */
 const Item = styled.li<{ $state: "done" | "current" | "todo" }>`
   display: flex;

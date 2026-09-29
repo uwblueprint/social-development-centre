@@ -39,7 +39,7 @@ const Root = styled(Link)`
 
 /**
  * "Head home" on the 404: home is the Opportunities page of the portal the missing address was in
- * (owner). Partner addresses go to the partner portal; everything else to the admin portal, whose layout
+ * Partner addresses go to the partner portal; everything else to the admin portal, whose layout
  * sends anyone who isn't an admin to sign in.
  */
 export function HomeLink({ label }: { label: string }) {

@@ -79,7 +79,7 @@ export function EventFields(props: KindFieldsProps & { part?: FieldPart }) {
       )}
       {fromYou && (
       <>
-      {/* Cost, From and To on one line (owner); they wrap on narrow screens. One price, or a range: leave "To" empty. */}
+      {/* Cost, From and To on one line; they wrap on narrow screens. One price, or a range: leave "To" empty. */}
       <CostRow>
       <ChoiceField
         label={t.cost}

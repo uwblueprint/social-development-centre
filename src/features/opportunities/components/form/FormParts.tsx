@@ -31,7 +31,7 @@ const SectionRoot = styled.section`
 
   display: flex;
   flex-direction: column;
-  /* Owner: fields were cluttered at 24px; 32px between them. */
+  /* 32px between fields; 24px felt cluttered. */
   gap: var(--space-6);
   padding-top: var(--space-6);
   border-top: 1px solid var(--color-border);

@@ -66,7 +66,7 @@ export async function updateMyOrganization(_prev: PartnerResult, fd: FormData): 
 }
 
 /*
- * Team: partners invite and remove colleagues in their own organization (partners decision 10).
+ * Team: partners invite and remove colleagues in their own organization.
  * A contact ID from another organization acts as if it doesn't exist. Rules and messages are shared with
  * the admin actions (src/app/admin/partners/_data/contacts.ts).
  */

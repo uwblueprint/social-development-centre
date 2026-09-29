@@ -10,15 +10,12 @@ import { ErrorIcon } from "./Field";
 import { DaysView, MonthsGrid, YearsGrid } from "./DatePickerGrids";
 import { addMonths, clampDate, formatISODate, isMonthOutOfRange, isYearOutOfRange, isYearsPageOutOfRange, monthStart, parseISODate, YEARS_PER_PAGE } from "./isoDate";
 
-/* ------------------------------------------------------------------ */
-/* ISO ("YYYY-MM-DD") <-> Date helpers. Local time throughout, so the   */
-/* value round-trips exactly through the text field, the calendar and  */
-/* form submission without timezone drift.                             */
-/* ------------------------------------------------------------------ */
+/*
+ * ISO ("YYYY-MM-DD") <-> Date helpers. Local time throughout, so the value round-trips exactly through the
+ * text field, the calendar and form submission without timezone drift.
+ */
 
-/* ------------------------------------------------------------------ */
-/* Text field + calendar trigger, styled to match Input/Select.        */
-/* ------------------------------------------------------------------ */
+/* Text field + calendar trigger, styled to match Input/Select. */
 
 const Wrapper = styled.div`
   position: relative;
@@ -130,12 +127,11 @@ const TriggerButton = styled(PopoverPrimitive.Trigger)`
   }
 `;
 
-/* ------------------------------------------------------------------ */
-/* Calendar popover. A fixed content width keeps the popover from      */
-/* resizing as it switches between the day grid and the month/year     */
-/* picker views. No rules/dividers separate the header, grid and       */
-/* footer — spacing alone does that job.                                */
-/* ------------------------------------------------------------------ */
+/*
+ * Calendar popover. A fixed content width keeps the popover from resizing as it switches between the day
+ * grid and the month/year picker views. No rules/dividers separate the header, grid and footer — spacing
+ * alone does that job.
+ */
 
 const CalendarContent = styled(PopoverPrimitive.Content)`
   z-index: var(--z-popover);
@@ -257,13 +253,12 @@ const CalendarBody = styled.div`
   }
 `;
 
-/* ------------------------------------------------------------------ */
-/* Header: shared by all three views (day grid, month grid, year grid).*/
-/* The label doubles as a button that drills from "May 1990" down to a  */
-/* month grid, then a year grid — the fast path to a birthdate that no  */
-/* one wants to reach by clicking "previous month" 400 times. The nav    */
-/* chevrons page whichever view is showing (month / year / 12-year page)*/
-/* ------------------------------------------------------------------ */
+/*
+ * Header: shared by all three views (day grid, month grid, year grid). The label doubles as a button that
+ * drills from "May 1990" down to a month grid, then a year grid — the fast path to a birthdate that no one
+ * wants to reach by clicking "previous month" 400 times. The nav chevrons page whichever view is showing
+ * (month / year / 12-year page)
+ */
 
 const Header = styled.div`
   display: flex;
@@ -341,11 +336,10 @@ const NavButton = styled.button`
   }
 `;
 
-/* ------------------------------------------------------------------ */
-/* Month/year grids: the same visual language as the day grid (36px    */
-/* cells, --color-bg-hover on hover, --color-primary when selected),   */
-/* with their own roving-tabindex arrow-key navigation.                */
-/* ------------------------------------------------------------------ */
+/*
+ * Month/year grids: the same visual language as the day grid (36px cells, --color-bg-hover on hover,
+ * --color-primary when selected), with their own roving-tabindex arrow-key navigation.
+ */
 
 const TodayRow = styled.div`
   display: flex;

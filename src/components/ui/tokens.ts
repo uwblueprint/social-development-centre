@@ -66,7 +66,7 @@ globalStyle`
     --color-category-1: #1d4ed8; /* blue */
     --color-category-1-subtle: #eff6ff;
     --color-category-1-border: #bfdbfe;
-    --color-category-1-line: #3b82f6; /* the hover line: 200 lighter than the category colour (owner) */
+    --color-category-1-line: #3b82f6; /* the hover line: 200 lighter than the category colour */
     --color-category-2: #6d28d9; /* violet */
     --color-category-2-subtle: #f5f3ff;
     --color-category-2-border: #ddd6fe;
@@ -84,16 +84,16 @@ globalStyle`
     --color-category-5-border: #d9f99d;
     --color-category-5-line: #65a30d;
 
-    /* Eventbrite's brand orange, only for recognizing an Eventbrite link (owner). Not for text: 3.3:1. */
+    /* Eventbrite's brand orange, only for recognizing an Eventbrite link. Not for text: 3.3:1. */
     --color-eventbrite: #f05537;
-    /* The Eventbrite scan line (owner): a brighter, sunnier orange than the brand mark; same in both modes. */
+    /* The Eventbrite scan line: a brighter, sunnier orange than the brand mark; same in both modes. */
     --color-eventbrite-bright: #ff8a1f;
     --color-eventbrite-subtle: #fff4f1;
     --color-eventbrite-border: #fbcabd;
 
     /* Pages built around a brand illustration (the 404): the taupe-50 of the drawing's ground in light mode. */
     --illustration-page-bg: var(--taupe-50);
-    /* The 404 drawing: taupe-600 lines on a taupe-50 ground; dark mode inverts it: taupe-500 lines (owner) on taupe-900. */
+    /* The 404 drawing: taupe-600 lines on a taupe-50 ground; dark mode inverts it: taupe-500 lines on taupe-900. */
     --illustration-line: var(--taupe-600);
     --illustration-ground: var(--taupe-50);
 
@@ -146,7 +146,7 @@ globalStyle`
 
     /*
      * Dashed borders (disabled controls, drop targets): drawn as 4px dashes with 4px gaps, because the
-     * browser's own dashes at 1px are too short to read as dashed (owner). Use with a transparent border:
+     * browser's own dashes at 1px are too short to read as dashed. Use with a transparent border and
      * background-image / -size / -position / -repeat from these, and background-origin: border-box.
      */
     --dashed-border:
@@ -164,14 +164,14 @@ globalStyle`
     /* First-load entrance for app shells: slow enough to feel calm, short enough not to block work. */
     --duration-enter: 480ms;
     --stagger: 40ms;
-    /* The Eventbrite "filling in" scan (owner): a steady sweep down a long form. */
+    /* The Eventbrite "filling in" scan: a steady sweep down a long form. */
     --duration-scan: 3s;
     --enter-offset: 12px;
     --ease: cubic-bezier(0.215, 0.61, 0.355, 1);
     --ease-spring: cubic-bezier(0.34, 1.3, 0.64, 1);
 
     /* Stacking layers, lowest to highest. One scale so a toast always sits above a sheet or dialog
-       (the owner copied from a sheet and never saw the toast). */
+       (a toast under a sheet would go unseen). */
     --z-raised: 1; /* in-flow content lifted above its neighbors: frozen table columns, a focused row */
     --z-sticky: 2; /* sticky table headers, above frozen columns scrolling under them */
     --z-nav: 40; /* the mobile sidebar drawer and its scrim */
@@ -237,7 +237,7 @@ globalStyle`
       --color-category-1: #93c5fd;
       --color-category-1-subtle: #172033;
       --color-category-1-border: #1e3a8a;
-      --color-category-1-line: #3b82f6; /* the hover line: 200 lighter than the category colour (owner) */
+      --color-category-1-line: #3b82f6; /* the hover line: 200 lighter than the category colour */
       --color-category-2: #c4b5fd;
       --color-category-2-subtle: #1f1a33;
       --color-category-2-border: #4c1d95;
@@ -310,7 +310,7 @@ globalStyle`
     --color-category-1: #93c5fd;
     --color-category-1-subtle: #172033;
     --color-category-1-border: #1e3a8a;
-    --color-category-1-line: #3b82f6; /* the hover line: 200 lighter than the category colour (owner) */
+    --color-category-1-line: #3b82f6; /* the hover line: 200 lighter than the category colour */
     --color-category-2: #c4b5fd;
     --color-category-2-subtle: #1f1a33;
     --color-category-2-border: #4c1d95;

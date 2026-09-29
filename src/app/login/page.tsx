@@ -1,7 +1,6 @@
 import { styled } from "next-yak";
 import { SignInForm } from "./SignInForm";
 
-/** New, needs approval: the owner's UX spec (retired), "Account and sign-out". */
 const goodbyeCopy = {
   signedOut: (name?: string) => (name ? `You're signed out. See you soon, ${name}.` : "You're signed out. See you soon."),
 };

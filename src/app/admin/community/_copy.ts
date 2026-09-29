@@ -1,8 +1,6 @@
 /**
  * Every user-facing string for the Community admin page. Components import
- * from here instead of writing copy inline. The owner edits copy here; it's
- * applied back to the product from this file. IDs in the retired UX spec's
- * Community copy table match this object's key paths.
+ * from here instead of writing copy inline.
  *
  * Server-returned strings (`ActionState.message`, from `_data/actions.ts`)
  * are backend copy, not covered here — that contract is fixed.
@@ -115,8 +113,8 @@ export const communityCopy = {
     backToAdd: "Back",
     emailsLabel: "People to add",
     uploadCsv: "Upload CSV",
-    /** NEW, NEEDS APPROVAL: the simplified file step. */
-    /** NEW, NEEDS APPROVAL: the numbered file steps. */
+    /** The simplified file step. */
+    /** The numbered file steps. */
     stepTemplateTitle: "Download the template",
     stepTemplateHint: "A CSV with name and email columns.",
     stepUploadTitle: "Upload your file",

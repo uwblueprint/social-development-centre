@@ -9,7 +9,7 @@ import type { ReactNode } from "react";
 import { Icon } from "./Icon";
 import { keepEscapeForTagSelection } from "./TagInput";
 
-// Owner decision 9: subtle enter and exit. A short slide plus fade, not the full panel width.
+// Subtle enter and exit. A short slide plus fade, not the full panel width.
 // Radix keeps the element mounted until the exit animation ends.
 const overlayShow = keyframes`
   from { opacity: 0; }
@@ -123,7 +123,7 @@ const Description = styled(DialogPrimitive.Description)`
 const HeaderRoot = styled.div`
   position: relative;
   flex-shrink: 0;
-  /* Owner: the header's top padding matches its sides. */
+  /* The header's top padding matches its sides. */
   padding: var(--sheet-inset) var(--sheet-inset) var(--space-5);
   border-bottom: 1px solid var(--color-border);
   display: flex;

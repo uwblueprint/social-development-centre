@@ -20,20 +20,20 @@ export const copy = {
     opportunity: "Opportunity",
     type: "Type",
     organization: "Organization",
-    /** NEW, NEEDS APPROVAL: one column for the event date, deadline or apply-by date, with the same wording for every type. */
+    /** One column for the event date, deadline or apply-by date, with the same wording for every type. */
     date: "Closes",
     noCloseDate: "No end date",
-    /** NEW, NEEDS APPROVAL: email reach columns. */
+    /** Email reach columns. */
     sentTo: "Sent to",
     clicks: "Clicks",
     notSent: "Not sent yet",
     openRow: "Open details",
-    /** NEW, NEEDS APPROVAL: header and cells ("Created today", "Edited 3d ago"). */
+    /** Header and cells ("Created today", "Edited 3d ago"). */
     lastChange: "Last change",
     created: (when: string) => `Created ${when}`,
     edited: (when: string) => `Edited ${when}`,
   },
-  /** NEW, NEEDS APPROVAL: the partner portal's opportunity cards. */
+  /** The partner portal's opportunity cards. */
   cards: {
     untitled: "Untitled",
     closes: (when: string) => `Closes ${when}`,
@@ -46,7 +46,7 @@ export const copy = {
     noResults: { title: "No matches", body: "Try a different search or clear the filters.", clear: "Clear filters" },
   },
   panel: {
-    /** NEW, NEEDS APPROVAL: reach tiles, the "soon but not sent" warning and the details heading. */
+    /** Reach tiles, the "soon but not sent" warning and the details heading. */
     sentTo: "Sent to",
     clicks: "Clicks",
     people: (n: string) => `${n} people`,
@@ -92,7 +92,7 @@ export const copy = {
     saveChanges: "Save changes",
     saveDraft: "Save as draft",
     cancel: "Cancel",
-    /** Three steps on one page (decision 17). NEW, NEEDS APPROVAL: step names and Back/Next. */
+    /** Three steps on one page. step names and Back/Next. */
     steps: { type: "Type", details: "Details", review: "Review" },
     stepsLabel: "Steps",
     stepDone: "done",
@@ -103,7 +103,7 @@ export const copy = {
     /** Placeholder for pickers with nothing chosen yet (organization, employment type, area). */
     choose: "Choose one",
     sections: {
-      /** NEW, NEEDS APPROVAL: the Details step after an Eventbrite fill. */
+      /** The Details step after an Eventbrite fill. */
       fromEventbrite: "From Eventbrite",
       fromYou: "Add the rest",
       basics: "Basics",
@@ -113,20 +113,20 @@ export const copy = {
       job: "Job details",
       other: "Details",
     },
-    /** Events only, the first field after Type (decision 18). NEW, NEEDS APPROVAL: label, hint and button. */
+    /** Events only, the first field after Type. label, hint and button. */
     eventbrite: {
       found: "This is an Eventbrite page",
       hint: "We can fill in the title, description, date, time and place from it. You can change them after.",
       fill: "Fill in details",
-      /** NEW, NEEDS APPROVAL: the owner's wording for a slow Eventbrite. */
+      /** Shown when Eventbrite is too slow to answer. */
       timedOut: "Timed out. Couldn't fetch details from Eventbrite.",
     },
-    /** NEW, NEEDS APPROVAL: unsaved work kept in the browser. */
+    /** Unsaved work kept in the browser. */
     draft: {
       restored: (when?: string) => (when ? `We restored your unsaved changes from ${when}.` : "We restored your unsaved changes."),
       discard: "Discard",
     },
-    /** NEW, NEEDS APPROVAL: the listing's image. */
+    /** The listing's image. */
     image: {
       label: "Image",
       add: "Add an image",
@@ -139,20 +139,20 @@ export const copy = {
       tooWide: "This image is too wide to show well. Choose one no more than 8 times wider than it is tall.",
       tooTall: "This image is too tall to show well. Choose one no more than 8 times taller than it is wide.",
     },
-    /** Hints only where they prevent a mistake (decision 22). */
+    /** Hints only where they prevent a mistake. */
     organization: { label: "Organization" },
     title: { label: "Title" },
     summary: { label: "Short description", hint: "One or two sentences for the email." },
     topics: {
       label: "Topics",
-      /** NEW, NEEDS APPROVAL. Beside the label. */
+      /** Beside the label. */
       count: (n: number, max: number) => `${n} of ${max} selected`,
-      /** Owner's words (27 Sep): the disabled reason on unselected topics at the cap. */
+      /** The disabled reason on unselected topics at the cap. */
       capReason: "You can choose up to 3 topics. Unselect one to choose another.",
     },
     /**
-     * Required for every type (owner: a click is how we know it worked). Volunteer roles and jobs may
-     * only have an email, so those accept one. NEW, NEEDS APPROVAL: labels and hints.
+     * Required for every type: a click is how we know an email worked. Volunteer roles and jobs may
+     * only have an email, so those accept one.
      */
     link: {
       label: {
@@ -170,7 +170,7 @@ export const copy = {
         other: "Where people take part.",
       },
     },
-    /** Structured place for matching (decision 19). NEW, NEEDS APPROVAL. */
+    /** Structured place for matching. */
     area: { label: "Area" },
     event: {
       date: "Date",
@@ -180,11 +180,11 @@ export const copy = {
       cost: "Cost",
       free: "Free",
       paid: "Paid",
-      /** NEW, NEEDS APPROVAL: a price or a range instead of free text (owner, 28 Sep). */
+      /** A price or a range instead of free text. */
       priceMin: { label: "From ($)" },
       priceMax: { label: "To ($)" },
       price: "Price",
-      /** NEW, NEEDS APPROVAL: checkbox group and note labels. */
+      /** Checkbox group and note labels. */
       accessibility: { label: "Accessibility" },
       accessibilityNote: { label: "Accessibility note" },
     },
@@ -196,7 +196,7 @@ export const copy = {
     volunteer: {
       format: "Where volunteers work",
       startDate: { label: "Start date" },
-      /** NEW, NEEDS APPROVAL: now a choice, not free text. */
+      /** Now a choice, not free text. */
       timeCommitment: { label: "Time commitment" },
       skills: { label: "Skills" },
       minimumAge: { label: "Minimum age" },
@@ -218,10 +218,10 @@ export const copy = {
       addDetail: "Add detail",
       removeDetail: (n: number) => `Remove detail ${n}`,
     },
-    /** Step 3: the email preview (decision 17). NEW, NEEDS APPROVAL. */
+    /** Step 3: the email preview. */
     review: {
       previewLabel: "Email preview",
-      /** NEW, NEEDS APPROVAL: the preview's host line and the email's share button. */
+      /** The preview's host line and the email's share button. */
       hostedBy: (org: string) => `Hosted by ${org}`,
       share: "Send to a friend",
       noTitle: "No title yet",

@@ -176,7 +176,7 @@ export function MemberSheetContent({ member, now, onChange }: { member: Member; 
               {p.unsubscribe}
             </Button>
           ) : (
-            // Owner decision 6: admins resubscribe only people an admin unsubscribed.
+            // Admins resubscribe only people an admin unsubscribed.
             // Self-unsubscribed people get the statement above instead.
             member.unsubscribedBy === "admin" && (
               <Button type="button" $variant="secondary" $size="sm" onClick={() => void resubscribe()}>

@@ -7,7 +7,7 @@ import type { ReactNode } from "react";
 import { Icon } from "./Icon";
 import { keepEscapeForTagSelection } from "./TagInput";
 
-// Owner decision 9: subtle enter and exit. Radix keeps the element mounted until the exit animation ends.
+// Subtle enter and exit. Radix keeps the element mounted until the exit animation ends.
 const overlayShow = keyframes`
   from { opacity: 0; }
   to { opacity: 1; }

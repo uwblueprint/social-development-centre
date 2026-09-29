@@ -26,7 +26,7 @@ export function PartnerShell({ user, children }: { user: PartnerUser; children: 
           navLabel: copy.nav.label,
           items,
           docsHref: "/partner/documentation",
-          // Owner: Organization is a settings-like page, so it sits in the footer, right above Sign out.
+          // Organization is a settings-like page, so it sits in the footer, right above Sign out.
           footerItems: [{ href: "/partner/organization", label: copy.nav.organization, icon: Building }],
           onSignOut: () => void signOut(user.name.split(/\s+/)[0]),
         }}

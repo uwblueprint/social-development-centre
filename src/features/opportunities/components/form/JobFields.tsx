@@ -14,7 +14,7 @@ import { onlineAreaFor, PlaceFields } from "./PlaceFields";
 const t = copy.form.job;
 const EMPLOYMENT_OPTIONS = Object.entries(EMPLOYMENT_TYPE_LABEL).map(([value, label]) => ({ value, label }));
 
-/** Job details. Area comes from a fixed list (decision 19). */
+/** Job details. Area comes from a fixed list. */
 export function JobFields(props: KindFieldsProps) {
   const { values, set, error } = props;
   return (

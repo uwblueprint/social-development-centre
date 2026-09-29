@@ -15,7 +15,7 @@ export const partnerCopy = {
     /** Shown as a delayed tooltip on the sidebar item; replaces the old page descriptions. */
     opportunitiesDescription: "What your organization shares with the SDC community.",
     organizationDescription: "How your organization appears to the SDC community.",
-    /** NEW, NEEDS APPROVAL: the Insights tooltip. */
+    /** The Insights tooltip. */
     insightsDescription: "How your opportunities perform.",
   },
 

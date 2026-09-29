@@ -17,7 +17,7 @@ export interface TableSort {
 }
 
 /**
- * Screen-reader text a sortable header adds after its label. The owner edits it here.
+ * Screen-reader text a sortable header adds after its label.
  * The header's accessible name reads "{label}, sorted ascending. Select to sort descending" or "{label}. Select to sort".
  */
 export const tableSortCopy = {

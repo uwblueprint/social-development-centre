@@ -61,10 +61,10 @@ export function RadioGroupItem(props: RadioGroupPrimitive.RadioGroupItemProps) {
   );
 }
 
-/* ---------------------------------------------------------------------- */
-/* RadioGroupOption: a full-width row so clicking anywhere in it selects   */
-/* the option, with a hover background and a ring that darkens to match.   */
-/* ---------------------------------------------------------------------- */
+/*
+ * RadioGroupOption: a full-width row so clicking anywhere in it selects the option, with a hover
+ * background and a ring that darkens to match.
+ */
 
 const Row = styled.label`
   display: flex;
@@ -178,7 +178,7 @@ const Card = styled(RadioGroupPrimitive.Item)`
   &:hover [data-draw] rect {
     stroke-dashoffset: 0;
   }
-  /* Selected: the card's own 1px border in the accent (owner: never a 2px border). */
+  /* Selected: the card's own 1px border in the accent (never a 2px border). */
   &[data-state="checked"] {
     border-color: var(--card-accent, var(--color-primary));
     background: var(--card-accent-subtle, var(--color-bg-hover));
@@ -207,7 +207,7 @@ const DrawBorder = styled.svg`
     height: calc(100% - 1px);
     rx: var(--radius-lg);
     fill: none;
-    /* --card-accent-line: a mid shade of the card's colour, 200 lighter than the accent (owner). */
+    /* Card-accent-line: a mid shade of the card's colour, 200 lighter than the accent. */
     stroke: var(--card-accent-line, var(--card-accent, var(--color-border-strong)));
     stroke-width: 1;
     stroke-dasharray: 1;

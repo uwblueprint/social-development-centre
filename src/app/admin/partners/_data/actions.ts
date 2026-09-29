@@ -52,7 +52,7 @@ function findContact(contactId: string) {
 }
 
 /**
- * Reinviting a removed organization (owner decision 8): its removal is cleared, but nobody has access
+ * Reinviting a removed organization: its removal is cleared, but nobody has access
  * until the invited person accepts. Its other people stay removed and can be invited again. Listings are
  * stored as closed first so none reopen before then; the acceptance handler reopens them
  * (docs/backend/partners.md).
@@ -161,7 +161,7 @@ export async function removePartner(orgId: string): Promise<ActionState> {
  * Field: notes. SDC-only notes on an organization, saved with the admin's name and the time. Empty clears
  * them. Never returned to the partner portal.
  */
-/** Hides this organization's current health tag (owner: "I don't need to worry about them"). */
+/** Hides this organization's current health tag (for organizations an admin doesn't need to worry about). */
 export async function dismissHealth(orgId: string): Promise<ActionState> {
   const admin = await getCurrentAdmin();
   if (!admin) return fail(organizationMessages.missing);

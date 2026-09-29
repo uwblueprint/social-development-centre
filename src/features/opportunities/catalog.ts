@@ -24,7 +24,7 @@ export const KIND_LABEL: Record<OpportunityKind, string> = {
 
 /**
  * The Type tag's color in the table: Badge `$category` 1–5, one per kind, always with the kind's icon and
- * label (never color alone). Decision 20 in docs/decisions/opportunities.md.
+ * label (never color alone).
  */
 export const KIND_CATEGORY: Record<OpportunityKind, 1 | 2 | 3 | 4 | 5> = { event: 1, petition: 2, volunteer: 3, job: 4, other: 5 };
 
@@ -66,8 +66,8 @@ export const EMPLOYMENT_TYPE_LABEL: Record<EmploymentType, string> = {
 };
 
 /*
- * Structured values for matching (decision 19). NEW, NEEDS APPROVAL: the option lists and labels are
- * proposals until SDC confirms its tags at the 29 September session. Ids are stable; labels may change.
+ * Structured values for matching. The option lists and labels are proposals until SDC confirms its tags.
+ * Ids are stable; labels may change.
  */
 export const AREAS: { id: Area; label: string }[] = [
   { id: "kitchener", label: "Kitchener" },

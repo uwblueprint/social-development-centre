@@ -73,10 +73,10 @@ export function Slider(props: SliderPrimitive.SliderProps) {
   );
 }
 
-/* ---------------------------------------------------------------------- */
-/* SliderField: labelled slider + synced min/max number inputs, modelled   */
-/* on filter sliders like Kiwi.com / Shop (Min/Max fields under the track). */
-/* ---------------------------------------------------------------------- */
+/*
+ * SliderField: labelled slider + synced min/max number inputs, modelled on filter sliders like Kiwi.com /
+ * Shop (Min/Max fields under the track).
+ */
 
 const FieldWrap = styled.div`
   display: flex;

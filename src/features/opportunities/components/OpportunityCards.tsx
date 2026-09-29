@@ -10,7 +10,7 @@ import { KindIcon } from "./KindIcon";
 import { formatLastChange, KindBadge } from "./opportunityColumns";
 
 /*
- * The partner portal's Published and Drafts tabs (owner): cards led by the listing's image, with only
+ * The partner portal's Published and Drafts tabs: cards led by the listing's image, with only
  * what matters at a glance: type, title, when it closes, and one status line. Closed stays a table.
  */
 const Grid = styled.ul`
@@ -49,7 +49,7 @@ const CardButton = styled.button`
 `;
 
 /*
- * Always exactly 16:9 whatever the image's shape (owner). The image sits inside a 4px taupe matte
+ * Always exactly 16:9 whatever the image's shape. The image sits inside a 4px taupe matte
  * (--color-bg-hover is taupe-100) and is fitted whole, so tall or square pictures get taupe bars too.
  */
 const Media = styled.div`

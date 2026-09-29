@@ -110,7 +110,7 @@ function readDetails(kind: OpportunityKind, fd: FormData, errors: Errors, strict
     if (v && !(Number.isInteger(Number(v)) && Number(v) > 0)) errors[key] = message;
   };
 
-  // Area: one of AREAS. No street address (owner, 28 Sep: nothing uses it). Shared by event, volunteer role and job.
+  // Area: one of AREAS. No street address (nothing uses it). Shared by event, volunteer role and job.
   const place = () => {
     need("area", "Choose the area.");
     const raw = opt(fd, "area");
@@ -290,7 +290,7 @@ export async function saveOpportunity(actor: Actor, fd: FormData): Promise<Actio
   else list.push(record);
   revalidate();
 
-  // Every confirmation names the listing (owner: "Draft saved" alone doesn't say which).
+  // Every confirmation names the listing ("Draft saved" alone doesn't say which).
   const name = `“${record.title}”`;
   const message =
     nextStatus === "draft"
@@ -384,7 +384,7 @@ export const closeListingsPastRemovalCutoff: (organizationId: string, removedAt?
   closeListingsForOrganization(organizationId);
 
 /**
- * Reinstatement (owner decision 8): when someone accepts an invitation to a removed organization and its
+ * Reinstatement: when someone accepts an invitation to a removed organization and its
  * access returns, the acceptance handler calls this. It reopens the organization's listings that were closed
  * because its access was removed and whose dates haven't passed. Listings someone closed by hand, and
  * listings that ended, stay closed. Returns how many reopened.

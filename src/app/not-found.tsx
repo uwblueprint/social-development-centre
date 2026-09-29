@@ -6,7 +6,7 @@ import { NotFoundNav } from "./_components/NotFoundNav";
 
 export const metadata: Metadata = { title: "Page not found" };
 
-/** The owner's 404 copy (Waterloo Region's ION light rail). */
+/** The 404 copy (a nod to Waterloo Region's ION light rail). */
 const copy = {
   title: "404: Next station... not found.",
   body: "This one isn't on the ION route. Head home and get back on track.",

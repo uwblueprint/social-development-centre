@@ -64,7 +64,7 @@ const Description = styled(ToastPrimitive.Description)`
   margin: var(--space-1) 0 0;
 `;
 
-/* The action is a kit Button (owner), right-aligned on its own row under the text. */
+/* The action is a kit Button, right-aligned on its own row under the text. */
 const ActionRow = styled.div`
   grid-column: 1 / -1;
   display: flex;
@@ -88,7 +88,7 @@ const Close = styled(ToastPrimitive.Close)`
   all: unset;
   grid-row: 1;
   grid-column: 2;
-  /* Tucked into the corner (owner): up 4px and right 8px from the padded content box. */
+  /* Tucked into the corner: up 4px and right 8px from the padded content box. */
   margin: calc(var(--space-1) * -1) calc(var(--space-2) * -1) 0 0;
   display: inline-flex;
   align-items: center;

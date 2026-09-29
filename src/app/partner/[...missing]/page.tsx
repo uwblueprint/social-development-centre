@@ -1,4 +1,4 @@
-// Unknown partner URLs render inside the partner layout, so the signed-in sidebar stays visible (owner).
+// Unknown partner URLs render inside the partner layout, so the signed-in sidebar stays visible.
 // A near-miss section name (e.g. a typo) redirects to the real section instead.
 import { notFound, redirect } from "next/navigation";
 import { closestSection } from "@/lib/closestSection";

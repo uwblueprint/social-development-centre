@@ -13,7 +13,7 @@ import { SearchField } from "./SearchField";
 export const tableFilterCopy = {
   trigger: (label: string, selected: number) => (selected > 0 ? `Filter ${label}, ${selected} selected` : `Filter ${label}`),
   legend: (label: string) => `Show ${label.toLowerCase()}`,
-  /** NEW, NEEDS APPROVAL: search inside a long filter list, and its empty result. */
+  /** Search inside a long filter list, and its empty result. */
   search: (label: string) => `Search ${label.toLowerCase()}s`,
   noMatches: "Nothing matches that search.",
   /** Selects every option (no filtering) without closing; Apply still commits. */

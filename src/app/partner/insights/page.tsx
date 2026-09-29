@@ -3,7 +3,7 @@ import { PlaceholderPage } from "@/app/admin/_components/PlaceholderPage";
 
 export const metadata: Metadata = { title: "Insights" };
 
-/** Blank for now (owner): how the organization's opportunities perform will live here. */
+/** Blank for now: how the organization's opportunities perform will live here. */
 export default function Page() {
   return <PlaceholderPage title="Insights" />;
 }

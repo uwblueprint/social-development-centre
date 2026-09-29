@@ -45,7 +45,7 @@ export async function prefillFromEventbrite(url: string): Promise<ActionState<Ev
   } catch {
     parsed = null;
   }
-  // NEW, NEEDS APPROVAL: both messages.
+  // Both messages.
   if (!parsed || !EVENTBRITE_HOST.test(parsed.hostname)) {
     return { status: "error", message: "Enter an Eventbrite event link, like eventbrite.ca/e/…", fieldErrors: { eventbrite: "Enter an Eventbrite event link, like eventbrite.ca/e/…" } };
   }

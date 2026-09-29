@@ -49,7 +49,7 @@ function matching(q: string): Member[] {
 }
 
 /**
- * The tabs are exclusive (owner, 27 Sep): General is `tier = general`, Paying is `tier = paying`.
+ * The tabs are exclusive: General is `tier = general`, Paying is `tier = paying`.
  * `statuses` is the Status filter; unsubscribed people are listed only when it includes `unsubscribed`
  * (the default leaves it out). Search matches name or email. Ties break on id.
  */

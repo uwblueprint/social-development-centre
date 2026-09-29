@@ -37,7 +37,7 @@ export interface DocumentationGuide {
 }
 
 /*
- * Layout after Mintlify, fal and Dropbox Paper (Mobbin): a sticky "On this page" list on the left
+ * Layout: a sticky "On this page" list on the left
  * that highlights the section in view, and one readable column of text. Below 900px the list sits
  * above the article instead.
  */

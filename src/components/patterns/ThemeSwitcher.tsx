@@ -58,7 +58,7 @@ const Item = styled.button`
 `;
 
 /**
- * Owner: the app follows the device's light/dark setting by default. This one item names the mode
+ * The app follows the device's light/dark setting by default. This one item names the mode
  * you'd switch to ("Dark mode" while light, "Light mode" while dark); choosing it saves that choice.
  */
 export function ThemeSwitcher() {

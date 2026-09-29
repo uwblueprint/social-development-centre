@@ -192,7 +192,7 @@ const Updated = styled.p`
   color: var(--color-text-muted);
 `;
 
-/* Secondary actions stay visible (owner: no ⋯ menu); Edit is the one primary action. */
+/* Secondary actions stay visible (no ⋯ menu); Edit is the one primary action. */
 /* The listing's image in the same 16:9 taupe matte as partner cards. */
 const Photo = styled(ImageMatte)`
   border: 1px solid var(--color-border);

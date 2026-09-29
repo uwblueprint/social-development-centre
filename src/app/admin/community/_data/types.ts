@@ -18,7 +18,7 @@ export type OnboardingState = "not_started" | "in_progress" | "completed";
 export const MEMBER_STATUSES = ["unsubscribed", "invited", "onboarding_incomplete", "active", "inactive"] as const;
 export type MemberStatus = (typeof MEMBER_STATUSES)[number];
 
-/** Shown by default: every status except Unsubscribed (owner decision). */
+/** Shown by default: every status except Unsubscribed. */
 export const DEFAULT_MEMBER_STATUSES: readonly MemberStatus[] = MEMBER_STATUSES.filter((s) => s !== "unsubscribed");
 
 /** A CTA click within this many days makes someone Active; older clicks only, Inactive. */

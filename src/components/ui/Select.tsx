@@ -155,9 +155,7 @@ function SearchIcon() {
   return <Icon icon={Search} size={14} />;
 }
 
-/* ---------------------------------------------------------------------- */
-/* Short list (5 or fewer options): plain Radix Select.                    */
-/* ---------------------------------------------------------------------- */
+/* Short list (5 or fewer options): plain Radix Select. */
 
 const Content = styled(SelectPrimitive.Content)`
   overflow: hidden;
@@ -284,11 +282,10 @@ function NativeSelect({
   );
 }
 
-/* ---------------------------------------------------------------------- */
-/* Long list (more than 5 options): searchable combobox, built from a      */
-/* Popover (for positioning/dismissal) with cmdk inside (for filtering,    */
-/* keyboard navigation and listbox ARIA).                                  */
-/* ---------------------------------------------------------------------- */
+/*
+ * Long list (more than 5 options): searchable combobox, built from a Popover (for positioning/dismissal)
+ * with cmdk inside (for filtering, keyboard navigation and listbox ARIA).
+ */
 
 const ComboContent = styled(PopoverPrimitive.Content)`
   z-index: var(--z-popover);
@@ -493,8 +490,6 @@ function ComboboxSelect({
     </PopoverPrimitive.Root>
   );
 }
-
-/* ---------------------------------------------------------------------- */
 
 /**
  * Pick one option from a list. Five or fewer options render as a plain
