@@ -15,6 +15,16 @@ async function settle(page: import("@playwright/test").Page) {
   // Wait for the variable font to finish loading and settle a frame: scanning
   // mid-swap can make axe misjudge text contrast from anti-aliased glyphs.
   await page.evaluate(() => document.fonts.ready);
+  // Fade-ins still running would let axe read half-blended colors as failing contrast. Endless
+  // animations (the scan line, the drifting illustration) are left alone.
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((a) => a.effect?.getComputedTiming().iterations !== Infinity)
+        .map((a) => a.finished.catch(() => undefined)),
+    ),
+  );
   await page.waitForTimeout(250);
 }
 

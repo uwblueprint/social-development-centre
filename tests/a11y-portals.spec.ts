@@ -8,6 +8,16 @@ import AxeBuilder from "@axe-core/playwright";
  */
 async function expectNoViolations(page: import("@playwright/test").Page, excludeSelectors: string[] = []) {
   await page.evaluate(() => document.fonts.ready);
+  // Fade-ins still running would let axe read half-blended colors as failing contrast. Endless
+  // animations (the scan line, the drifting illustration) are left alone.
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((a) => a.effect?.getComputedTiming().iterations !== Infinity)
+        .map((a) => a.finished.catch(() => undefined)),
+    ),
+  );
   await page.waitForTimeout(250);
   let builder = new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]);
   for (const selector of excludeSelectors) builder = builder.exclude(selector);
