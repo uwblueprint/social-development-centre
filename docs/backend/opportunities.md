@@ -1,0 +1,255 @@
+# Opportunities: backend requirements
+
+**Bottom line:** implement `queries.ts` and `service.ts` in `src/features/opportunities/` against real tables, keeping every function name, FormData field name and `ActionState` result. Then delete `store.ts`. Both portals share this code. What differs is the **actor**, which each portal's actions build from the session and never take from the client.
+
+The UI is built against:
+- **Types:** `src/features/opportunities/types.ts` (the contract)
+- **Reads:** `src/features/opportunities/queries.ts`
+- **Writes:** `src/features/opportunities/service.ts` (validation, status rules and user-facing messages)
+- **Server actions:** `src/app/admin/opportunities/_data/actions.ts` and `src/app/partner/opportunities/_data/actions.ts`. These are thin wrappers that bind the actor and call `service.ts`.
+- **Expiry and dates:** `src/features/opportunities/format.ts`
+- **Labels, topics and limits:** `src/features/opportunities/catalog.ts`
+
+A dev-only in-memory store (`store.ts`) makes both portals work end to end. It resets on restart.
+
+Decisions and their rationale: [docs/decisions/opportunities.md](../decisions/opportunities.md). Every one of them is an assumption that SDC hasn't confirmed yet.
+
+## Model
+
+### `opportunities`
+| Field | Type | Notes |
+|---|---|---|
+| `id` | text / uuid | Stable. The UI never keys on the title. |
+| `kind` | `event` \| `petition` \| `volunteer` \| `job` \| `other` | Can't change after creation. `saveOpportunity` keeps the stored kind when editing. |
+| `title` | text, ≤ 100 | Required, even for drafts. |
+| `summary` | text, ≤ 280 | Required to publish. Written for email. |
+| `topics` | `TopicId[]`, 1–3 | Required to publish. The form disables more than 3 ([decision 21](../decisions/opportunities.md#21-topics-are-capped-at-3-in-the-form)). IDs come from `TOPICS` in `catalog.ts`. The list is a placeholder until the 29 September taxonomy; keep IDs stable if labels change. Store as an array column or a join table. |
+| `link` | text, `https://` | Required to publish. The external page where people take action. People may type it without a protocol (`sdckw.ca`); `saveOpportunity` stores the result of `normalizeWebAddress` (`src/lib/url.ts`). |
+| `organization_id` | FK → organizations, or `sdc` | SDC posts as itself (`SDC_ORG`). Either add SDC as an organizations row or treat `sdc` as a reserved ID. The UI needs `{ id, name }`, with the **current** name. |
+| `details` | JSON (per kind, below) | Drafts may be partial. Published and closed listings are complete. |
+| `status` | `draft` \| `published` \| `closed` | Stored status, shown as **Draft**, **Published**, **Closed**. See [Automatic expiry](#automatic-expiry). |
+| `closed_reason` | `ended` \| `closed` \| `partner_removed` \| null | `ended`: its date passed. `closed`: a person closed it. `partner_removed`: its organization's access was removed (shown as **Partner access removed**; see [Removed partners](#removed-partners)). Null unless closed. |
+| `created_at`, `updated_at` | timestamptz | |
+| `updated_by` | `{ name, role: admin \| partner }` | Store the user ID and derive the name, so a renamed person shows their current name. The panel shows "Updated {when} by {who}". |
+| `published_at` | timestamptz, nullable | Set the first time a listing is published. Kept after it's closed. Cleared on duplicate. |
+| `closed_at` | timestamptz, nullable | When it moved to Closed (manual close, expiry or partner removal). Needed for audit and for sorting the Closed tab later. |
+| `performance` | derived, not stored here | `{ sentTo, clicks, lastSentAt? }`; see [Performance](#performance-email-reach). Absent on drafts and on listings never emailed. |
+
+### `details` by kind
+Dates are `yyyy-mm-dd` and times are `HH:mm` (24-hour), both local to Waterloo Region (America/Toronto).
+
+| Kind | Required to publish | Optional |
+|---|---|---|
+| `event` | `date`, `startTime`, `format` (`in_person` \| `online` \| `hybrid`), `area` (required for in person and hybrid; set to `online` for online events) | `endTime` (after `startTime`), `cost` (`free` \| `paid`, default `free`), `priceMin` (whole dollars, required if `paid`), `priceMax` (optional, ≥ `priceMin`; a range), `accessibility` (`AccessibilityFeature[]`), `accessibilityNote` (≤ 200) |
+| `petition` | `target` | `deadline`, `signatureGoal` (positive integer) |
+| `volunteer` | `timeCommitment` (`under_2` \| `2_to_5` \| `5_plus` \| `one_time`), `format` (`in_person` \| `remote` \| `hybrid`), `area` | `startDate`, `skills` (`SkillId[]`), `minimumAge` (positive integer), `applyBy` |
+| `job` | `employmentType` (`full_time` \| `part_time` \| `contract` \| `temporary` \| `internship`), `workplace` (`on_site` \| `remote` \| `hybrid`), `area` | `pay`, `applyBy`, `qualifications` |
+| `other` | `callToAction` | `deadline`, `details[]` (≤ 5 `{ label ≤ 40, value ≤ 120 }`) |
+
+**Structured values for matching** ([decision 19](../decisions/opportunities.md#19-structured-fields-instead-of-free-text-for-matching)); ids and labels are in `catalog.ts`:
+- `area`: `kitchener` \| `waterloo` \| `cambridge` \| `north_dumfries` \| `wellesley` \| `wilmot` \| `woolwich` \| `online` (`AREAS`). There is no street address on any type (owner, 28 Sep: matching uses the area; the venue is on the listing's own page). Drop the `address` column.
+- `timeCommitment` (`TIME_COMMITMENTS`) replaced the old free-text `timeCommitment` and the `commitment` (`one_time` \| `ongoing`) field. `formatWhen` shows "One-time" for `one_time`, otherwise "Ongoing".
+- `skills`: any of `no_experience`, `driving`, `languages`, `tech`, `childcare`, `cooking`, `writing`, `event_setup` (`SKILLS`).
+- `accessibility`: any of `step_free`, `accessible_washroom`, `asl`, `childcare`, `quiet_space` (`ACCESSIBILITY_FEATURES`); free text goes in `accessibilityNote`.
+- **Migration:** the old `location` (free text) maps to a chosen `area` (the text itself is dropped); old free-text `timeCommitment`, `skills` and `accessibility` need mapping by hand or can move to `accessibilityNote`. The dev seed is already migrated (`store.ts`, key `__opportunitiesStoreV3`).
+
+When cost is `free`, the prices are dropped. `priceMin`/`priceMax` are matched against the budget range members give: recommend a paid event when its range overlaps theirs. Old free-text `costDetails` needs mapping by hand. Area, time commitment, skills and accessibility are good candidates for columns (or join tables) since emails will filter on them.
+
+JSON is enough because emails and recommendations only need the fields in this table. If you later filter emails by format, location or date in SQL, add those as columns.
+
+### Audit
+The panel only needs the latest `updated_by`. The user research asks to keep history ("who last changed a listing matters when both SDC and the partner edit it"), so an append-only log of each action (who, when, what) is recommended.
+
+## Actor and permissions
+`Actor` (`types.ts`) is either `{ role: "admin", name }` or `{ role: "partner", name, organizationId }`. **Always derive it from the session, never from FormData or arguments.** Each portal's `_data/actions.ts` already does this. Keep it that way, and re-check the session on every call.
+
+| Operation | Partner | Admin |
+|---|---|---|
+| List, count, get | Only rows where `organization_id = actor.organizationId` | Every row |
+| Create | Always their own organization. `organizationId` in FormData is **ignored**. | Any current (not removed) organization, or SDC. Defaults to SDC if empty. |
+| Edit, close, reopen, duplicate, delete | Own organization only | Any |
+| Filter by organization | Ignored | `organizationId` filter |
+
+- **A row the actor can't see must act as if it doesn't exist.** `getOpportunity` returns `null`, and writes return the "no longer exists" error. Never reveal another organization's listing, even by a different error message.
+- **Enforce scoping in the query or with row-level security** (Supabase RLS on `organization_id`), not only in application code.
+- **Partners can't change a listing's organization.** Admins can, when editing.
+
+## Session seams
+**`getCurrentPartner()`** in `src/app/partner/_data/session.ts` returns a `PartnerUser` (`contactId`, `name`, `email`, `organization { id, name }`) or `null`. It throws in production until implemented, so the partner portal fails closed.
+- **Return `null` unless** the signed-in user is an **active** contact (they accepted their invitation and weren't removed) of a **current** organization (not removed). The layout then redirects to `/login`.
+- **Return the organization's current name.** The sidebar shows it as the product name.
+- **Call it on every partner action,** not just in the layout. Removing a person or an organization must end access at once, including for open tabs ([partners decisions 6 and 9](../decisions/partners.md)).
+- **One organization per person.** A contact belongs to one organization at a time (partners decision 8), so there's no organization switcher.
+
+`getCurrentAdmin()` (`src/app/admin/_data/session.ts`) is unchanged. It must check the SDC admin role.
+
+## Reads (`queries.ts`)
+| Function | Returns | Rules |
+|---|---|---|
+| `listOpportunities(actor, filters)` | `Opportunity[]` | Scoped to the actor. Apply [effective status](#automatic-expiry) before choosing the tab. `filters.tab`: `published`, `drafts` or `closed` (closed includes ended listings and those of removed partners). Optional filters: `kind`, `organizationId` (admins only), and `q`, a case-insensitive substring of the title **or** the organization name. **Sort:** Published by key date, soonest first and undated last, then most recently updated. Drafts and Closed by most recently updated. |
+| `getOpportunityCounts(actor, filters)` | `{ published, drafts, closed }` | The same scope and filters as the list, without the tab. Used for the tab counts. |
+| `getOpportunity(actor, id)` | `Opportunity \| null` | `null` if missing **or** not visible to the actor. Returned with effective status. |
+| `listPublisherOptions()` | `OrganizationRef[]` | Admin only. SDC first, then current (not removed) partners A–Z. Feeds the form's **Organization** picker. |
+| `listOrganizationFilterOptions()` | `OrganizationFilterOption[]` | Admin only. `listPublisherOptions()` plus removed partners that have listings (`removed: true`). Feeds the list's **Organization** filter. |
+| `countPublishedOpportunities(organizationId)` | `number` | Effective status `published` for one organization (a removed partner has none). Replaces Partners' stored `opportunityCount` in the Organizations table and in "View opportunities ({count})". |
+
+Paging isn't built. Volumes are small (about 50 partners). Add paging when a tab regularly passes about 200 rows.
+
+## Performance (email reach)
+Admins judge an opportunity by two numbers, shown in the table (**Sent to**, **Clicks**) and as tiles at the top of the panel. The UI reads `Opportunity.performance` (`types.ts`); the dev store fakes it (`withPerformance` in `store.ts`).
+
+| Field | Type | Definition |
+|---|---|---|
+| `sentTo` | integer | Distinct members whose SDC email included this opportunity, across every send. A member emailed twice counts once. |
+| `clicks` | integer | Distinct members who clicked this opportunity in any of those emails. Not raw click events. |
+| `lastSentAt` | ISO timestamp, optional | The most recent send that included it. |
+
+- **Omit `performance`** (don't send zeros) when the opportunity has never been in a sent email. The UI shows **Not sent yet**, and uses that to warn "In {n} days and not emailed to anyone yet" for published listings closing within 7 days. Zeros would hide that warning.
+- **Source:** the same email/insights records Partners health needs ([partners.md](./partners.md#partner-health)): one row per (email send, opportunity) and a click log keyed by member, opportunity and send. `sentTo` = count distinct recipients across sends containing the opportunity; `clicks` = count distinct clickers.
+- **Cost:** `listOpportunities` returns up to ~200 rows, each needing both numbers. Don't compute per row. Either one grouped query (`GROUP BY opportunity_id`) joined onto the page, or a nightly `opportunity_stats` table (`opportunity_id, sent_to, clicks, last_sent_at, computed_at`). Up to a day stale is fine; say so if you pick nightly and the panel will show "as of".
+- **Same numbers everywhere:** Partners' `totalClicks` must equal the sum of `clicks` over that organization's opportunities.
+
+## API contracts (per screen)
+Every read is a server function returning the TypeScript shape named; field names are the contract. "Required" means the UI breaks or shows a wrong state without it.
+
+### Opportunities list: `/admin/opportunities`, `/partner/opportunities`
+`listOpportunities(actor, { tab, q?, kind?, organizationId?, sort? })` → `Opportunity[]`. Each row **requires**:
+| Field | Used for |
+|---|---|
+| `id`, `title`, `kind`, `organization { id, name }` | Title (frozen first column), type badge, organization column (admin). |
+| `status`, `closedReason` | Tab placement. On **Closed**, every row shows why it closed (**Ended**, **Closed**, **Partner access removed**), so `closedReason` is required for every closed row, including ones closed before this ships (backfill: past date → `ended`, removed org → `partner_removed`, else `closed`). |
+| `details.date` + `details.startTime` (event), `details.deadline` (petition, other), `details.applyBy` (volunteer, job) | The **Closes** column: one date per row for every type, plus the start time for events. The server's `date` sort must use this same key (`closesOn` in `format.ts`). |
+| `performance?` | **Sent to** and **Clicks** columns on Published and Closed (not Drafts). Both sort: `sort=sentTo` / `sort=clicks` (default descending), listings with no `performance` last in either direction, ties by most recently updated. Sorting needs the numbers at query time, so use the grouped query or the `opportunity_stats` table (below), not a per-row lookup. |
+| `createdAt`, `updatedAt` | **Last change** column. |
+
+`getOpportunityCounts(actor, filters)` → `{ published, drafts, closed }` for the tab counts.
+
+### Opportunity panel: `?opportunity=<id>`
+`getOpportunity(actor, id)` → `Opportunity`, in this reading order:
+1. When: `details.date`, `startTime`, `endTime` (events render as one line, "Sat, Oct 10 · 7:00 p.m. – 8:30 p.m."), or the deadline/apply-by date.
+2. Reach: `performance.sentTo`, `performance.clicks` (click rate is computed in the UI).
+3. About: `summary`, `topics`.
+4. Details: `organization.name`, `link`, then the kind's remaining `details` fields.
+5. `updatedAt`, `updatedBy { name, role }`.
+
+### Partners panel: `/admin/partners?org=<id>`
+No new fields. Order is numbers (`opportunityCount`, `totalClicks`, `lastPostedAt`), then the health callout (`health`), then people, profile and admin notes. See [partners.md](./partners.md#data-the-ui-needs).
+
+## Writes (`service.ts`)
+Each function takes `(actor, …)` and returns `ActionState` from `src/lib/forms.ts`. **Keep the messages exactly as written.** The UI shows action results as toasts, and validation errors beside fields and in the form's error summary, and they're listed in the owner's UX spec (retired) (Opportunities table).
+
+| Function | Behaviour | Success message |
+|---|---|---|
+| `saveOpportunity(actor, fd)` | Create when there's no `id`, update when there is. Validates (below), normalizes `link`, sets the status from `intent`, stamps `updated_at` and `updated_by`, and sets `published_at` on first publish. Returns `data: { id, tab }`. | `“{title}” saved as a draft.` / `“{title}” is published. Members can now see this {type}.` / `Changes to “{title}” saved.` |
+| `closeOpportunity(actor, id)` | `status = closed`, `closed_reason = closed`. No confirmation in the UI. | `“{title}” is closed. It won't be recommended to members or included in emails.` |
+| `reopenOpportunity(actor, id)` | `status = published` and clears `closed_reason`. **Refuse if the listing has already ended** (`This {type} has already ended. Edit its date to reopen it.`) **or its organization is removed** (`This partner no longer has access. Reinvite them before reopening their opportunities.`). No confirmation in the UI. | `“{title}” is open again. Members can see it.` |
+| `duplicateOpportunity(actor, id)` | New draft: a copy with a new `id` and the title `Copy of {title}` (cut to 100 characters). Same organization. Clears `closed_reason` and `published_at`; resets the timestamps and `updated_by`. Returns `data: { id }`. No confirmation in the UI. | `Duplicated “{title}” as a draft.` |
+| `deleteOpportunity(actor, id)` | Hard delete. The UI confirms first. | `Deleted “{title}”.` |
+
+If a listing is missing or the actor can't access it, every function returns `This opportunity no longer exists.` `{type}` is `KIND_NOUN` in `catalog.ts` (event, petition, volunteer role, job, opportunity).
+
+### FormData fields (`saveOpportunity`)
+All values are strings. Fields marked "multiple" repeat the key.
+
+| Field | Notes |
+|---|---|
+| `id` | Present when editing. |
+| `kind` | `event` \| `petition` \| `volunteer` \| `job` \| `other`. Ignored when editing (the stored kind wins). |
+| `intent` | `draft` saves as a draft. `publish` publishes it. `save` keeps the current effective status (for **Save changes** on a published or closed listing). Default: `publish`. |
+| `organizationId` | Admin only. Ignored for partners. Empty means SDC. |
+| `title`, `summary`, `link` | |
+| `topics` | Multiple. Unknown IDs and duplicates are dropped. |
+| Event | `date`, `startTime`, `endTime`, `format`, `area` (omitted when online), `cost`, `priceMin`, `priceMax`, `accessibility` (multiple), `accessibilityNote` |
+| Petition | `target`, `deadline`, `signatureGoal` |
+| Volunteer role | `timeCommitment`, `format`, `area`, `startDate`, `skills` (multiple), `minimumAge`, `applyBy` |
+| Job | `employmentType`, `workplace`, `area`, `pay`, `applyBy`, `qualifications` |
+| Other | `callToAction`, `deadline`, `detailLabel` (multiple), `detailValue` (multiple), paired by position. Rows with both empty are skipped. |
+
+Unknown ids in `area`, `timeCommitment`, `skills` and `accessibility` are rejected (`area`, `timeCommitment`) or dropped (the lists). The form is three steps, but it always posts the whole model at once (`toFormData` in `components/form/formValues.ts`), so this contract is unchanged in shape.
+
+### Validation
+- **The strictness depends on the next status.** Publishing, and saving a published or closed listing, are **strict** (every required field). Drafts are **lenient**: only a title is required, but anything that *is* filled in must still be valid (lengths, date and time format, link format, a positive integer, end time after start time, complete detail pairs).
+- **Field errors are keyed by the control `name`.** Custom details use `detailLabel.{i}` and `detailValue.{i}`; too many details uses `details`.
+- **The form-level message** titles the form's error summary, and is never shown as a toast: `Fix {n} field(s) to publish this {type}` (publish), `… to save your changes` (save) or `… to save this draft` (draft).
+- **Links:** required to publish for every type (owner: a click is how we know a listing worked). Accept anything `normalizeWebAddress` accepts (`sdckw.ca`, `www.sdckw.ca/events`, `http://…`, `https://…`) and store its `https://` result. **Volunteer roles and jobs** also accept an email address, stored as `mailto:{email}`. Errors: `Enter a web address, like sdckw.ca.` (or `…, or an email address.` for those two types).
+- **Areas:** drafts never need one. Publishing an in person or hybrid event needs a real area (`Choose where the event is.` if it's `online`).
+- **You can't publish a listing with a date that has passed.** The error goes on `date` (events), `applyBy` (volunteer role, job) or `deadline` (petition, other).
+- The field messages are in `service.ts`; the rules for showing them are in the owner's UX spec (retired) (Form errors).
+
+## Eventbrite prefill
+**Detection (owner, 28 Sep):** there is no separate Eventbrite field. When an event's **Link** is an Eventbrite event page (`eventbrite.*/e/…`), the form offers **Fill in details**, which calls the prefill with that link. Eventbrite detection needs no backend.
+
+**Timing and fields (owner, 28 Sep):** the form waits at most **5 seconds** for `prefillFromEventbrite`, then shows "Timed out. Couldn't fetch details from Eventbrite." and returns to the link. After a fill, Details shows **From Eventbrite** (title, summary, date, start and end time, how people attend, area) above **Add the rest** (organization for admins, topics, cost and price, accessibility). The real Eventbrite API can also supply cost: map `is_free` to `cost`, and the event's ticket classes' lowest and highest `cost.major_value` to `priceMin` / `priceMax`, and `online_event` to `format`. Once it does, move cost up into **From Eventbrite** (`part` in `EventFields`).
+
+**Spike** ([decision 18](../decisions/opportunities.md#18-eventbrite-first-for-events)). The event form's **Fill in details** calls each portal's `prefillFromEventbrite(url)` server action (`src/app/{admin,partner}/opportunities/_data/actions.ts`), which checks the session and calls `prefillFromEventbrite` in `src/features/opportunities/eventbrite.ts`.
+
+- **Returns** `ActionState<EventbritePrefill>`: `{ link, title, summary, date (yyyy-mm-dd), startTime (HH:mm), endTime?, area, address? }`. On failure, `status: "error"` with the message on `fieldErrors.eventbrite`.
+- **Dev mock (now):** accepts eventbrite.ca and eventbrite.com `/e/…` links only; derives the title from the URL slug and returns a fixed date 14 days out, 18:00–20:00, Kitchener, Kitchener Public Library. It saves nothing.
+- **Real version:** parse the event id from the URL (`/e/{slug}-{id}`) and call the Eventbrite API, `GET https://www.eventbriteapi.com/v3/events/{id}/?expand=venue`, with SDC's private token (a server-only secret; never sent to the browser). Map `name.text` → `title`, `summary` (or the first 280 characters of `description.text`) → `summary`, `start.local`/`end.local` → `date`, `startTime`, `endTime` (the event's own time zone), `venue.address.city` → `area` (online events → `online`; an unknown city leaves `area` empty for the person to choose), and `venue.name` plus `venue.address.address_1` → `address`. Rate-limit per session. Keep the messages in `eventbrite.ts`.
+
+## Images
+The form sends `imageUrl`: today a browser-scaled JPEG data URL (longest side at most 1600px, quality 0.85, transparent areas filled white) or an `https://` address. The browser refuses images wider than 8:1 or taller than 1:8 (owner); the server should check the same once it can read dimensions. The original shape is kept: cards and the panel fit it whole into 16:9 with bars; emails show it at its own shape. `service.ts` accepts `data:image/(jpeg|png|webp);base64,…` or `https://…` up to 2,800,000 characters, otherwise `fieldErrors.imageUrl`.
+
+- **Real version:** don't store data URLs in the database. On save, upload the image to object storage (S3, R2 or similar), keep only its public `https` URL in `imageUrl`, and delete the old object when it's replaced or removed. Cap uploads at 5 MB and JPG/PNG/WebP; strip EXIF (location) data.
+- **Eventbrite:** the event's `logo.url` (or `logo.original.url`) from the same API call can fill `imageUrl` in `prefillFromEventbrite`, copied into our storage rather than hot-linked.
+- **Emails:** the member email puts the image above the title, 16:9, with empty `alt` (the title follows).
+- **Partner cards** read `imageUrl` in the partner list query; include it there.
+- **Broken images:** if a stored image URL stops loading, cards show the type's colour and icon, and the panel, preview and emails leave the image out. Keep images in our own storage so this stays rare.
+
+## Automatic expiry
+Rule (`format.ts`, `hasEnded` and `effectiveStatus`):
+- **Key date:** event `date`; petition and other `deadline`; volunteer and job `applyBy`.
+- **An event ends at `date` + `startTime`.** Every other kind ends at 23:59:59.999 on its key date, in Waterloo Region time.
+- **No key date means it never ends automatically.**
+- **Drafts never end.** Only `published` listings do.
+- **An ended published listing reads as `closed` with `closed_reason = ended`** (Closed, reason **Ended**). It moves to the Closed tab and out of the published count.
+
+Implement this as a scheduled job (at least hourly, since events end at their start time) that writes `status = closed, closed_reason = ended`, **or** as a rule applied at query time. Either way, every read, count and email query must agree, and the timezone must be America/Toronto rather than the server's.
+
+**Known edge in the dev service:** saving (`intent=save`) a listing that ended but is still stored as `published` writes `closed_reason = closed`, so it would show **Closed** instead of **Ended**. If you store expiry with a job, this can't happen. If you compute it at query time, keep `ended` when the effective reason is `ended`.
+
+## Removed partners
+Decided by owner, 26 Sep 2026 ([opportunities decisions 13 and 14](../decisions/opportunities.md), owner decision 8 in the owner's UX spec (retired)).
+
+**Admin and partner views.** Implemented at query time in `format.ts` (`effectiveStatus(o, now, partnerRemovedAt)`), with `queries.ts` passing the organization's `removedAt`:
+- From `removedAt`, every published listing of the organization reads as `closed` with `closed_reason = partner_removed` (**Closed**, reason **Partner access removed**). A listing whose own date passed before `removedAt` reads as `ended`. If you store this instead, write it when access is removed (`closeListingsForOrganization(organizationId)` does that in the dev store).
+- `reopenOpportunity` refuses while the organization is removed: `This partner no longer has access. Reinvite them before reopening their opportunities.`
+- **Admin Organization filter:** `listOrganizationFilterOptions()` returns SDC, current partners, then removed partners that still have listings (`removed: true`, shown as "{name} (removed)"; that names the organization, not a listing status). `listPublisherOptions()` still leaves removed partners out, so nobody can post as them.
+- Partners of a removed organization can't sign in (`getCurrentPartner` returns `null`), so only admins see these states.
+
+**Members (not built yet).** Keep the owner's visibility rule on the member side:
+- Leave every listing of a removed organization out of all new emails and recommendations from `removedAt`.
+- People who were **already emailed** a listing can still view it until **the earlier of its own end or `removedAt` + 1 month** (30 days). Undated listings use `removedAt` + 30 days. After that, show it as no longer available.
+- This is a read rule for member-facing pages only. The admin view just shows Closed with the reason.
+
+**Reinstatement (owner decision 8).** Reinviting doesn't change any listing. Access returns when someone at the organization **accepts** an invitation; the acceptance handler then clears `removed_at` and calls:
+
+| Function | Behaviour |
+|---|---|
+| `reopenListingsForOrganization(organizationId)` (`service.ts`) | For the organization's listings with `status = closed` and `closed_reason = partner_removed`: if the date hasn't passed, set `status = published` and clear `closed_reason`; if it has, set `closed_reason = ended`. Listings closed by a person (`closed`) or already `ended` are untouched. Returns the number reopened. Revalidates the list pages. |
+| `closeListingsForOrganization(organizationId)` (`service.ts`) | Stores the organization's effectively-removed published listings as `closed` / `partner_removed`. Call it on removal, or at the latest before `removed_at` is cleared on reinvite, so reinviting alone doesn't republish them. `closeListingsPastRemovalCutoff(organizationId, removedAt)` is a deprecated alias that Partners' reinvite still calls. |
+
+Order at acceptance: clear `removed_at`, then `reopenListingsForOrganization`. Do both in one transaction so a listing is never published for a removed organization.
+
+## Revalidation
+After any successful write, revalidate:
+- `/admin/opportunities`
+- `/partner/opportunities`
+- `/admin/partners` (the opportunity counts)
+
+If the form's edit pages or the partner organization page render cached data, add `/admin/opportunities/[id]/edit` and `/partner/opportunities/[id]/edit`.
+
+## Partner organization profile
+The partner **Organization** page edits the organization's name, website and short description, and manages the team: partners invite and remove colleagues (opportunities decision 8, partners decision 10). The requirements are in [backend/partners.md](./partners.md) under `updateOrganization`:
+- `updateMyOrganization` (`src/app/partner/organization/_data/actions.ts`) takes FormData `name`, `website` and `description`. It takes the organization from `getCurrentPartner()`, never from the client, and refuses removed organizations.
+- The validation is shared with the admin action in `src/app/admin/partners/_data/profile.ts`.
+- A name change must show up everywhere at once: listings, the partner sidebar and Partners. Store organizations by ID only; never copy the name onto opportunity rows. The dev store copies it (`OrganizationRef` on each record), so renames don't reach existing listings in development.
+- Team: the organization's current contacts (name, email, and whether they're pending). Partners invite and remove colleagues themselves; see [backend/partners.md](./partners.md#partners-managing-their-own-team).
+
+## Also needed
+- **The Partners panel link.** "View opportunities" links to `/admin/opportunities?org=<organizationId>`. The list reads `org` (plus `tab`, `q`, `kind`) in `components/listParams.ts` and passes it as `filters.organizationId`; partners' `org` is ignored.
+- **Emails and recommendations** (not built) must read only effective-`published` listings, which excludes removed partners. See [Removed partners](#removed-partners) for what already-emailed members can still view.
+
+## Delete when done
+- `src/features/opportunities/store.ts` (the seed data and in-memory store).
+- The imports of `@/app/admin/partners/_data/store` (`orgs`, `statusOf`) in `queries.ts`, `service.ts` and `src/app/partner/_data/session.ts`. Replace them with real organization queries.
