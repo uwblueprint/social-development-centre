@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { useActionState } from "react";
 import Link from "next/link";
 import { styled } from "next-yak";
 import { ArrowRight, Ban, Copy, MoreHorizontal, Pencil, Plus, Send, UserPlus } from "lucide-react";
@@ -23,23 +22,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/DropdownMenu";
-import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
-import { Input } from "@/components/ui/Input";
 import { List } from "@/components/ui/ListRow";
 import { SheetBody, SheetHeader, SheetTitle } from "@/components/ui/Sheet";
-import { SubmitButton } from "@/components/ui/SubmitButton";
-import { Textarea } from "@/components/ui/Textarea";
 import { useToast } from "@/components/ui/Toast";
-import { fieldError, idleState } from "@/lib/forms";
 import { partnersCopy } from "../_copy";
-import { dismissHealth, removePartner, saveOrganizationNotes, updateOrganization } from "../_data/actions";
-import { ORGANIZATION_DESCRIPTION_MAX, ORGANIZATION_NOTES_MAX, type AdminPartnerOrganization } from "../_data/types";
+import { dismissHealth, removePartner } from "../_data/actions";
+import type { AdminPartnerOrganization } from "../_data/types";
 import { formatDate, formatDateTimeTitle, formatRelativeCell } from "../_lib/format";
-import { useFocusFirstInvalid } from "../_lib/useFocusFirstInvalid";
 import { ContactRow } from "./ContactRow";
 import { copyEmails } from "./CopyableEmail";
 import { HealthBadge } from "./HealthBadge";
+import { OrganizationNotes } from "./OrganizationNotes";
+import { OrganizationProfileForm } from "./OrganizationProfileForm";
 
 const copy = partnersCopy.organizationPanel;
 
@@ -221,26 +216,6 @@ const NextStep = styled.p`
   }
 `;
 
-const Form = styled.form`
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-3);
-  width: 100%;
-
-  & > * {
-    align-self: stretch;
-  }
-  & > [data-form-actions] {
-    align-self: flex-start;
-  }
-`;
-
-const FormActions = styled.div`
-  display: flex;
-  gap: var(--space-2);
-`;
-
 function reasonFor(org: AdminPartnerOrganization): string | null {
   const r = partnersCopy.health.reasons;
   switch (org.health?.tag) {
@@ -359,7 +334,7 @@ export function PartnerSheetContent({
               <SectionHeader>
                 <SectionTitle id={ids.profile}>{copy.editProfile}</SectionTitle>
               </SectionHeader>
-              <ProfileForm key={org.id} org={org} labelledBy={ids.profile} onDone={() => setEditing(false)} />
+              <OrganizationProfileForm key={org.id} org={org} labelledBy={ids.profile} onDone={() => setEditing(false)} />
             </Section>
           )}
 
@@ -444,7 +419,7 @@ export function PartnerSheetContent({
           </Section>
 
           <Section>
-            <NotesForm key={org.id} org={org} now={now} />
+            <OrganizationNotes key={org.id} org={org} />
           </Section>
         </Sections>
       </SheetBody>
@@ -480,121 +455,3 @@ export function PartnerSheetContent({
     </>
   );
 }
-
-/** Edit details: name, website, description. Opens focused on the name; closes after a successful save. */
-function ProfileForm({ org, labelledBy, onDone }: { org: AdminPartnerOrganization; labelledBy: string; onDone: () => void }) {
-  const { toast } = useToast();
-  const [state, action] = useActionState(updateOrganization.bind(null, org.id), idleState);
-  // Controlled so a failed save keeps what was typed (React resets uncontrolled forms after an action).
-  const [name, setName] = React.useState(org.name);
-  const [website, setWebsite] = React.useState(org.website ?? "");
-  const [description, setDescription] = React.useState(org.description ?? "");
-  const formRef = React.useRef<HTMLFormElement>(null);
-  useFocusFirstInvalid(formRef, state);
-
-  React.useEffect(() => {
-    formRef.current?.querySelector<HTMLInputElement>("input")?.focus();
-  }, []);
-
-  React.useEffect(() => {
-    if (state.status === "idle" || state.fieldErrors) return;
-    if (state.message) toast({ title: state.message });
-    if (state.status === "success") onDone();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state]);
-
-  return (
-    <Form ref={formRef} action={action} aria-labelledby={labelledBy} noValidate>
-      <Field label={copy.nameLabel} error={fieldError(state, "name")} required>
-        {(p) => <Input {...p} name="name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="off" />}
-      </Field>
-      <Field label={copy.websiteLabel} hint={copy.websiteHint} error={fieldError(state, "website")}>
-        {(p) => <Input {...p} name="website" inputMode="url" autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} />}
-      </Field>
-      <Field label={copy.descriptionLabel} hint={copy.descriptionHint} error={fieldError(state, "description")}>
-        {(p) => (
-          <Textarea
-            {...p}
-            name="description"
-            rows={3}
-            maxLength={ORGANIZATION_DESCRIPTION_MAX}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-        )}
-      </Field>
-      <FormActions data-form-actions="">
-        <SubmitButton $size="sm">{copy.save}</SubmitButton>
-        <Button type="button" $variant="ghost" $size="sm" onClick={onDone}>
-          {copy.cancel}
-        </Button>
-      </FormActions>
-    </Form>
-  );
-}
-
-/** SDC notes: admins only, saved with who edited them and when. */
-/** How long typing must pause before notes save. */
-const NOTES_SAVE_DELAY_MS = 800;
-
-/**
- * Owner: notes save themselves (no Save button, no edit history). A save runs once typing pauses and
- * when the field loses focus; a quiet status says Saving… / Saved, and errors show on the field.
- */
-function NotesForm({ org }: { org: AdminPartnerOrganization; now: string }) {
-  const [notes, setNotes] = React.useState(org.notes?.text ?? "");
-  const [status, setStatus] = React.useState<"idle" | "saving" | "saved">("idle");
-  const [error, setError] = React.useState<string>();
-  const saved = React.useRef(org.notes?.text ?? "");
-  const timer = React.useRef<number>(undefined);
-
-  const save = React.useCallback(
-    async (value: string) => {
-      window.clearTimeout(timer.current);
-      if (value === saved.current) return;
-      setStatus("saving");
-      const fd = new FormData();
-      fd.set("notes", value);
-      const result = await saveOrganizationNotes(org.id, idleState, fd);
-      if (result.status === "success") {
-        saved.current = value;
-        setError(undefined);
-        setStatus("saved");
-      } else {
-        setError(result.fieldErrors?.notes ?? result.message);
-        setStatus("idle");
-      }
-    },
-    [org.id],
-  );
-
-  React.useEffect(() => () => window.clearTimeout(timer.current), []);
-
-  return (
-    <Field
-      label={copy.notesLabel}
-      error={error}
-      hint={<span aria-live="polite">{status === "saving" ? copy.notesSaving : status === "saved" ? copy.notesSaved : ""}</span>}
-    >
-      {(p) => (
-        <Textarea
-          {...p}
-          name="notes"
-          rows={4}
-          maxLength={ORGANIZATION_NOTES_MAX}
-          value={notes}
-          onChange={(e) => {
-            const value = e.target.value;
-            setNotes(value);
-            setStatus("idle");
-            window.clearTimeout(timer.current);
-            timer.current = window.setTimeout(() => void save(value), NOTES_SAVE_DELAY_MS);
-          }}
-          onBlur={() => void save(notes)}
-        />
-      )}
-    </Field>
-
-  );
-}
-

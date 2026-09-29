@@ -7,7 +7,6 @@ import {
   ArrowLeft,
   BadgeCheck,
   Download,
-  ChevronRight,
   CircleAlert,
   CircleCheck,
   Copy,
@@ -17,11 +16,9 @@ import {
   Upload,
   UserPlus,
   UserX,
-  type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/Collapsible";
 import { Dialog, DialogActions, DialogClose, DialogContent, DialogTitle } from "@/components/ui/Dialog";
 import { ErrorIcon, Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
@@ -31,9 +28,10 @@ import { Textarea } from "@/components/ui/Textarea";
 import { useToast } from "@/components/ui/Toast";
 import { fieldError, idleState, type ActionState } from "@/lib/forms";
 import { confirmMembers, previewMembers, type AddMode } from "../_data/actions";
-import type { ImportEntry, ImportPreview } from "../_data/types";
+import type { ImportPreview } from "../_data/types";
 import { csvToLines, summarizePreview } from "../_lib/import";
 import { communityCopy as copy } from "../_copy";
+import { PreviewGroup } from "./PreviewGroup";
 
 /** A check, plus (for one clear new person) the result of adding them straight away. */
 type PreviewState = ActionState<ImportPreview> & { applied?: ActionState };
@@ -191,120 +189,10 @@ const GroupList = styled.ul`
   list-style: none;
 `;
 
-const GroupItem = styled.li`
-  display: grid;
-  gap: var(--space-1);
-  padding: var(--space-2) 0;
-
-  & + & {
-    border-top: 1px solid var(--color-border);
-  }
-`;
-
-const GroupTrigger = styled(Button)`
-  justify-content: flex-start;
-  width: 100%;
-  height: auto;
-  min-height: var(--space-6);
-  padding: var(--space-1);
-  text-align: left;
-  font-weight: var(--weight-medium);
-  white-space: normal;
-`;
-
-const Chevron = styled.span<{ $open?: boolean }>`
-  display: inline-flex;
-  flex-shrink: 0;
-  color: var(--color-text-muted);
-  transition: transform var(--duration) var(--ease);
-  transform: rotate(${({ $open }) => ($open ? 90 : 0)}deg);
-`;
-
-type Tone = "success" | "muted" | "warning" | "danger";
-
-const GroupIcon = styled.span<{ $tone: Tone }>`
-  display: inline-flex;
-  flex-shrink: 0;
-  color: ${({ $tone }) =>
-    $tone === "success"
-      ? "var(--color-success)"
-      : $tone === "warning"
-        ? "var(--color-warning)"
-        : $tone === "danger"
-          ? "var(--color-danger)"
-          : "var(--color-text-muted)"};
-`;
-
-const Detail = styled.p`
-  margin: 0;
-  padding-left: calc(var(--space-6) + var(--space-3));
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-`;
-
-const Addresses = styled.ul`
-  margin: 0;
-  padding: var(--space-1) 0 0 calc(var(--space-6) + var(--space-3));
-  list-style: none;
-  display: grid;
-  gap: var(--space-1);
-  font-size: var(--text-xs);
-  color: var(--color-text);
-  overflow-wrap: anywhere;
-`;
-
 const ResubscribeRow = styled.div`
   padding-left: calc(var(--space-6) + var(--space-3));
   padding-top: var(--space-1);
 `;
-
-const person = (e: ImportEntry | string) => (typeof e === "string" ? e : e.name ? `${e.name} · ${e.email}` : e.email);
-
-/** One preview group: icon, "N what happens" label that reveals the addresses, and a short detail line. */
-function Group({
-  icon,
-  tone,
-  label,
-  detail,
-  people,
-  children,
-}: {
-  icon: LucideIcon;
-  tone: Tone;
-  label: string;
-  detail?: string;
-  people: (ImportEntry | string)[];
-  children?: React.ReactNode;
-}) {
-  const [open, setOpen] = React.useState(false);
-  if (people.length === 0) return null;
-  return (
-    <GroupItem>
-      <Collapsible open={open} onOpenChange={setOpen}>
-        <CollapsibleTrigger asChild>
-          <GroupTrigger type="button" $variant="ghost" $size="sm" aria-label={copy.addDialog.toggleAddresses(label, open)}>
-            <Chevron aria-hidden="true" $open={open}>
-              <Icon icon={ChevronRight} size={14} />
-            </Chevron>
-            <GroupIcon aria-hidden="true" $tone={tone}>
-              <Icon icon={icon} size={16} />
-            </GroupIcon>
-            {label}
-          </GroupTrigger>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          <Addresses>
-            {people.map((p) => (
-              <li key={typeof p === "string" ? p : p.email}>{person(p)}</li>
-            ))}
-          </Addresses>
-        </CollapsibleContent>
-      </Collapsible>
-      {detail && <Detail>{detail}</Detail>}
-      {children}
-    </GroupItem>
-  );
-}
 
 type View = "single" | "file";
 
@@ -630,50 +518,50 @@ export function AddMembersDialog({ open, onOpenChange }: { open: boolean; onOpen
         ) : (
           <Step>
             <GroupList>
-              <Group
+              <PreviewGroup
                 icon={UserPlus}
                 tone="success"
                 label={g.added(preview.added.length, preview.paying)}
                 detail={g.addedDetail(preview.paying)}
                 people={preview.added}
               />
-              <Group
+              <PreviewGroup
                 icon={BadgeCheck}
                 tone="success"
                 label={g.converted(preview.converted.length)}
                 detail={g.convertedDetail}
                 people={preview.converted}
               />
-              <Group
+              <PreviewGroup
                 icon={CircleCheck}
                 tone="muted"
                 label={g.alreadyPaying(preview.alreadyPaying.length)}
                 detail={preview.paying ? undefined : g.alreadyPayingDetail}
                 people={preview.alreadyPaying}
               />
-              <Group
+              <PreviewGroup
                 icon={CircleCheck}
                 tone="muted"
                 label={g.alreadyMembers(preview.alreadyMembers.length)}
                 detail={g.alreadyMembersDetail(payingLabel)}
                 people={preview.alreadyMembers}
               />
-              <Group icon={Copy} tone="muted" label={g.duplicates(preview.duplicates.length)} people={preview.duplicates} />
-              <Group
+              <PreviewGroup icon={Copy} tone="muted" label={g.duplicates(preview.duplicates.length)} people={preview.duplicates} />
+              <PreviewGroup
                 icon={CircleAlert}
                 tone="danger"
                 label={g.invalid(preview.invalid.length)}
                 detail={g.invalidDetail}
                 people={preview.invalid}
               />
-              <Group
+              <PreviewGroup
                 icon={MailX}
                 tone="muted"
                 label={g.unsubscribedSelf(preview.unsubscribedSelf.length)}
                 detail={g.unsubscribedSelfDetail(selfConverting)}
                 people={preview.unsubscribedSelf}
               />
-              <Group
+              <PreviewGroup
                 icon={MailQuestion}
                 tone="warning"
                 label={g.unsubscribedAdmin(preview.unsubscribedAdmin.length)}
@@ -688,8 +576,8 @@ export function AddMembersDialog({ open, onOpenChange }: { open: boolean; onOpen
                     label={g.resubscribe(preview.unsubscribedAdmin.length)}
                   />
                 </ResubscribeRow>
-              </Group>
-              <Group icon={UserX} tone="muted" label={g.deleted(preview.deleted.length)} detail={g.deletedDetail} people={preview.deleted} />
+              </PreviewGroup>
+              <PreviewGroup icon={UserX} tone="muted" label={g.deleted(preview.deleted.length)} detail={g.deletedDetail} people={preview.deleted} />
             </GroupList>
 
             <Summary role="status">

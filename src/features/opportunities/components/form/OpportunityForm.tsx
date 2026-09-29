@@ -3,8 +3,8 @@
 import * as React from "react";
 import { useActionState } from "react";
 import { useRouter } from "next/navigation";
-import { keyframes, styled } from "next-yak";
-import { ArrowLeft, ArrowRight, Check, FilePen, Send, Sparkles } from "lucide-react";
+import { styled } from "next-yak";
+import { ArrowLeft, ArrowRight, Check, FilePen, Send } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { ErrorSummary } from "@/components/ui/ErrorSummary";
 import { Field } from "@/components/ui/Field";
@@ -19,6 +19,7 @@ import { copy } from "../../copy";
 import type { EventbritePrefill } from "../../eventbrite";
 import type { Opportunity, OpportunityActions, OpportunityKind, OrganizationRef, SaveResult, TopicId } from "../../types";
 import { BasicsFields } from "./BasicsFields";
+import { EventbriteOffer, isEventbriteLink } from "./EventbriteOffer";
 import { EventFields } from "./EventFields";
 import { BackLink, OutlineLink, Section } from "./FormParts";
 import {
@@ -34,62 +35,17 @@ import {
   type Step,
 } from "./formValues";
 import { JobFields } from "./JobFields";
+import { MagicScanArea, type ScanPhase } from "./MagicScanArea";
 import { OtherFields } from "./OtherFields";
 import { PetitionFields } from "./PetitionFields";
 import { ReviewStep } from "./ReviewStep";
 import { StepIndicator } from "./StepIndicator";
 import { TypeField } from "./TypeField";
+import { useFormDraft } from "./useFormDraft";
 import { VolunteerFields } from "./VolunteerFields";
 
 /** Fields every type shares; the rest live per type in `byKind`. */
 const SHARED_FIELDS = new Set(["organizationId", "title", "summary", "imageUrl", "link"]);
-/** The focus target when a step opens: its first heading. */
-
-/** An eventbrite.ca / .com event page, typed with or without https://. */
-const isEventbriteLink = (value?: string) => /^(https?:\/\/)?([a-z0-9-]+\.)*eventbrite\.[a-z.]+\/e\//i.test((value ?? "").trim());
-
-/* The "we can fill this in" moment for an Eventbrite link: calm, not an alert. */
-const Prefill = styled.div`
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-3);
-  padding: var(--space-3);
-  align-items: center;
-  border: 1px solid var(--color-eventbrite-border);
-  border-radius: var(--radius-md);
-  background: var(--color-eventbrite-subtle);
-`;
-
-/* Eventbrite's mark: their orange disc with a lowercase "e", so the link is recognized at a glance. */
-function EventbriteMark() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true" style={{ flex: "none" }}>
-      <circle cx="14" cy="14" r="14" fill="var(--color-eventbrite)" />
-      <path
-        d="M9.2 14.6h9.3c.1-3.1-1.8-5.4-4.6-5.4-2.9 0-4.9 2.1-4.9 5 0 3 2 4.9 5 4.9 1.9 0 3.4-.8 4.3-2.3l-2-1c-.5.8-1.2 1.2-2.3 1.2-1.5 0-2.6-.9-2.8-2.4Zm.1-1.9c.3-1.3 1.3-2.1 2.6-2.1 1.4 0 2.3.8 2.5 2.1H9.3Z"
-        fill="var(--color-bg)"
-      />
-    </svg>
-  );
-}
-
-const PrefillText = styled.div`
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 2px;
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-`;
-
-const PrefillTitle = styled.span`
-  font-weight: var(--weight-medium);
-  color: var(--color-text);
-`;
-
-const PrefillError = styled.span`
-  color: var(--color-danger);
-`;
 
 const STEP_HEADING = "opportunity-step-heading";
 
@@ -126,165 +82,10 @@ const Form = styled.form`
   gap: var(--space-6);
 `;
 
-/* Sticky footer: the actions stay in reach on a long form (HoneyBook, Workable). */
-/** Eventbrite gets at most this long; then "Timed out" (owner). */
+/** Eventbrite gets at most this long to answer; then the fill gives up with a "timed out" message. */
 const PREFILL_TIMEOUT_MS = 5000;
-/** The line always waits at least this long at the top, so a fast answer doesn't flash (owner). */
+/** The scan line waits at least this long at the top, so a fast answer doesn't flash. */
 const PREFILL_MIN_WAIT_MS = 300;
-
-/*
- * After an Eventbrite fill: a thin glowing line in Eventbrite orange. While Eventbrite answers it bobs at
- * the top of Details; then it sweeps down the step (--duration-scan, at a constant speed so the timing
- * below holds) and the page scrolls with it. The fields start empty; each one's text appears, with a
- * brief glow, as the line passes it. Reduced motion: no bob, no sweep, fields appear at once.
- */
-const bob = keyframes`
-  from {
-    translate: 0 0;
-  }
-  to {
-    translate: 0 var(--space-2);
-  }
-`;
-
-const fieldFilled = keyframes`
-  from {
-    color: transparent;
-    background-color: var(--color-eventbrite-subtle);
-    box-shadow: 0 0 0 1px var(--color-eventbrite-border);
-  }
-  30% {
-    color: var(--color-text);
-    background-color: var(--color-eventbrite-subtle);
-    box-shadow: 0 0 0 1px var(--color-eventbrite-border);
-  }
-  to {
-    color: var(--color-text);
-    background-color: var(--color-bg);
-    box-shadow: 0 0 0 0 transparent;
-  }
-`;
-
-const MagicScan = styled.div`
-  position: relative;
-  /* Same gap as Form, so a divider inside never touches the section above it (owner). */
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
-
-  /* Waiting on Eventbrite: fields stay empty. */
-  &[data-phase="loading"] :is(input, textarea, [role="combobox"]) {
-    color: transparent;
-  }
-  /* Filling: each field fills when the line reaches it (--reveal-at, set per field). */
-  &[data-phase="scanning"] :is(input, textarea, [role="combobox"]) {
-    animation: ${fieldFilled} calc(var(--duration-slow) * 4) var(--ease) var(--reveal-at, 0ms) backwards;
-  }
-`;
-
-/*
- * The line (owner): Eventbrite orange only, layered. A 3px core that brightens to full Eventbrite orange in
- * the middle, then five halos that step out through translucent Eventbrite orange to its lightest tints,
- * each wider and softer than the last, so the glow spreads well beyond the line.
- */
-/*
- * The scan line (owner, round five): one simple 2px line in a bright orange, with a soft sun-like glow, a
- * single warm radial wash that fades out above and below, instead of stacked halos (read as a lightsaber).
- */
-const ScanLine = styled.div`
-  position: absolute;
-  z-index: var(--z-raised);
-  top: 0;
-  left: calc(var(--space-4) * -1);
-  right: calc(var(--space-4) * -1);
-  height: 2px;
-  background: var(--color-eventbrite-bright);
-  pointer-events: none;
-
-  &::before {
-    content: "";
-    position: absolute;
-    inset: calc(var(--space-8) * -1) 0;
-    background: radial-gradient(
-      ellipse 60% 50% at 50% 50%,
-      color-mix(in srgb, var(--color-eventbrite-bright) 32%, transparent),
-      color-mix(in srgb, var(--color-eventbrite-bright) 10%, transparent) 55%,
-      transparent 75%
-    );
-    pointer-events: none;
-  }
-
-  &[data-phase="loading"] {
-    animation: ${bob} var(--duration-slow) var(--ease) infinite alternate;
-  }
-`
-
-/** The nearest scrolling ancestor, or the page. */
-function scrollParentOf(el: HTMLElement): HTMLElement {
-  for (let node = el.parentElement; node; node = node.parentElement) {
-    const { overflowY } = getComputedStyle(node);
-    if ((overflowY === "auto" || overflowY === "scroll") && node.scrollHeight > node.clientHeight) return node;
-  }
-  return (document.scrollingElement as HTMLElement) ?? document.documentElement;
-}
-
-function MagicScanArea({
-  phase,
-  onDone,
-  children,
-}: {
-  phase: "idle" | "loading" | "scanning";
-  onDone: () => void;
-  children: React.ReactNode;
-}) {
-  const ref = React.useRef<HTMLDivElement>(null);
-  const lineRef = React.useRef<HTMLDivElement>(null);
-  const doneRef = React.useRef(onDone);
-  React.useEffect(() => {
-    doneRef.current = onDone;
-  });
-
-  React.useLayoutEffect(() => {
-    const area = ref.current;
-    const line = lineRef.current;
-    if (phase !== "scanning" || !area || !line) return;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const duration = reduce ? 0 : parseFloat(getComputedStyle(area).getPropertyValue("--duration-scan")) * 1000 || 0;
-    const box = area.getBoundingClientRect();
-    // Each visible field fills when the line reaches its top edge (hidden inputs behind Selects are skipped).
-    area
-      .querySelectorAll<HTMLElement>('input:not([type="hidden"]):not([aria-hidden="true"]), textarea, [role="combobox"]')
-      .forEach((field) => {
-        const at = Math.min(Math.max((field.getBoundingClientRect().top - box.top) / Math.max(box.height, 1), 0), 1);
-        field.style.setProperty("--reveal-at", `${Math.round(at * duration)}ms`);
-      });
-    const scroller = scrollParentOf(area);
-    const start = performance.now();
-    let frame = 0;
-    const tick = (now: number) => {
-      const t = duration ? Math.min((now - start) / duration, 1) : 1;
-      const y = t * area.offsetHeight;
-      line.style.top = `${y}px`;
-      // Keep the line about a third of the way down the screen, so the page scrolls with it.
-      if (!reduce) {
-        const lineTop = area.getBoundingClientRect().top + y;
-        const target = scroller.clientHeight / 3;
-        scroller.scrollTop += lineTop - target - (scroller === document.scrollingElement ? 0 : scroller.getBoundingClientRect().top);
-      }
-      if (t < 1) frame = requestAnimationFrame(tick);
-      else doneRef.current();
-    };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [phase]);
-
-  return (
-    <MagicScan ref={ref} data-phase={phase === "idle" ? undefined : phase}>
-      {phase !== "idle" && <ScanLine ref={lineRef} data-phase={phase} aria-hidden="true" />}
-      {children}
-    </MagicScan>
-  );
-}
 
 /* Back and the primary action, pushed to the right edge. */
 const PrimaryGroup = styled.div`
@@ -352,18 +153,6 @@ export interface OpportunityFormProps {
  * current step is rendered; `intent` comes from the clicked button. A server validation error opens the
  * step with the first invalid field, with the error summary on top (its links switch steps too).
  */
-/** "today at 3:42 p.m.", "yesterday at 9:05 a.m." or "Mon, Sep 28 at 3:42 p.m.", in the person's time zone. */
-function draftWhen(iso: string) {
-  const at = new Date(iso);
-  if (Number.isNaN(at.getTime())) return undefined;
-  const time = at.toLocaleTimeString("en-CA", { hour: "numeric", minute: "2-digit" });
-  const day = new Date(at).setHours(0, 0, 0, 0);
-  const today = new Date().setHours(0, 0, 0, 0);
-  const days = Math.round((today - day) / 86_400_000);
-  const date = days === 0 ? "today" : days === 1 ? "yesterday" : at.toLocaleDateString("en-CA", { weekday: "short", month: "short", day: "numeric" });
-  return `${date} at ${time}`;
-}
-
 export function OpportunityForm({
   scope,
   basePath,
@@ -381,61 +170,14 @@ export function OpportunityForm({
   const [model, setModel] = React.useState(() => initialModel(initialKind, opportunity, initialOrganizationId));
   const [step, setStep] = React.useState<Step>(1);
 
-  /*
-   * Unsaved work is kept in this browser (owner, like Google Forms): every change is saved locally, and
-   * coming back restores it with a toast offering Discard. Cleared once the listing saves.
-   */
+  // Unsaved work is kept in this browser and restored on return (see useFormDraft).
   const draftKey = `nexus-draft:${scope}:${opportunity?.id ?? "new"}`;
-  const pristine = React.useRef("");
-  const draftReady = React.useRef(false);
-  const draftCancelled = React.useRef(false);
-  const restoredFor = React.useRef<string>(undefined);
-  React.useEffect(() => {
-    // Once per form, even when React runs effects twice in development (owner: no duplicate toast).
-    if (restoredFor.current === draftKey) return;
-    restoredFor.current = draftKey;
-    const initial = initialModel(initialKind, opportunity, initialOrganizationId);
-    pristine.current = JSON.stringify(initial);
-    try {
-      const raw = localStorage.getItem(draftKey);
-      const saved = raw ? (JSON.parse(raw) as { model?: unknown; savedAt?: string }) : null;
-      // Older drafts were the bare model; newer ones carry when they were saved.
-      const savedModel = saved && "model" in saved ? saved.model : saved;
-      if (savedModel && JSON.stringify(savedModel) !== pristine.current) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- restoring from browser storage after hydration
-        setModel(savedModel as typeof initial);
-        toast({
-          title: copy.form.draft.restored(saved && "savedAt" in saved && saved.savedAt ? draftWhen(saved.savedAt) : undefined),
-          actionLabel: copy.form.draft.discard,
-          onAction: () => {
-            try {
-              localStorage.removeItem(draftKey);
-            } catch {}
-            setModel(initial);
-          },
-        });
-      }
-    } catch {}
-    draftReady.current = true;
-    // Once per form: the key identifies it.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draftKey]);
-  React.useEffect(() => {
-    if (!draftReady.current || draftCancelled.current) return;
-    const timer = window.setTimeout(() => {
-      try {
-        const json = JSON.stringify(model);
-        if (json === pristine.current) localStorage.removeItem(draftKey);
-        else localStorage.setItem(draftKey, JSON.stringify({ model, savedAt: new Date().toISOString() }));
-      } catch {}
-    }, 400);
-    return () => window.clearTimeout(timer);
-  }, [model, draftKey]);
+  const { clearDraft } = useFormDraft(draftKey, () => initialModel(initialKind, opportunity, initialOrganizationId), model, setModel);
   const [prefillError, setPrefillError] = React.useState<string>();
   /** Bumped when Eventbrite fills the form: the Details step plays its "filling in" scan once per fill. */
   const [magicFill, setMagicFill] = React.useState(0);
   /** loading: waiting on Eventbrite (the line bounces at the top); scanning: the line sweeps and fields fill. */
-  const [scanPhase, setScanPhase] = React.useState<"idle" | "loading" | "scanning">("idle");
+  const [scanPhase, setScanPhase] = React.useState<ScanPhase>("idle");
   /** Filled from Eventbrite: Details shows Eventbrite's fields first and what the person adds at the bottom. */
   const [fromEventbrite, setFromEventbrite] = React.useState(false);
   const [prefilling, startPrefill] = React.useTransition();
@@ -508,9 +250,7 @@ export function OpportunityForm({
 
   React.useEffect(() => {
     if (state.status === "success") {
-      try {
-        localStorage.removeItem(draftKey);
-      } catch {}
+      clearDraft();
       if (state.message) toast({ title: state.message });
       router.push(`${basePath}?tab=${state.data?.tab ?? "published"}`);
     } else if (state.status === "error") {
@@ -653,20 +393,8 @@ export function OpportunityForm({
                 />
               )}
             </Field>
-            {/* Events: an Eventbrite link is recognized as typed, with an offer to fill in the details. */}
             {kind === "event" && isEventbriteLink(model.values.link) && (
-              <Prefill role="status">
-                <EventbriteMark />
-                <PrefillText>
-                  <PrefillTitle>{copy.form.eventbrite.found}</PrefillTitle>
-                  <span>{copy.form.eventbrite.hint}</span>
-                  {prefillError && <PrefillError role="alert">{prefillError}</PrefillError>}
-                </PrefillText>
-                <Button type="button" $size="sm" onClick={fillFromEventbrite} aria-busy={prefilling || undefined}>
-                  <Icon icon={Sparkles} size={16} />
-                  {copy.form.eventbrite.fill}
-                </Button>
-              </Prefill>
+              <EventbriteOffer error={prefillError} busy={prefilling} onFill={fillFromEventbrite} />
             )}
           </Section>
         )}
@@ -712,16 +440,8 @@ export function OpportunityForm({
           left (owner). Enter in a field presses the primary button (onFormKeyDown), not the first in the DOM.
         */}
         <ActionBar>
-          {/* Cancel is an explicit "throw this away" (owner): the browser's saved draft goes too. */}
-          <OutlineLink
-            href={basePath}
-            onClick={() => {
-              draftCancelled.current = true;
-              try {
-                localStorage.removeItem(draftKey);
-              } catch {}
-            }}
-          >
+          {/* Cancel means "throw this away", so the browser's saved draft goes too. */}
+          <OutlineLink href={basePath} onClick={() => clearDraft({ stopSaving: true })}>
             {copy.form.cancel}
           </OutlineLink>
           {isDraft && (

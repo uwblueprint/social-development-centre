@@ -23,7 +23,8 @@ import {
   ToggleGroupDemo,
 } from "./demos/ControlDemos";
 import { OverlayDemos } from "./demos/OverlayDemos";
-import { DisplayDemos, EmptyStateDemo, FilterTableDemo, ListRowDemo, PaginationDemo, SortableTableDemo, TableDemo, TruncationDemo } from "./demos/DisplayDemos";
+import { DisplayDemos, EmptyStateDemo, ListRowDemo, TruncationDemo } from "./demos/DisplayDemos";
+import { FilterTableDemo, PaginationDemo, SortableTableDemo, TableDemo } from "./demos/TableDemos";
 
 export const metadata: Metadata = {
   title: "Components · Social Development Centre",
