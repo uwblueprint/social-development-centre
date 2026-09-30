@@ -231,6 +231,16 @@ const Prose = styled.article`
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
   }
+  figure {
+    margin: var(--space-3) 0 var(--space-4);
+  }
+  figure img {
+    margin: 0 0 var(--space-2);
+  }
+  figcaption {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
   .doc-table {
     margin: 0 0 var(--space-4);
     overflow-x: auto;

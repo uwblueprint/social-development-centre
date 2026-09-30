@@ -4,7 +4,10 @@ For SDC admins.
 
 ## Open a section
 
-![The admin sidebar with Opportunities, Insights, Community and Partners, and Partners highlighted](img/admin-getting-around/open-a-section.png)
+<figure>
+  <img src="img/admin-getting-around/open-a-section.png" alt="The admin sidebar with Opportunities, Insights, Community and Partners, and Partners highlighted" />
+  <figcaption>Figure 1. Open a section</figcaption>
+</figure>
 
 1. Use the left sidebar: **Opportunities**, **Partners**, **Community** or **Insights**.
 2. The section you're in is highlighted.

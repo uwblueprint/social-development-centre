@@ -6,7 +6,10 @@ You can do anything a partner can, for any organization, including posting as SD
 
 ## Find an opportunity
 
-![The Opportunities list with the search box, the Published, Drafts and Closed tabs, and the Type filter open with Apply highlighted](img/admin-opportunities/find-an-opportunity.png)
+<figure>
+  <img src="img/admin-opportunities/find-an-opportunity.png" alt="The Opportunities list with the search box, the Published, Drafts and Closed tabs, and the Type filter open with Apply highlighted" />
+  <figcaption>Figure 1. Find an opportunity</figcaption>
+</figure>
 
 1. Go to **Opportunities**.
 2. Choose a tab:
@@ -48,7 +51,10 @@ The listing is published right away, with no review by SDC. You'll see "Publishe
 
 ## Post for a partner
 
-![The Organization field highlighted on the Details step, set to Social Development Centre](img/admin-opportunities/post-for-a-partner.png)
+<figure>
+  <img src="img/admin-opportunities/post-for-a-partner.png" alt="The Organization field highlighted on the Details step, set to Social Development Centre" />
+  <figcaption>Figure 2. Post for a partner</figcaption>
+</figure>
 
 1. Follow **Post a new opportunity**.
 2. On the **Details** step, choose the partner in **Organization**.
@@ -57,7 +63,10 @@ The listing appears in that partner's portal as if they had posted it, and they 
 
 ## Save a draft and finish it later
 
-![The Details step with Title empty and the Save as draft button highlighted next to Next](img/admin-opportunities/save-a-draft-and-finish-it-later.png)
+<figure>
+  <img src="img/admin-opportunities/save-a-draft-and-finish-it-later.png" alt="The Details step with Title empty and the Save as draft button highlighted next to Next" />
+  <figcaption>Figure 3. Save a draft and finish it later</figcaption>
+</figure>
 
 1. In the form, fill in at least a **Title** (on the **Details** step).
 2. Click **Save as draft**. It's there on every step.
@@ -66,7 +75,10 @@ The draft appears on the **Drafts** tab. Community members never see drafts. To 
 
 ## Edit an opportunity
 
-![An opportunity's details panel with the Edit button highlighted at the bottom](img/admin-opportunities/edit-an-opportunity.png)
+<figure>
+  <img src="img/admin-opportunities/edit-an-opportunity.png" alt="An opportunity's details panel with the Edit button highlighted at the bottom" />
+  <figcaption>Figure 4. Edit an opportunity</figcaption>
+</figure>
 
 1. Open the opportunity (click its row).
 2. Click **Edit**.
@@ -80,7 +92,10 @@ You can't change an opportunity's type after it's created. To change it, post a 
 
 ## Post a repeat of an event (or any listing)
 
-![The More actions menu open with Duplicate highlighted](img/admin-opportunities/post-a-repeat-of-an-event-or-any-listing.png)
+<figure>
+  <img src="img/admin-opportunities/post-a-repeat-of-an-event-or-any-listing.png" alt="The More actions menu open with Duplicate highlighted" />
+  <figcaption>Figure 5. Post a repeat of an event (or any listing)</figcaption>
+</figure>
 
 There's no repeat schedule. Copy the listing instead:
 1. Open the opportunity.
@@ -89,7 +104,10 @@ There's no repeat schedule. Copy the listing instead:
 
 ## Close an opportunity (full, cancelled or no longer needed)
 
-![The More actions menu open with Close highlighted](img/admin-opportunities/close-an-opportunity.png)
+<figure>
+  <img src="img/admin-opportunities/close-an-opportunity.png" alt="The More actions menu open with Close highlighted" />
+  <figcaption>Figure 6. Close an opportunity (full, cancelled or no longer needed)</figcaption>
+</figure>
 
 1. Open the opportunity.
 2. At the bottom of the panel, click **Close** (point at an icon to see its name).
@@ -100,7 +118,10 @@ Opportunities also close by themselves: an **event** at its start time, and anyt
 
 ## Reopen a closed opportunity
 
-![The More actions menu for a closed opportunity with Reopen highlighted](img/admin-opportunities/reopen-a-closed-opportunity.png)
+<figure>
+  <img src="img/admin-opportunities/reopen-a-closed-opportunity.png" alt="The More actions menu for a closed opportunity with Reopen highlighted" />
+  <figcaption>Figure 7. Reopen a closed opportunity</figcaption>
+</figure>
 
 1. Go to **Closed** and open the opportunity.
 2. At the bottom of the panel, click **Reopen** (point at an icon to see its name).
@@ -112,7 +133,10 @@ It goes back to **Published**. You'll see "Reopened. Members can see this opport
 
 ## Delete an opportunity posted by mistake
 
-![The delete confirmation with Cancel and the Delete button highlighted](img/admin-opportunities/delete-an-opportunity-posted-by-mistake.png)
+<figure>
+  <img src="img/admin-opportunities/delete-an-opportunity-posted-by-mistake.png" alt="The delete confirmation with Cancel and the Delete button highlighted" />
+  <figcaption>Figure 8. Delete an opportunity posted by mistake</figcaption>
+</figure>
 
 1. Open the opportunity.
 2. At the bottom of the panel, click **Delete** (point at an icon to see its name).
@@ -122,14 +146,20 @@ It's removed for everyone and can't be restored. You'll see "Deleted â€œ{title}â
 
 ## Open the link people will use
 
-![The More actions menu open with Open link highlighted](img/admin-opportunities/open-the-link-people-will-use.png)
+<figure>
+  <img src="img/admin-opportunities/open-the-link-people-will-use.png" alt="The More actions menu open with Open link highlighted" />
+  <figcaption>Figure 9. Open the link people will use</figcaption>
+</figure>
 
 1. Open the opportunity.
 2. At the bottom of the panel, click **Open link** (point at an icon to see its name). The page people go to opens, so you can check it works.
 
 ## See one partner's opportunities
 
-![The Organization filter open with Northside Food Bank ticked and highlighted](img/admin-opportunities/see-one-partners-opportunities.png)
+<figure>
+  <img src="img/admin-opportunities/see-one-partners-opportunities.png" alt="The Organization filter open with Northside Food Bank ticked and highlighted" />
+  <figcaption>Figure 10. See one partner's opportunities</figcaption>
+</figure>
 
 1. Go to **Opportunities**, click the filter icon next to **Organization** in the table header, and tick the partner.
 2. Or, from **Partners**, open the partner and click **View opportunities**.

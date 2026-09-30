@@ -9,6 +9,7 @@ How to get things done in the Social Development Centre product, organized by ta
 - Plain language, no internal terms. Mention who can do it if it's limited (e.g. SDC admins only).
 - Update this guide in the same change as any user-facing product change (see `AGENTS.md`).
 - Screenshots in `img/` are generated with `pnpm docs:screenshots`; rerun it after UI changes (run it locally for the production font, since some sandboxes block Fontshare and fall back to Geist).
+Screenshots are embedded as `<figure>` with descriptive `alt` text (what to notice) and a `<figcaption>` naming the task ("Figure 3. Invite a partner"); keep that format when adding images.
 
 ## Admin portal (SDC admins)
 - [Getting around the admin portal](./admin-getting-around.md)

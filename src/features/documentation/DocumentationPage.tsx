@@ -77,6 +77,10 @@ function renderGuide(
         const src = href.startsWith("img/") ? `/documentation-assets/${href.slice(4)}` : href;
         return `<img src="${src}" alt="${text.replace(/"/g, "&quot;")}" loading="lazy" />`;
       },
+      html({ text }: Tokens.HTML | Tokens.Tag) {
+        // Screenshots written as <figure><img src="img/…"> get the same /documentation-assets address as markdown images.
+        return text.replace(/(<img\s[^>]*?src=")img\//g, "$1/documentation-assets/");
+      },
       table(token: Tokens.Table) {
         // Wide tables scroll inside their own frame instead of widening the page.
         return `<div class="doc-table" role="region" aria-label="Table" tabindex="0">${marked.Renderer.prototype.table.call(this, token)}</div>`;
