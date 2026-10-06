@@ -95,7 +95,7 @@ export function BlockedNotice({ blocked }: { blocked: Blocked }) {
           <>
             <Text>{copy.signedOut}</Text>
             <Text>
-              <SignInLink href="/login">{copy.signIn}</SignInLink>
+              <SignInLink href="/login/partner">{copy.signIn}</SignInLink>
             </Text>
           </>
         ) : (

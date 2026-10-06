@@ -37,11 +37,37 @@ for (const path of routes) test(`${path} has no WCAG 2.2 AA violations`, async (
   await checkA11y(page);
 });
 
-test.describe("login", () => {
-  test("sign-in error state has no violations", async ({ page }) => {
+test.describe("sign-in", () => {
+  // Every designed screen of the three sign-in pages and the shared opportunity page (?state= is dev only).
+  const screens = [
+    "/login",
+    "/login?state=cooldown",
+    "/login?state=sent",
+    "/login?state=expired",
+    "/login?state=not-member",
+    "/login?next=%2Fo%2Fopp_1",
+    "/login/partner",
+    "/login/partner?state=cooldown",
+    "/login/partner?state=not-found",
+    "/login/admin",
+    "/login/admin?state=wrong-password",
+    "/login/admin?state=paused",
+    "/login/admin?state=session-ended",
+    "/o/opp_1",
+    "/o/opp_missing",
+  ];
+  for (const path of screens) {
+    test(`${path} has no violations`, async ({ page }) => {
+      await page.goto(path);
+      await settle(page);
+      await checkA11y(page);
+    });
+  }
+
+  test("member sign-in error state has no violations", async ({ page }) => {
     await page.goto("/login");
     await settle(page);
-    await page.getByRole("button", { name: "Send sign-in link" }).click();
+    await page.getByRole("button", { name: "Email me a sign-in link" }).click();
     await expect(page.getByText("Enter an email address like name@example.org.")).toBeVisible();
     await checkA11y(page);
   });
@@ -50,6 +76,15 @@ test.describe("login", () => {
     await page.goto("/login?signedOut=1&name=Amara");
     await settle(page);
     await expect(page.getByRole("status")).toContainText("You're signed out");
+    await checkA11y(page);
+  });
+
+  test("newsletter signup confirms in place", async ({ page }) => {
+    await page.goto("/o/opp_1");
+    await settle(page);
+    await page.getByLabel("Email address").fill("jordan@example.org");
+    await page.getByRole("button", { name: "Subscribe" }).click();
+    await expect(page.getByRole("status")).toContainText("You’re already subscribed");
     await checkA11y(page);
   });
 });

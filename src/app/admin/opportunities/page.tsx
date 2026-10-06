@@ -18,7 +18,7 @@ export const metadata: Metadata = { title: copy.page.title };
 
 export default async function Page({ searchParams }: PageProps<"/admin/opportunities">) {
   const admin = await getCurrentAdmin();
-  if (!admin) redirect("/login");
+  if (!admin) redirect("/login/admin");
   const actor: Actor = { role: "admin", name: admin.name };
 
   const params = await searchParams;

@@ -14,7 +14,7 @@ const BASE = "/admin/opportunities";
 
 async function load(id: string) {
   const admin = await getCurrentAdmin();
-  if (!admin) redirect("/login");
+  if (!admin) redirect("/login/admin");
   const actor: Actor = { role: "admin", name: admin.name };
   return getOpportunity(actor, id);
 }
