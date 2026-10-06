@@ -2,6 +2,10 @@
 
 This file is for AI coding agents and humans alike. Read it before writing any UI.
 
+## Who is pushing
+
+If the person pushing code is Justin, work on the frontend only. No backend: don't add or change server actions, data seams, API routes, database code or other server-side logic. If the UI needs data or actions that don't exist yet, list them in `docs/backend/<feature>.md` and stop there.
+
 ## Where things live
 
 - `src/components/ui/`: the component kit. Import from here and nowhere else.
