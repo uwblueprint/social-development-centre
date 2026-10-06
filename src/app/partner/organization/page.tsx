@@ -9,6 +9,6 @@ export const metadata: Metadata = { title: copy.organization.title };
 
 export default async function Page() {
   const [partner, org] = await Promise.all([getCurrentPartner(), getMyOrganization()]);
-  if (!partner || !org) redirect("/login");
+  if (!partner || !org) redirect("/login/partner");
   return <OrganizationView org={org} currentContactId={partner.contactId} />;
 }

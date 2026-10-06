@@ -25,7 +25,7 @@ export default async function NewOpportunityPage({ searchParams }: Props) {
   // No or unknown ?kind starts as an event; Type is the form's first field and can be changed there.
   const kind = parseKind((await searchParams).kind) ?? "event";
   const partner = await getCurrentPartner();
-  if (!partner) redirect("/login");
+  if (!partner) redirect("/login/partner");
   return (
     <OpportunityForm
       scope="partner"

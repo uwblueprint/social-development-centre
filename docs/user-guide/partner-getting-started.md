@@ -10,14 +10,19 @@ The link works once, for 7 days. **If it has expired or doesn't work,** ask your
 
 ## Sign in later
 
-![The sign-in page with an email address entered and the Send sign-in link button highlighted](img/partner-getting-started/sign-in-later.png)
+![The CivicHub partner sign-in page with an organization email entered and the Email me a sign-in link button highlighted](img/partner-getting-started/sign-in-later.png)
 
 There's no password. You sign in with a link sent to your email.
-1. Go to the sign-in page and enter your **Email**.
-2. Click **Send sign-in link**.
-3. Open the email and click the link.
+1. Go to the **CivicHub partner sign in** page and enter your **Organization email** (the address SDC invited).
+2. Click **Email me a sign-in link**.
+3. Open the email ("Your CivicHub sign-in link") on the same device and click **Sign in to CivicHub**.
 
-You'll see "Check your email for a sign-in link." after step 2. Use the same email address SDC invited. If no email arrives, check your spam folder, then ask your SDC contact to check which address they invited.
+You stay signed in on that device until you sign out.
+
+- **"Check your email":** the link is on its way. If it doesn't arrive, check spam or quarantine (work email filters sometimes hold these). **Resend link** works again after 60 seconds; until then it counts down.
+- **"Email not found":** that address wasn't invited. Check for typos, search your inbox for "CivicHub invitation" to find the invited address, or try your organization's shared inbox. Edit the email, then click **Email me a sign-in link** again. If SDC has the wrong address, click **Contact SDC**.
+- **"This link has expired":** links work once and expire after 15 minutes. Click **Send a new link**, or **Use a different email**.
+- **Lost access to the invited email?** Contact SDC and an admin will move your account to a new email.
 
 ## Get around the portal
 

@@ -18,7 +18,7 @@ export const metadata: Metadata = { title: copy.page.title };
 
 export default async function Page({ searchParams }: PageProps<"/partner/opportunities">) {
   const partner = await getCurrentPartner();
-  if (!partner) redirect("/login");
+  if (!partner) redirect("/login/partner");
   const actor: Actor = { role: "partner", name: partner.name, organizationId: partner.organization.id };
 
   // Partners only ever see their own organization; an org param is ignored.

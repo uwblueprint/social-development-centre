@@ -19,3 +19,6 @@ How to get things done in the Social Development Centre product, organized by ta
 ## Partner portal (Civic Hub partners)
 - [Getting started with the partner portal](./partner-getting-started.md)
 - [Opportunities](./partner-opportunities.md)
+
+## Paying members
+- [Signing in as a paying member](./member-sign-in.md)

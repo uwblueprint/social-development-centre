@@ -10,7 +10,7 @@ export const viewport: Viewport = { interactiveWidget: "resizes-content" };
 
 /** Tablet sign-up for an SDC booth. Opened by an admin from Community in a new tab; no admin shell. */
 export default async function KioskPage({ searchParams }: PageProps<"/kiosk">) {
-  if (!(await getCurrentAdmin())) redirect("/login");
+  if (!(await getCurrentAdmin())) redirect("/login/admin");
 
   const { location } = await searchParams;
   const label = typeof location === "string" ? location.trim().slice(0, 80) : "";

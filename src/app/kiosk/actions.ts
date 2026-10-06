@@ -15,7 +15,7 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 /** Booth sign-up form (fields: name, email). `location` is bound from the page's `?location=`. */
 export async function signUpAtBooth(location: string | null, _prev: KioskState, fd: FormData): Promise<KioskState> {
   // The kiosk runs on an admin's signed-in tablet; the action is a public endpoint, so check again.
-  if (!(await getCurrentAdmin())) redirect("/login");
+  if (!(await getCurrentAdmin())) redirect("/login/admin");
 
   const name = String(fd.get("name") ?? "").trim();
   const email = String(fd.get("email") ?? "").trim();

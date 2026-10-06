@@ -498,10 +498,10 @@ const SHOTS: Shot[] = [
 
   // ---- Partner: getting started ----
   {
-    guide: partnerStart, slug: "sign-in-later", url: "/login",
-    act: async (p) => { await p.getByLabel("Email").fill("amara@northsidefood.org"); },
-    target: (p) => btn(p, "Send sign-in link"),
-    region: (p) => [p.getByLabel("Email"), btn(p, "Send sign-in link")],
+    guide: partnerStart, slug: "sign-in-later", url: "/login/partner",
+    act: async (p) => { await p.getByLabel("Organization email").fill("amara@northsidefood.org"); },
+    target: (p) => btn(p, "Email me a sign-in link"),
+    region: (p) => [p.getByLabel("Organization email"), btn(p, "Email me a sign-in link")],
     pad: 48,
   },
   {

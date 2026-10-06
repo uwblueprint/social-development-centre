@@ -2,6 +2,17 @@
 
 For SDC admins.
 
+## Sign in
+Admins share one SDC admin account.
+1. Go to the **Admin sign in** page (marked **SDC staff only**).
+2. Enter the shared account's **Email** and **Password**.
+3. Click **Sign in**.
+
+You stay signed in for 30 days on that device. After 30 days you'll see **Your session has ended**; click **Sign in again**.
+
+- **"Incorrect password":** the email stays filled in; retype the password. The message says how many attempts are left.
+- **"Sign-in paused for 15 minutes":** there were too many wrong passwords on the shared account, so sign-in is paused for everyone. Wait for the timer on the button (**Try again in …**), or ask another admin who knows the current password.
+
 ## Open a section
 
 ![The admin sidebar with Opportunities, Insights, Community and Partners, and Partners highlighted](img/admin-getting-around/open-a-section.png)

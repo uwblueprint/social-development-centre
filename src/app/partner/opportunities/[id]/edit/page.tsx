@@ -15,7 +15,7 @@ const BASE = "/partner/opportunities";
 /** Scoped to the partner's organization: another organization's id reads as not found. */
 async function load(id: string) {
   const partner = await getCurrentPartner();
-  if (!partner) redirect("/login");
+  if (!partner) redirect("/login/partner");
   const actor: Actor = { role: "partner", name: partner.name, organizationId: partner.organization.id };
   return getOpportunity(actor, id);
 }
