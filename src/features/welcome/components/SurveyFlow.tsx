@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { keyframes, styled } from "next-yak";
 import { ArrowLeft, CircleAlert, CircleCheck, Clock } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -11,6 +12,7 @@ import { Progress } from "@/components/ui/Progress";
 import { RadioCard, RadioCardGroup } from "@/components/ui/RadioGroup";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Textarea } from "@/components/ui/Textarea";
+import { signOut } from "@/features/auth/actions";
 import { celebrate } from "@/lib/celebrate";
 import { trackSurveyEvent } from "../analytics";
 import { OUTSIDE, locationChoices, surveyCopy as copy, timeChoices, topicChoices, wayChoices } from "../copy";
@@ -248,6 +250,7 @@ export function SurveyFlow({ email, initialName }: { email: string; initialName:
   const [saveError, setSaveError] = useState(false);
   // One id per page load, sent again on every retry so a repeated save is the same submission.
   const [submissionId] = useState(() => crypto.randomUUID());
+  const router = useRouter();
   const firstRender = useRef(true);
 
   const set = <K extends keyof SurveyAnswers>(key: K, value: SurveyAnswers[K]) => setAnswers((a) => ({ ...a, [key]: value }));
@@ -325,6 +328,19 @@ export function SurveyFlow({ email, initialName }: { email: string; initialName:
               {step === "done" ? copy.done.heading : copy.left.heading}
             </Heading>
             <Lead>{step === "done" ? copy.done.body : copy.left.body}</Lead>
+            {step === "done" ? (
+              <Button type="button" $size="lg" onClick={() => router.push("/")}>
+                {copy.done.next}
+              </Button>
+            ) : (
+              /* "Come back any time" is only true if they leave: the gate would otherwise send
+                 them straight back here, so this screen's way out is signing out. */
+              <form action={signOut.bind(null, "member")}>
+                <SubmitButton $size="lg" $variant="outline">
+                  {copy.left.signOut}
+                </SubmitButton>
+              </form>
+            )}
           </Centered>
         )}
 

@@ -91,6 +91,7 @@ export const surveyCopy = {
   left: {
     heading: "No problem — come back any time",
     body: "We’ve saved your place, not your answers. The survey is waiting whenever you sign in again. Thank you for supporting Ride for Refuge.",
+    signOut: "Sign out",
   },
 
   contact: {
@@ -145,7 +146,8 @@ export const surveyCopy = {
 
   done: {
     heading: "Thanks for sharing!",
-    body: "Your answers will help SDC shape its membership community and understand the ways people would like to be involved. You can change your mind or opt out any time.",
+    body: "Your answers will help SDC shape its membership community and understand the ways people would like to be involved.",
+    next: "Go to SDC",
   },
 
   /** The decorative icon on the welcome screen. */

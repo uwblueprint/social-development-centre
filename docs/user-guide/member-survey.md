@@ -12,7 +12,7 @@ the survey. You answer it the first time you sign in, and it takes about two min
 5. Answer each of the five questions, or leave one blank. Choose **Next** after each one. The button
    says **Skip for now** until you pick something.
 6. On the last question, write in the box if you like, then choose **Share my preferences**.
-7. When you see "Thanks for sharing!", your answers are saved.
+7. When you see "Thanks for sharing!", your answers are saved. Choose **Go to SDC** to carry on.
 
 You can choose **Back** at any step to change an answer.
 
@@ -24,7 +24,8 @@ issues question, **I’m not sure yet** clears your other picks, and picking ano
 ## Answer it later
 1. On the first screen, choose **Maybe later** at the bottom.
 2. You'll see "No problem — come back any time". Nothing is cancelled.
-3. The survey opens again the next time you sign in.
+3. Choose **Sign out**.
+4. The survey opens again the next time you sign in.
 
 The same is true if you close the page part-way through: nothing is saved until you choose
 **Share my preferences**, and you'll be asked again next time.
