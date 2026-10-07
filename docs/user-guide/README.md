@@ -20,3 +20,6 @@ Screenshots are embedded as `<figure>` with descriptive `alt` text (what to noti
 ## Partner portal (Civic Hub partners)
 - [Getting started with the partner portal](./partner-getting-started.md)
 - [Opportunities](./partner-opportunities.md)
+
+## Ride for Refuge supporters
+- [Membership survey](./member-survey.md)

@@ -38,6 +38,7 @@ No backend work. When there's no connection, what's on screen stays readable; su
 - [Partners](./partners.md)
 - [Opportunities](./opportunities.md) (both portals, plus the partner session)
 - [Community](./community.md)
+- [Membership survey](./member-survey.md) (the public `/join` questionnaire for Ride for Refuge supporters)
 
 ## Support address
 `BSF_SUPPORT_EMAIL` (`src/lib/contact.ts`) is where admins escalate a page that keeps failing to load. It is still the placeholder `{BSF email}`; set the real address there, and the load-error page turns it into a mailto link automatically.

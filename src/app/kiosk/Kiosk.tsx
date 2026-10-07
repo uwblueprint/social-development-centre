@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import confetti from "canvas-confetti";
 import { styled } from "next-yak";
 import { CircleAlert, CircleCheck } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -9,6 +8,7 @@ import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
 import { Input } from "@/components/ui/Input";
 import { SubmitButton } from "@/components/ui/SubmitButton";
+import { celebrate } from "@/lib/celebrate";
 import { fieldError } from "@/lib/forms";
 import { signUpAtBooth, type KioskState } from "./actions";
 import { kioskCopy as copy } from "./copy";
@@ -227,18 +227,6 @@ const Countdown = styled.p`
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
 `;
-
-/** Tokens, read at runtime: confetti draws on a canvas, which can't use CSS variables directly. */
-const CONFETTI_TOKENS = ["--color-success", "--color-category-1", "--color-category-2", "--color-category-3", "--color-warning"];
-
-function celebrate() {
-  const styles = getComputedStyle(document.documentElement);
-  const colors = CONFETTI_TOKENS.map((t) => styles.getPropertyValue(t).trim()).filter(Boolean);
-  // `disableForReducedMotion` skips it for people who ask for less motion.
-  const burst = { particleCount: 80, spread: 70, startVelocity: 45, colors, disableForReducedMotion: true };
-  void confetti({ ...burst, angle: 60, origin: { x: 0, y: 0.7 } });
-  void confetti({ ...burst, angle: 120, origin: { x: 1, y: 0.7 } });
-}
 
 /** Centers a focused field in view, again once the on-screen keyboard has opened and resized the viewport. */
 function useKeepFocusedFieldInView() {

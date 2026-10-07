@@ -84,6 +84,37 @@ test.describe("kiosk", () => {
   });
 });
 
+test.describe("membership survey", () => {
+  test("every step has no violations", async ({ page }) => {
+    await page.goto("/join?email=ada@example.org");
+    await settle(page);
+    await checkA11y(page);
+
+    await page.getByRole("button", { name: "Get started" }).click();
+    await page.getByRole("heading", { name: "Let’s start with your details" }).waitFor();
+    await settle(page);
+    await checkA11y(page);
+
+    await page.getByRole("button", { name: "Next", exact: true }).click();
+    await page.getByRole("heading", { name: /Which issues/ }).waitFor();
+    await page.getByLabel("Other").check();
+    await settle(page);
+    await checkA11y(page);
+
+    for (const heading of [/How would you like to be involved/, /Where are you based/, /how much time/, /What would make being part/]) {
+      await page.getByRole("button", { name: /^(Next|Skip for now)$/ }).click();
+      await page.getByRole("heading", { name: heading }).waitFor();
+      await settle(page);
+      await checkA11y(page);
+    }
+
+    await page.getByRole("button", { name: "Share my preferences" }).click();
+    await page.getByRole("heading", { name: "Thanks for sharing!" }).waitFor();
+    await settle(page);
+    await checkA11y(page);
+  });
+});
+
 test.describe("admin shell", () => {
   test("documentation page has no violations", async ({ page }) => {
     await page.goto("/admin/documentation");
