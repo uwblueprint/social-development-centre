@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/Textarea";
 import { celebrate } from "@/lib/celebrate";
 import { trackSurveyEvent } from "../analytics";
 import { OUTSIDE, locationChoices, surveyCopy as copy, timeChoices, topicChoices, wayChoices } from "../copy";
-import { submitSurvey } from "@/app/join/actions";
+import { submitSurvey } from "../actions";
 import { toSubmission } from "../submit";
 import { QUESTION_COUNT, emptyAnswers, type Step, type SurveyAnswers } from "../types";
 import { CheckCardGroup } from "./CheckCardGroup";
