@@ -4,22 +4,10 @@ import { signOut } from "@/app/login/actions";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/Button";
 
-const Heading = styled.h1`
-  font-size: 1.25rem;
-`;
-
-export default async function Home() {
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getClaims();
-  const claims = data?.claims;
-
-  if (!claims) redirect("/login");
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("email")
-    .eq("id", claims.sub)
-    .single();
+// Placeholder until the members-only opportunities feed exists.
+export default async function MembersHome() {
+  const member = await requireMember();
+  if (!member.hasAnsweredWelcome) redirect("/welcome");
 
   return (
     <main>

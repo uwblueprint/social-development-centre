@@ -11,3 +11,15 @@ export const SDC_CONTACT_EMAIL = "{SDC contact email}";
  * TODO: replace with the real BSF address. Import this constant; never hard-code the address elsewhere.
  */
 export const BSF_SUPPORT_EMAIL = "{BSF email}";
+
+/**
+ * Where "Become a paying member" goes on the member sign-in page (SDC's membership page).
+ * TODO: replace with the real URL once SDC confirms it. Import this constant; never hard-code it.
+ */
+export const SDC_MEMBERSHIP_URL = "{SDC membership page URL}";
+
+/**
+ * Where "Join the newsletter" goes on the member sign-in page (SDC's public newsletter signup).
+ * TODO: replace with the real URL once SDC confirms it. Import this constant; never hard-code it.
+ */
+export const SDC_NEWSLETTER_URL = "{SDC newsletter signup URL}";
