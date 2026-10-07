@@ -1,13 +1,13 @@
 # Membership survey (Ride for Refuge pilot): decision log
 
-Decisions and assumptions behind `/join`, the questionnaire sent to Ride for Refuge supporters. **All copy is draft until SDC confirms the complimentary-membership terms and the topic labels.** Each decision can be revisited.
+Decisions and assumptions behind `/welcome`, the questionnaire Ride for Refuge supporters answer after their first sign-in. **All copy is draft until SDC confirms the complimentary-membership terms and the topic labels.** Each decision can be revisited.
 
 ## 0. Superseded by the first-login gate (6 Oct 2026, later the same day)
 
 Sections 2 and 4 below record the original frontend-only design and are kept as the record of what
 was decided and why. Two of those decisions have since been replaced; the rest still stand.
 
-- **Where it lives (was §2):** `/join` is now **behind sign-in**, not public. Members receive a
+- **Where it lives (was §2):** the survey moved to `/welcome`, **behind sign-in**, not public. Members receive a
   magic-link login rather than a survey link, and the app shows the survey until their answers are
   saved. The URL prefill (`?email=`, `?name=`) is gone: the email is the signed-in account,
   shown as read-only context, so a forwarded link cannot file answers under someone else.

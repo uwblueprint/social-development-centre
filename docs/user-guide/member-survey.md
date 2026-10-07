@@ -4,7 +4,7 @@ You received an email from SDC offering a complimentary membership. These steps 
 the survey. You answer it the first time you sign in, and it takes about two minutes.
 
 ## Sign in and answer the survey
-1. Open the link in your invitation email and sign in with your email address.
+1. Open the link in your invitation email and enter your email address to sign in.
 2. SDC emails you a sign-in link. Open it. The survey opens on its own the first time.
 3. Read the welcome, then choose **Get started**.
 4. Fill in **Name** (optional). Your email is shown under **Signed in as** and can't be changed
