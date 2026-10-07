@@ -73,8 +73,9 @@ It needs somewhere to record, per person:
 Writes should be fire-and-forget: logging must never block a step change or fail a submission.
 
 ## 4. No unsubscribe
-"Maybe later" shows a screen and nothing else: no answers row is written, so the person is still
-unanswered and the survey is waiting next time. Removing someone from the Mailchimp audience is not
+"Maybe later" writes nothing and signs the person out, so the survey is waiting at their next
+sign-in. Signing out is what makes that promise true: the gate at `/` would otherwise send them
+straight back, since they are still unanswered. Removing someone from the Mailchimp audience is not
 this form's job — the invitation email's own **Unsubscribe** button uses Mailchimp's link. Once §3
 exists, choosing "Maybe later" should at least be recorded.
 

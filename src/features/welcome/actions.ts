@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { requireMember } from "@/features/auth/session";
 import type { ActionState } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
@@ -33,5 +34,7 @@ export async function submitSurvey(submission: SurveySubmission): Promise<Action
     console.error("submit_welcome failed:", error.message);
     return { status: "error", message: surveyCopy.submitFailed };
   }
+  // So the gate at / sees the new welcome_answers row instead of a cached payload.
+  revalidatePath("/");
   return { status: "success" };
 }
