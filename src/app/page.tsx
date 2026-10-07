@@ -1,31 +1,30 @@
 import { redirect } from "next/navigation";
-import { styled } from "next-yak";
-import { signOut } from "@/app/login/actions";
-import { createClient } from "@/lib/supabase/server";
+import { Button } from "@/components/ui/Button";
+import { signOut } from "@/features/auth/actions";
+import { AuthActions, AuthColumn, AuthHeading, AuthScreen, SdcLogo } from "@/features/auth/AuthScreen";
+import { requireMember } from "@/features/auth/session";
 
-const Heading = styled.h1`
-  font-size: 1.25rem;
-`;
-
-export default async function Home() {
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getClaims();
-  const claims = data?.claims;
-
-  if (!claims) redirect("/login");
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("email")
-    .eq("id", claims.sub)
-    .single();
+// Placeholder until the members-only opportunities feed exists.
+export default async function MembersHome() {
+  const member = await requireMember();
+  if (!member.hasAnsweredWelcome) redirect("/welcome");
 
   return (
-    <main>
-      <Heading>Signed in as {profile?.email ?? claims.email}</Heading>
-      <form action={signOut}>
-        <button type="submit">Sign out</button>
-      </form>
-    </main>
+    <AuthScreen>
+      <AuthColumn>
+        <SdcLogo />
+        <AuthHeading
+          title="You’re signed in"
+          description={`The members-only opportunities feed is coming soon.\nSigned in as ${member.email}.`}
+        />
+        <AuthActions>
+          <form action={signOut.bind(null, "member")}>
+            <Button type="submit" $variant="outline" $size="lg">
+              Sign out
+            </Button>
+          </form>
+        </AuthActions>
+      </AuthColumn>
+    </AuthScreen>
   );
 }

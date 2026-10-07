@@ -1,33 +1,9 @@
-import { styled } from "next-yak";
-import { signIn } from "./actions";
+import type { Metadata } from "next";
+import { SignIn } from "@/features/auth/SignIn";
 
-const Main = styled.main`
-  display: grid;
-  place-items: center;
-  min-height: 100vh;
-`;
+export const metadata: Metadata = { title: "Sign in to SDC" };
 
-const Form = styled.form`
-  display: grid;
-  gap: 0.5rem;
-  width: 16rem;
-`;
-
-export default async function LoginPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ sent?: string; error?: string }>;
-}) {
-  const { sent, error } = await searchParams;
-
-  return (
-    <Main>
-      <Form action={signIn}>
-        <input type="email" name="email" placeholder="Email" required />
-        <button type="submit">Send sign-in link</button>
-        {sent && <p>Check your email for a sign-in link.</p>}
-        {error && <p>{error}</p>}
-      </Form>
-    </Main>
-  );
+export default async function MemberSignInPage({ searchParams }: PageProps<"/login">) {
+  const { error } = await searchParams;
+  return <SignIn portal="member" linkError={typeof error === "string" ? error : undefined} />;
 }
