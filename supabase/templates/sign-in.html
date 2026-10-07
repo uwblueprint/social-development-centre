@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <body style="margin: 0; background: #f3f1f1; font-family: Geist, Helvetica, Arial, sans-serif; color: #1d1816">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background: #f3f1f1; padding: 32px 16px">
+      <tr>
+        <td align="center">
+          <table
+            role="presentation"
+            width="576"
+            cellpadding="0"
+            cellspacing="0"
+            style="width: 100%; max-width: 576px; background: #ffffff; border: 1px solid #e8e4e3; border-radius: 8px"
+          >
+            <tr>
+              <td style="padding: 48px">
+                <img
+                  src="{{ .SiteURL }}/brand/sdc-logo.png"
+                  width="92"
+                  height="72"
+                  alt="Social Development Centre Waterloo Region"
+                  style="display: block"
+                />
+                <h1 style="margin: 24px 0; font-size: 40px; line-height: 1; font-weight: 500; letter-spacing: -0.8px; color: #064d45">
+                  Sign in to SDC
+                </h1>
+                <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.7">Click the button below to sign in to SDC.</p>
+                <a
+                  href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=email"
+                  style="display: inline-block; padding: 14px 24px; border-radius: 6px; background: #1d1816; color: #fbfaf9; font-size: 16px; line-height: 1; text-decoration: none"
+                  >Sign in to SDC</a
+                >
+                <p style="margin: 24px 0; font-size: 14px; line-height: 1.5; color: #5b4f4b">This link works once and expires in 1 hour.</p>
+                <hr style="margin: 0 0 24px; border: 0; border-top: 1px solid #e8e4e3" />
+                <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #5b4f4b">
+                  <strong style="font-weight: 500; color: #1d1816">Didn’t expect this?</strong> You can ignore this email. No one
+                  can sign in without access to your inbox.
+                </p>
+              </td>
+            </tr>
+          </table>
+          <p style="margin: 24px 0 0; font-size: 12px; line-height: 1.4; color: #7c6d67">
+            Social Development Centre Waterloo Region<br />
+            You’re getting this because a sign-in link was requested for {{ .Email }}.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

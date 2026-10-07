@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { signInPathFor } from "@/features/auth/portals";
 
 export async function updateSession(request: NextRequest) {
   // Lets people work on UI locally without Supabase credentials; production always enforces auth.
@@ -30,13 +31,11 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
+  // Signed-out visitors go to their portal's sign-in page. Pages still check roles themselves.
   const { data } = await supabase.auth.getClaims();
-  const { pathname } = request.nextUrl;
-
-  if (!data?.claims && !pathname.startsWith("/login") && !pathname.startsWith("/auth")) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
+  const signInPath = signInPathFor(request.nextUrl.pathname);
+  if (!data && signInPath) {
+    return NextResponse.redirect(new URL(signInPath, request.url));
   }
 
   return supabaseResponse;
