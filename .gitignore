@@ -26,8 +26,6 @@ yarn-error.log*
 .env*.local
 .env
 
-AGENTS.md
-CLAUDE.md
 
 # vercel
 .vercel
@@ -38,3 +36,7 @@ next-env.d.ts
 
 # next-yak swc plugin cache
 /.swc/
+
+# playwright
+/test-results/
+/playwright-report/
