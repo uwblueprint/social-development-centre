@@ -103,6 +103,56 @@ export type Database = {
         }
         Relationships: []
       }
+      page_visits: {
+        Row: {
+          active_ms: number | null
+          answers: Json | null
+          created_at: string | null
+          first_answer_ms: number | null
+          id: number
+          last_answer_ms: number | null
+          left_via: string | null
+          link_token: string
+          page_key: string
+          person_id: string | null
+          total_ms: number | null
+        }
+        Insert: {
+          active_ms?: number | null
+          answers?: Json | null
+          created_at?: string | null
+          first_answer_ms?: number | null
+          id?: never
+          last_answer_ms?: number | null
+          left_via?: string | null
+          link_token: string
+          page_key: string
+          person_id?: string | null
+          total_ms?: number | null
+        }
+        Update: {
+          active_ms?: number | null
+          answers?: Json | null
+          created_at?: string | null
+          first_answer_ms?: number | null
+          id?: never
+          last_answer_ms?: number | null
+          left_via?: string | null
+          link_token?: string
+          page_key?: string
+          person_id?: string | null
+          total_ms?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_visits_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       welcome_answers: {
         Row: {
           answers: Json
