@@ -14,6 +14,7 @@ import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Textarea } from "@/components/ui/Textarea";
 import { signOut } from "@/features/auth/actions";
 import { celebrate } from "@/lib/celebrate";
+import { usePageVisitMetrics } from "@/lib/form-analytics";
 import { trackSurveyEvent } from "../analytics";
 import { OUTSIDE, locationChoices, surveyCopy as copy, timeChoices, topicChoices, wayChoices } from "../copy";
 import { submitSurvey } from "../actions";
@@ -252,8 +253,14 @@ export function SurveyFlow({ email, initialName }: { email: string; initialName:
   const [submissionId] = useState(() => crypto.randomUUID());
   const router = useRouter();
   const firstRender = useRef(true);
+  const pageMetrics = usePageVisitMetrics({ linkToken: submissionId, pageKey: step });
 
-  const set = <K extends keyof SurveyAnswers>(key: K, value: SurveyAnswers[K]) => setAnswers((a) => ({ ...a, [key]: value }));
+  const set = <K extends keyof SurveyAnswers>(key: K, value: SurveyAnswers[K]) => {
+    if (key === "topics" || key === "ways" || key === "location" || key === "time") {
+      pageMetrics.recordAnswer(key, value);
+    }
+    setAnswers((a) => ({ ...a, [key]: value }));
+  };
 
   // Each step: tell analytics (drop-off), then move focus to its heading so screen readers start there.
   useEffect(() => {
@@ -272,14 +279,24 @@ export function SurveyFlow({ email, initialName }: { email: string; initialName:
 
   function previous() {
     setSaveError(false);
+    void pageMetrics.finish("back");
     setStep(index > 0 ? FLOW[index - 1] : "welcome");
   }
 
   // The form's action: Next on every step but the last, which saves. A client action keeps `pending` for the SubmitButton.
   async function advance() {
-    if (step === "welcome") return setStep("contact");
-    if (step === "contact") return setStep("topics");
-    if (inFlow && step !== "hopes") return setStep(FLOW[index + 1]);
+    if (step === "welcome") {
+      void pageMetrics.finish("next");
+      return setStep("contact");
+    }
+    if (step === "contact") {
+      void pageMetrics.finish("next");
+      return setStep("topics");
+    }
+    if (inFlow && step !== "hopes") {
+      void pageMetrics.finish("next");
+      return setStep(FLOW[index + 1]);
+    }
     if (step !== "hopes") return;
 
     setSaveError(false);
@@ -291,11 +308,13 @@ export function SurveyFlow({ email, initialName }: { email: string; initialName:
     }
     if (!saved) return setSaveError(true);
     trackSurveyEvent({ name: "survey_submitted" });
+    void pageMetrics.finish("submit");
     setStep("done");
   }
 
   function leave() {
     trackSurveyEvent({ name: "survey_left" });
+    void pageMetrics.finish("close");
     setStep("left");
   }
 

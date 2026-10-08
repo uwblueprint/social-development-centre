@@ -8,9 +8,9 @@ Mailchimp merge tags. Two of its requirements are now inverted and recorded here
 re-implements them: the survey must stay **behind** sign-in, and the email comes from the session,
 never from the URL.
 
-Everything this feature needs on the backend **already exists** (migrations
-`20261007024752_people_and_roles` and `20261007024829_revoke_sync_person_email`). It adds no table,
-function or column.
+Survey answer submission uses the existing backend (migrations
+`20261007024752_people_and_roles` and `20261007024829_revoke_sync_person_email`). Page analytics
+adds `public.page_visits` in migration `20261008000000_page_visits`.
 
 ## 1. What the gate reads
 `getSignedInPerson()` in `src/features/auth/session.ts` resolves the person in one cached query and
@@ -58,17 +58,21 @@ The upsert means `submit_welcome` will happily **overwrite** a completed set of 
 reach it twice today, since `/welcome` redirects away once answered — but a future "edit my answers"
 screen gets that for free, and an "answers are final" rule would need a guard in the function.
 
-## 3. Still needed: the event log
-`trackSurveyEvent` in `src/features/welcome/analytics.ts` **is not implemented** — it logs to the
-console in development and does nothing in production. There is no event table, and adding one is a
-separate decision rather than something this feature should invent. Without it there is no drop-off
-data, which was one of the pilot's stated goals.
+## 3. Page metrics
+`src/lib/form-analytics.ts` records one `page_visits` row for each step (`page_key`) in the survey.
+`person_id` is resolved from the signed-in session, like `welcome_answers.person_id`; the browser
+never supplies the identity. `link_token` is the survey's `submissionId` and groups visits within
+one run. The row records total and visible-tab time, answer timing, and the transition (`next`,
+`back`, `close`, or `submit`). The answer log includes selected option values; names and free-text
+responses are deliberately excluded because the survey already stores those answers separately.
 
-It needs somewhere to record, per person:
-- `survey_step_viewed` with `step` (`welcome`, `contact`, `topics`, `ways`, `location`, `time`,
-  `hopes`, `done`, `left`) — this is the drop-off signal.
-- `survey_left` — someone chose "Maybe later".
-- `survey_submitted`.
+The browser calls the `recordPageVisit` server action, which validates the payload, requires a
+signed-in paying member, and inserts through the cookie-aware Supabase client. Row-level security
+requires the row's `person_id` to belong to that session; clients have no read policy. Metrics are
+fire-and-forget and never block navigation or submission.
+
+`trackSurveyEvent` in `src/features/welcome/analytics.ts` remains a development-console helper for
+the separate `survey_left` and `survey_submitted` events; it is not a production event log.
 
 Writes should be fire-and-forget: logging must never block a step change or fail a submission.
 
@@ -76,8 +80,9 @@ Writes should be fire-and-forget: logging must never block a step change or fail
 "Maybe later" writes nothing and signs the person out, so the survey is waiting at their next
 sign-in. Signing out is what makes that promise true: the gate at `/` would otherwise send them
 straight back, since they are still unanswered. Removing someone from the Mailchimp audience is not
-this form's job — the invitation email's own **Unsubscribe** button uses Mailchimp's link. Once §3
-exists, choosing "Maybe later" should at least be recorded.
+this form's job — the invitation email's own **Unsubscribe** button uses Mailchimp's link. The
+welcome page visit is recorded with `left_via = 'close'`; the separate `survey_left` event remains
+development-only.
 
 ## 5. Open question: who can sign in at all
 `can_sign_in(email, 'member')` and `requireMember()` both require `memberships.tier = 'paying'`. The
