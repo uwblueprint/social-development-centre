@@ -9,6 +9,8 @@ globalStyle`
 
     --weight-regular: 400;
     --weight-medium: 500;
+    /* The survey letter's greeting and "5 quick questions" (letter prototype): the only bold text in the app so far. */
+    --weight-bold: 700;
 
     --taupe-50: #fbfaf9;
     --taupe-100: #f3f1f1;
@@ -101,6 +103,36 @@ globalStyle`
        tint behind brand icons. Not for portal UI, which stays taupe. */
     --color-brand-heading: #064d45;
     --color-brand-tint: #e3f1ee;
+
+    /* Member survey "letter" (/welcome only, design-system owner approval pending): a doodled invitation on paper.
+       Ink lines on cream paper over a dotted desk; Coming Soon for headings, Nunito for everything else. */
+    --font-survey-display: "Coming Soon", "Comic Sans MS", "Chalkboard SE", cursive;
+    --font-survey-body: "Nunito Variable", "Nunito", var(--font-sans);
+    --survey-desk: #fbf1d9;
+    --survey-desk-dot: rgb(140 110 50 / 0.28);
+    --survey-paper: #fffef8;
+    --survey-paper-tint: #fbf5e4;
+    /* Ink is taupe-900 so drawn lines match body text (16.9:1 on the paper). */
+    --survey-ink: var(--taupe-900);
+    --survey-envelope-inside: #f4e7c6;
+    /* A hand-drawn sheet: uneven corners and an offset ink shadow instead of a soft one. */
+    --radius-survey-sheet: 22px 8px 26px 10px / 10px 24px 8px 26px;
+    --shadow-survey-sheet: 5px 6px 0 var(--survey-ink);
+    --shadow-survey-small: 3px 3px 0 var(--survey-ink);
+    /* Doodle colours from the two partner logos (SDC green and orange, Ride for Refuge yellow, blue, red).
+       Decoration only: never text, never the only sign of state. */
+    --survey-doodle-green: #0b7a52;
+    --survey-doodle-orange: #f07b2a;
+    --survey-doodle-yellow: #f6b81a;
+    --survey-doodle-blue: #1f5fa8;
+    --survey-doodle-red: #d9412f;
+    /* The Canada goose on the confirmation screen. */
+    --survey-goose-body: #b39a7c;
+    --survey-goose-wing: #8f7560;
+    --survey-goose-wing-back: #7d6450;
+    --survey-goose-breast: #f1e8d8;
+    --survey-goose-head: var(--taupe-900);
+    --survey-goose-cheek: #fffef8;
 
     --color-focus: var(--taupe-900);
     --color-overlay: rgb(29 24 22 / 0.4);
@@ -266,6 +298,12 @@ globalStyle`
     --illustration-ground: var(--taupe-900);
     --color-brand-heading: #5fbfae; /* 8.5:1 on --color-bg */
     --color-brand-tint: #12302b;
+    --survey-desk: #1b1714;
+    --survey-desk-dot: rgb(255 240 210 / 0.1);
+    --survey-paper: #231e1b;
+    --survey-paper-tint: #2e2724;
+    --survey-ink: var(--taupe-100);
+    --survey-envelope-inside: #3a312a;
     --color-eventbrite-subtle: #2c1712;
     --color-eventbrite-border: #7a2b18;
       --color-overlay: rgb(0 0 0 / 0.6);
@@ -341,6 +379,12 @@ globalStyle`
     --illustration-ground: var(--taupe-900);
     --color-brand-heading: #5fbfae; /* 8.5:1 on --color-bg */
     --color-brand-tint: #12302b;
+    --survey-desk: #1b1714;
+    --survey-desk-dot: rgb(255 240 210 / 0.1);
+    --survey-paper: #231e1b;
+    --survey-paper-tint: #2e2724;
+    --survey-ink: var(--taupe-100);
+    --survey-envelope-inside: #3a312a;
     --color-eventbrite-subtle: #2c1712;
     --color-eventbrite-border: #7a2b18;
     --color-overlay: rgb(0 0 0 / 0.6);

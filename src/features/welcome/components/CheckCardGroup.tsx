@@ -3,15 +3,15 @@
 import type { CSSProperties } from "react";
 import { keyframes, styled } from "next-yak";
 import { Checkbox } from "@/components/ui/Checkbox";
-import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
-import { Input } from "@/components/ui/Input";
 import { OTHER, type IconChoice } from "../copy";
+import { OtherChoice } from "./OtherChoice";
 
 /*
  * Pick any number of options, shown as cards like the kit's RadioCard: the whole card is the click target,
  * and selected pairs a filled check box with the card's border and fill (never colour alone).
- * Composed from the kit's Checkbox; if another feature needs it, promote it to src/components/ui/.
+ * The check box sits at the card's end, as in the letter design. "Other" comes last, below a divider
+ * (see OtherChoice). Composed from the kit's Checkbox; if another feature needs it, promote it to src/components/ui/.
  */
 
 const fadeUp = keyframes`
@@ -24,15 +24,15 @@ const fadeUp = keyframes`
 const Group = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
-  gap: var(--space-2);
+  gap: var(--space-3);
 `;
 
 const Card = styled.label`
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
   padding: var(--space-3);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-lg);
   background: var(--color-bg);
   cursor: pointer;
@@ -44,7 +44,7 @@ const Card = styled.label`
 
   &:hover {
     translate: 0 -1px;
-    border-color: var(--color-border-strong);
+    background: var(--color-bg-hover);
   }
 
   &[data-checked] {
@@ -61,20 +61,15 @@ const Card = styled.label`
 const Glyph = styled.span`
   display: inline-flex;
   flex-shrink: 0;
-  color: var(--color-text-muted);
-`;
-
-const Text = styled.span`
-  min-width: 0;
-  font-size: var(--text-sm);
-  line-height: var(--leading-ui);
   color: var(--color-text);
 `;
 
-/* Wide enough that the text field under "Other" lines up with the card, not a single column. */
-const OtherField = styled.div`
-  grid-column: 1 / -1;
-  animation: ${fadeUp} var(--duration-enter) var(--ease) both;
+const Text = styled.span`
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-md);
+  line-height: var(--leading-ui);
+  color: var(--color-text);
 `;
 
 export function CheckCardGroup({
@@ -87,27 +82,22 @@ export function CheckCardGroup({
   otherValue,
   onOtherChange,
   otherLabel,
-  otherPlaceholder,
 }: {
   /** Form field name: one value is submitted per selected option. */
   name: string;
   /** The id of the question's heading, which names the group. */
   labelledBy: string;
   describedBy?: string;
+  /** The listed options; "Other" is always added at the end. */
   options: IconChoice[];
   value: string[];
   onChange: (next: string[]) => void;
   otherValue: string;
   onOtherChange: (text: string) => void;
+  /** Describes the "Other" text field, e.g. "What other issues matter to you?". */
   otherLabel: string;
-  otherPlaceholder: string;
 }) {
-  function toggle(option: IconChoice, checked: boolean) {
-    if (!checked) return onChange(value.filter((v) => v !== option.id));
-    if (option.exclusive) return onChange([option.id]);
-    const exclusive = new Set(options.filter((o) => o.exclusive).map((o) => o.id));
-    onChange([...value.filter((v) => !exclusive.has(v)), option.id]);
-  }
+  const toggle = (id: string, checked: boolean) => onChange(checked ? [...value, id] : value.filter((v) => v !== id));
 
   return (
     <Group role="group" aria-labelledby={labelledBy} aria-describedby={describedBy}>
@@ -116,32 +106,23 @@ export function CheckCardGroup({
         const id = `${name}-${option.id}`;
         return (
           <Card key={option.id} htmlFor={id} data-checked={checked ? "" : undefined} style={{ "--i": i } as CSSProperties}>
-            <Checkbox id={id} name={name} value={option.id} checked={checked} onCheckedChange={(next) => toggle(option, next === true)} />
             <Glyph>
               <Icon icon={option.icon} size={20} />
             </Glyph>
             <Text>{option.label}</Text>
+            <Checkbox id={id} name={name} value={option.id} checked={checked} onCheckedChange={(next) => toggle(option.id, next === true)} />
           </Card>
         );
       })}
-      {value.includes(OTHER) && (
-        <OtherField>
-          <Field label={otherLabel} hint="Optional">
-            {(props) => (
-              <Input
-                {...props}
-                name={`${name}Other`}
-                value={otherValue}
-                maxLength={80}
-                placeholder={otherPlaceholder}
-                autoComplete="off"
-                autoFocus
-                onChange={(e) => onOtherChange(e.target.value)}
-              />
-            )}
-          </Field>
-        </OtherField>
-      )}
+      <OtherChoice
+        kind="checkbox"
+        name={name}
+        checked={value.includes(OTHER)}
+        onCheckedChange={(checked) => toggle(OTHER, checked)}
+        text={otherValue}
+        onTextChange={onOtherChange}
+        textLabel={otherLabel}
+      />
     </Group>
   );
 }

@@ -48,10 +48,10 @@ which sets `people.full_name` and upserts the person's `welcome_answers` row. Id
 | Field | Notes |
 |---|---|
 | `submittedAt` | UTC ISO 8601 with a Z. |
-| `topics`, `topicsOther` | Selected labels; the "Other" text only when Other was chosen (max 80 characters). |
+| `topics`, `topicsOther` | Selected labels; "Other" appears as the label `Other`, and its text only when Other was chosen (max 80 characters). |
 | `ways`, `waysOther` | Same. |
-| `location`, `locationOther` | One label; the city/town only when "Outside Waterloo Region" was chosen (max 60). |
-| `timeAvailable` | One label. A preference, not a commitment: do not use it to assign people to actions automatically. |
+| `location`, `locationOther` | One label (`Kitchener`, `Waterloo`, `Cambridge` or `Other`); the typed place only when Other was chosen (max 80). |
+| `timeAvailable`, `timeOther` | One label; the typed amount only when Other was chosen (max 80). A preference, not a commitment: do not use it to assign people to actions automatically. |
 | `hopes` | Optional free text, max 600. |
 
 The upsert means `submit_welcome` will happily **overwrite** a completed set of answers. Nothing can
@@ -65,19 +65,27 @@ separate decision rather than something this feature should invent. Without it t
 data, which was one of the pilot's stated goals.
 
 It needs somewhere to record, per person:
-- `survey_step_viewed` with `step` (`welcome`, `contact`, `topics`, `ways`, `location`, `time`,
-  `hopes`, `done`, `left`) — this is the drop-off signal.
-- `survey_left` — someone chose "Maybe later".
+- `survey_step_viewed` with `step` (`envelope`, `welcome`, `contact`, `topics`, `ways`, `location`,
+  `time`, `hopes`, `done`, `unsubscribe`, `unsubscribed`) — this is the drop-off signal.
+- `survey_envelope_opened` — someone opened the letter (the gap between this and `envelope` views is
+  people who never got past the closed envelope).
+- `survey_unsubscribe_clicked` and `survey_unsubscribed` — someone started, then confirmed, Unsubscribe.
 - `survey_submitted`.
 
 Writes should be fire-and-forget: logging must never block a step change or fail a submission.
 
-## 4. No unsubscribe
-"Maybe later" writes nothing and signs the person out, so the survey is waiting at their next
-sign-in. Signing out is what makes that promise true: the gate at `/` would otherwise send them
-straight back, since they are still unanswered. Removing someone from the Mailchimp audience is not
-this form's job — the invitation email's own **Unsubscribe** button uses Mailchimp's link. Once §3
-exists, choosing "Maybe later" should at least be recorded.
+## 4. Unsubscribe (still needed)
+The letter design (8 Oct 2026) puts an **Unsubscribe** button on every survey screen, with a
+confirmation step and a "You’re unsubscribed" screen whose only action is **Sign out**. Today it
+**changes nothing**: it fires `survey_unsubscribe_clicked` / `survey_unsubscribed` (which go nowhere
+until §3 exists) and the person is still unanswered, so the gate at `/` shows them the survey again
+at their next sign-in.
+
+To make the screen true it needs, per person:
+- a record that they unsubscribed (a column on `people` or a row in the §3 event log), which the
+  gate at `/` reads so it stops sending them to `/welcome`;
+- removal from the Mailchimp audience used for SDC invitations (API call or a synced suppression
+  list), since the screen promises "We won’t email you about SDC membership again".
 
 ## 5. Open question: who can sign in at all
 `can_sign_in(email, 'member')` and `requireMember()` both require `memberships.tier = 'paying'`. The
