@@ -1,15 +1,43 @@
+import { dayKey, SDC_TIME_ZONE } from "@/lib/date";
 import { AREA_LABEL } from "./catalog";
 import type { Opportunity, OpportunityStatus, ClosedReason } from "./types";
 
 /*
- * Pure helpers shared by server and client. Dates are local to Waterloo Region;
- * the dev server and browser are assumed to share a time zone.
+ * Pure helpers shared by server and client. Dates and times are wall-clock times in Waterloo Region:
+ * when a listing ends is worked out in SDC's time zone, so a server running in UTC closes it at the
+ * right moment. Display helpers only format calendar dates, so they read the same in any zone.
  */
 
 const parseDate = (ymd: string) => {
   const [y, m, d] = ymd.split("-").map(Number);
   return new Date(y, m - 1, d);
 };
+
+const wallClock = new Intl.DateTimeFormat("en-US", {
+  timeZone: SDC_TIME_ZONE,
+  hourCycle: "h23",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+});
+
+/** How far SDC's wall clock is ahead of UTC at instant `t`, in ms (negative in Waterloo Region). */
+function sdcOffset(t: number): number {
+  const p = Object.fromEntries(wallClock.formatToParts(new Date(t)).map((part) => [part.type, part.value]));
+  const wall = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second);
+  return wall - (t - (((t % 1000) + 1000) % 1000));
+}
+
+/** The instant a wall-clock time on a YYYY-MM-DD date happens in SDC's time zone. */
+function sdcInstant(ymd: string, hour: number, minute: number, second = 0, ms = 0): Date {
+  const [y, m, d] = ymd.split("-").map(Number);
+  const asUtc = Date.UTC(y, m - 1, d, hour, minute, second, ms);
+  // Twice, so a time on the day the clocks change uses that day's offset.
+  return new Date(asUtc - sdcOffset(asUtc - sdcOffset(asUtc)));
+}
 
 /** The date that decides when a listing ends and how it sorts: event date, or deadline/apply-by. */
 export function keyDate(o: Opportunity): string | undefined {
@@ -33,13 +61,9 @@ export function endsAt(o: Opportunity): Date | undefined {
   if (!date) return undefined;
   if (o.kind === "event") {
     const [h, min] = (o.details.startTime ?? "00:00").split(":").map(Number);
-    const start = parseDate(date);
-    start.setHours(h, min);
-    return start;
+    return sdcInstant(date, h, min);
   }
-  const endOfDay = parseDate(date);
-  endOfDay.setHours(23, 59, 59, 999);
-  return endOfDay;
+  return sdcInstant(date, 23, 59, 59, 999);
 }
 
 /** Events end at their start time; deadlines end when the day is over. */
@@ -117,10 +141,10 @@ export function closesOn(o: Opportunity): { date?: string; time?: string; ymd?: 
   return { date: formatDate(ymd), time: start ? formatTime(start) : undefined, ymd };
 }
 
-/** Whole days from today to a YYYY-MM-DD date; negative once it's past. */
+/** Whole days from today (in SDC's time zone) to a YYYY-MM-DD date; negative once it's past. */
 export function daysUntil(ymd: string, now = new Date()): number {
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  return Math.round((parseDate(ymd).getTime() - today.getTime()) / 86_400_000);
+  const utcDay = (key: string) => Date.UTC(+key.slice(0, 4), +key.slice(5, 7) - 1, +key.slice(8, 10));
+  return Math.round((utcDay(ymd) - utcDay(dayKey(now.toISOString()))) / 86_400_000);
 }
 
 /** "Sat, Oct 10 · 7:00 p.m. – 8:30 p.m." for an event (one line, not three fields); the closing date otherwise. */

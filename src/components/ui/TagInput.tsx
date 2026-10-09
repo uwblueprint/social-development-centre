@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { styled } from "next-yak";
+import { css, styled } from "next-yak";
 import { CircleAlert, X } from "lucide-react";
 import { Icon } from "./Icon";
 import { Tooltip } from "./Tooltip";
@@ -83,7 +83,7 @@ const Box = styled.div<{ $invalid?: boolean; $disabled?: boolean }>`
 
   ${({ $disabled }) =>
     $disabled &&
-    `
+    css`
     cursor: not-allowed;
     background: var(--color-disabled-bg);
     border-color: transparent;
