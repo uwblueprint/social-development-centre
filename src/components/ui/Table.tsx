@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { keyframes, styled } from "next-yak";
+import { css, keyframes, styled } from "next-yak";
 import { ArrowDown, ArrowUp, ChevronsUpDown, ListFilter, LoaderCircle } from "lucide-react";
 import { Button } from "./Button";
 import { Checkbox } from "./Checkbox";
@@ -276,7 +276,7 @@ const Th = styled.th<{ $align?: "left" | "right"; $sticky?: boolean }>`
 
   ${({ $sticky }) =>
     $sticky &&
-    `
+    css`
     position: sticky;
     top: 0;
     z-index: var(--z-sticky);
@@ -738,7 +738,9 @@ const Td = styled.td<{ $align?: "left" | "right"; $busy?: boolean }>`
 
   ${({ $busy }) =>
     $busy &&
-    `color: color-mix(in srgb, var(--color-text) 78%, var(--color-bg));`}
+    css`
+      color: color-mix(in srgb, var(--color-text) 78%, var(--color-bg));
+    `}
 `;
 
 const Row = styled.tr<{ $clickable?: boolean }>`
@@ -746,7 +748,11 @@ const Row = styled.tr<{ $clickable?: boolean }>`
     border-top: 1px solid var(--color-border);
   }
 
-  ${({ $clickable }) => $clickable && `cursor: pointer;`}
+  ${({ $clickable }) =>
+    $clickable &&
+    css`
+      cursor: pointer;
+    `}
 
   /*
    * The focus ring is drawn inside the cells, so the scroll container never clips it and frozen
