@@ -25,11 +25,13 @@ import {
   emptyKindValues,
   fieldId,
   initialModel,
+  newDetailRow,
   orderedErrors,
   previewOpportunity,
   stepOf,
   toFormData,
   type DetailRow,
+  type FormModel,
   type KindFieldsProps,
   type Step,
 } from "./formValues";
@@ -329,6 +331,8 @@ function focusField(id: string) {
 
 export interface OpportunityFormProps {
   scope: "admin" | "partner";
+  /** The signed-in person's email. Unsaved work is kept per person, so a shared browser never shows someone else's. */
+  draftOwner: string;
   /** The list page, e.g. /admin/opportunities. */
   basePath: string;
   kind: OpportunityKind;
@@ -353,6 +357,18 @@ export interface OpportunityFormProps {
  * step with the first invalid field, with the error summary on top (its links switch steps too).
  */
 /** "today at 3:42 p.m.", "yesterday at 9:05 a.m." or "Mon, Sep 28 at 3:42 p.m.", in the person's time zone. */
+/** What's kept in the browser: the model without React keys, when it was saved, and the listing version it started from. */
+interface StoredDraft {
+  model?: FormModel;
+  savedAt?: string;
+  base?: string;
+}
+
+/** Detail rows get new React keys on every load, so keys are left out of what's stored and compared. */
+const withoutRowKeys = (m: FormModel): FormModel => ({ ...m, details: m.details.map(({ label, value }) => ({ label, value }) as DetailRow) });
+const withRowKeys = (m: FormModel): FormModel => ({ ...m, details: (m.details ?? []).map(({ label, value }) => newDetailRow({ label, value })) });
+const draftJson = (m: FormModel) => JSON.stringify(withoutRowKeys(m));
+
 function draftWhen(iso: string) {
   const at = new Date(iso);
   if (Number.isNaN(at.getTime())) return undefined;
@@ -366,6 +382,7 @@ function draftWhen(iso: string) {
 
 export function OpportunityForm({
   scope,
+  draftOwner,
   basePath,
   kind: initialKind,
   opportunity,
@@ -383,9 +400,11 @@ export function OpportunityForm({
 
   /*
    * Unsaved work is kept in this browser (owner, like Google Forms): every change is saved locally, and
-   * coming back restores it with a toast offering Discard. Cleared once the listing saves.
+   * coming back restores it with a toast offering Discard. Cleared once the listing saves. Kept per person
+   * (and per organization for new listings); a draft of an edit only applies to the version it started from.
    */
-  const draftKey = `nexus-draft:${scope}:${opportunity?.id ?? "new"}`;
+  const draftKey = `nexus-draft:${scope}:${draftOwner}:${opportunity?.id ?? `new:${initialOrganizationId ?? ""}`}`;
+  const draftBase = opportunity?.updatedAt;
   const pristine = React.useRef("");
   const draftReady = React.useRef(false);
   const draftCancelled = React.useRef(false);
@@ -395,17 +414,17 @@ export function OpportunityForm({
     if (restoredFor.current === draftKey) return;
     restoredFor.current = draftKey;
     const initial = initialModel(initialKind, opportunity, initialOrganizationId);
-    pristine.current = JSON.stringify(initial);
+    pristine.current = draftJson(initial);
     try {
       const raw = localStorage.getItem(draftKey);
-      const saved = raw ? (JSON.parse(raw) as { model?: unknown; savedAt?: string }) : null;
-      // Older drafts were the bare model; newer ones carry when they were saved.
-      const savedModel = saved && "model" in saved ? saved.model : saved;
-      if (savedModel && JSON.stringify(savedModel) !== pristine.current) {
+      const saved = raw ? (JSON.parse(raw) as StoredDraft) : null;
+      // Someone saved the listing since this draft started: restoring it would undo their change.
+      if (saved && saved.base !== draftBase) localStorage.removeItem(draftKey);
+      else if (saved?.model && draftJson(saved.model) !== pristine.current) {
         // eslint-disable-next-line react-hooks/set-state-in-effect -- restoring from browser storage after hydration
-        setModel(savedModel as typeof initial);
+        setModel(withRowKeys(saved.model));
         toast({
-          title: copy.form.draft.restored(saved && "savedAt" in saved && saved.savedAt ? draftWhen(saved.savedAt) : undefined),
+          title: copy.form.draft.restored(saved.savedAt ? draftWhen(saved.savedAt) : undefined),
           actionLabel: copy.form.draft.discard,
           onAction: () => {
             try {
@@ -423,14 +442,18 @@ export function OpportunityForm({
   React.useEffect(() => {
     if (!draftReady.current || draftCancelled.current) return;
     const timer = window.setTimeout(() => {
+      // The listing saved (or was cancelled) while this write was waiting: don't bring the draft back.
+      if (draftCancelled.current) return;
       try {
-        const json = JSON.stringify(model);
-        if (json === pristine.current) localStorage.removeItem(draftKey);
-        else localStorage.setItem(draftKey, JSON.stringify({ model, savedAt: new Date().toISOString() }));
+        if (draftJson(model) === pristine.current) localStorage.removeItem(draftKey);
+        else {
+          const draft: StoredDraft = { model: withoutRowKeys(model), savedAt: new Date().toISOString(), base: draftBase };
+          localStorage.setItem(draftKey, JSON.stringify(draft));
+        }
       } catch {}
     }, 400);
     return () => window.clearTimeout(timer);
-  }, [model, draftKey]);
+  }, [model, draftKey, draftBase]);
   const [prefillError, setPrefillError] = React.useState<string>();
   /** Bumped when Eventbrite fills the form: the Details step plays its "filling in" scan once per fill. */
   const [magicFill, setMagicFill] = React.useState(0);
@@ -508,6 +531,7 @@ export function OpportunityForm({
 
   React.useEffect(() => {
     if (state.status === "success") {
+      draftCancelled.current = true;
       try {
         localStorage.removeItem(draftKey);
       } catch {}
