@@ -1,15 +1,8 @@
 import "server-only";
+import type { PersonRow } from "@/features/people/person";
 import { createClient } from "@/lib/supabase/server";
 
-export interface AdminRow {
-  id: string;
-  name: string | null;
-  email: string;
-  addedAt: string;
-  hasSignedIn: boolean;
-}
-
-export async function listAdmins(): Promise<AdminRow[]> {
+export async function listAdmins(): Promise<PersonRow[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("admins")

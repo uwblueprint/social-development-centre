@@ -1,145 +1,69 @@
 "use client";
 
 import { useActionState } from "react";
-import { CircleAlert } from "lucide-react";
-import { styled } from "next-yak";
-import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
-import { Icon } from "@/components/ui/Icon";
 import { Input } from "@/components/ui/Input";
 import { SubmitButton } from "@/components/ui/SubmitButton";
-import { signOut } from "@/features/auth/actions";
-import { FormError } from "@/features/auth/AuthScreen";
-import { formatDate } from "@/lib/date";
-import { fieldError, idleState } from "@/lib/forms";
-import { addAdmin, resendAdminLink } from "./actions";
-import type { AdminRow } from "./queries";
+import { ConfirmRemove, PeopleList } from "@/features/people/PeopleList";
+import { displayName, type PersonRow } from "@/features/people/person";
+import { AddForm, FormMessage, Muted, PageTitle, PeoplePage, Section, SectionTitle } from "@/features/people/PeoplePage";
+import { fieldError } from "@/lib/forms";
+import { addAdmin, removeAdmin } from "./actions";
 
-const Page = styled.main`
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
-  max-width: 720px;
-  margin: 0 auto;
-  padding: var(--space-7) var(--space-4);
-`;
+export function AdminsPage({ admins, currentAdminId }: { admins: PersonRow[]; currentAdminId: string }) {
+  // The last admin can't leave (the database refuses too), so SDC is never locked out.
+  const canLeave = admins.length > 1;
 
-const Header = styled.header`
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-4);
-`;
-
-const Title = styled.h1`
-  margin: 0 0 var(--space-2);
-  font-size: var(--text-xl);
-  font-weight: var(--weight-medium);
-  line-height: var(--leading-none);
-  letter-spacing: var(--tracking-tight);
-`;
-
-const Muted = styled.p`
-  margin: 0;
-  color: var(--color-text-muted);
-`;
-
-const Section = styled.section`
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-`;
-
-const SectionTitle = styled.h2`
-  margin: 0;
-  font-size: var(--text-lg);
-  font-weight: var(--weight-medium);
-`;
-
-const AddForm = styled.form`
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-4);
-  max-width: 400px;
-`;
-
-const Success = styled.p`
-  margin: 0;
-  font-size: var(--text-sm);
-  color: var(--color-success);
-`;
-
-const List = styled.ul`
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  border-top: 1px solid var(--color-border);
-`;
-
-const Row = styled.li`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--space-3) 0;
-  border-bottom: 1px solid var(--color-border);
-`;
-
-const Person = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  min-width: 0;
-`;
-
-const Details = styled.span`
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-`;
-
-const RowActions = styled.div`
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-`;
-
-const ResendForm = styled.form`
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-`;
-
-export function AdminsPage({ admins, currentAdminId }: { admins: AdminRow[]; currentAdminId: string }) {
   return (
-    <Page>
-      <Header>
-        <div>
-          <Title>Admins</Title>
-          <Muted>Every admin can manage SDC and add other admins.</Muted>
-        </div>
-        <form action={signOut.bind(null, "admin")}>
-          <Button type="submit" $variant="outline">
-            Sign out
-          </Button>
-        </form>
-      </Header>
+    <PeoplePage>
+      <header>
+        <PageTitle>Admins</PageTitle>
+        <Muted>Every admin can manage SDC and add other admins.</Muted>
+      </header>
 
       <Section aria-labelledby="add-admin">
         <SectionTitle id="add-admin">Add an admin</SectionTitle>
         <AddAdminForm />
       </Section>
 
-      <Section aria-labelledby="current-admins">
-        <SectionTitle id="current-admins">Current admins</SectionTitle>
-        <List>
-          {admins.map((admin) => (
-            <AdminListItem key={admin.id} admin={admin} isYou={admin.id === currentAdminId} />
-          ))}
-        </List>
-      </Section>
-    </Page>
+      <PeopleList
+        titleId="current-admins"
+        title="Current admins"
+        people={admins}
+        emptyText="No admins yet."
+        portal="admin"
+        currentPersonId={currentAdminId}
+        renderRemove={(admin, removal) => {
+          if (admin.id !== currentAdminId) {
+            return (
+              <ConfirmRemove
+                label="Remove"
+                accessibleLabel={`Remove ${displayName(admin)}`}
+                title={`Remove ${displayName(admin)} as an admin?`}
+                description="They’ll lose access to the admin portal right away."
+                confirmLabel="Remove admin"
+                doneMessage={`${displayName(admin)} is no longer an admin.`}
+                action={() => removeAdmin(admin.id)}
+                removal={removal}
+              />
+            );
+          }
+          if (!canLeave) return null;
+          return (
+            <ConfirmRemove
+              label="Leave"
+              accessibleLabel="Leave the admin portal"
+              title="Leave the admin portal?"
+              description="You’ll lose access right away. Another admin can add you back."
+              confirmLabel="Leave"
+              doneMessage=""
+              action={() => removeAdmin(admin.id)}
+              removal={removal}
+            />
+          );
+        }}
+      />
+    </PeoplePage>
   );
 }
 
@@ -157,46 +81,7 @@ function AddAdminForm() {
         )}
       </Field>
       <SubmitButton>Send invite</SubmitButton>
-      <Success role="status">{state.status === "success" && state.message}</Success>
-      {state.status === "error" && state.message && (
-        <FormError role="alert">
-          <Icon icon={CircleAlert} size={16} />
-          {state.message}
-        </FormError>
-      )}
+      <FormMessage state={state} />
     </AddForm>
-  );
-}
-
-function AdminListItem({ admin, isYou }: { admin: AdminRow; isYou: boolean }) {
-  return (
-    <Row>
-      <Person>
-        <span>
-          {admin.name ?? admin.email}
-          {isYou && " (you)"}
-        </span>
-        <Details>
-          {admin.email} · Added {formatDate(admin.addedAt)}
-        </Details>
-      </Person>
-      <RowActions>
-        {!admin.hasSignedIn && <ResendLink email={admin.email} />}
-        <Badge $variant={admin.hasSignedIn ? "success" : "neutral"}>{admin.hasSignedIn ? "Active" : "Invited"}</Badge>
-      </RowActions>
-    </Row>
-  );
-}
-
-function ResendLink({ email }: { email: string }) {
-  const [state, formAction] = useActionState(resendAdminLink.bind(null, email), idleState);
-
-  return (
-    <ResendForm action={formAction}>
-      <Details role="status">{state.message}</Details>
-      <SubmitButton $variant="outline" $size="sm">
-        Resend link
-      </SubmitButton>
-    </ResendForm>
   );
 }
