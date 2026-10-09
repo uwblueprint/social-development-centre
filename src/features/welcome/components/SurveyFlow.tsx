@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { keyframes, styled } from "next-yak";
-import { ArrowLeft, CircleAlert, CircleCheck, Clock } from "lucide-react";
+import { ArrowLeft, CircleAlert } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
@@ -15,11 +16,20 @@ import { Textarea } from "@/components/ui/Textarea";
 import { signOut } from "@/features/auth/actions";
 import { celebrate } from "@/lib/celebrate";
 import { trackSurveyEvent } from "../analytics";
-import { OUTSIDE, locationChoices, surveyCopy as copy, timeChoices, topicChoices, wayChoices } from "../copy";
+import { OTHER, locationChoices, surveyCopy as copy, timeChoices, topicChoices, wayChoices } from "../copy";
 import { submitSurvey } from "../actions";
 import { toSubmission } from "../submit";
 import { QUESTION_COUNT, emptyAnswers, type Step, type SurveyAnswers } from "../types";
 import { CheckCardGroup } from "./CheckCardGroup";
+import { Envelope } from "./Envelope";
+import { Goose } from "./Goose";
+import { OtherChoice } from "./OtherChoice";
+
+/*
+ * The survey as a doodled letter (prototype, 8 Oct 2026): a closed envelope opens into the welcome letter,
+ * every step sits on a sheet of paper, and the confirmation is a celebrating goose. Kit components keep
+ * their behaviour; this page only re-points --color-bg and --color-bg-hover at the paper so they sit on it.
+ */
 
 /** Steps that show the progress bar, in order. */
 const FLOW: Step[] = ["contact", "topics", "ways", "location", "time", "hopes"];
@@ -32,35 +42,67 @@ const fadeUp = keyframes`
     translate: 0 var(--enter-offset);
   }
 `;
-
-const Page = styled.div<{ $tint?: boolean }>`
-  min-height: 100dvh;
-  background: ${({ $tint }) => ($tint ? "var(--color-success-subtle)" : "var(--color-bg)")};
-  color: var(--color-text);
-  line-height: var(--leading-body);
-  transition: background-color var(--duration-slow) var(--ease);
+const sheetIn = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-6)) scale(0.96);
+  }
 `;
 
-const Column = styled.div`
+const Page = styled.div`
+  --color-bg: var(--survey-paper);
+  --color-bg-hover: var(--survey-paper-tint);
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background-color: var(--survey-desk);
+  background-image: radial-gradient(var(--survey-desk-dot) 1px, transparent 1.2px);
+  background-size: var(--space-5) var(--space-5);
+  color: var(--color-text);
+  font-family: var(--font-survey-body);
+  line-height: var(--leading-body);
+`;
+
+/* The letter: a hand-drawn sheet on the desk. On a phone it fills the screen instead. */
+const Sheet = styled.div`
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
   width: 100%;
   max-width: 40rem;
-  min-height: 100dvh;
-  margin: 0 auto;
-  padding: var(--space-5) var(--space-4) 0;
+  min-height: calc(100dvh - var(--space-4) * 2);
+  margin: var(--space-4) auto;
+  padding: var(--space-5) var(--space-5) 0;
+  border: 2px solid var(--survey-ink);
+  border-radius: var(--radius-survey-sheet);
+  background: var(--survey-paper);
+  box-shadow: var(--shadow-survey-sheet);
+  animation: ${sheetIn} var(--duration-enter) var(--ease-spring) both;
 
-  @media (min-width: 640px) {
-    padding: var(--space-6) var(--space-5) 0;
+  @media (max-width: 40rem) {
+    min-height: 100dvh;
+    margin: 0;
+    padding: var(--space-4) var(--space-4) 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
   }
 `;
 
-const Brand = styled.p`
-  margin: 0;
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
-  color: var(--color-text-muted);
+const Logos = styled.div`
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-6);
+
+  img {
+    width: auto;
+    height: var(--space-8);
+  }
+  @media (max-height: 45rem), (max-width: 40rem) {
+    img {
+      height: var(--space-7);
+    }
+  }
 `;
 
 const ProgressBlock = styled.div`
@@ -92,11 +134,10 @@ const StepBody = styled.div`
 
 const Heading = styled.h1`
   margin: 0;
+  font-family: var(--font-survey-display);
   font-size: var(--text-xl);
-  font-weight: var(--weight-medium);
+  font-weight: var(--weight-regular);
   line-height: var(--leading-heading);
-  letter-spacing: var(--tracking-tight);
-  text-wrap: balance;
   overflow-wrap: anywhere;
 
   &:focus {
@@ -104,10 +145,35 @@ const Heading = styled.h1`
   }
 `;
 
-const Eyebrow = styled.p`
-  margin: 0;
-  font-size: var(--text-sm);
+const Letter = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
   color: var(--color-text-muted);
+  font-size: var(--text-md);
+
+  p {
+    margin: 0;
+    max-width: 60ch;
+  }
+  b {
+    color: var(--color-text);
+    font-weight: var(--weight-bold);
+  }
+  em {
+    font-style: italic;
+  }
+`;
+
+const Greeting = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+`;
+
+const Hello = styled.p`
+  color: var(--color-text);
+  font-weight: var(--weight-bold);
 `;
 
 const Lead = styled.p`
@@ -119,27 +185,9 @@ const Lead = styled.p`
 
 const Hint = styled.p`
   margin: 0;
-  font-size: var(--text-sm);
+  font-size: var(--text-md);
   color: var(--color-text-muted);
   max-width: 60ch;
-`;
-
-const Count = styled.p`
-  margin: 0;
-  min-height: 1.4em;
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-`;
-
-const Tile = styled.span`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--space-7);
-  height: var(--space-7);
-  border-radius: var(--radius-lg);
-  background: var(--color-bg-hover);
-  color: var(--color-text);
 `;
 
 const Fields = styled.div`
@@ -158,7 +206,7 @@ const SignedIn = styled.div`
 
 const SignedInLabel = styled.span`
   font-size: var(--text-sm);
-  color: var(--color-text-subtle);
+  color: var(--color-text-muted);
 `;
 
 const SignedInEmail = styled.p`
@@ -168,10 +216,16 @@ const SignedInEmail = styled.p`
   overflow-wrap: anywhere;
 `;
 
+/* One column, as in the letter design: each place or amount of time on its own line. */
+const Choices = styled(RadioCardGroup)`
+  grid-template-columns: 1fr;
+  gap: var(--space-3);
+`;
+
 const CardText = styled.span`
   /* Leave room for the card's check in the corner. */
-  padding-right: var(--space-5);
-  font-size: var(--text-sm);
+  padding-right: var(--space-6);
+  font-size: var(--text-md);
   line-height: var(--leading-ui);
 `;
 
@@ -198,60 +252,59 @@ const Actions = styled.div`
   position: sticky;
   bottom: 0;
   display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  margin: 0 calc(var(--space-4) * -1);
-  padding: var(--space-3) var(--space-4) var(--space-4);
-  border-top: 1px solid var(--color-border);
-  background: var(--color-bg);
-
-  @media (min-width: 640px) {
-    margin: 0 calc(var(--space-5) * -1);
-    padding: var(--space-3) var(--space-5) var(--space-4);
-  }
-`;
-
-const ActionRow = styled.div`
-  display: flex;
   gap: var(--space-2);
+  margin: 0 calc(var(--space-5) * -1);
+  padding: var(--space-3) var(--space-5) var(--space-4);
+  background: var(--survey-paper);
 
   > :last-child {
     flex: 1;
+  }
+  @media (max-width: 40rem) {
+    margin: 0 calc(var(--space-4) * -1);
+    padding: var(--space-3) var(--space-4) var(--space-4);
   }
 `;
 
 const Footer = styled.div`
   display: flex;
   justify-content: center;
-  padding: var(--space-3) 0 var(--space-5);
+  padding: var(--space-2) 0 var(--space-4);
   border-top: 1px solid var(--color-border);
 `;
 
-const Centered = styled.div`
+/* The confirmation stays on the sheet, under the logos, so the letter keeps its corners to the end. */
+const Celebration = styled.div`
   display: flex;
   flex: 1;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--space-4);
-  padding: var(--space-6) 0;
+  gap: var(--space-3);
+  padding-bottom: var(--space-6);
   text-align: center;
-  animation: ${fadeUp} var(--duration-enter) var(--ease) both;
-`;
 
-const DoneIcon = styled.span`
-  display: inline-flex;
-  color: var(--color-success);
+  > p {
+    margin: 0;
+    max-width: 36rem;
+    font-size: var(--text-md);
+    color: var(--color-text-muted);
+  }
+  > :last-child {
+    margin-top: var(--space-4);
+  }
 `;
 
 export function SurveyFlow({ email, initialName }: { email: string; initialName: string }) {
-  const [step, setStep] = useState<Step>("welcome");
+  const [step, setStep] = useState<Step>("envelope");
   const [answers, setAnswers] = useState<SurveyAnswers>({ ...emptyAnswers, name: initialName });
   const [saveError, setSaveError] = useState(false);
   // One id per page load, sent again on every retry so a repeated save is the same submission.
   const [submissionId] = useState(() => crypto.randomUUID());
   const router = useRouter();
   const firstRender = useRef(true);
+  // Where "Keep me in" goes back to.
+  const returnTo = useRef<Step>("welcome");
 
   const set = <K extends keyof SurveyAnswers>(key: K, value: SurveyAnswers[K]) => setAnswers((a) => ({ ...a, [key]: value }));
 
@@ -269,16 +322,21 @@ export function SurveyFlow({ email, initialName }: { email: string; initialName:
   const index = FLOW.indexOf(step);
   const inFlow = index >= 0;
   const questionNumber = index; // contact is 0, topics is 1 … hopes is 5
+  const firstName = answers.name.trim().split(/\s+/)[0] ?? "";
 
   function previous() {
     setSaveError(false);
     setStep(index > 0 ? FLOW[index - 1] : "welcome");
   }
 
+  function opened() {
+    trackSurveyEvent({ name: "survey_envelope_opened" });
+    setStep("welcome");
+  }
+
   // The form's action: Next on every step but the last, which saves. A client action keeps `pending` for the SubmitButton.
   async function advance() {
     if (step === "welcome") return setStep("contact");
-    if (step === "contact") return setStep("topics");
     if (inFlow && step !== "hopes") return setStep(FLOW[index + 1]);
     if (step !== "hopes") return;
 
@@ -294,23 +352,38 @@ export function SurveyFlow({ email, initialName }: { email: string; initialName:
     setStep("done");
   }
 
-  function leave() {
-    trackSurveyEvent({ name: "survey_left" });
-    setStep("left");
+  function startUnsubscribe() {
+    trackSurveyEvent({ name: "survey_unsubscribe_clicked" });
+    returnTo.current = step;
+    setStep("unsubscribe");
   }
 
-  const empty =
-    (step === "topics" && answers.topics.length === 0) ||
-    (step === "ways" && answers.ways.length === 0) ||
-    (step === "location" && answers.location === "") ||
-    (step === "time" && answers.time === "");
+  function confirmUnsubscribe() {
+    trackSurveyEvent({ name: "survey_unsubscribed" });
+    setStep("unsubscribed");
+  }
 
-  const nextLabel = step === "welcome" ? copy.welcome.start : step === "hopes" ? copy.submit : empty ? copy.skip : copy.next;
+  const nextLabel = step === "welcome" ? copy.welcome.start : step === "hopes" ? copy.submit : copy.next;
+
+  if (step === "envelope") {
+    return (
+      <Page>
+        <Envelope
+          name={answers.name.trim() || copy.envelope.fallbackName}
+          copy={{ ...copy.envelope, letterTitle: copy.welcome.heading }}
+          onOpened={opened}
+        />
+      </Page>
+    );
+  }
 
   return (
-    <Page $tint={step === "done"}>
-      <Column>
-        <Brand>{copy.brand}</Brand>
+    <Page>
+      <Sheet>
+        <Logos>
+          <Image src="/brand/sdc-logo-transparent.png" alt={copy.logos.sdc} width={800} height={628} loading="eager" />
+          <Image src="/brand/ride-for-refuge-logo.png" alt={copy.logos.rideForRefuge} width={568} height={456} loading="eager" />
+        </Logos>
 
         {inFlow && (
           <ProgressBlock>
@@ -319,46 +392,83 @@ export function SurveyFlow({ email, initialName }: { email: string; initialName:
           </ProgressBlock>
         )}
 
-        {(step === "done" || step === "left") && (
-          <Centered>
-            <DoneIcon>
-              <Icon icon={step === "done" ? CircleCheck : Clock} size={64} />
-            </DoneIcon>
+        {step === "done" && (
+          <Celebration>
+            <Goose label={copy.done.goose} />
             <Heading id={HEADING_ID} tabIndex={-1}>
-              {step === "done" ? copy.done.heading : copy.left.heading}
+              {copy.done.heading}
             </Heading>
-            <Lead>{step === "done" ? copy.done.body : copy.left.body}</Lead>
-            {step === "done" ? (
-              <Button type="button" $size="lg" onClick={() => router.push("/")}>
-                {copy.done.next}
-              </Button>
-            ) : (
-              /* "Come back any time" is only true if they leave: the gate would otherwise send
-                 them straight back here, so this screen's way out is signing out. */
-              <form action={signOut.bind(null, "member")}>
-                <SubmitButton $size="lg" $variant="outline">
-                  {copy.left.signOut}
-                </SubmitButton>
-              </form>
-            )}
-          </Centered>
+            <p>{copy.done.body}</p>
+            <Button type="button" $size="lg" onClick={() => router.push("/")}>
+              {copy.done.next}
+            </Button>
+          </Celebration>
         )}
 
-        {step !== "done" && step !== "left" && (
+        {step === "unsubscribe" && (
+          <StepBody>
+            <Heading id={HEADING_ID} tabIndex={-1}>
+              {copy.unsubscribe.heading}
+            </Heading>
+            <Lead>{copy.unsubscribe.body}</Lead>
+            <Actions>
+              <Button type="button" $variant="outline" $size="lg" onClick={() => setStep(returnTo.current)}>
+                {copy.unsubscribe.keep}
+              </Button>
+              <Button type="button" $size="lg" onClick={confirmUnsubscribe}>
+                {copy.unsubscribe.confirm}
+              </Button>
+            </Actions>
+          </StepBody>
+        )}
+
+        {step === "unsubscribed" && (
+          <StepBody>
+            <Heading id={HEADING_ID} tabIndex={-1}>
+              {copy.unsubscribed.heading}
+            </Heading>
+            <Lead>{copy.unsubscribed.body}</Lead>
+            {/* Signing out is the way off this page: the gate at / would otherwise send them straight back. */}
+            <Actions>
+              <form action={signOut.bind(null, "member")}>
+                <SubmitButton $size="lg" $variant="outline">
+                  {copy.unsubscribed.signOut}
+                </SubmitButton>
+              </form>
+            </Actions>
+          </StepBody>
+        )}
+
+        {step !== "done" && step !== "unsubscribe" && step !== "unsubscribed" && (
           <Body action={advance} noValidate autoComplete="on">
             <StepBody key={step}>
               {step === "welcome" && (
                 <>
-                  <Tile>
-                    <Icon icon={copy.welcomeIcon} size={24} />
-                  </Tile>
-                  <Eyebrow>{copy.title}</Eyebrow>
                   <Heading id={HEADING_ID} tabIndex={-1}>
                     {copy.welcome.heading}
                   </Heading>
-                  {copy.welcome.body.map((p) => (
-                    <Lead key={p}>{p}</Lead>
-                  ))}
+                  <Letter>
+                    <Greeting>
+                      <Hello>{firstName ? copy.welcome.greeting(firstName) : copy.welcome.greetingNoName}</Hello>
+                      <p>{copy.welcome.invitation}</p>
+                      <p>{copy.welcome.benefits}</p>
+                    </Greeting>
+                    <p>
+                      {copy.welcome.askBefore}
+                      <b>{copy.welcome.askBold}</b>
+                      {copy.welcome.askAfter}
+                    </p>
+                    <p>
+                      <em>{copy.welcome.privacy}</em>
+                    </p>
+                    <p>
+                      <em>
+                        {copy.welcome.signOff}
+                        <br />
+                        {copy.welcome.signature}
+                      </em>
+                    </p>
+                  </Letter>
                 </>
               )}
 
@@ -369,7 +479,7 @@ export function SurveyFlow({ email, initialName }: { email: string; initialName:
                   </Heading>
                   <Lead>{copy.contact.body}</Lead>
                   <Fields>
-                    <Field label={copy.contact.nameLabel} hint={copy.contact.nameHint}>
+                    <Field label={copy.contact.nameLabel}>
                       {(props) => (
                         <Input
                           {...props}
@@ -404,11 +514,7 @@ export function SurveyFlow({ email, initialName }: { email: string; initialName:
                     otherValue={answers.topicsOther}
                     onOtherChange={(v) => set("topicsOther", v)}
                     otherLabel={copy.topics.otherLabel}
-                    otherPlaceholder={copy.otherPlaceholder}
                   />
-                  <Count aria-live="polite">
-                    {answers.topics.includes("not-sure") ? copy.notSureNote : answers.topics.length > 0 ? copy.selected(answers.topics.length) : ""}
-                  </Count>
                 </>
               )}
 
@@ -428,9 +534,7 @@ export function SurveyFlow({ email, initialName }: { email: string; initialName:
                     otherValue={answers.waysOther}
                     onOtherChange={(v) => set("waysOther", v)}
                     otherLabel={copy.ways.otherLabel}
-                    otherPlaceholder={copy.otherPlaceholder}
                   />
-                  <Count aria-live="polite">{answers.ways.length > 0 ? copy.selected(answers.ways.length) : ""}</Count>
                 </>
               )}
 
@@ -440,7 +544,7 @@ export function SurveyFlow({ email, initialName }: { email: string; initialName:
                     {copy.location.heading}
                   </Heading>
                   <Hint id={HINT_ID}>{copy.location.hint}</Hint>
-                  <RadioCardGroup
+                  <Choices
                     name="location"
                     aria-labelledby={HEADING_ID}
                     aria-describedby={HINT_ID}
@@ -452,22 +556,15 @@ export function SurveyFlow({ email, initialName }: { email: string; initialName:
                         <CardText>{c.label}</CardText>
                       </RadioCard>
                     ))}
-                  </RadioCardGroup>
-                  {answers.location === OUTSIDE && (
-                    <Field label={copy.location.outsideLabel} hint={copy.location.outsideHint}>
-                      {(props) => (
-                        <Input
-                          {...props}
-                          name="locationOther"
-                          value={answers.locationOther}
-                          maxLength={60}
-                          autoComplete="off"
-                          autoFocus
-                          onChange={(e) => set("locationOther", e.target.value)}
-                        />
-                      )}
-                    </Field>
-                  )}
+                    <OtherChoice
+                      kind="radio"
+                      name="location"
+                      checked={answers.location === OTHER}
+                      text={answers.locationOther}
+                      onTextChange={(v) => set("locationOther", v)}
+                      textLabel={copy.location.otherLabel}
+                    />
+                  </Choices>
                 </>
               )}
 
@@ -477,7 +574,7 @@ export function SurveyFlow({ email, initialName }: { email: string; initialName:
                     {copy.time.heading}
                   </Heading>
                   <Hint id={HINT_ID}>{copy.time.hint}</Hint>
-                  <RadioCardGroup
+                  <Choices
                     name="time"
                     aria-labelledby={HEADING_ID}
                     aria-describedby={HINT_ID}
@@ -489,7 +586,15 @@ export function SurveyFlow({ email, initialName }: { email: string; initialName:
                         <CardText>{c.label}</CardText>
                       </RadioCard>
                     ))}
-                  </RadioCardGroup>
+                    <OtherChoice
+                      kind="radio"
+                      name="time"
+                      checked={answers.time === OTHER}
+                      text={answers.timeOther}
+                      onTextChange={(v) => set("timeOther", v)}
+                      textLabel={copy.time.otherLabel}
+                    />
+                  </Choices>
                 </>
               )}
 
@@ -498,7 +603,8 @@ export function SurveyFlow({ email, initialName }: { email: string; initialName:
                   <Heading id={HEADING_ID} tabIndex={-1}>
                     {copy.hopes.heading}
                   </Heading>
-                  <Field label={copy.hopes.label} hint={copy.hopes.hint}>
+                  <Hint>{copy.hopes.hint}</Hint>
+                  <Field label={copy.hopes.label}>
                     {(props) => (
                       <Textarea
                         {...props}
@@ -522,29 +628,27 @@ export function SurveyFlow({ email, initialName }: { email: string; initialName:
             </StepBody>
 
             <Actions>
-              <ActionRow>
-                {step !== "welcome" && (
-                  <Button type="button" $variant="outline" $size="lg" onClick={previous}>
-                    <Icon icon={ArrowLeft} size={16} />
-                    {copy.back}
-                  </Button>
-                )}
-                <SubmitButton $size="lg" $variant={empty ? "secondary" : undefined}>
-                  {nextLabel}
-                </SubmitButton>
-              </ActionRow>
-            </Actions>
-
-            {step === "welcome" && (
-              <Footer>
-                <Button type="button" $variant="ghost" onClick={leave}>
-                  {copy.welcome.leave}
+              {step !== "welcome" && (
+                <Button type="button" $variant="outline" $size="lg" onClick={previous}>
+                  <Icon icon={ArrowLeft} size={16} />
+                  {copy.back}
                 </Button>
-              </Footer>
-            )}
+              )}
+              {/* Every question can be left blank (letter prototype, 8 Oct 2026). */}
+              <SubmitButton $size="lg">{nextLabel}</SubmitButton>
+            </Actions>
           </Body>
         )}
-      </Column>
+
+        {/* Unsubscribe is offered once, on the welcome letter (letter prototype, 8 Oct 2026). */}
+        {step === "welcome" && (
+          <Footer>
+            <Button type="button" $variant="ghost" onClick={startUnsubscribe}>
+              {copy.unsubscribe.link}
+            </Button>
+          </Footer>
+        )}
+      </Sheet>
     </Page>
   );
 }

@@ -2,6 +2,54 @@
 
 Decisions and assumptions behind `/welcome`, the questionnaire Ride for Refuge supporters answer after their first sign-in. **All copy is draft until SDC confirms the complimentary-membership terms and the topic labels.** Each decision can be revisited.
 
+## 00. The letter design (8 Oct 2026)
+
+The survey was redesigned as a doodled letter from a clickable prototype reviewed on 8 Oct 2026. This supersedes the
+copy, options and confirmation in §3, and reverses the "Maybe later" decision in §0. Everything else
+in §0 still stands.
+
+- **Envelope first:** members first see a closed envelope addressed to them ("To" beside their name,
+  or "Friend of SDC" without one). Clicking or tapping it opens the flap and slides the letter out,
+  then shows the welcome. A floating hint underneath says
+  "Click the envelope to open your letter" ("Tap…" on touch screens). Reduced motion opens it at once.
+- **Look:** every step sits on a hand-drawn paper sheet (ink border, uneven corners, offset shadow) on
+  a dotted desk, with the SDC and Ride for Refuge logos at the top. Headings use **Coming Soon**, all
+  other text **Nunito** at 16px. Kit components keep their behaviour; the page only re-points
+  `--color-bg`/`--color-bg-hover` at the paper. Colours and fonts are new `--survey-*` tokens, used only
+  on `/welcome` and **pending design-system owner approval**. Dark mode turns the paper dark and the ink light.
+- **Welcome letter:** "Welcome to the SDC community", a thank-you for supporting Ride for Refuge, the
+  complimentary membership, what it gets them ("better visibility into what’s happening at SDC and
+  easier access to opportunities across our community"), "5 quick questions (about 2 minutes)", a
+  privacy line and "Sincerely, SDC Team". **Begin survey** starts. Other membership benefits are still
+  to be defined with SDC.
+- **Questions and options** (labels are what gets stored):
+  1. Issues: housing and homelessness, tenant rights and eviction prevention, community connections
+     and neighbourhood life, social justice and local civic issues, climate and the environment,
+     refugee and newcomer support. "I’m not sure yet" is gone.
+  2. Ways to be involved: learn, meet people, support a petition, volunteer, join a workshop.
+     "Stay informed for now" is gone.
+  3. Where you’re based: Kitchener, Waterloo, Cambridge. "Elsewhere in Waterloo Region", "Outside
+     Waterloo Region" and "Prefer not to say" are gone.
+  4. Time: "How much time can you commit to local community events a week?" with 5+ hours, 3–4,
+     1–2, less than 1 hour, Unsure.
+  5. "What would make SDC membership meaningful to you?", optional text.
+- **Other:** every card question ends with **Other** below a divider. Choosing it turns the card into
+  a text box (labelled "Other:", with the question’s prompt as its description). Q4 gains `timeOther`.
+- **Every question can be skipped:** **Next** always works, with or without an answer (the button no
+  longer changes to "Skip for now"). Question 5 stays optional.
+- **Unsubscribe is back**, once, at the bottom of the welcome letter (reversing §0's "Maybe later"):
+  a confirmation ("Stop SDC invitations?", **Keep me in** / **Unsubscribe**) then "You’re
+  unsubscribed" with **Sign out**. It
+  does not yet unsubscribe anyone or stop the survey reappearing — see
+  `docs/backend/member-survey.md` §4.
+- **Confirmation:** "Thanks for sharing!" with a doodled Canada goose in a party hat (Waterloo theme)
+  that hops and honks, plus the existing confetti. It stays on the paper sheet under the logos, so
+  the letter keeps its corners to the end.
+- **Kept from the signed-in build, on purpose:** the email stays read-only under **Signed in as** (the
+  prototype let people edit it; that would let a forwarded link file answers under someone else), and
+  the confirmation keeps **Go to SDC** (otherwise it is a dead end behind sign-in).
+- **To confirm:** that SDC may show the Ride for Refuge logo.
+
 ## 0. Superseded by the first-login gate (6 Oct 2026, later the same day)
 
 Sections 2 and 4 below record the original frontend-only design and are kept as the record of what

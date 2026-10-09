@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import "@fontsource/coming-soon/400.css";
+import "@fontsource-variable/nunito/wght.css";
 import { redirect } from "next/navigation";
 import { requireMember } from "@/features/auth/session";
 import { SurveyFlow } from "@/features/welcome/components/SurveyFlow";

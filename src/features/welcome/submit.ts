@@ -1,4 +1,4 @@
-import { OTHER, OUTSIDE, locationChoices, timeChoices, topicChoices, wayChoices } from "./copy";
+import { OTHER, locationChoices, otherLabel, timeChoices, topicChoices, wayChoices } from "./copy";
 import type { SurveyAnswers } from "./types";
 
 /*
@@ -21,11 +21,12 @@ export interface SurveySubmission {
   location: string;
   locationOther: string;
   timeAvailable: string;
+  timeOther: string;
   hopes: string;
 }
 
 type Choices = { id: string; label: string }[];
-const label = (choices: Choices, id: string) => choices.find((c) => c.id === id)?.label ?? "";
+const label = (choices: Choices, id: string) => (id === OTHER ? otherLabel : (choices.find((c) => c.id === id)?.label ?? ""));
 const labels = (choices: Choices, ids: string[]) => ids.map((id) => label(choices, id)).filter(Boolean);
 
 export function toSubmission(submissionId: string, a: SurveyAnswers): SurveySubmission {
@@ -38,8 +39,9 @@ export function toSubmission(submissionId: string, a: SurveyAnswers): SurveySubm
     ways: labels(wayChoices, a.ways),
     waysOther: a.ways.includes(OTHER) ? a.waysOther.trim() : "",
     location: label(locationChoices, a.location),
-    locationOther: a.location === OUTSIDE ? a.locationOther.trim() : "",
+    locationOther: a.location === OTHER ? a.locationOther.trim() : "",
     timeAvailable: label(timeChoices, a.time),
+    timeOther: a.time === OTHER ? a.timeOther.trim() : "",
     hopes: a.hopes.trim(),
   };
 }
