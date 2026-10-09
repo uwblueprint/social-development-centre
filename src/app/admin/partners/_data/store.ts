@@ -24,8 +24,8 @@ const iso = (offsetDays: number) => new Date(Date.now() + offsetDays * DAY).toIS
 /** A freshly delivered link: single use, expires after 7 days. */
 export const newInvitation = (): Invitation => ({ sentAt: iso(0), expiresAt: iso(7) });
 
-let seq = 100;
-export const nextId = (prefix: string) => `${prefix}_${++seq}`;
+// Random, so new ids never collide with the seeded ones or repeat after a hot reload.
+export const nextId = (prefix: string) => `${prefix}_${crypto.randomUUID()}`;
 
 const contact = (
   id: string,

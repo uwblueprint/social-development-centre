@@ -15,8 +15,8 @@ export const dayOffset = (offsetDays: number) => {
 };
 const iso = (offsetDays: number) => at(offsetDays).toISOString();
 
-let seq = 1000;
-export const nextOpportunityId = () => `opp_${++seq}`;
+// Random, so new ids never collide with the seeded ones or repeat after a hot reload.
+export const nextOpportunityId = () => `opp_${crypto.randomUUID()}`;
 
 const org = {
   sdc: { id: "sdc", name: "Social Development Centre" },
