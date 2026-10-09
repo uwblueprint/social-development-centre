@@ -1,0 +1,206 @@
+"use client";
+
+import { css, keyframes, styled } from "next-yak";
+import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui";
+import { Check } from "lucide-react";
+import type { ReactNode } from "react";
+import { Icon } from "./Icon";
+
+/*
+ * Radix's default `modal` mode marks the rest of the page `aria-hidden` while the menu is open, but
+ * doesn't remove its focusable elements from the tab order (a real axe/WCAG 4.1.2 violation whenever a
+ * menu opens over a page with other content — the account menu, a row's ⋯ menu). Non-modal avoids the
+ * mismatch outright: closing behavior (Escape, outside click, item select) is unaffected.
+ */
+export function DropdownMenu(props: DropdownMenuPrimitive.DropdownMenuProps) {
+  return <DropdownMenuPrimitive.Root modal={false} {...props} />;
+}
+
+const contentShow = keyframes`
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+`;
+
+const Content = styled(DropdownMenuPrimitive.Content)`
+  z-index: var(--z-popover);
+  min-width: 220px;
+  background: var(--color-surface-raised);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-1);
+  animation: ${contentShow} var(--duration) var(--ease);
+  transform-origin: var(--radix-dropdown-menu-content-transform-origin);
+
+  /* The indicator column only exists when something in the menu can be checked. */
+  &:not(:has([role="menuitemcheckbox"], [role="menuitemradio"])) > * {
+    padding-left: var(--space-2);
+  }
+
+  &:focus {
+    outline: none;
+  }
+`;
+
+/*
+ * Every row reserves the same leading column (whether or not it renders a
+ * checkbox glyph there) so item labels line up regardless of item type, and
+ * every row is a uniform 32px tall with matching line-height (modeled on
+ * Linear's menus).
+ */
+const itemStyles = css`
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 32px;
+  line-height: var(--leading-ui);
+  /* Equal inset on both sides; checkable menus widen only the leading column. */
+  padding: 0 var(--space-2) 0 var(--space-7);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  /* Link items (asChild with an <a> or Link) look like every other item, never underlined. */
+  text-decoration: none;
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+  position: relative;
+
+  &:hover,
+  &:focus,
+  &:visited {
+    text-decoration: none;
+  }
+
+  /* Leading icon: fixed width and the same var(--space-2) gap as every other item, muted so the label leads. */
+  & > svg {
+    flex-shrink: 0;
+    color: var(--color-text-muted);
+  }
+
+  &[data-highlighted] {
+    background: var(--color-bg-hover);
+  }
+  &[data-disabled] {
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+  }
+`;
+
+/** `$variant="danger"` for destructive items: label and icon both use the danger color. */
+const Item = styled(DropdownMenuPrimitive.Item)<{ $variant?: "danger" }>`
+  ${itemStyles}
+
+  ${({ $variant }) =>
+    $variant === "danger" &&
+    css`
+      color: var(--color-danger);
+
+      & > svg {
+        color: var(--color-danger);
+      }
+
+      &[data-highlighted] {
+        background: var(--color-danger-subtle);
+      }
+    `}
+`;
+
+const CheckboxItem = styled(DropdownMenuPrimitive.CheckboxItem)`
+  ${itemStyles}
+`;
+
+/*
+ * Always rendered (forceMount), even when unchecked, so unchecked items show
+ * an empty box and read as checkable at a glance.
+ */
+const IndicatorBox = styled(DropdownMenuPrimitive.ItemIndicator)`
+  position: absolute;
+  left: var(--space-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-bg);
+  color: var(--color-on-primary);
+
+  svg {
+    opacity: 0;
+  }
+
+  &[data-state="checked"] {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+  }
+  &[data-state="checked"] svg {
+    opacity: 1;
+  }
+`;
+
+const Label = styled(DropdownMenuPrimitive.Label)`
+  padding: var(--space-2) var(--space-3) var(--space-2) var(--space-7);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+`;
+
+const Separator = styled(DropdownMenuPrimitive.Separator)`
+  height: 1px;
+  /* 2px above and below: groups stay distinct without a gap that splits the menu. */
+  margin: calc(var(--space-1) / 2) var(--space-1);
+  background: var(--color-border);
+`;
+
+const Shortcut = styled.kbd`
+  margin-left: auto;
+  padding: 2px 6px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: var(--leading-none);
+  /* text-subtle on this chip's own bg-hover fill is 4.4:1, short of the 4.5:1 text needs (WCAG 1.4.3). */
+  color: var(--color-text-muted);
+  background: var(--color-bg-hover);
+  border: 1px solid var(--color-bg-selected);
+  border-radius: var(--radius-sm);
+`;
+
+export const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
+export const DropdownMenuItem = Item;
+export const DropdownMenuLabel = Label;
+export const DropdownMenuSeparator = Separator;
+export const DropdownMenuShortcut = Shortcut;
+export const DropdownMenuGroup = DropdownMenuPrimitive.Group;
+export const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup;
+
+export function DropdownMenuContent({
+  children,
+  sideOffset = 6,
+  ...props
+}: DropdownMenuPrimitive.DropdownMenuContentProps & { children: ReactNode }) {
+  return (
+    <DropdownMenuPrimitive.Portal>
+      <Content sideOffset={sideOffset} {...props}>
+        {children}
+      </Content>
+    </DropdownMenuPrimitive.Portal>
+  );
+}
+
+export function DropdownMenuCheckboxItem({
+  children,
+  ...props
+}: DropdownMenuPrimitive.DropdownMenuCheckboxItemProps & { children: ReactNode }) {
+  return (
+    <CheckboxItem {...props}>
+      <IndicatorBox forceMount>
+        <Icon icon={Check} size={12} />
+      </IndicatorBox>
+      {children}
+    </CheckboxItem>
+  );
+}
