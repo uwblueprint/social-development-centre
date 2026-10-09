@@ -1,0 +1,425 @@
+"use client";
+
+import * as React from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { keyframes, styled } from "next-yak";
+import { ArrowRight, FunnelX, SearchX, X, type LucideIcon } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Icon } from "@/components/ui/Icon";
+import type { TableSort } from "@/components/ui/Table";
+
+/**
+ * Every string the list pattern writes itself (not the caller's nouns, scopes or filter names).
+ * The owner edits them here. See the owner's UX spec (retired), "Empty and error states".
+ */
+export const listEmptyCopy = {
+  /** "No paying members match “ada”", or with filters: "No closed jobs from Northside Food Bank match “ada”". */
+  searchTitle: (items: string, query: string) => `No ${items} match “${query}”`,
+  /** Search finds nothing here but matches in another tab or view. */
+  elsewhere: (count: number, scope: string) => `${count} ${count === 1 ? "match" : "matches"} in ${scope}`,
+  showIn: (scope: string) => `Show in ${scope}`,
+  /** Search finds nothing anywhere. */
+  searched: (fields: string) => `Searched ${fields}. Check the spelling, or clear the search.`,
+  clearSearch: "Clear search",
+  /** Filters hide everything: the title is "No " + the caller's description of the filtered items. */
+  filtersTitle: (filtered: string) => `No ${filtered}`,
+  filtersBody: "Nothing matches these filters.",
+  clearFilters: "Clear filters",
+  /** Search plus filters. */
+  searchAndFiltersBody: (fields: string) => `Searched ${fields} with these filters on. Check the spelling, or clear the search and filters.`,
+  clearSearchAndFilters: "Clear search and filters",
+  /** Screen-reader announcement after search results settle (ListPageToolbar's `results`). */
+  results: (count: number) => `${count} ${count === 1 ? "result" : "results"}`,
+  noResults: "No results",
+} as const;
+
+/* Content arriving after a load (owner): fades in and rises slightly. Reduced motion is handled globally. */
+export const contentIn = keyframes`
+  from {
+    opacity: 0;
+    translate: 0 var(--space-2);
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+`;
+
+/**
+ * Page body for a list page: fills the available width (no max-width), so tables use wide monitors.
+ * Everything under the header animates in when the page mounts (i.e. when data replaces the loading
+ * state); the header stays put so the title doesn't move. The loading state itself (aria-busy) doesn't.
+ */
+export const ListPage = styled.div`
+  display: flex;
+  flex-direction: column;
+  /* Owner: 16px max between the header and the page's blocks, product-wide. */
+  gap: var(--space-4);
+  min-width: 0;
+  padding: var(--space-5) var(--space-6);
+
+  &:not([aria-busy]) > :not(:first-child) {
+    animation: ${contentIn} var(--duration-slow) var(--ease) backwards;
+  }
+
+  @media (max-width: 767px) {
+    gap: var(--space-4);
+    padding: var(--space-4);
+  }
+`;
+
+const HeaderContainer = styled.div`
+  container-type: inline-size;
+  min-width: 0;
+`;
+
+const Header = styled.header`
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  min-height: 36px;
+`;
+
+const Title = styled.h1`
+  flex: 1 1 auto;
+  margin: 0;
+  min-width: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-heading);
+  letter-spacing: var(--tracking-tight);
+
+  /* Focused by script only (after choosing a section in the mobile drawer); it isn't a control. */
+  &:focus {
+    outline: none;
+  }
+`;
+
+/* A fixed, comfortable width just left of the actions. Narrow: its own full-width row under the title. */
+const HeaderSearch = styled.div`
+  flex: 0 0 var(--search-width);
+  min-width: 0;
+
+  @container (max-width: 640px) {
+    order: 1;
+    flex-basis: 100%;
+  }
+`;
+
+const Actions = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+`;
+
+/**
+ * One compact row: the page's h1 on the left, then the page's search (`search`, a `SearchField`) and
+ * its actions (buttons with icons) on the right. No description. Search filters the whole page across
+ * tabs, so it lives here, not in the tab toolbar. Below 640px the search wraps to its own full-width
+ * row under the title. `results` drives the polite "{n} results" announcement once a search settles.
+ * The h1 takes focus (tabIndex -1) when the person arrives from the mobile navigation drawer.
+ */
+export function ListPageHeader({
+  title,
+  search,
+  actions,
+  results,
+}: {
+  title: React.ReactNode;
+  search?: React.ReactNode;
+  actions?: React.ReactNode;
+  results?: { query: string; count: number; pending: boolean };
+}) {
+  return (
+    <HeaderContainer>
+      <Header>
+        <Title tabIndex={-1}>{title}</Title>
+        {search && <HeaderSearch>{search}</HeaderSearch>}
+        {actions && <Actions>{actions}</Actions>}
+      </Header>
+      {results && <SearchAnnouncer {...results} />}
+    </HeaderContainer>
+  );
+}
+
+const VisuallyHidden = styled.span`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+`;
+
+/**
+ * Politely announces "{n} results" or "No results" once a search settles (not on first load, and not
+ * while the next results are still loading). Each message is a new node, so the same text is still
+ * announced for a new search.
+ */
+function SearchAnnouncer({ query, count, pending }: { query: string; count: number; pending: boolean }) {
+  const key = `${query}\u0000${count}`;
+  const [announced, setAnnounced] = React.useState(key);
+  const [message, setMessage] = React.useState({ id: 0, text: "" });
+  if (!pending && key !== announced) {
+    setAnnounced(key);
+    setMessage((prev) => ({
+      id: prev.id + 1,
+      text: query ? (count === 0 ? listEmptyCopy.noResults : listEmptyCopy.results(count)) : "",
+    }));
+  }
+  return (
+    <VisuallyHidden aria-live="polite" aria-atomic="true">
+      <span key={message.id}>{message.text}</span>
+    </VisuallyHidden>
+  );
+}
+
+const ToolbarContainer = styled.div`
+  min-width: 0;
+`;
+
+/**
+ * The page's tabs (views of the list), full width. Render it inside `<Tabs>` and pass the `TabsList`
+ * as `tabs`. Search lives in `ListPageHeader`'s `search` slot: it filters the whole page across tabs.
+ * `results` drives a polite screen-reader announcement ("{n} results" / "No results") once a search
+ * settles; pass it here or on `ListPageHeader`, not both.
+ */
+export function ListPageToolbar({
+  tabs,
+  results,
+}: {
+  tabs: React.ReactNode;
+  /** @deprecated Ignored. Pass the `SearchField` to `ListPageHeader`'s `search` instead. */
+  search?: React.ReactNode;
+  results?: { query: string; count: number; pending: boolean };
+}) {
+  return (
+    <ToolbarContainer>
+      {tabs}
+      {results && <SearchAnnouncer {...results} />}
+    </ToolbarContainer>
+  );
+}
+
+export interface ListEmptyStateProps {
+  /** What the list holds, plural and lowercase as it reads mid-sentence: "members", "paying members". */
+  items: string;
+  /** The server's current search (`q`), trimmed; "" or omitted when not searching. */
+  query?: string;
+  /** What the search looks in, for "Searched {fields}.": "names and emails". */
+  searchedFields?: string;
+  /** Clears the search (Clear search). Needed whenever `query` can be set. */
+  onClearSearch?: () => void;
+  /**
+   * The same search's matches in another tab or view. When `count` > 0 and nothing matches here, the
+   * state says so and offers a button to switch there. Use the per-tab counts computed with the search.
+   * `body` replaces the default "{n} matches in {scope}" when the page knows more (e.g. the matches are unsubscribed).
+   */
+  elsewhere?: { count: number; scope: string; onShow: () => void; body?: string };
+  /**
+   * The active filters (beyond search), described as the items they'd show, e.g. "closed jobs from
+   * Northside Food Bank". Omit when no filter is on.
+   */
+  filtered?: string;
+  /** Resets the filters (Clear filters). Needed whenever `filtered` can be set. */
+  onClearFilters?: () => void;
+  /** Clears the search and resets the filters in one URL update (Clear search and filters). */
+  onClearSearchAndFilters?: () => void;
+  /** The truly empty state (no search, no filters): the caller's own title, body and optional action. */
+  empty: { icon: LucideIcon; title: string; description?: string; action?: React.ReactNode };
+}
+
+/**
+ * A list's empty state, tailored to why it's empty. It picks one of five variants from its props:
+ * search matches elsewhere, search matches nothing, filters hide everything, search plus filters, or
+ * truly empty. Each says what's empty, why, and offers the one action that fixes it.
+ * Render it as the `Table`'s `empty`.
+ */
+export function ListEmptyState({
+  items,
+  query = "",
+  searchedFields = "",
+  onClearSearch,
+  elsewhere,
+  filtered,
+  onClearFilters,
+  onClearSearchAndFilters,
+  empty,
+}: ListEmptyStateProps) {
+  const c = listEmptyCopy;
+
+  if (query && elsewhere && elsewhere.count > 0) {
+    return (
+      <EmptyState
+        icon={SearchX}
+        title={c.searchTitle(filtered ?? items, query)}
+        description={elsewhere.body ?? c.elsewhere(elsewhere.count, elsewhere.scope)}
+        action={
+          <Button type="button" $variant="secondary" onClick={elsewhere.onShow}>
+            {c.showIn(elsewhere.scope)}
+            <Icon icon={ArrowRight} size={16} />
+          </Button>
+        }
+      />
+    );
+  }
+
+  if (query && filtered) {
+    return (
+      <EmptyState
+        icon={SearchX}
+        title={c.searchTitle(filtered, query)}
+        description={c.searchAndFiltersBody(searchedFields)}
+        action={
+          onClearSearchAndFilters && (
+            <Button type="button" $variant="secondary" onClick={onClearSearchAndFilters}>
+              <Icon icon={X} size={16} />
+              {c.clearSearchAndFilters}
+            </Button>
+          )
+        }
+      />
+    );
+  }
+
+  if (query) {
+    return (
+      <EmptyState
+        icon={SearchX}
+        title={c.searchTitle(items, query)}
+        description={c.searched(searchedFields)}
+        action={
+          onClearSearch && (
+            <Button type="button" $variant="secondary" onClick={onClearSearch}>
+              <Icon icon={X} size={16} />
+              {c.clearSearch}
+            </Button>
+          )
+        }
+      />
+    );
+  }
+
+  if (filtered) {
+    return (
+      <EmptyState
+        icon={FunnelX}
+        title={c.filtersTitle(filtered)}
+        description={c.filtersBody}
+        action={
+          onClearFilters && (
+            <Button type="button" $variant="secondary" onClick={onClearFilters}>
+              <Icon icon={FunnelX} size={16} />
+              {c.clearFilters}
+            </Button>
+          )
+        }
+      />
+    );
+  }
+
+  return <EmptyState icon={empty.icon} title={empty.title} description={empty.description} action={empty.action} />;
+}
+
+/**
+ * Updates the list's URL params with `router.replace` (no history entry per keystroke), keeping every
+ * param it isn't told to change. `undefined` or "" removes a param. `pending` is true until the new
+ * page has rendered. `inTransition` runs inside the same transition (for `useOptimistic` updates).
+ */
+export function useListParams() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [pending, startTransition] = React.useTransition();
+
+  const setParams = React.useCallback(
+    (next: Record<string, string | undefined>, inTransition?: () => void) => {
+      const params = new URLSearchParams(searchParams.toString());
+      for (const [key, value] of Object.entries(next)) {
+        if (value) params.set(key, value);
+        else params.delete(key);
+      }
+      const qs = params.toString();
+      startTransition(() => {
+        inTransition?.(); // e.g. an optimistic update that lasts until the new page renders
+        router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+      });
+    },
+    [router, pathname, searchParams],
+  );
+
+  return { setParams, pending };
+}
+
+/**
+ * State for a list page's `SearchField`, backed by the `q` URL param. `search` writes `q`, resets to
+ * page 1 and keeps the other params; `pending` drives the field's spinner. `q` is the server's current
+ * value: when it changes from outside (back/forward, "Clear filters"), the field follows it, but a
+ * response for an older search never overwrites what the person has typed since.
+ */
+export function useListSearch(q: string) {
+  const { setParams, pending } = useListParams();
+  const [value, setValue] = React.useState(q);
+  const [requested, setRequested] = React.useState(q);
+  const [prevQ, setPrevQ] = React.useState(q);
+  if (q !== prevQ) {
+    setPrevQ(q);
+    if (q !== requested) {
+      setRequested(q);
+      setValue(q);
+    }
+  }
+
+  function search(text: string) {
+    const next = text.trim();
+    if (next === requested) return;
+    setRequested(next);
+    setParams({ q: next || undefined, page: undefined });
+  }
+
+  return { value, setValue, search, pending };
+}
+
+/**
+ * Sort state for a list page's `Table`, backed by the `sort` (a column's `sortKey`) and `dir`
+ * (`asc` | `desc`) URL params. Pass `sort` and `setSort` to the table as `sort` and `onSortChange`.
+ * `setSort` writes both params with `router.replace`, resets to page 1 and keeps the rest. `fallback`
+ * is the server's default order: it shows as the active column when the URL has no sort, and choosing
+ * it removes the params. The server validates `sort` against its own list of sortable columns.
+ * `sort` switches to the chosen column at once (optimistic); pass `pending` to the table's `busy`.
+ */
+export function useListSort(fallback?: TableSort) {
+  const searchParams = useSearchParams();
+  const { setParams, pending } = useListParams();
+  const key = searchParams.get("sort");
+  const dir = searchParams.get("dir");
+  const current: TableSort | undefined = key
+    ? { key, direction: dir === "desc" ? "desc" : "asc" }
+    : fallback;
+  // Shows the chosen column as active (with the table's busy spinner) until the sorted page arrives.
+  const [sort, setOptimisticSort] = React.useOptimistic(current);
+
+  const fallbackKey = fallback?.key;
+  const fallbackDirection = fallback?.direction;
+  const setSort = React.useCallback(
+    (next: TableSort) => {
+      const isFallback = next.key === fallbackKey && next.direction === fallbackDirection;
+      setParams(
+        {
+          sort: isFallback ? undefined : next.key,
+          dir: isFallback ? undefined : next.direction,
+          page: undefined,
+        },
+        () => setOptimisticSort(next),
+      );
+    },
+    [setParams, fallbackKey, fallbackDirection, setOptimisticSort],
+  );
+
+  return { sort, setSort, pending };
+}

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { styled } from "next-yak";
 import { signOut } from "@/app/login/actions";
 import { createClient } from "@/lib/supabase/server";
+import { Button } from "@/components/ui/Button";
 
 const Heading = styled.h1`
   font-size: 1.25rem;
@@ -24,7 +25,7 @@ export default async function Home() {
     <main>
       <Heading>Signed in as {profile?.email ?? claims.email}</Heading>
       <form action={signOut}>
-        <button type="submit">Sign out</button>
+        <Button type="submit" $variant="secondary">Sign out</Button>
       </form>
     </main>
   );
