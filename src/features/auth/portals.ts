@@ -2,7 +2,7 @@ export type Portal = "member" | "admin";
 
 export const portals = {
   member: { signInPath: "/login", homePath: "/" },
-  // The Admins page is the only admin page until the admin portal lands.
+  // Admins is the admin home until the admin portal lands.
   admin: { signInPath: "/login/admin", homePath: "/admin/admins" },
 } satisfies Record<Portal, { signInPath: string; homePath: string }>;
 
