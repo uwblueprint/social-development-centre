@@ -8,9 +8,9 @@ The survey was redesigned as a doodled letter from a clickable prototype reviewe
 copy, options and confirmation in §3, and reverses the "Maybe later" decision in §0. Everything else
 in §0 still stands.
 
-- **Envelope first:** members first see a closed envelope addressed to them ("To" and their name,
-  or "Friend of SDC" without one) with a heart sticker. Clicking or tapping it peels the sticker,
-  opens the flap and slides the letter out, then shows the welcome. A floating hint underneath says
+- **Envelope first:** members first see a closed envelope addressed to them ("To" beside their name,
+  or "Friend of SDC" without one). Clicking or tapping it opens the flap and slides the letter out,
+  then shows the welcome. A floating hint underneath says
   "Click the envelope to open your letter" ("Tap…" on touch screens). Reduced motion opens it at once.
 - **Look:** every step sits on a hand-drawn paper sheet (ink border, uneven corners, offset shadow) on
   a dotted desk, with the SDC and Ride for Refuge logos at the top. Headings use **Coming Soon**, all
@@ -34,16 +34,17 @@ in §0 still stands.
      1–2, less than 1 hour, Unsure.
   5. "What would make SDC membership meaningful to you?", optional text.
 - **Other:** every card question ends with **Other** below a divider. Choosing it turns the card into
-  a text box (labelled "Other:", with the question’s prompt as its description); it needs text before
-  **Next** works. Q4 gains `timeOther`.
-- **Answers required:** Questions 1–4 need an answer; **Next** is disabled until then, replacing
-  "Skip for now". The prototype review chose no on-screen reason (`disabledReason={null}`).
-- **Unsubscribe is back** on every screen (reversing §0's "Maybe later"): a confirmation ("Stop SDC
-  invitations?", **Keep me in** / **Unsubscribe**) then "You’re unsubscribed" with **Sign out**. It
+  a text box (labelled "Other:", with the question’s prompt as its description). Q4 gains `timeOther`.
+- **Every question can be skipped:** **Next** always works, with or without an answer (the button no
+  longer changes to "Skip for now"). Question 5 stays optional.
+- **Unsubscribe is back**, once, at the bottom of the welcome letter (reversing §0's "Maybe later"):
+  a confirmation ("Stop SDC invitations?", **Keep me in** / **Unsubscribe**) then "You’re
+  unsubscribed" with **Sign out**. It
   does not yet unsubscribe anyone or stop the survey reappearing — see
   `docs/backend/member-survey.md` §4.
 - **Confirmation:** "Thanks for sharing!" with a doodled Canada goose in a party hat (Waterloo theme)
-  that hops and honks, on the dotted desk, plus the existing confetti.
+  that hops and honks, plus the existing confetti. It stays on the paper sheet under the logos, so
+  the letter keeps its corners to the end.
 - **Kept from the signed-in build, on purpose:** the email stays read-only under **Signed in as** (the
   prototype let people edit it; that would let a forwarded link file answers under someone else), and
   the confirmation keeps **Go to SDC** (otherwise it is a dead end behind sign-in).

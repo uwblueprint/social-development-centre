@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { keyframes, styled } from "next-yak";
 import { ArrowLeft, CircleAlert } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { DisabledReason } from "@/components/ui/DisabledReason";
 import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
 import { Input } from "@/components/ui/Input";
@@ -261,9 +260,6 @@ const Actions = styled.div`
   > :last-child {
     flex: 1;
   }
-  > :last-child > button {
-    width: 100%;
-  }
   @media (max-width: 40rem) {
     margin: 0 calc(var(--space-4) * -1);
     padding: var(--space-3) var(--space-4) var(--space-4);
@@ -277,15 +273,15 @@ const Footer = styled.div`
   border-top: 1px solid var(--color-border);
 `;
 
-const Celebration = styled.main`
+/* The confirmation stays on the sheet, under the logos, so the letter keeps its corners to the end. */
+const Celebration = styled.div`
   display: flex;
   flex: 1;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: var(--space-3);
-  min-height: 100dvh;
-  padding: var(--space-6) var(--space-4);
+  padding-bottom: var(--space-6);
   text-align: center;
 
   > p {
@@ -340,7 +336,6 @@ export function SurveyFlow({ email, initialName }: { email: string; initialName:
 
   // The form's action: Next on every step but the last, which saves. A client action keeps `pending` for the SubmitButton.
   async function advance() {
-    if (unanswered) return;
     if (step === "welcome") return setStep("contact");
     if (inFlow && step !== "hopes") return setStep(FLOW[index + 1]);
     if (step !== "hopes") return;
@@ -368,14 +363,6 @@ export function SurveyFlow({ email, initialName }: { email: string; initialName:
     setStep("unsubscribed");
   }
 
-  // Questions 1–4 need an answer, and "Other" needs its text (letter prototype, 8 Oct 2026). Question 5 is optional.
-  const otherEmpty = (chosen: boolean, text: string) => chosen && text.trim() === "";
-  const unanswered =
-    (step === "topics" && (answers.topics.length === 0 || otherEmpty(answers.topics.includes(OTHER), answers.topicsOther))) ||
-    (step === "ways" && (answers.ways.length === 0 || otherEmpty(answers.ways.includes(OTHER), answers.waysOther))) ||
-    (step === "location" && (answers.location === "" || otherEmpty(answers.location === OTHER, answers.locationOther))) ||
-    (step === "time" && (answers.time === "" || otherEmpty(answers.time === OTHER, answers.timeOther)));
-
   const nextLabel = step === "welcome" ? copy.welcome.start : step === "hopes" ? copy.submit : copy.next;
 
   if (step === "envelope") {
@@ -386,23 +373,6 @@ export function SurveyFlow({ email, initialName }: { email: string; initialName:
           copy={{ ...copy.envelope, letterTitle: copy.welcome.heading }}
           onOpened={opened}
         />
-      </Page>
-    );
-  }
-
-  if (step === "done") {
-    return (
-      <Page>
-        <Celebration>
-          <Goose label={copy.done.goose} />
-          <Heading id={HEADING_ID} tabIndex={-1}>
-            {copy.done.heading}
-          </Heading>
-          <p>{copy.done.body}</p>
-          <Button type="button" $size="lg" onClick={() => router.push("/")}>
-            {copy.done.next}
-          </Button>
-        </Celebration>
       </Page>
     );
   }
@@ -420,6 +390,19 @@ export function SurveyFlow({ email, initialName }: { email: string; initialName:
             <Progress value={questionNumber} max={QUESTION_COUNT} aria-label={copy.progressLabel} />
             <ProgressText>{step === "contact" ? copy.progressContact : copy.progressQuestion(questionNumber, QUESTION_COUNT)}</ProgressText>
           </ProgressBlock>
+        )}
+
+        {step === "done" && (
+          <Celebration>
+            <Goose label={copy.done.goose} />
+            <Heading id={HEADING_ID} tabIndex={-1}>
+              {copy.done.heading}
+            </Heading>
+            <p>{copy.done.body}</p>
+            <Button type="button" $size="lg" onClick={() => router.push("/")}>
+              {copy.done.next}
+            </Button>
+          </Celebration>
         )}
 
         {step === "unsubscribe" && (
@@ -456,7 +439,7 @@ export function SurveyFlow({ email, initialName }: { email: string; initialName:
           </StepBody>
         )}
 
-        {step !== "unsubscribe" && step !== "unsubscribed" && (
+        {step !== "done" && step !== "unsubscribe" && step !== "unsubscribed" && (
           <Body action={advance} noValidate autoComplete="on">
             <StepBody key={step}>
               {step === "welcome" && (
@@ -651,17 +634,14 @@ export function SurveyFlow({ email, initialName }: { email: string; initialName:
                   {copy.back}
                 </Button>
               )}
-              {/* Disabled until the question is answered. The prototype review chose no on-screen reason (8 Oct 2026). */}
-              <DisabledReason reason={null}>
-                <SubmitButton $size="lg" disabled={unanswered}>
-                  {nextLabel}
-                </SubmitButton>
-              </DisabledReason>
+              {/* Every question can be left blank (letter prototype, 8 Oct 2026). */}
+              <SubmitButton $size="lg">{nextLabel}</SubmitButton>
             </Actions>
           </Body>
         )}
 
-        {step !== "unsubscribe" && step !== "unsubscribed" && (
+        {/* Unsubscribe is offered once, on the welcome letter (letter prototype, 8 Oct 2026). */}
+        {step === "welcome" && (
           <Footer>
             <Button type="button" $variant="ghost" onClick={startUnsubscribe}>
               {copy.unsubscribe.link}

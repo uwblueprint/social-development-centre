@@ -75,7 +75,7 @@ It needs somewhere to record, per person:
 Writes should be fire-and-forget: logging must never block a step change or fail a submission.
 
 ## 4. Unsubscribe (still needed)
-The letter design (8 Oct 2026) puts an **Unsubscribe** button on every survey screen, with a
+The letter design (8 Oct 2026) puts an **Unsubscribe** button at the bottom of the welcome letter, with a
 confirmation step and a "You’re unsubscribed" screen whose only action is **Sign out**. Today it
 **changes nothing**: it fires `survey_unsubscribe_clicked` / `survey_unsubscribed` (which go nowhere
 until §3 exists) and the person is still unanswered, so the gate at `/` shows them the survey again

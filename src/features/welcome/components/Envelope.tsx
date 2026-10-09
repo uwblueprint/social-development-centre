@@ -6,20 +6,14 @@ import { ArrowUp } from "lucide-react";
 import { Icon } from "@/components/ui/Icon";
 
 /*
- * The first thing a member sees: a closed, doodled envelope addressed to them. Opening it peels the
- * heart sticker, folds the flap back and slides the letter out, then hands over to the welcome step.
+ * The first thing a member sees: a closed, doodled envelope addressed to them. Opening it folds the
+ * flap back and slides the letter out, then hands over to the welcome step.
  * The envelope is one big button; a floating hint underneath says to click (or tap) it.
  * With reduced motion it opens at once.
  */
 
 const OPEN_MS = 1750;
 
-const peel = keyframes`
-  to {
-    opacity: 0;
-    transform: translate(-50%, -80%) scale(1.25) rotate(-18deg);
-  }
-`;
 /* The flap swaps layers halfway, so once it is folded back the letter slides out in front of it. */
 const unfold = keyframes`
   0% {
@@ -109,18 +103,8 @@ const Card = styled.button`
     stroke-width: 2.5;
     opacity: 0.7;
   }
-  .sticker {
-    fill: var(--survey-doodle-orange);
-    stroke: var(--survey-ink);
-    stroke-width: 1.6;
-    stroke-linejoin: round;
-  }
-
-  &[data-opening] .sticker-wrap {
-    animation: ${peel} var(--duration-slow) ease-in forwards;
-  }
   &[data-opening] .flap {
-    animation: ${unfold} var(--duration-enter) var(--ease) var(--duration-slow) forwards;
+    animation: ${unfold} var(--duration-enter) var(--ease) forwards;
   }
   &[data-opening] .letter {
     animation: ${slideOut} calc(var(--duration-enter) * 1.5) var(--ease) calc(var(--duration-enter) * 2) forwards;
@@ -179,36 +163,25 @@ const Flap = styled.span`
   transform-style: preserve-3d;
 `;
 
-const Sticker = styled.span`
-  left: 50%;
-  top: 56%;
-  z-index: 6;
-  width: clamp(var(--space-7), 13vw, 4.5rem);
-  aspect-ratio: 1;
-  transform: translate(-50%, -50%) rotate(-12deg);
-
-  svg {
-    position: static;
-    width: 78%;
-    height: 78%;
-    margin: 11%;
-  }
-`;
-
+/* "To" sits beside the name, both on one dashed line, like a hand-addressed envelope. */
 const Address = styled.span`
   left: 50%;
   bottom: 13%;
   z-index: 5;
-  display: grid;
-  justify-items: start;
-  gap: 2px;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
   min-width: 52%;
+  max-width: 84%;
+  padding-bottom: var(--space-1);
+  border-bottom: 2.5px dashed var(--survey-ink);
   translate: -50% 0;
   color: var(--survey-ink);
   pointer-events: none;
 `;
 
 const AddressTo = styled.span`
+  flex-shrink: 0;
   font-size: var(--text-xs);
   color: var(--color-text-muted);
   letter-spacing: 0.04em;
@@ -216,9 +189,7 @@ const AddressTo = styled.span`
 `;
 
 const AddressName = styled.span`
-  width: 100%;
-  padding-bottom: var(--space-1);
-  border-bottom: 2.5px dashed var(--survey-ink);
+  min-width: 0;
   font-family: var(--font-survey-display);
   font-size: clamp(var(--text-lg), 5.4vw, var(--text-xl));
   line-height: var(--leading-heading);
@@ -315,14 +286,6 @@ export function Envelope({
             <path className="paper" vectorEffect="non-scaling-stroke" d="M2 0 L298 0 L156 108 Q150 113 144 108 Z" />
           </svg>
         </Flap>
-        <Sticker className="sticker-wrap" aria-hidden="true">
-          <svg viewBox="0 0 24 24">
-            <path
-              className="sticker"
-              d="M12 21s-7.4-4.5-9.6-8.9C.8 8.9 2.6 4.6 6.3 4.6c2.1 0 3.4 1.1 4.2 2.4.8-1.3 2.2-2.4 4.3-2.4 3.8 0 5.5 4.3 3.9 7.5C16.6 16.5 12 21 12 21z"
-            />
-          </svg>
-        </Sticker>
         <Address className="address" aria-hidden="true">
           <AddressTo>{copy.to}</AddressTo>
           <AddressName>{name}</AddressName>
