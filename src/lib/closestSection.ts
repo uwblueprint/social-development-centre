@@ -27,5 +27,7 @@ export function closestSection(portal: keyof typeof SECTIONS, segments: string[]
   const typed = decodeURIComponent(segments[0]).toLowerCase();
   if (typed.length < 4) return null;
   const matches = SECTIONS[portal].filter((s) => distance(typed, s) <= 2);
-  return matches.length === 1 ? `/${portal}/${matches[0]}` : null;
+  // An exact name is not a typo: redirecting it would loop whenever that section has no page.
+  if (matches.length !== 1 || matches[0] === decodeURIComponent(segments[0])) return null;
+  return `/${portal}/${matches[0]}`;
 }
