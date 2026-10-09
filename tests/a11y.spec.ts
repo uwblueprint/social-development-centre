@@ -3,7 +3,9 @@ import AxeBuilder from "@axe-core/playwright";
 
 const routes = [
   "/components",
+  "/admin/partners",
   "/admin/community",
+  "/partner/organization",
 ];
 
 async function settle(page: import("@playwright/test").Page) {
