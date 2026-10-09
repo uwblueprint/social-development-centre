@@ -3,8 +3,10 @@ import AxeBuilder from "@axe-core/playwright";
 
 const routes = [
   "/components",
+  "/admin/opportunities",
   "/admin/partners",
   "/admin/community",
+  "/partner/opportunities",
   "/partner/organization",
 ];
 

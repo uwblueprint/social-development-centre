@@ -49,7 +49,31 @@ test.describe("Partners", () => {
   });
 });
 
+test.describe("Opportunities", () => {
+  test("sheet open (published)", async ({ page }) => {
+    await page.goto("/admin/opportunities?opportunity=opp_1");
+    await expectNoViolations(page);
+  });
+
+  test("sheet open (draft)", async ({ page }) => {
+    await page.goto("/admin/opportunities?opportunity=opp_11&tab=drafts");
+    await expectNoViolations(page);
+  });
+
+  test("delete confirm open", async ({ page }) => {
+    await page.goto("/admin/opportunities?opportunity=opp_11&tab=drafts");
+    // Owner: no ⋯ menu in the opportunity panel; Delete is a visible button.
+    await page.getByRole("dialog").getByRole("button", { name: /^delete$/i }).click();
+    await expectNoViolations(page);
+  });
+
+});
+
 test.describe("Partner portal", () => {
+  test("opportunities sheet open", async ({ page }) => {
+    await page.goto("/partner/opportunities?opportunity=opp_3");
+    await expectNoViolations(page);
+  });
 
   test("team invite dialog open", async ({ page }) => {
     await page.goto("/partner/organization");
