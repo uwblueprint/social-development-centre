@@ -1,0 +1,50 @@
+import { expect, test } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
+
+const routes = [
+  "/components",
+];
+
+async function settle(page: import("@playwright/test").Page) {
+  // Wait for the variable font to finish loading and settle a frame: scanning
+  // mid-swap can make axe misjudge text contrast from anti-aliased glyphs.
+  await page.evaluate(() => document.fonts.ready);
+  await page.waitForTimeout(250);
+}
+
+async function checkA11y(page: import("@playwright/test").Page, excludeSelectors: string[] = []) {
+  let builder = new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]);
+  for (const selector of excludeSelectors) builder = builder.exclude(selector);
+  const results = await builder.analyze();
+  expect(results.violations.map((v) => `${v.id}: ${v.nodes.length} × ${v.help}`)).toEqual([]);
+}
+
+// The member sheet's email bodies render in `sandbox=""` iframes (a unique opaque origin, by design —
+// see MemberEmails.tsx): axe can't inject into that origin to scan it and analyze() hangs until Playwright's
+// own timeout. Exclude it; its content is a static rendered email, not kit UI, and the frame itself has
+// an accessible name (`title`).
+const SANDBOXED_EMAIL_FRAME = 'iframe[sandbox=""]';
+
+for (const path of routes) test(`${path} has no WCAG 2.2 AA violations`, async ({ page }) => {
+  await page.goto(path);
+  await settle(page);
+  await checkA11y(page);
+});
+
+test.describe("login", () => {
+  test("sign-in error state has no violations", async ({ page }) => {
+    await page.goto("/login");
+    await settle(page);
+    await page.getByRole("button", { name: "Send sign-in link" }).click();
+    await expect(page.getByText("Enter an email address like name@example.org.")).toBeVisible();
+    await checkA11y(page);
+  });
+
+  test("signed-out goodbye has no violations", async ({ page }) => {
+    await page.goto("/login?signedOut=1&name=Amara");
+    await settle(page);
+    await expect(page.getByRole("status")).toContainText("You're signed out");
+    await checkA11y(page);
+  });
+});
+
