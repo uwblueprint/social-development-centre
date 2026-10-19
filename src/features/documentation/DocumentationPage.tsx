@@ -13,6 +13,8 @@ import {
  * (checked into the repo), so rendering it as HTML is safe.
  */
 const GUIDE_DIR = path.join(process.cwd(), "docs", "user-guide");
+/** The email prototype's PM notes (open questions, missed states, backend risks) live beside the guides, one file per flow. */
+const FLAGS_DIR = path.join(process.cwd(), "docs", "emails-prototype");
 
 /**
  * Tab labels, in tab order: the orientation guide first, then the portal's sidebar order
@@ -26,6 +28,15 @@ const TAB_LABEL: Record<string, string> = {
   "admin-partners": "Partners",
   "partner-getting-started": "Getting started",
   "partner-opportunities": "Opportunities",
+  "emails-outbox": "Outbox",
+  "emails-automatic": "Automatic emails",
+  "emails-one-off": "One-off emails",
+  "emails-editor": "Email editor",
+  "flags-outbox": "Outbox",
+  "flags-automatic": "Automatic emails",
+  "flags-one-off": "One-off emails",
+  "flags-editor": "Email editor",
+  "flags-engine": "Sending and data",
 };
 const ORDER = Object.keys(TAB_LABEL);
 
@@ -66,7 +77,7 @@ function renderGuide(
       link({ href, tokens }: Tokens.Link) {
         const inner = this.parser.parseInline(tokens);
         // Links between guides open that guide's tab.
-        const guide = /^\.?\/?(admin|partner)-([a-z-]+)\.md(#.*)?$/.exec(href);
+        const guide = /^\.?\/?(admin|partner|emails|flags)-([a-z-]+)\.md(#.*)?$/.exec(href);
         if (guide && guide[1] === portal)
           return `<a href="?guide=${guide[2]}">${inner}</a>`;
         const external = /^https?:/.test(href);
@@ -90,9 +101,10 @@ function renderGuide(
 export async function DocumentationPage({
   portal,
 }: {
-  portal: "admin" | "partner";
+  portal: "admin" | "partner" | "emails" | "flags";
 }) {
-  const ids = (await readdir(GUIDE_DIR))
+  const dir = portal === "flags" ? FLAGS_DIR : GUIDE_DIR;
+  const ids = (await readdir(dir))
     .filter((f) => f.startsWith(`${portal}-`) && f.endsWith(".md"))
     .map((f) => f.slice(0, -3))
     .sort(
@@ -102,7 +114,7 @@ export async function DocumentationPage({
     ids.map(async (file) => {
       const id = file.slice(portal.length + 1);
       const { html, toc } = renderGuide(
-        await readFile(path.join(GUIDE_DIR, `${file}.md`), "utf8"),
+        await readFile(path.join(dir, `${file}.md`), "utf8"),
         id,
         portal,
       );
