@@ -1,4 +1,3 @@
-import { labRead } from "@/dev/state-lab/state"; // STATE LAB (disposable)
 import { DEFAULT_MEMBER_SORT, MEMBER_STATUSES } from "./types";
 import type { CommunityCounts, Member, MemberPage, MemberRecord, MemberSort, MemberStatus, MemberTier, SentEmail } from "./types";
 import { summarizeActivity } from "./status";
@@ -60,7 +59,6 @@ export async function listMembers(
   sort: MemberSort = DEFAULT_MEMBER_SORT,
   statuses: readonly MemberStatus[] = MEMBER_STATUSES,
 ): Promise<MemberPage> {
-  await labRead(); // STATE LAB (disposable)
   const rows = matching(q)
     .filter((m) => m.tier === tier && statuses.includes(m.status))
     .sort(comparator(sort));

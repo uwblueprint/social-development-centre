@@ -1,6 +1,6 @@
 "use client";
 
-import { styled } from "next-yak";
+import { css, styled } from "next-yak";
 import { CircleAlert, Clock, Send } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -24,7 +24,11 @@ export const ContactRowFrame = styled.div<{ $highlighted?: boolean }>`
   border-radius: var(--radius-md);
   transition: background-color var(--duration) var(--ease);
 
-  ${({ $highlighted }) => $highlighted && `background: var(--color-accent-subtle);`}
+  ${({ $highlighted }) =>
+    $highlighted &&
+    css`
+      background: var(--color-accent-subtle);
+    `}
 
   &:focus-visible {
     outline: none;

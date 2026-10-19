@@ -31,17 +31,27 @@ function removeStored(key: string) {
  *
  * @param storageKey Identifies the form, e.g. one per portal and listing.
  * @param initial Builds the form's starting model; a saved copy that equals it is not a draft.
+ * @param options `base` is the version the form started from: a draft saved against another version is dropped,
+ *   so restoring it never undoes someone else's save. `strip` removes anything that changes on every load (React
+ *   keys) before the model is stored or compared; `revive` puts it back when a draft is restored.
  */
-export function useFormDraft<T>(storageKey: string, initial: () => T, model: T, setModel: (model: T) => void) {
+export function useFormDraft<T>(
+  storageKey: string,
+  initial: () => T,
+  model: T,
+  setModel: (model: T) => void,
+  options: { base?: string; strip?: (model: T) => T; revive?: (model: T) => T } = {},
+) {
+  const { base, strip = (m: T) => m, revive = (m: T) => m } = options;
   const { toast } = useToast();
   const pristine = React.useRef("");
   const ready = React.useRef(false);
   const cancelled = React.useRef(false);
   const restoredFor = React.useRef<string>(undefined);
   // Read inside the restore effect, which must run once per key, not whenever these change identity.
-  const latest = React.useRef({ initial, toast });
+  const latest = React.useRef({ initial, toast, strip, revive });
   React.useEffect(() => {
-    latest.current = { initial, toast };
+    latest.current = { initial, toast, strip, revive };
   });
 
   React.useEffect(() => {
@@ -49,16 +59,15 @@ export function useFormDraft<T>(storageKey: string, initial: () => T, model: T, 
     if (restoredFor.current === storageKey) return;
     restoredFor.current = storageKey;
     const start = latest.current.initial();
-    pristine.current = JSON.stringify(start);
+    pristine.current = JSON.stringify(latest.current.strip(start));
     try {
       const raw = localStorage.getItem(storageKey);
-      const saved = raw ? (JSON.parse(raw) as { model?: unknown; savedAt?: string }) : null;
-      // Early drafts stored the bare model; later ones wrap it with the time it was saved.
-      const savedModel = saved && "model" in saved ? saved.model : saved;
-      if (savedModel && JSON.stringify(savedModel) !== pristine.current) {
-        setModel(savedModel as T);
+      const saved = raw ? (JSON.parse(raw) as { model?: T; savedAt?: string; base?: string }) : null;
+      if (saved && saved.base !== base) removeStored(storageKey);
+      else if (saved?.model && JSON.stringify(saved.model) !== pristine.current) {
+        setModel(latest.current.revive(saved.model));
         latest.current.toast({
-          title: copy.form.draft.restored(saved && "savedAt" in saved && saved.savedAt ? draftWhen(saved.savedAt) : undefined),
+          title: copy.form.draft.restored(saved.savedAt ? draftWhen(saved.savedAt) : undefined),
           actionLabel: copy.form.draft.discard,
           onAction: () => {
             removeStored(storageKey);
@@ -68,19 +77,21 @@ export function useFormDraft<T>(storageKey: string, initial: () => T, model: T, 
       }
     } catch {}
     ready.current = true;
-  }, [storageKey, setModel]);
+  }, [storageKey, setModel, base]);
 
   React.useEffect(() => {
     if (!ready.current || cancelled.current) return;
     const timer = window.setTimeout(() => {
+      // Saved (or cancelled) while this write was waiting: don't bring the draft back.
+      if (cancelled.current) return;
       try {
-        const json = JSON.stringify(model);
-        if (json === pristine.current) localStorage.removeItem(storageKey);
-        else localStorage.setItem(storageKey, JSON.stringify({ model, savedAt: new Date().toISOString() }));
+        const stripped = latest.current.strip(model);
+        if (JSON.stringify(stripped) === pristine.current) localStorage.removeItem(storageKey);
+        else localStorage.setItem(storageKey, JSON.stringify({ model: stripped, savedAt: new Date().toISOString(), base }));
       } catch {}
     }, 400);
     return () => window.clearTimeout(timer);
-  }, [model, storageKey]);
+  }, [model, storageKey, base]);
 
   /** Deletes the saved draft. With `stopSaving`, later changes are no longer saved either. */
   const clearDraft = React.useCallback(

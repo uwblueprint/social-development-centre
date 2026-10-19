@@ -1,6 +1,6 @@
 "use client";
 
-import { styled } from "next-yak";
+import { css, styled } from "next-yak";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "./Button";
 import { Icon } from "./Icon";
@@ -49,7 +49,7 @@ const PageButton = styled.button<{ $active?: boolean }>`
 
   ${({ $active }) =>
     $active &&
-    `
+    css`
     background: var(--color-primary);
     color: var(--color-on-primary);
   `}

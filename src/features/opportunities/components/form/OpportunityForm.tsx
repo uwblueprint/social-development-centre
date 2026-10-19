@@ -26,11 +26,13 @@ import {
   emptyKindValues,
   fieldId,
   initialModel,
+  newDetailRow,
   orderedErrors,
   previewOpportunity,
   stepOf,
   toFormData,
   type DetailRow,
+  type FormModel,
   type KindFieldsProps,
   type Step,
 } from "./formValues";
@@ -130,6 +132,8 @@ function focusField(id: string) {
 
 export interface OpportunityFormProps {
   scope: "admin" | "partner";
+  /** The signed-in person's email. Unsaved work is kept per person, so a shared browser never shows someone else's. */
+  draftOwner: string;
   /** The list page, e.g. /admin/opportunities. */
   basePath: string;
   kind: OpportunityKind;
@@ -153,8 +157,13 @@ export interface OpportunityFormProps {
  * current step is rendered; `intent` comes from the clicked button. A server validation error opens the
  * step with the first invalid field, with the error summary on top (its links switch steps too).
  */
+/** Detail rows get new React keys on every load, so keys are left out of what's stored and compared. */
+const withoutRowKeys = (m: FormModel): FormModel => ({ ...m, details: m.details.map(({ label, value }) => ({ label, value }) as DetailRow) });
+const withRowKeys = (m: FormModel): FormModel => ({ ...m, details: (m.details ?? []).map(({ label, value }) => newDetailRow({ label, value })) });
+
 export function OpportunityForm({
   scope,
+  draftOwner,
   basePath,
   kind: initialKind,
   opportunity,
@@ -171,8 +180,13 @@ export function OpportunityForm({
   const [step, setStep] = React.useState<Step>(1);
 
   // Unsaved work is kept in this browser and restored on return (see useFormDraft).
-  const draftKey = `nexus-draft:${scope}:${opportunity?.id ?? "new"}`;
-  const { clearDraft } = useFormDraft(draftKey, () => initialModel(initialKind, opportunity, initialOrganizationId), model, setModel);
+  const draftKey = `nexus-draft:${scope}:${draftOwner}:${opportunity?.id ?? `new:${initialOrganizationId ?? ""}`}`;
+  // Kept per person (and per organization for new listings); a draft of an edit only applies to the version it started from.
+  const { clearDraft } = useFormDraft(draftKey, () => initialModel(initialKind, opportunity, initialOrganizationId), model, setModel, {
+    base: opportunity?.updatedAt,
+    strip: withoutRowKeys,
+    revive: withRowKeys,
+  });
   const [prefillError, setPrefillError] = React.useState<string>();
   /** Bumped when Eventbrite fills the form: the Details step plays its "filling in" scan once per fill. */
   const [magicFill, setMagicFill] = React.useState(0);

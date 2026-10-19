@@ -28,10 +28,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function EditOpportunityPage({ params }: Props) {
   const opportunity = await load((await params).id);
   if (!opportunity) notFound(); // renders ../not-found.tsx with a 404 status
+  const partner = await getCurrentPartner();
+  if (!partner) redirect("/login");
   return (
     <OpportunityForm
       key={opportunity.id}
       scope="partner"
+      draftOwner={partner.email}
       basePath={BASE}
       kind={opportunity.kind}
       opportunity={opportunity}

@@ -2,7 +2,21 @@ import { revalidatePath } from "next/cache";
 import { orgs, statusOf } from "@/app/admin/partners/_data/store";
 import type { ActionState } from "@/lib/forms";
 import { normalizeWebAddress } from "@/lib/url";
-import { ACCESSIBILITY_FEATURES, AREAS, KIND_NOUN, LIMITS, MAX_TOPICS, SDC_ORG, SKILLS, TIME_COMMITMENTS, TOPICS } from "./catalog";
+import {
+  ACCESSIBILITY_FEATURES,
+  AREAS,
+  EMPLOYMENT_TYPE_LABEL,
+  EVENT_FORMAT_LABEL,
+  KIND_NOUN,
+  LIMITS,
+  MAX_TOPICS,
+  SDC_ORG,
+  SKILLS,
+  TIME_COMMITMENTS,
+  TOPICS,
+  VOLUNTEER_FORMAT_LABEL,
+  WORKPLACE_LABEL,
+} from "./catalog";
 import { effectiveStatus, hasEnded } from "./format";
 import { nextOpportunityId, opportunities } from "./store";
 import type {
@@ -66,6 +80,15 @@ const IMAGE_MAX_CHARS = 2_800_000;
 const fail = (message: string, fieldErrors?: ActionState["fieldErrors"]): ActionState<never> => ({ status: "error", message, fieldErrors });
 
 const MISSING = "This opportunity no longer exists.";
+const DRAFT_NOT_PUBLISHED = (o: Opportunity) => `This ${KIND_NOUN[o.kind]} is a draft. Publish it from its form instead.`;
+
+/** YYYY-MM-DD that is a real day (the pattern alone accepts 2026-13-45). */
+function isCalendarDate(v: string): boolean {
+  if (!DATE.test(v)) return false;
+  const [y, m, d] = v.split("-").map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d));
+  return t.getUTCFullYear() === y && t.getUTCMonth() === m - 1 && t.getUTCDate() === d;
+}
 
 /** The form's error summary title, e.g. "Fix 2 fields to publish this event". */
 function summaryTitle(count: number, intent: string, noun: string) {
@@ -103,7 +126,7 @@ function readDetails(kind: OpportunityKind, fd: FormData, errors: Errors, strict
   };
   const date = (key: string) => {
     const v = text(fd, key);
-    if (v && !DATE.test(v)) errors[key] = "Enter a date like 2026-10-08.";
+    if (v && !isCalendarDate(v)) errors[key] = "Enter a date like 2026-10-08.";
   };
   const positiveInt = (key: string, message: string) => {
     const v = text(fd, key);
@@ -118,6 +141,16 @@ function readDetails(kind: OpportunityKind, fd: FormData, errors: Errors, strict
     const area = raw && AREA_IDS.has(raw) ? (raw as Area) : undefined;
     return { area };
   };
+  /** One value from a fixed list; anything else is an error and is never stored. */
+  const oneOf = <T extends string>(key: string, allowed: Record<T, string>, message: string) => {
+    const v = opt(fd, key);
+    if (v === undefined) return undefined;
+    if (!Object.hasOwn(allowed, v)) {
+      errors[key] = message;
+      return undefined;
+    }
+    return v as T;
+  };
   /** Repeated values from a fixed list; unknown ids and duplicates are dropped. */
   const pick = <T extends string>(key: string, allowed: Set<string>) => {
     const values = [...new Set(all(fd, key))].filter((v) => allowed.has(v)) as T[];
@@ -131,14 +164,14 @@ function readDetails(kind: OpportunityKind, fd: FormData, errors: Errors, strict
       need("format", "Choose how people attend.");
       date("date");
       for (const k of ["startTime", "endTime"]) if (text(fd, k) && !TIME.test(text(fd, k))) errors[k] = "Enter a time like 18:30.";
-      const format = opt(fd, "format") as "in_person" | "online" | "hybrid" | undefined;
+      const format = oneOf("format", EVENT_FORMAT_LABEL, "Choose how people attend.");
       const start = text(fd, "startTime");
       const end = text(fd, "endTime");
       if (start && end && TIME.test(start) && TIME.test(end) && end <= start) errors.endTime = "End time must be after the start time.";
       // Online events need no area; in person and hybrid need one (and never a street address).
       const where = format === "online" ? { area: "online" as Area } : { area: place().area };
       if (strict && format && format !== "online" && where.area === "online") errors.area = "Choose where the event is.";
-      const cost = (opt(fd, "cost") ?? "free") as "free" | "paid";
+      const cost = oneOf("cost", { free: "", paid: "" }, "Choose whether it’s free or paid.") ?? "free";
       const price = (key: string) => {
         const raw = text(fd, key).replace(/^\$/, "");
         if (!raw) return undefined;
@@ -171,7 +204,7 @@ function readDetails(kind: OpportunityKind, fd: FormData, errors: Errors, strict
       const rawCommitment = opt(fd, "timeCommitment");
       if (rawCommitment && !TIME_COMMITMENT_IDS.has(rawCommitment)) errors.timeCommitment = "Choose the time commitment.";
       need("format", "Choose where volunteers work.");
-      const format = opt(fd, "format") as "in_person" | "remote" | "hybrid" | undefined;
+      const format = oneOf("format", VOLUNTEER_FORMAT_LABEL, "Choose where volunteers work.");
       const where = place();
       date("startDate");
       date("applyBy");
@@ -185,11 +218,12 @@ function readDetails(kind: OpportunityKind, fd: FormData, errors: Errors, strict
     case "job": {
       need("employmentType", "Choose the employment type.");
       need("workplace", "Choose where the work happens.");
-      const workplace = opt(fd, "workplace") as "on_site" | "remote" | "hybrid" | undefined;
+      const workplace = oneOf("workplace", WORKPLACE_LABEL, "Choose where the work happens.");
+      const employmentType = oneOf("employmentType", EMPLOYMENT_TYPE_LABEL, "Choose the employment type.");
       const where = place();
       date("applyBy");
       return {
-        employmentType: opt(fd, "employmentType") as never, workplace, ...where, pay: opt(fd, "pay"),
+        employmentType, workplace, ...where, pay: opt(fd, "pay"),
         applyBy: opt(fd, "applyBy"), qualifications: opt(fd, "qualifications"),
       };
     }
@@ -222,6 +256,7 @@ export async function saveOpportunity(actor: Actor, fd: FormData): Promise<Actio
   if (!KINDS.has(kind)) return fail("Choose a type of opportunity.");
 
   const intent = text(fd, "intent") || "publish";
+  if (intent !== "publish" && intent !== "draft" && intent !== "save") return fail("We couldn’t save this. Refresh the page and try again.");
   // "save" keeps the stored status. An ended listing is stored as published, so moving its date forward revives it.
   const nextStatus = intent === "draft" ? "draft" : intent === "save" ? (existing?.status ?? "draft") : "published";
   const strict = nextStatus !== "draft";
@@ -311,6 +346,7 @@ function find(actor: Actor, id: string) {
 export async function closeOpportunity(actor: Actor, id: string): Promise<ActionState> {
   const o = find(actor, id);
   if (!o) return fail(MISSING);
+  if (o.status === "draft") return fail(DRAFT_NOT_PUBLISHED(o));
   o.status = "closed";
   o.closedReason = "closed";
   o.updatedAt = new Date().toISOString();
@@ -322,12 +358,15 @@ export async function closeOpportunity(actor: Actor, id: string): Promise<Action
 export async function reopenOpportunity(actor: Actor, id: string): Promise<ActionState> {
   const o = find(actor, id);
   if (!o) return fail(MISSING);
+  // Reopening skips the form's checks, so it's only for listings that were published before.
+  if (o.status === "draft") return fail(DRAFT_NOT_PUBLISHED(o));
   if (hasEnded(o)) return fail(`This ${KIND_NOUN[o.kind]} has already ended. Edit its date to reopen it.`);
   if (isRemoved(o.organization.id)) {
     return fail("This partner no longer has access. Reinvite them before reopening their opportunities.");
   }
   o.status = "published";
   o.closedReason = undefined;
+  o.publishedAt ??= new Date().toISOString();
   o.updatedAt = new Date().toISOString();
   o.updatedBy = { name: actor.name, role: actor.role };
   revalidate();
@@ -347,6 +386,7 @@ export async function duplicateOpportunity(actor: Actor, id: string): Promise<Ac
     createdAt: now,
     updatedAt: now,
     publishedAt: undefined,
+    performance: undefined,
     updatedBy: { name: actor.name, role: actor.role },
   } as Opportunity;
   opportunities().push(copy);

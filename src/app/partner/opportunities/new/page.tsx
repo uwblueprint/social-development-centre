@@ -29,6 +29,7 @@ export default async function NewOpportunityPage({ searchParams }: Props) {
   return (
     <OpportunityForm
       scope="partner"
+      draftOwner={partner.email}
       basePath={BASE}
       kind={kind}
       organizationName={partner.organization.name}
