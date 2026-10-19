@@ -101,6 +101,11 @@ export interface TableProps<T> {
    * fill a phone screen.
    */
   stickyColumns?: number;
+  /**
+   * Highlights the row under the pointer (default). Turn it off when the row does nothing on click and
+   * holds buttons whose own hover fill would blend into the highlight.
+   */
+  rowHover?: boolean;
   "aria-label"?: string;
 }
 
@@ -192,7 +197,7 @@ const StyledTable = styled.table`
    * Row hover is pure CSS on every cell (frozen ones too), with no transition, so the whole row
    * highlights in the same frame.
    */
-  tbody tr:hover > td {
+  &:not([data-no-row-hover]) tbody tr:hover > td {
     background: var(--color-bg-hover);
   }
 
@@ -219,6 +224,11 @@ const CellBox = styled.div`
 const Th = styled.th<{ $align?: "left" | "right"; $sticky?: boolean }>`
   height: var(--row-height);
   padding: 0 var(--space-3);
+
+  /* The first column's text lines up with the page heading; the row dividers still run edge to edge. */
+  &:first-child {
+    padding-left: 0;
+  }
   border-bottom: 1px solid var(--color-border);
   font-size: var(--text-xs);
   font-weight: var(--weight-medium);
@@ -419,6 +429,11 @@ const Body = styled.tbody``;
 const Td = styled.td<{ $align?: "left" | "right"; $busy?: boolean }>`
   height: var(--row-height);
   padding: 0 var(--space-3);
+
+  /* The first column's text lines up with the page heading; the row dividers still run edge to edge. */
+  &:first-child {
+    padding-left: 0;
+  }
   white-space: nowrap;
   color: var(--color-text);
   text-align: ${({ $align }) => $align ?? "left"};
@@ -505,6 +520,7 @@ export function Table<T>({
   busy = false,
   sortPending = false,
   stickyColumns = 0,
+  rowHover = true,
   "aria-label": ariaLabel,
 }: TableProps<T>) {
   const visibleColumns = columns.filter(
@@ -570,6 +586,7 @@ export function Table<T>({
         aria-label={ariaLabel}
         aria-busy={busy || sortPending || undefined}
         data-fixed={fixed ? "" : undefined}
+        data-no-row-hover={rowHover ? undefined : ""}
       >
         <thead>
           <tr>

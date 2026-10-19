@@ -16,7 +16,14 @@ Screenshots are embedded as `<figure>` with descriptive `alt` text (what to noti
 - [Opportunities](./admin-opportunities.md)
 - [Partners](./admin-partners.md)
 - [Community](./admin-community.md)
+- [Admins](./admin-admins.md)
 
 ## Partner portal (Civic Hub partners)
 - [Getting started with the partner portal](./partner-getting-started.md)
 - [Opportunities](./partner-opportunities.md)
+
+## Member feed (paying members)
+- [Finding and opening opportunities](./member-feed.md)
+
+## Ride for Refuge supporters
+- [Membership survey](./member-survey.md)

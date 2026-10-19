@@ -1,0 +1,13 @@
+"use client";
+
+import { OfflineState } from "@/app/_components/OfflineState";
+import { RouteError } from "@/components/patterns/RouteError";
+import { errorCopy } from "@/lib/errorCopy";
+
+/** Shown when a member page fails to load. Never shows the raw error; Next logs it (with its digest) on the server. */
+export default function MemberError({ retry }: { error: Error & { digest?: string }; retry: () => void }) {
+  // No connection: the goose, not a generic error.
+  if (typeof navigator !== "undefined" && !navigator.onLine) return <OfflineState page onRetry={retry} />;
+  const c = errorCopy.member.portal;
+  return <RouteError title={c.title} body={c.body} escalation={c.escalation} retryLabel={c.retry} onRetry={retry} />;
+}

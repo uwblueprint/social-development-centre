@@ -119,6 +119,11 @@ Show the chosen sort at once (`useListSort` does this optimistically) so the spi
 ## Hover
 Row hover is pure CSS on every cell (`tbody tr:hover > td`, frozen cells included) with no transition and no script, so the whole row highlights in the same frame. Don't add a hover transition to rows or cells: frozen cells paint their own background, and a transition makes them lag behind the rest of the row.
 
+Pass `rowHover={false}` to turn the highlight off. Use it when rows do nothing on click (no `onRowClick`) and hold buttons whose own hover fill would blend into the highlight, such as the Admins list.
+
+## Alignment
+The first column has no left padding, so its text (and the header label) lines up with the page heading above; the row dividers still run edge to edge. Keep the table directly under the page heading at the same left edge.
+
 ## Content rules
 Header labels are short nouns in sentence case ("Date added", not "DATE ADDED"). A cell with no value reads as muted placeholder text ("No name"), never a blank cell — a blank cell reads as missing data, not "not set".
 

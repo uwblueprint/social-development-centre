@@ -2,7 +2,7 @@
 
 import { OfflineWatcher } from "@/app/_components/OfflineWatcher";
 import type { ReactNode } from "react";
-import { BriefcaseBusiness, Building, ChartColumnIncreasing, UsersRound } from "lucide-react";
+import { BriefcaseBusiness, Building, ChartColumnIncreasing, ShieldCheck, UsersRound } from "lucide-react";
 import { AppToastProvider } from "@/components/ui/Toast";
 import { SidebarLayout, type SidebarNavItem } from "@/components/patterns/Sidebar";
 import type { AdminSection, AdminUser } from "../_data/types";
@@ -39,6 +39,7 @@ export function AdminShell({ user, children }: { user: AdminUser; children: Reac
           navLabel: "Admin navigation",
           items,
           docsHref: "/admin/documentation",
+          footerItems: [{ href: "/admin/admins", label: "Admins", icon: ShieldCheck }],
           onSignOut: () => void signOut(user.name.split(/\s+/)[0]),
         }}
       >

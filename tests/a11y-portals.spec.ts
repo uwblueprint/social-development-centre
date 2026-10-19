@@ -119,10 +119,45 @@ test.describe("Partner portal", () => {
   });
 });
 
+test.describe("Member feed", () => {
+  test("filters panel open", async ({ page }) => {
+    await page.goto("/member/explore");
+    await page.getByRole("button", { name: /^filters/i }).click();
+    await expectNoViolations(page);
+  });
+
+  test("details panel open", async ({ page }) => {
+    await page.goto("/member/explore");
+    await page.getByRole("button", { name: /^see details for/i }).first().click();
+    await expectNoViolations(page);
+  });
+
+  test("interests panel open", async ({ page }) => {
+    await page.goto("/member/for-you");
+    await page.getByRole("button", { name: /^edit interests$/i }).click();
+    await expectNoViolations(page);
+  });
+
+  test("account menu open", async ({ page }) => {
+    await page.goto("/member/for-you");
+    await page.getByRole("button", { name: /account menu/i }).click();
+    await expectNoViolations(page);
+  });
+
+  test("your opportunities with items", async ({ page }) => {
+    await page.goto("/member/yours");
+    await page.evaluate(() =>
+      localStorage.setItem("nexus.member.yours.v1", JSON.stringify(["opp_1", "opp_14", "opp_15"].map((id) => ({ id, openedAt: new Date().toISOString() })))),
+    );
+    await page.reload();
+    await expectNoViolations(page);
+  });
+});
+
 test.describe("320px", () => {
   test.use({ viewport: { width: 320, height: 800 } });
 
-  for (const path of ["/admin/partners?org=org_1", "/admin/opportunities/new?kind=event", "/partner/organization"]) {
+  for (const path of ["/admin/partners?org=org_1", "/admin/opportunities/new?kind=event", "/partner/organization", "/member/for-you", "/member/explore"]) {
     test(`${path} has no violations at 320px`, async ({ page }) => {
       await page.goto(path);
       await expectNoViolations(page);

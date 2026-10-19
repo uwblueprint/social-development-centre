@@ -9,6 +9,9 @@ const Heading = styled.h1`
 `;
 
 export default async function Home() {
+  // Without Supabase credentials (local UI work; see updateSession) there is no session to read.
+  if (process.env.NODE_ENV !== "production" && !process.env.NEXT_PUBLIC_SUPABASE_URL) redirect("/admin/opportunities");
+
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   const claims = data?.claims;

@@ -9,7 +9,7 @@ For SDC admins.
   <figcaption>Figure 1. Open a section</figcaption>
 </figure>
 
-1. Use the left sidebar: **Opportunities**, **Partners**, **Community** or **Insights**.
+1. Use the left sidebar: **Opportunities**, **Insights**, **Community** or **Partners**. **Admins** is at the bottom, above **Sign out**.
 2. The section you're in is highlighted.
 
 On a phone, tap the menu button (**Open menu**) at the top left to open the sidebar, then choose a section. To close it without choosing, tap the **X** (**Close menu**), tap the dimmed page beside it, or press Escape.

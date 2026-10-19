@@ -11,7 +11,14 @@ const retry = "Try again";
 export const adminEscalation = { text: "If it keeps happening, email", email: BSF_SUPPORT_EMAIL };
 export const partnerEscalation = { text: "If it keeps happening, tell an SDC admin." };
 
+/** Members have no admin to tell, so the escalation points at SDC. */
+export const memberEscalation = { text: "If it keeps happening, let SDC know." };
+
 export const errorCopy = {
+  member: {
+    /** /member: any member page (For you, Explore, Your opportunities). */
+    portal: { title: "We couldn't load this page.", body, retry, escalation: memberEscalation },
+  },
   admin: {
     /** /admin: any admin page without a boundary of its own (e.g. Insights, Documentation). */
     portal: { title: "We couldn't load this page.", body, retry, escalation: adminEscalation },

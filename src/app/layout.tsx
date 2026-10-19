@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "@fontsource-variable/geist/wght.css";
 import "@fontsource-variable/jetbrains-mono/wght.css";
 import "@/components/ui/tokens";
@@ -15,7 +16,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     // suppressHydrationWarning: the theme script may set data-theme on <html> before React hydrates.
     <html lang="en" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
+        {/* next/script rather than a raw <script>: React warns about scripts it renders on the client. */}
+        <Script id="theme-boot" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: themeBootScript }} />
         {/* Switzer from Fontshare: 400 for text, 500 for headings (--weight-regular / --weight-medium). */}
         <link rel="preconnect" href="https://api.fontshare.com" />
         <link rel="preconnect" href="https://cdn.fontshare.com" crossOrigin="anonymous" />
