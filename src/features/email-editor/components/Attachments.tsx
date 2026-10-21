@@ -72,7 +72,7 @@ export function Attachments({ items, errors, onAdd, onRemove, onRetry }: Attachm
 
   return (
     <Section
-      aria-labelledby="email-attachments-label"
+      aria-label={copy.attachments.label}
       onDragEnter={(e) => {
         if (!hasFiles(e) || full) return;
         depth.current += 1;
@@ -95,7 +95,6 @@ export function Attachments({ items, errors, onAdd, onRemove, onRetry }: Attachm
         onAdd(Array.from(e.dataTransfer.files));
       }}
     >
-      <Overline id="email-attachments-label">{copy.attachments.label}</Overline>
       {errors.length > 0 && (
         <Errors aria-live="polite">
           {errors.map((m) => (
@@ -196,15 +195,6 @@ const Section = styled.section`
   gap: var(--space-2);
 `;
 
-const Overline = styled.h3`
-  margin: 0;
-  font-size: var(--text-2xs);
-  line-height: var(--leading-2xs);
-  font-weight: var(--weight-medium);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--color-text-subtle);
-`;
 
 const Errors = styled.div`
   display: grid;

@@ -15,12 +15,12 @@ Decisions made while designing the email editor component (subject, message, att
 - A chip that doesn't exist for the email's moment is red, struck through, and says so on hover.
 
 ## 3. Subject
-- **Decision (owner):** A grey "Subject:" label sits inline before the field. The underline is always visible: grey, darker on hover, green while typing, red with an error. No placeholder. Enter moves to the message.
+- **Decision (owner):** A grey "Subject:" label sits inline before the field, with 4px between the text and its underline. The underline is always visible: grey, darker on hover, green while typing, red with an error. No placeholder. Enter moves to the message.
 - **Limits:** a warning past 60 characters ("Phones may cut off…") and a hard stop at 150.
 
 ## 4. Message
 - Text uses the default email font (Arial) at 16px, not the app font.
-- Lists start from typing `- `, `* ` or `1. `. Their tooltips show no shortcut.
+- Lists start from typing `- `, `* ` or `1. `. Their tooltips show no shortcut. Backspace or Delete on an empty bullet or number removes it, leaving a plain line.
 - **Shortcuts:** Quote is ⌘> (⌘⇧B toggles Chrome's bookmarks bar). Heading is ⌘⌥1; on a list item it turns that item into a heading and splits the list.
 - **Links:**
   - Sky blue, `--color-link`. Deepened from the requested sky-600 to 4.86:1 for AA.
@@ -40,7 +40,7 @@ Decisions made while designing the email editor component (subject, message, att
   - Populated: tiles with a preview, a name that can be shortened and an extension always shown in full, plus a dashed + tile.
   - Full: the + tile becomes "Max file limit reached" with a solid outline and no hover.
 - **Limits:** PDF, image, text, Word (.docx) or CSV; 10 MB per file; 20 MB and 10 files per email. 20 MB rather than 32 because encoding adds about a third and Gmail refuses mail over 25 MB.
-- Errors appear in red under the Attachments label. "x/20 MB used" appears under the tiles.
+- The section has no visible heading (owner); screen readers still announce it as Attachments. Errors appear in red above the tiles, and "x/20 MB used" under them.
 
 ## 6. Preview and saving
 - **Preview** is the editor's one button, in SDC green. It looks disabled when the subject or message is empty but stays clickable: clicking shows "Please include a subject." or "Please include a message." under that field. The screen it opens is designed separately (with Automatic Emails); this component only calls `onPreview`.

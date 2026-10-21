@@ -154,8 +154,8 @@ const Line = styled.div`
   }
 
   .ProseMirror {
-    min-height: 40px;
-    padding: var(--space-2) 0;
+    min-height: 32px;
+    padding: var(--space-2) 0 var(--space-1);
     outline: none;
     font-family: var(--font-email);
     font-size: var(--text-md);
