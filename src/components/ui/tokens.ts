@@ -63,6 +63,17 @@ globalStyle`
     --color-danger-border: #fecaca;
     --color-info-border: #c9dbe5;
 
+    /* Email editor (owner): SDC dark green (Figma brand/heading) for interactive states, until the palette moves to green. */
+    --color-brand: #064d45;
+    --color-brand-hover: #053a34;
+    --color-on-brand: var(--taupe-50);
+    /* Fill for pressed toolbar buttons and the selected-image outline; the brand at low strength. */
+    --color-brand-subtle: #dcece8;
+    /* Link text inside the email editor (owner asked for sky blue); 4.86:1 on white. */
+    --color-link: #0277b6;
+    /* Email text is shown in the default email font, not the app font (owner). */
+    --font-email: Arial, Helvetica, sans-serif;
+
     /* Opportunity types need distinct, non-status colors. Hues avoid the status and accent hues
        (red, orange, amber, emerald, steel blue); each text color is 5.5:1 or more on its -subtle fill. */
     --color-category-1: #1d4ed8; /* blue */
@@ -148,6 +159,11 @@ globalStyle`
     --space-8: 64px;
 
     --text-xs: 0.8125rem;
+    /* Popovers, tooltips and overline labels in the email editor (owner): 12px. */
+    --text-2xs: 0.75rem;
+    --leading-2xs: 1rem;
+    /* Headings inside an email: 24px, the size email clients give a heading (owner). */
+    --text-email-heading: 1.5rem;
     --text-sm: 0.875rem;
     --text-md: 1rem;
     --text-lg: 1.1875rem;
@@ -266,6 +282,11 @@ globalStyle`
       --color-warning-border: #78350f;
       --color-danger-border: #7f1d1d;
       --color-info-border: #2f4b5c;
+      --color-brand: #8fd8ca;
+      --color-brand-hover: #b0e6dc;
+      --color-on-brand: var(--taupe-900);
+      --color-brand-subtle: rgb(143 216 202 / 0.16);
+      --color-link: #7dd3fc;
 
       --color-category-1: #93c5fd;
       --color-category-1-subtle: #172033;
@@ -346,6 +367,11 @@ globalStyle`
     --color-warning-border: #78350f;
     --color-danger-border: #7f1d1d;
     --color-info-border: #2f4b5c;
+    --color-brand: #8fd8ca;
+    --color-brand-hover: #b0e6dc;
+    --color-on-brand: var(--taupe-900);
+    --color-brand-subtle: rgb(143 216 202 / 0.16);
+    --color-link: #7dd3fc;
 
     --color-category-1: #93c5fd;
     --color-category-1-subtle: #172033;
