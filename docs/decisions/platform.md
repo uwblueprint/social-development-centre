@@ -129,3 +129,16 @@ Tab titles (owner, 28 Sep 2026): both portals' browser tabs read "… · Nexus".
 Offline: modal or page (owner, 28 Sep 2026): a dialog when an action needs the server (people keep their place and their draft), a full page only when the page they asked for can't load. Both use the illustration's ground (taupe-50; taupe-900 in dark) so the drawing's square blends in. The dialog uses the dialog title size (centred) with a 14px message; the full page uses the 404's sizes. Brand illustrations are square (no radius) and their mask bleeds 2px past the frame, so no hairline shows at the edges when zoomed in.
 
 Offline actions (owner, 28 Sep 2026): actions that call the server directly (Fill in details, the panel's Close, Reopen, Delete and so on) also stop with the goose while offline (`requireOnline()` in `src/lib/offline.ts`), and any other server action made offline is caught by a safety net in `OfflineWatcher`.
+
+## Admin access is a row in `public.admins` (20 Oct 2026)
+**What:** Being an SDC admin means having a row in `public.admins`. `getCurrentAdmin()` asks the database through `is_admin()` (security definer) rather than checking anything the browser sends, and returns `null` on any failure, so the admin portal fails closed. A sign-in link now also calls `record_sign_in()`, which links the login to its person in `public.people`; a link whose address has no person is refused and the session dropped, rather than leaving someone signed in with no role.
+**Why:** The role check has to live in one place, and the database is the only place both portals and row-level security can share. Before this, the seam threw in production, which broke the production build (the admin pages are prerendered at build time) and so blocked every deploy.
+**Affects:** `src/app/admin/_data/session.ts`, `src/app/auth/confirm/route.ts`, every `/admin` route (all now dynamic, never prerendered or cached), `/kiosk`.
+**When encountered:** Every admin sign-in. Someone whose address isn't in `public.admins` lands back on the sign-in page.
+
+## The partner portal is closed until it has a backend (20 Oct 2026)
+**What:** `getCurrentPartner()` returns `null` in production, so every `/partner` route redirects to `/login`. In development it still signs you in as the in-memory store's first active contact, so the UI can be built and reviewed.
+**Why:** Nothing in the database links a signed-in person to a partner organization yet, so there is no honest check to make. Failing closed is the safe reading of "not implemented"; the alternative, letting anyone signed in reach another organization's data, isn't acceptable even briefly. Like the admin seam, it previously threw and broke the production build.
+**Affects:** `src/app/partner/_data/session.ts`, every `/partner` route. The partner user guide describes the portal as it will work once the backend lands.
+**When encountered:** Any partner trying to sign in before that schema exists.
+

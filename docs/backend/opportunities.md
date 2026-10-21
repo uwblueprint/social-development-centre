@@ -75,13 +75,13 @@ The panel only needs the latest `updated_by`. The user research asks to keep his
 - **Partners can't change a listing's organization.** Admins can, when editing.
 
 ## Session seams
-**`getCurrentPartner()`** in `src/app/partner/_data/session.ts` returns a `PartnerUser` (`contactId`, `name`, `email`, `organization { id, name }`) or `null`. It throws in production until implemented, so the partner portal fails closed.
+**`getCurrentPartner()`** in `src/app/partner/_data/session.ts` returns a `PartnerUser` (`contactId`, `name`, `email`, `organization { id, name }`) or `null`. It returns `null` in production until implemented, so the partner portal fails closed: every `/partner` route redirects to `/login`.
 - **Return `null` unless** the signed-in user is an **active** contact (they accepted their invitation and weren't removed) of a **current** organization (not removed). The layout then redirects to `/login`.
 - **Return the organization's current name.** The sidebar shows it as the product name.
 - **Call it on every partner action,** not just in the layout. Removing a person or an organization must end access at once, including for open tabs ([partners decisions 6 and 9](../decisions/partners.md)).
 - **One organization per person.** A contact belongs to one organization at a time (partners decision 8), so there's no organization switcher.
 
-`getCurrentAdmin()` (`src/app/admin/_data/session.ts`) is unchanged. It must check the SDC admin role.
+`getCurrentAdmin()` (`src/app/admin/_data/session.ts`) checks the SDC admin role in the database (`is_admin()`); see [README](./README.md#1-who-is-signed-in).
 
 ## Reads (`queries.ts`)
 | Function | Returns | Rules |

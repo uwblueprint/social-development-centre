@@ -8,6 +8,13 @@ From the Partners PRD, product decisions and the owner's UX spec (the owner's UX
 
 A dev-only in-memory store (`_data/store.ts`) makes the UI work end to end. Replace `queries.ts` and the actions, then delete `store.ts`. Dev simulations: an email containing `fail` fails delivery; one containing `nosave` fails to save.
 
+## Partner sign-in
+`getCurrentPartner()` (`src/app/partner/_data/session.ts`) returns `null` in production, so the whole partner portal redirects to `/login` today. Opening it needs a way to get from a signed-in person to their organization:
+- **A link from a person to an organization in the database.** `public.people` has no organization, and organizations and their people still live in `_data/store.ts`. Until a real table (and its row-level security) exists, there is nothing to check.
+- **The same rules the dev store applies:** active contact (invitation accepted, not removed) of a current (not removed) organization. Anything else is `null`.
+- **A portal check at sign-in.** `can_sign_in(email, portal)` already answers this for `admin` and `member`; a partner portal needs its own case rather than reusing either.
+- Until then, don't relax the admin check to let partners in: the two portals show different data and the admin portal is the more privileged of the two.
+
 ## Model
 - An **organization** (partner) has one or more **people** (called contacts in the data model; the UI never says "contact"). Admins invite a *person* and attach them to an existing organization or add one inline.
 - Person status: `pending` until they accept their invitation, then `active`. A removed person keeps their record with `removedAt`.
