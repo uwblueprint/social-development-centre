@@ -22,24 +22,17 @@ Email security scanners (e.g. Outlook Safe Links) can open a link before the per
 `supabase/migrations/`. Types generated from the database are in `src/lib/supabase/database.types.ts`; regenerate them after changing the schema.
 
 - `people`: one row per email SDC knows, whether or not they've signed in. `user_id` links to the Supabase login after the first sign-in; `first_signed_in_at` and `last_signed_in_at` record sign-ins.
-- `admins`: everyone here can sign in at `/login/admin` and add other admins. All admins are equal.
+- `admins`: everyone here can sign in at `/login/admin` and add or remove admins, themselves included. All admins are equal, and the last one can't be removed.
 - `memberships`: SDC's list, `tier` `general` or `paying`. Only `paying` can sign in at `/login`.
 - `welcome_answers`: the form members fill in once, after their first sign-in.
 
-The browser can only read rows (row-level security). Every write goes through a database function: `add_admin`, `submit_welcome`, `record_sign_in`.
+The browser can only read rows (row-level security). Every write goes through a database function: `add_admin`, `remove_admin`, `add_paying_member`, `remove_paying_access`, `submit_welcome`, `record_sign_in`.
 
 Partners will get `partner_organizations` and `partner_contacts` tables pointing at `people`, plus their own sign-in page.
 
 ### Adding a paying member
 
-Until the Community page saves to the database, add them in the SQL editor:
-
-```sql
-with person as (
-  insert into people (email, full_name) values ('name@example.org', 'Full Name') returning id
-)
-insert into memberships (person_id, tier) select id, 'paying' from person;
-```
+Admins add them on **Paying members** (`/admin/community`), which upgrades a general member or adds someone new and emails them a sign-in link. See [user-guide/admin-paying-members.md](user-guide/admin-paying-members.md).
 
 ## Setup
 
@@ -54,16 +47,16 @@ In the Supabase dashboard:
 ## Decisions
 
 - Every admin signs in with their own email. This replaces the shared admin password in the earlier designs.
-- The first admin is seeded by the migration. Admins add other admins at `/admin/admins`; the invite is a sign-in link. Admins can't be removed yet.
-- Paying members are donors, so membership doesn't expire. Payments happen by e-transfer outside the app; an admin marks someone as paying once it arrives.
+- The first admin is seeded by the migration. Admins add and remove admins at `/admin/admins`; the invite is a sign-in link. See [decisions/admins.md](decisions/admins.md).
+- Paying members are donors, so membership doesn't expire. Payments happen by e-transfer outside the app; an admin marks someone as paying at `/admin/community` once it arrives. See [decisions/paying-members.md](decisions/paying-members.md).
 - Changing email: members contact SDC. When someone's login email changes, a trigger updates `people.email` to match. When an admin changes a `people.email` directly, also clear its `user_id` so the new address can sign in.
 - Links last 1 hour (Supabase's default).
 
 ## Not built yet
 
 - Partner sign-in.
-- Adding paying members from the Community page.
+- The full Community page (general members, unsubscribes, imports). `/admin/community` lists paying members only for now.
 - Self-service email change.
 - Supabase's "Before User Created" hook, to stop people creating logins by calling Supabase directly with an email that has no access. Such logins can't see or do anything today, but the hook would keep them out of `auth.users`.
-- Final copy for `/welcome` and `/admin/admins`, which aren't in Figma yet.
+- Final copy for `/welcome`, `/admin/admins` and `/admin/community`, which aren't in Figma yet.
 - Separate member, admin and invite emails as in Figma. Supabase uses one template per kind of email, so this needs the Send Email Hook.

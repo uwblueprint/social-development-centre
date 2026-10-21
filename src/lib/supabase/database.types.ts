@@ -138,6 +138,10 @@ export type Database = {
         Args: { p_email: string; p_full_name: string }
         Returns: boolean
       }
+      add_paying_member: {
+        Args: { p_email: string; p_full_name: string }
+        Returns: string
+      }
       can_sign_in: {
         Args: { p_email: string; p_portal: string }
         Returns: boolean
@@ -145,6 +149,11 @@ export type Database = {
       current_person_id: { Args: never; Returns: string }
       is_admin: { Args: never; Returns: boolean }
       record_sign_in: { Args: never; Returns: boolean }
+      remove_admin: { Args: { p_person_id: string }; Returns: string }
+      remove_paying_access: {
+        Args: { p_person_id: string }
+        Returns: undefined
+      }
       submit_welcome: {
         Args: { p_answers: Json; p_full_name: string }
         Returns: undefined

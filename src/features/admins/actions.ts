@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { sendSignInLink } from "@/features/auth/actions";
+import { sendSignInLink, signOut } from "@/features/auth/actions";
 import { requireAdmin } from "@/features/auth/session";
 import { normalizeEmail } from "@/lib/email";
 import type { ActionState } from "@/lib/forms";
@@ -42,9 +42,19 @@ export async function addAdmin(_prev: ActionState<NewAdmin>, formData: FormData)
   return { status: "success", message: `Invite sent to ${email}.` };
 }
 
-export async function resendAdminLink(email: string): Promise<ActionState> {
-  await requireAdmin();
-  return (await sendSignInLink("admin", email)) === "sent"
-    ? { status: "success", message: "Sent" }
-    : { status: "error", message: "Didn’t send. Try again." };
+/** Removing yourself is leaving: you're signed out. The last admin can't be removed. */
+export async function removeAdmin(personId: string): Promise<ActionState> {
+  const me = await requireAdmin();
+  const supabase = await createClient();
+  const { data: result, error } = await supabase.rpc("remove_admin", { p_person_id: personId });
+  if (error) {
+    console.error("remove_admin failed:", error.message);
+    return { status: "error", message: "We couldn’t remove this admin. Try again." };
+  }
+  if (result === "last_admin") {
+    return { status: "error", message: "You’re the only admin. Add another admin before you leave." };
+  }
+  if (personId === me.id) await signOut("admin");
+  revalidatePath("/admin/admins");
+  return { status: "success" };
 }
