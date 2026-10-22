@@ -6,8 +6,9 @@ import { ArrowUp } from "lucide-react";
 import { Icon } from "@/components/ui/Icon";
 
 /*
- * The first thing a member sees: a closed, doodled envelope addressed to them. Opening it folds the
- * flap back and slides the letter out, then hands over to the welcome step.
+ * The first thing a member sees: a closed, doodled envelope. Opening it folds the flap back and
+ * slides the letter out, then hands over to the welcome step. Nothing addresses it: the link is the
+ * same for everyone, so no name is known until the details step (review, 22 Oct 2026).
  * The envelope is one big button; a floating hint underneath says to click (or tap) it.
  * With reduced motion it opens at once.
  */
@@ -34,11 +35,6 @@ const unfold = keyframes`
 const slideOut = keyframes`
   to {
     transform: translateY(-58%);
-  }
-`;
-const fadeOut = keyframes`
-  to {
-    opacity: 0;
   }
 `;
 const float = keyframes`
@@ -109,9 +105,6 @@ const Card = styled.button`
   &[data-opening] .letter {
     animation: ${slideOut} calc(var(--duration-enter) * 1.5) var(--ease) calc(var(--duration-enter) * 2) forwards;
   }
-  &[data-opening] .address {
-    animation: ${fadeOut} var(--duration-slow) var(--ease) calc(var(--duration-enter) * 2) forwards;
-  }
 `;
 
 const Inside = styled.svg`
@@ -163,39 +156,6 @@ const Flap = styled.span`
   transform-style: preserve-3d;
 `;
 
-/* "To" sits beside the name, both on one dashed line, like a hand-addressed envelope. */
-const Address = styled.span`
-  left: 50%;
-  bottom: 13%;
-  z-index: 5;
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-2);
-  min-width: 52%;
-  max-width: 84%;
-  padding-bottom: var(--space-1);
-  border-bottom: 2.5px dashed var(--intake-ink);
-  translate: -50% 0;
-  color: var(--intake-ink);
-  pointer-events: none;
-`;
-
-const AddressTo = styled.span`
-  flex-shrink: 0;
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-`;
-
-const AddressName = styled.span`
-  min-width: 0;
-  font-family: var(--font-intake-display);
-  font-size: clamp(var(--text-lg), 5.4vw, var(--text-xl));
-  line-height: var(--leading-heading);
-  overflow-wrap: anywhere;
-`;
-
 const Hint = styled.p`
   display: flex;
   align-items: center;
@@ -233,13 +193,10 @@ const Hint = styled.p`
 `;
 
 export function Envelope({
-  name,
   copy,
   onOpened,
 }: {
-  /** Who the envelope is addressed to. */
-  name: string;
-  copy: { to: string; open: string; hintClick: string; hintTap: string; letterTitle: string };
+  copy: { open: string; hintClick: string; hintTap: string; letterTitle: string };
   onOpened: () => void;
 }) {
   const [opening, setOpening] = useState(false);
@@ -286,10 +243,6 @@ export function Envelope({
             <path className="paper" vectorEffect="non-scaling-stroke" d="M2 0 L298 0 L156 108 Q150 113 144 108 Z" />
           </svg>
         </Flap>
-        <Address className="address" aria-hidden="true">
-          <AddressTo>{copy.to}</AddressTo>
-          <AddressName>{name}</AddressName>
-        </Address>
       </Card>
       {/* The envelope is the control; this only points at it, so screen readers skip it. */}
       <Hint aria-hidden="true" data-hidden={opening ? "" : undefined} onClick={open}>

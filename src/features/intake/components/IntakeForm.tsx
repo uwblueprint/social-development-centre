@@ -30,7 +30,6 @@ import { Goose } from "./Goose";
 /** Steps that show the progress bar, in order. */
 const FLOW: Step[] = ["contact", "topics", "ways", "location", "time", "hopes"];
 const HEADING_ID = "intake-heading";
-const HINT_ID = "intake-hint";
 
 const fadeUp = keyframes`
   from {
@@ -105,6 +104,8 @@ const ProgressBlock = styled.div`
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  /* Clear of the logos above (review, 22 Oct 2026). */
+  margin-top: var(--space-2);
 `;
 
 const ProgressText = styled.p`
@@ -177,20 +178,6 @@ const Lead = styled.p`
   font-size: var(--text-md);
   color: var(--color-text-muted);
   max-width: 60ch;
-`;
-
-const Hint = styled.p`
-  margin: 0;
-  font-size: var(--text-md);
-  color: var(--color-text-muted);
-  max-width: 60ch;
-`;
-
-const Count = styled.p`
-  margin: 0;
-  min-height: 1.4em;
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
 `;
 
 const Fields = styled.div`
@@ -376,11 +363,7 @@ export function IntakeForm() {
   if (step === "envelope") {
     return (
       <Page>
-        <Envelope
-          name={copy.envelope.fallbackName}
-          copy={{ ...copy.envelope, letterTitle: copy.welcome.heading }}
-          onOpened={() => setStep("welcome")}
-        />
+        <Envelope copy={{ ...copy.envelope, letterTitle: copy.welcome.heading }} onOpened={() => setStep("welcome")} />
       </Page>
     );
   }
@@ -489,12 +472,7 @@ export function IntakeForm() {
                         />
                       )}
                     </Field>
-                    <Field
-                      label={copy.contact.emailLabel}
-                      hint={copy.contact.emailHint}
-                      required
-                      error={contactErrors.email}
-                    >
+                    <Field label={copy.contact.emailLabel} required error={contactErrors.email}>
                       {(props) => (
                         <Input
                           {...props}
@@ -517,11 +495,9 @@ export function IntakeForm() {
                   <Heading id={HEADING_ID} tabIndex={-1}>
                     {copy.topics.heading}
                   </Heading>
-                  <Hint id={HINT_ID}>{copy.topics.hint}</Hint>
                   <CheckCardGroup
                     name="topics"
                     labelledBy={HEADING_ID}
-                    describedBy={HINT_ID}
                     options={topicChoices}
                     value={answers.topics}
                     onChange={(v) => set("topics", v)}
@@ -529,7 +505,6 @@ export function IntakeForm() {
                     onOtherChange={(v) => set("topicsOther", v)}
                     otherLabel={copy.topics.otherLabel}
                   />
-                  <Count aria-live="polite">{answers.topics.includes("not-sure") ? copy.notSureNote : ""}</Count>
                 </>
               )}
 
@@ -538,11 +513,9 @@ export function IntakeForm() {
                   <Heading id={HEADING_ID} tabIndex={-1}>
                     {copy.ways.heading}
                   </Heading>
-                  <Hint id={HINT_ID}>{copy.ways.hint}</Hint>
                   <CheckCardGroup
                     name="ways"
                     labelledBy={HEADING_ID}
-                    describedBy={HINT_ID}
                     options={wayChoices}
                     value={answers.ways}
                     onChange={(v) => set("ways", v)}
@@ -558,11 +531,9 @@ export function IntakeForm() {
                   <Heading id={HEADING_ID} tabIndex={-1}>
                     {copy.location.heading}
                   </Heading>
-                  <Hint id={HINT_ID}>{copy.location.hint}</Hint>
                   <Choices
                     name="location"
                     aria-labelledby={HEADING_ID}
-                    aria-describedby={HINT_ID}
                     value={answers.location}
                     onValueChange={(v) => set("location", v)}
                   >
@@ -573,7 +544,7 @@ export function IntakeForm() {
                     ))}
                   </Choices>
                   {answers.location === OUTSIDE && (
-                    <Field label={copy.location.outsideLabel} hint={copy.location.outsideHint}>
+                    <Field label={copy.location.outsideLabel}>
                       {(props) => (
                         <Input
                           {...props}
@@ -595,11 +566,9 @@ export function IntakeForm() {
                   <Heading id={HEADING_ID} tabIndex={-1}>
                     {copy.time.heading}
                   </Heading>
-                  <Hint id={HINT_ID}>{copy.time.hint}</Hint>
                   <Choices
                     name="time"
                     aria-labelledby={HEADING_ID}
-                    aria-describedby={HINT_ID}
                     value={answers.time}
                     onValueChange={(v) => set("time", v)}
                   >
@@ -617,7 +586,7 @@ export function IntakeForm() {
                   <Heading id={HEADING_ID} tabIndex={-1}>
                     {copy.hopes.heading}
                   </Heading>
-                  <Field label={copy.hopes.label} hint={copy.hopes.hint}>
+                  <Field label={copy.hopes.label}>
                     {(props) => (
                       <Textarea
                         {...props}

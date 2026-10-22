@@ -65,5 +65,10 @@ Nothing in the product reads these rows. SDC reads them in the Supabase dashboar
   second attempt writes a second row.
 - **No admin screen**, and no link to `people`: an intake submission does not create a person, a
   membership or a tag. Joining these rows to `public.people` is a later decision.
-- **No "maybe later" record.** Choosing it saves nothing, so SDC cannot count who opened the form and
-  left. That needs an event log.
+- **No "not interested" record, and no suppression.** Choosing it saves nothing, so SDC cannot count
+  who opened the form and left, and cannot stop sending that person invitations. The 22 Oct review
+  named this button as the replacement for an **Unsubscribe** link
+  (`docs/decisions/intake-form.md`, decisions 5 and 8), so if SDC expects it to act like one, it
+  needs two things that do not exist: an event log to record the refusal, and a suppression list the
+  mailing-list campaign actually reads before sending. Until then the screen does not promise it,
+  and the user guide tells people to reply to SDC's email instead.

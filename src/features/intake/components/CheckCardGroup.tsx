@@ -97,12 +97,7 @@ export function CheckCardGroup({
   /** Describes the "Other" text field, e.g. "Tell us which issue". */
   otherLabel: string;
 }) {
-  function toggle(id: string, checked: boolean, exclusive?: boolean) {
-    if (!checked) return onChange(value.filter((v) => v !== id));
-    if (exclusive) return onChange([id]);
-    const exclusiveIds = new Set(options.filter((o) => o.exclusive).map((o) => o.id));
-    onChange([...value.filter((v) => !exclusiveIds.has(v)), id]);
-  }
+  const toggle = (id: string, checked: boolean) => onChange(checked ? [...value, id] : value.filter((v) => v !== id));
 
   return (
     <Group role="group" aria-labelledby={labelledBy} aria-describedby={describedBy}>
@@ -115,13 +110,7 @@ export function CheckCardGroup({
               <Icon icon={option.icon} size={20} />
             </Glyph>
             <Text>{option.label}</Text>
-            <Checkbox
-              id={id}
-              name={name}
-              value={option.id}
-              checked={checked}
-              onCheckedChange={(next) => toggle(option.id, next === true, option.exclusive)}
-            />
+            <Checkbox id={id} name={name} value={option.id} checked={checked} onCheckedChange={(next) => toggle(option.id, next === true)} />
           </Card>
         );
       })}
