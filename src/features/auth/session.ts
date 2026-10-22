@@ -10,7 +10,6 @@ export interface Person {
   fullName: string | null;
   isAdmin: boolean;
   isPayingMember: boolean;
-  hasAnsweredWelcome: boolean;
 }
 
 export const getSignedInPerson = cache(async (): Promise<Person | null> => {
@@ -20,7 +19,7 @@ export const getSignedInPerson = cache(async (): Promise<Person | null> => {
 
   const { data, error } = await supabase
     .from("people")
-    .select("id, email, full_name, admins!admins_person_id_fkey(person_id), memberships(tier), welcome_answers(person_id)")
+    .select("id, email, full_name, admins!admins_person_id_fkey(person_id), memberships(tier)")
     .eq("user_id", auth.claims.sub)
     .maybeSingle();
   if (error) throw error;
@@ -32,7 +31,6 @@ export const getSignedInPerson = cache(async (): Promise<Person | null> => {
     fullName: data.full_name,
     isAdmin: data.admins !== null,
     isPayingMember: data.memberships?.tier === "paying",
-    hasAnsweredWelcome: data.welcome_answers !== null,
   };
 });
 

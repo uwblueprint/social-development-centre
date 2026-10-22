@@ -1,4 +1,4 @@
--- People SDC knows, the roles that let them sign in, and the welcome form members fill in once.
+-- People SDC knows and the roles that let them sign in.
 -- Replaces profiles: SDC adds people (paying members, admins) before they ever sign in, so a person
 -- can't depend on a login existing. Partners get their own tables later and reuse people.
 
@@ -27,12 +27,6 @@ create table public.memberships (
   person_id uuid primary key references public.people (id) on delete cascade,
   tier text not null default 'general' check (tier in ('general', 'paying')),
   created_at timestamptz not null default now()
-);
-
-create table public.welcome_answers (
-  person_id uuid primary key references public.people (id) on delete cascade,
-  answers jsonb not null,
-  submitted_at timestamptz not null default now()
 );
 
 create function public.current_person_id()
@@ -113,25 +107,6 @@ begin
 end;
 $$;
 
-create function public.submit_welcome(p_full_name text, p_answers jsonb)
-returns void
-language plpgsql security definer set search_path = ''
-as $$
-declare
-  me uuid := public.current_person_id();
-begin
-  if me is null then
-    raise exception 'Not signed in' using errcode = '42501';
-  end if;
-
-  update public.people set full_name = nullif(btrim(p_full_name), '') where id = me;
-
-  insert into public.welcome_answers (person_id, answers)
-  values (me, p_answers)
-  on conflict (person_id) do update set answers = excluded.answers, submitted_at = now();
-end;
-$$;
-
 -- Supabase confirms a new login email before changing it; this keeps people.email in step.
 create function public.sync_person_email()
 returns trigger
@@ -152,8 +127,7 @@ revoke execute on function
   public.current_person_id(),
   public.is_admin(),
   public.record_sign_in(),
-  public.add_admin(text, text),
-  public.submit_welcome(text, jsonb)
+  public.add_admin(text, text)
 from public, anon;
 
 grant execute on function public.can_sign_in(text, text) to anon, authenticated;
@@ -162,7 +136,6 @@ grant execute on function public.can_sign_in(text, text) to anon, authenticated;
 alter table public.people enable row level security;
 alter table public.admins enable row level security;
 alter table public.memberships enable row level security;
-alter table public.welcome_answers enable row level security;
 
 create policy "People see themselves, admins see everyone"
   on public.people for select to authenticated
@@ -174,10 +147,6 @@ create policy "Admins see admins"
 
 create policy "Members see their membership, admins see all"
   on public.memberships for select to authenticated
-  using (person_id = (select public.current_person_id()) or (select public.is_admin()));
-
-create policy "Members see their answers, admins see all"
-  on public.welcome_answers for select to authenticated
   using (person_id = (select public.current_person_id()) or (select public.is_admin()));
 
 -- The first admin. Every admin can add more from /admin/admins.

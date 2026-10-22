@@ -103,32 +103,6 @@ export type Database = {
         }
         Relationships: []
       }
-      welcome_answers: {
-        Row: {
-          answers: Json
-          person_id: string
-          submitted_at: string
-        }
-        Insert: {
-          answers: Json
-          person_id: string
-          submitted_at?: string
-        }
-        Update: {
-          answers?: Json
-          person_id?: string
-          submitted_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "welcome_answers_person_id_fkey"
-            columns: ["person_id"]
-            isOneToOne: true
-            referencedRelation: "people"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
     Views: {
       [_ in never]: never
@@ -152,10 +126,6 @@ export type Database = {
       remove_admin: { Args: { p_person_id: string }; Returns: string }
       remove_paying_access: {
         Args: { p_person_id: string }
-        Returns: undefined
-      }
-      submit_welcome: {
-        Args: { p_answers: Json; p_full_name: string }
         Returns: undefined
       }
     }
