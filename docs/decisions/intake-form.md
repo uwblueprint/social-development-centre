@@ -22,8 +22,9 @@ Decisions behind `/intake-form`, the questionnaire Ride for Refuge supporters fi
 - **When encountered:** the first step, and the error under any field left empty or an address that isn't one.
 
 ## 4. The flow
-Welcome → Your details → five questions, one per screen → confirmation.
-- **Welcome** opens with "Your complimentary SDC membership", then thanks, what it is, "about two minutes" and "no payment request". **Get started** continues; **Maybe later** sits at the bottom of this first screen.
+Envelope → the welcome letter → Your details → five questions, one per screen → confirmation.
+- **Envelope** (decision 7) is a closed, hand-drawn envelope. Clicking or tapping it opens the letter.
+- **The letter** thanks them for supporting Ride for Refuge, offers the complimentary membership, and asks for "5 quick questions (about 2 minutes)". **Begin survey** continues; **Maybe later** sits at the bottom of the letter.
 - **Your details:** First name, Last name, Email. All required (decision 3).
 - **Questions** (wording from the client questionnaire, shown as cards):
   1. Issues of interest: pick any, **Other** with a text field, **I'm not sure yet** is exclusive (choosing it clears the rest, and choosing another clears it).
@@ -45,7 +46,15 @@ Welcome → Your details → five questions, one per screen → confirmation.
 - **Why not a row per person:** the same address may legitimately answer twice (a correction, a shared family address), and deciding which wins is SDC's call, not the form's.
 - **When encountered:** retrying after a failed save.
 
-## 7. Still open
+## 7. The form is a doodled letter (22 Oct 2026)
+- **Decision:** `/intake-form` is drawn as a hand-made letter, from the clickable prototype reviewed on 8 Oct 2026 (PR #23, built against the earlier `/welcome` version). A closed envelope opens into the welcome letter; every step then sits on a sheet of paper on a dotted desk, under the SDC and Ride for Refuge logos; the confirmation is a celebrating Canada goose.
+- **Why:** the form goes to people who have just donated, not to staff using a tool. A letter reads as a thank-you and an invitation; the portal's taupe chrome reads as administration.
+- **Typefaces:** Coming Soon for headings, Nunito for everything else, loaded on this route only so the rest of the app keeps Switzer.
+- **Scope:** the look is confined to `/intake-form`. It is carried by `--intake-*` tokens and the page re-points `--color-bg` / `--color-bg-hover` at the paper so kit components sit on it; no kit component changes behaviour, and **design-system owner approval for these tokens is still pending**.
+- **Behaviour is unchanged** from decisions 2-6: still public, still First name / Last name / Email required, still skippable questions, still one row per `submissionId`.
+- **When encountered:** the moment the link is opened — the envelope is the first thing on screen, and the letter is behind it.
+
+## 8. Still open
 - The complimentary-membership terms, the topic labels, and the contact-details wording ("We'll use these to set up your complimentary membership").
 - Whether SDC needs a screen to read submissions, or the Supabase dashboard is enough for the pilot.
 - What stops automated submissions if the link is shared publicly (`docs/backend/intake-form.md`).

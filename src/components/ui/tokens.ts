@@ -9,6 +9,8 @@ globalStyle`
 
     --weight-regular: 400;
     --weight-medium: 500;
+    /* The intake letter's greeting and "5 quick questions" (letter prototype): the only bold text in the app so far. */
+    --weight-bold: 700;
 
     --taupe-50: #fbfaf9;
     --taupe-100: #f3f1f1;
@@ -96,6 +98,37 @@ globalStyle`
     /* The 404 drawing: taupe-600 lines on a taupe-50 ground; dark mode inverts it: taupe-500 lines (owner) on taupe-900. */
     --illustration-line: var(--taupe-600);
     --illustration-ground: var(--taupe-50);
+
+    /* The intake form's "letter" (/intake-form only, design-system owner approval pending): a doodled
+       invitation on paper. Ink lines on cream paper over a dotted desk; Coming Soon for headings,
+       Nunito for everything else. */
+    --font-intake-display: "Coming Soon", "Comic Sans MS", "Chalkboard SE", cursive;
+    --font-intake-body: "Nunito Variable", "Nunito", var(--font-sans);
+    --intake-desk: #fbf1d9;
+    --intake-desk-dot: rgb(140 110 50 / 0.28);
+    --intake-paper: #fffef8;
+    --intake-paper-tint: #fbf5e4;
+    /* Ink is taupe-900 so drawn lines match body text (16.9:1 on the paper). */
+    --intake-ink: var(--taupe-900);
+    --intake-envelope-inside: #f4e7c6;
+    /* A hand-drawn sheet: uneven corners and an offset ink shadow instead of a soft one. */
+    --radius-intake-sheet: 22px 8px 26px 10px / 10px 24px 8px 26px;
+    --shadow-intake-sheet: 5px 6px 0 var(--intake-ink);
+    --shadow-intake-small: 3px 3px 0 var(--intake-ink);
+    /* Doodle colours from the two partner logos (SDC green and orange, Ride for Refuge yellow, blue, red).
+       Decoration only: never text, never the only sign of state. */
+    --intake-doodle-green: #0b7a52;
+    --intake-doodle-orange: #f07b2a;
+    --intake-doodle-yellow: #f6b81a;
+    --intake-doodle-blue: #1f5fa8;
+    --intake-doodle-red: #d9412f;
+    /* The Canada goose on the confirmation screen. */
+    --intake-goose-body: #b39a7c;
+    --intake-goose-wing: #8f7560;
+    --intake-goose-wing-back: #7d6450;
+    --intake-goose-breast: #f1e8d8;
+    --intake-goose-head: var(--taupe-900);
+    --intake-goose-cheek: #fffef8;
 
     --color-focus: var(--taupe-900);
     --color-overlay: rgb(29 24 22 / 0.4);
@@ -259,6 +292,13 @@ globalStyle`
     --illustration-page-bg: var(--taupe-900);
     --illustration-line: var(--taupe-500);
     --illustration-ground: var(--taupe-900);
+    /* The intake letter in the dark: the same paper and ink, inverted. */
+    --intake-desk: #1b1714;
+    --intake-desk-dot: rgb(255 240 210 / 0.1);
+    --intake-paper: #231e1b;
+    --intake-paper-tint: #2e2724;
+    --intake-ink: var(--taupe-100);
+    --intake-envelope-inside: #3a312a;
     --color-eventbrite-subtle: #2c1712;
     --color-eventbrite-border: #7a2b18;
       --color-overlay: rgb(0 0 0 / 0.6);
@@ -332,6 +372,13 @@ globalStyle`
     --illustration-page-bg: var(--taupe-900);
     --illustration-line: var(--taupe-500);
     --illustration-ground: var(--taupe-900);
+    /* The intake letter in the dark: the same paper and ink, inverted. */
+    --intake-desk: #1b1714;
+    --intake-desk-dot: rgb(255 240 210 / 0.1);
+    --intake-paper: #231e1b;
+    --intake-paper-tint: #2e2724;
+    --intake-ink: var(--taupe-100);
+    --intake-envelope-inside: #3a312a;
     --color-eventbrite-subtle: #2c1712;
     --color-eventbrite-border: #7a2b18;
     --color-overlay: rgb(0 0 0 / 0.6);

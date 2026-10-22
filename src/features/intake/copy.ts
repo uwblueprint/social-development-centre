@@ -8,18 +8,16 @@ import {
   Mail,
   Megaphone,
   MessagesSquare,
-  PenLine,
   CircleHelp,
   Scale,
-  Sparkles,
   Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 /*
- * Ride for Refuge pilot intake form copy. All of it is DRAFT until SDC confirms the membership terms,
- * the topic labels and the contact-details wording (docs/decisions/intake-form.md). Question wording
- * comes from the client questionnaire.
+ * Ride for Refuge pilot intake form copy, written as a letter (prototype, 8 Oct 2026). All of it is
+ * DRAFT until SDC confirms the membership terms, the topic labels and the contact-details wording
+ * (docs/decisions/intake-form.md). Question wording comes from the client questionnaire.
  */
 
 export interface Choice {
@@ -32,8 +30,10 @@ export interface IconChoice extends Choice {
   exclusive?: boolean;
 }
 
-/** The "Other" choice's id in the multi-select questions; it reveals a short text field. */
+/** The "Other" choice's id in the multi-select questions. */
 export const OTHER = "other";
+/** "Other" is drawn by OtherChoice below a divider, so it is never one of the listed choices. */
+export const otherLabel = "Other";
 
 export const topicChoices: IconChoice[] = [
   { id: "housing", label: "Housing and homelessness", icon: Home },
@@ -41,7 +41,6 @@ export const topicChoices: IconChoice[] = [
   { id: "community", label: "Community connections and neighbourhood life", icon: Users },
   { id: "social-justice", label: "Social justice and local civic issues", icon: Landmark },
   { id: "climate", label: "Climate and the environment", icon: Leaf },
-  { id: OTHER, label: "Other", icon: PenLine },
   { id: "not-sure", label: "I’m not sure yet", icon: CircleHelp, exclusive: true },
 ];
 
@@ -52,7 +51,6 @@ export const wayChoices: IconChoice[] = [
   { id: "volunteer", label: "Volunteer my time or skills", icon: HandHeart },
   { id: "petition", label: "Support a petition or another community action", icon: Megaphone },
   { id: "informed", label: "Stay informed for now", icon: Mail },
-  { id: OTHER, label: "Other", icon: PenLine },
 ];
 
 export const OUTSIDE = "outside";
@@ -75,16 +73,36 @@ export const timeChoices: Choice[] = [
 ];
 
 export const intakeCopy = {
-  brand: "Social Development Centre",
   title: "Help shape SDC’s membership community",
+  logos: {
+    sdc: "Social Development Centre Waterloo Region",
+    rideForRefuge: "Ride for Refuge",
+  },
+
+  envelope: {
+    to: "To",
+    /** Read by screen readers; the envelope itself is the button. */
+    open: "Open your letter from SDC",
+    hintClick: "Click the envelope to open your letter",
+    hintTap: "Tap the envelope to open your letter",
+    /** The form is public, so nobody is named until the details step. */
+    fallbackName: "Friend of SDC",
+  },
 
   welcome: {
-    heading: "Your complimentary SDC membership",
-    body: [
-      "Thank you for supporting Ride for Refuge! As a thank-you, we’d like to offer you a complimentary membership in SDC’s new community, where people can learn, connect and contribute in ways that work for them.",
-      "Tell us what you care about and how you’d like to be involved. It takes about two minutes. There’s no payment request, and you can stop and come back whenever you like.",
-    ],
-    start: "Get started",
+    heading: "Welcome to the SDC community",
+    greeting: "Thank you for supporting Ride for Refuge!",
+    invitation:
+      "Your support means a lot, and we’d love to welcome you into the SDC community with a complimentary membership.",
+    benefits:
+      "As a member, you’ll have better visibility into what’s happening at SDC and easier access to opportunities across our community.",
+    askBefore: "To help us share the opportunities that fit you best, please answer ",
+    askBold: "5 quick questions",
+    askAfter: " (about 2 minutes).",
+    privacy: "Your answers are used only by SDC and are never shared. Every question is optional.",
+    signOff: "Sincerely,",
+    signature: "SDC Team",
+    start: "Begin survey",
     leave: "Maybe later",
   },
 
@@ -144,8 +162,6 @@ export const intakeCopy = {
     placeholder: "Something you’d like to learn, a connection you’d like to make, or a way you’d like to contribute.",
   },
 
-  otherPlaceholder: "A few words is plenty",
-  selected: (n: number) => `${n} selected`,
   notSureNote: "Choosing “I’m not sure yet” clears your other picks.",
 
   back: "Back",
@@ -160,8 +176,6 @@ export const intakeCopy = {
   done: {
     heading: "Thanks for sharing!",
     body: "Your answers will help SDC shape its membership community and understand the ways people would like to be involved.",
+    goose: "A Canada goose in a party hat, wings up, honking in celebration",
   },
-
-  /** The decorative icon on the first screen. */
-  welcomeIcon: Sparkles,
 };

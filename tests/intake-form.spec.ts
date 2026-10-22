@@ -13,9 +13,15 @@ const inForm = (page: import("@playwright/test").Page) => page.locator("form");
 const advance = (page: import("@playwright/test").Page) =>
   inForm(page).getByRole("button", { name: /^(Next|Skip for now)$/ });
 
-async function startAndFillDetails(page: import("@playwright/test").Page) {
+/* The form opens on a closed envelope; the letter is behind it. */
+async function openLetter(page: import("@playwright/test").Page) {
   await page.goto("/intake-form");
-  await inForm(page).getByRole("button", { name: "Get started" }).click();
+  await page.getByRole("button", { name: "Open your letter from SDC" }).click();
+}
+
+async function startAndFillDetails(page: import("@playwright/test").Page) {
+  await openLetter(page);
+  await inForm(page).getByRole("button", { name: "Begin survey" }).click();
   await page.locator('input[name="firstName"]').fill("Ada");
   await page.locator('input[name="lastName"]').fill("Lovelace");
   await page.locator('input[name="email"]').fill("ada@example.com");
@@ -42,8 +48,8 @@ test("answers survive moving between steps", async ({ page }) => {
 });
 
 test("the details step requires a name and a real email address", async ({ page }) => {
-  await page.goto("/intake-form");
-  await inForm(page).getByRole("button", { name: "Get started" }).click();
+  await openLetter(page);
+  await inForm(page).getByRole("button", { name: "Begin survey" }).click();
 
   // Nothing filled in: the form stays put and says what's missing.
   await advance(page).click();
