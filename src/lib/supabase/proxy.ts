@@ -33,11 +33,19 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const { pathname } = request.nextUrl;
 
-  if (!data?.claims && !pathname.startsWith("/login") && !pathname.startsWith("/auth")) {
+  if (!data?.claims && !isPublic(pathname)) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
   return supabaseResponse;
+}
+
+/**
+ * Pages that work without a session: the sign-in page, the sign-in link's landing route, and the
+ * intake form, which is deliberately open to anyone with the link (docs/decisions/intake-form.md).
+ */
+function isPublic(pathname: string): boolean {
+  return pathname.startsWith("/login") || pathname.startsWith("/auth") || pathname.startsWith("/intake-form");
 }
