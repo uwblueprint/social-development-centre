@@ -20,6 +20,7 @@ Decisions made while designing the email editor component (subject, message, att
 
 ## 4. Message
 - Text uses the default email font (Arial) at 16px, not the app font.
+- While typing, the message border is link blue (`--color-link`), not SDC green (owner).
 - Lists start from typing `- `, `* ` or `1. `. Their tooltips show no shortcut. Backspace or Delete on an empty bullet or number removes it, leaving a plain line.
 - **Shortcuts:** Quote is ⌘> (⌘⇧B toggles Chrome's bookmarks bar). Heading is ⌘⌥1; on a list item it turns that item into a heading and splits the list.
 - **Links:**

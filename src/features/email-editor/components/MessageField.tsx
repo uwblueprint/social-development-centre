@@ -298,7 +298,7 @@ const Card = styled.div`
   transition: border-color var(--duration) var(--ease);
 
   &:focus-within {
-    border-color: var(--color-brand);
+    border-color: var(--color-link); /* owner: the message border matches link blue while typing */
   }
   &[data-invalid],
   &[data-invalid]:focus-within {
