@@ -4,7 +4,11 @@ This file is for AI coding agents and humans alike. Read it before writing any U
 
 ## Who is pushing
 
-If the person pushing code is Justin, work on the frontend only. No backend: don't add or change server actions, data seams, API routes, database code or other server-side logic. If the UI needs data or actions that don't exist yet, list them in `docs/backend/<feature>.md` and stop there.
+Check `git config user.name` and work in that person's folder:
+
+- **Justin or Shallot (design):** `src/app/design/<feature>/` only, on demo data. Frontend only. No backend: don't add or change server actions, data seams, API routes, database code or other server-side logic. If the UI needs data or actions that don't exist yet, list them in `docs/backend/<feature>.md` and stop there.
+- **Gaurav or Olivia (PM):** `src/app/prototypes/<name>/` only, on demo data.
+- **Anyone else (dev):** the product (`src/app/admin/`, `src/features/`, `supabase/`). Pull from `src/app/design/` when building a feature; never import from `src/app/prototypes/`.
 
 ## Where things live
 
