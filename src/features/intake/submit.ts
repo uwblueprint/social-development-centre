@@ -1,4 +1,4 @@
-import { OTHER, OUTSIDE, locationChoices, timeChoices, topicChoices, wayChoices } from "./copy";
+import { OTHER, OUTSIDE, locationChoices, otherLabel, timeChoices, topicChoices, wayChoices } from "./copy";
 import type { IntakeAnswers } from "./types";
 
 /*
@@ -29,6 +29,10 @@ export interface IntakeSubmission {
 type Choices = { id: string; label: string }[];
 const label = (choices: Choices, id: string) => choices.find((c) => c.id === id)?.label ?? "";
 const labels = (choices: Choices, ids: string[]) => ids.map((id) => label(choices, id)).filter(Boolean);
+/* "Other" is drawn below the listed choices rather than being one of them, so add its label here:
+   a stored row still reads as it was answered, with the typed text in the matching `*Other` field. */
+const withOther = (choices: Choices, ids: string[]) =>
+  ids.includes(OTHER) ? [...labels(choices, ids), otherLabel] : labels(choices, ids);
 
 export function toSubmission(submissionId: string, a: IntakeAnswers): IntakeSubmission {
   return {
@@ -37,9 +41,9 @@ export function toSubmission(submissionId: string, a: IntakeAnswers): IntakeSubm
     firstName: a.firstName.trim(),
     lastName: a.lastName.trim(),
     email: a.email.trim(),
-    topics: labels(topicChoices, a.topics),
+    topics: withOther(topicChoices, a.topics),
     topicsOther: a.topics.includes(OTHER) ? a.topicsOther.trim() : "",
-    ways: labels(wayChoices, a.ways),
+    ways: withOther(wayChoices, a.ways),
     waysOther: a.ways.includes(OTHER) ? a.waysOther.trim() : "",
     location: label(locationChoices, a.location),
     locationOther: a.location === OUTSIDE ? a.locationOther.trim() : "",

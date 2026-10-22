@@ -32,5 +32,8 @@ export const QUESTION_COUNT = 5;
 /** The details step's three fields, for keying validation errors. */
 export type ContactField = "firstName" | "lastName" | "email";
 
-/** `left` is someone choosing "maybe later": nothing is saved, so the form can be filled in later. */
-export type Step = "welcome" | "contact" | "topics" | "ways" | "location" | "time" | "hopes" | "done" | "left";
+/**
+ * `envelope` is the closed letter people open first. `left` is someone choosing "maybe later":
+ * nothing is saved, so the form can be filled in later.
+ */
+export type Step = "envelope" | "welcome" | "contact" | "topics" | "ways" | "location" | "time" | "hopes" | "done" | "left";

@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+/* The letter's typefaces, loaded here so the rest of the app keeps Switzer. */
+import "@fontsource/coming-soon/400.css";
+import "@fontsource-variable/nunito/wght.css";
 import { IntakeForm } from "@/features/intake/components/IntakeForm";
 import { intakeCopy } from "@/features/intake/copy";
 

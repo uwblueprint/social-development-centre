@@ -45,7 +45,20 @@ export async function updateSession(request: NextRequest) {
 /**
  * Pages that work without a session: the sign-in page, the sign-in link's landing route, and the
  * intake form, which is deliberately open to anyone with the link (docs/decisions/intake-form.md).
+ *
+ * Static files under `public/` are public too. They are not secrets, and gating them breaks the
+ * pages above: `next/image` fetches the file back through this proxy, gets the redirect to /login
+ * instead of a PNG and renders nothing, so the intake letter loses both its logos and the 404 loses
+ * its illustration. The matcher already skips `_next/static` and `favicon.ico` for the same reason;
+ * these are the rest.
  */
+const PUBLIC_ASSETS = ["/brand/", "/illustrations/"];
+
 function isPublic(pathname: string): boolean {
-  return pathname.startsWith("/login") || pathname.startsWith("/auth") || pathname.startsWith("/intake-form");
+  return (
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/auth") ||
+    pathname.startsWith("/intake-form") ||
+    PUBLIC_ASSETS.some((prefix) => pathname.startsWith(prefix))
+  );
 }
