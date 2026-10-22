@@ -18,15 +18,7 @@ const GUIDE_DIR = path.join(process.cwd(), "docs", "user-guide");
  * Tab labels, in tab order: the orientation guide first, then the portal's sidebar order
  * (AdminShell / PartnerShell). Unlisted guides fall back to their file name, after these.
  */
-const TAB_LABEL: Record<string, string> = {
-  "admin-getting-around": "Getting around",
-  "admin-opportunities": "Opportunities",
-  "admin-insights": "Insights",
-  "admin-community": "Community",
-  "admin-partners": "Partners",
-  "partner-getting-started": "Getting started",
-  "partner-opportunities": "Opportunities",
-};
+const TAB_LABEL: Record<string, string> = {};
 const ORDER = Object.keys(TAB_LABEL);
 
 const slug = (s: string) =>

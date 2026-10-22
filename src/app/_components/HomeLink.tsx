@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { styled } from "next-yak";
 import { Icon } from "@/components/ui/Icon";
@@ -38,13 +37,10 @@ const Root = styled(Link)`
 `;
 
 /**
- * "Head home" on the 404: home is the Opportunities page of the portal the missing address was in
- * (owner). Partner addresses go to the partner portal; everything else to the admin portal, whose layout
- * sends anyone who isn't an admin to sign in.
+ * "Head home" on the 404: the admin portal, whose layout sends anyone who isn't an admin to sign in.
  */
 export function HomeLink({ label }: { label: string }) {
-  const pathname = usePathname() ?? "";
-  const href = pathname.startsWith("/partner") ? "/partner/opportunities" : "/admin/opportunities";
+  const href = "/admin";
   return (
     <Root href={href}>
       {label}
