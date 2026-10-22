@@ -19,7 +19,7 @@ Check `git config user.name` and work in that person's folder:
 - `src/app/prototypes/<feature>/`: PM prototypes for scoping. Throwaway: never import from them.
 - `src/features/`: feature code, e.g. `src/features/intake/` (the public intake form).
 - `src/components/ui/tokens.ts`: every color, space, radius, type size, line height, shadow and duration.
-- `docs/product/README.md`: links to the Notion PRDs, the source of product context. Read the PRD for a feature before building it.
+- `docs/product/README.md`: links to the SDC page in Notion, the source of product context. Find the feature's PRD there and read it before building.
 - `docs/components/<Component>.md`: when to use each component, when not to, content rules and accessibility notes. Read the doc before using a component for the first time.
 - `docs/design/principles.md`: the design rules behind the kit.
 - `docs/backend/`: how the backend connects (data seams, server actions returning `ActionState`, `SubmitButton`) and per-feature backend requirements. `/components/form-contract` shows exactly what a form submits.
