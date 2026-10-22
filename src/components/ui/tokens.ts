@@ -164,6 +164,8 @@ globalStyle`
     --leading-2xs: 1rem;
     /* Headings inside an email: 24px, the size email clients give a heading (owner). */
     --text-email-heading: 1.5rem;
+    /* The message box's border: a little heavier than the 1px hairline so the writing area reads as the main field (owner). */
+    --border-message: 1.5px;
     --text-sm: 0.875rem;
     --text-md: 1rem;
     --text-lg: 1.1875rem;

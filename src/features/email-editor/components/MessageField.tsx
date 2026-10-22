@@ -292,7 +292,7 @@ export function MessageField({
 
 const Card = styled.div`
   position: relative;
-  border: 1px solid var(--color-border);
+  border: var(--border-message) solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-bg);
   transition: border-color var(--duration) var(--ease);
