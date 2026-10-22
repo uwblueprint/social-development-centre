@@ -10,17 +10,16 @@ If the person pushing code is Justin, work on the frontend only. No backend: don
 
 - `src/components/ui/`: the component kit. Import from here and nowhere else.
 - `src/components/patterns/`: layouts composed from the kit, e.g. `SidebarLayout` and `ListPage` (docs in `docs/patterns/`).
-- `src/app/admin/`: the admin portal. Its sidebar config lives in `src/app/admin/_components/AdminShell.tsx`; each section is a route (`/admin/opportunities`, `/admin/partners`, `/admin/community`, `/admin/insights`). Sub-areas of a section use in-page tabs, not new sidebar items.
-- `src/app/partner/`: the partner portal. Its sidebar config lives in `src/app/partner/_components/PartnerShell.tsx`.
-- `src/features/`: feature code shared by both portals, e.g. `src/features/opportunities/` (the Opportunities contract, copy and UI).
+- `src/app/admin/`: the admin portal, the product SDC staff use. Its sidebar config lives in `src/app/admin/_components/AdminShell.tsx`; each section is a route under `/admin/`. Sub-areas of a section use in-page tabs, not new sidebar items.
+- `src/app/design/<feature>/`: designers' screens on demo data. The folder's layout draws a blank placeholder where the sidebar will go. Devs build the real feature in `src/app/admin/` from these.
+- `src/app/prototypes/<feature>/`: PM prototypes for scoping. Throwaway: never import from them.
+- `src/features/`: feature code, e.g. `src/features/intake/` (the public intake form).
 - `src/components/ui/tokens.ts`: every color, space, radius, type size, line height, shadow and duration.
-- `docs/product/`: product context condensed from Notion. Read it first.
-- `docs/users.md`: one section per user type. Read the section for a user before designing for them.
+- `docs/product/README.md`: links to the Notion PRDs, the source of product context. Read the PRD for a feature before building it.
 - `docs/components/<Component>.md`: when to use each component, when not to, content rules and accessibility notes. Read the doc before using a component for the first time.
 - `docs/design/principles.md`: the design rules behind the kit.
 - `docs/backend/`: how the backend connects (data seams, server actions returning `ActionState`, `SubmitButton`) and per-feature backend requirements. `/components/form-contract` shows exactly what a form submits.
-- `docs/user-guide/`: task-based user guide ("to do X, click Y"). The source for end-user documentation.
-- `docs/decisions/`: product decisions per feature (what, which page, what it affects, when users meet it).
+- `docs/user-guide/`: task-based user guide ("to do X, click Y"). Frozen until just before launch: don't add or edit guides.
 - `/components`: live showcase of every component in every state. Run `pnpm dev` and open http://localhost:3000/components.
 
 ## Hard rules (lint, types or CI enforce these)
@@ -50,10 +49,7 @@ If the person pushing code is Justin, work on the frontend only. No backend: don
 
 ## Shipping a product change
 
-Any change users will notice must, in the same change:
-1. Update `docs/user-guide/` as task-based steps using the exact on-screen labels (see its README for the writing rules). Add a new workflow, or edit the ones whose steps changed.
-2. Record any new product decision in `docs/decisions/<feature>.md`.
-3. List backend needs in `docs/backend/<feature>.md` if the UI depends on data or actions that don't exist yet.
+If the UI depends on data or actions that don't exist yet, list them in `docs/backend/<feature>.md` in the same change. Product decisions go in the feature's PRD in Notion, not in the repo.
 
 ## Changing the kit
 
