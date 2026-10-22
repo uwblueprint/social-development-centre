@@ -10,6 +10,9 @@ How to get things done in the Social Development Centre product, organized by ta
 - Update this guide in the same change as any user-facing product change (see `AGENTS.md`).
 - Screenshots in `img/` are generated with `pnpm docs:screenshots`; rerun it after UI changes (run it locally for the production font, since some sandboxes block Fontshare and fall back to Geist).
 
+## Members and supporters
+- [Fill in the intake form](./intake-form.md)
+
 ## Admin portal (SDC admins)
 - [Getting around the admin portal](./admin-getting-around.md)
 - [Opportunities](./admin-opportunities.md)

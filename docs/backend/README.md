@@ -46,6 +46,7 @@ The UI blocks a second click or Enter while a save is pending (`SubmitButton`: b
 No backend work. When there's no connection, what's on screen stays readable; submits and page changes are stopped with the "Goose stole your wifi." screen; route errors while offline show the same screen. The opportunity form also keeps unsaved work in the browser (`localStorage`, key `nexus-draft:{scope}:{id or new}`) until it saves.
 
 ## Feature requirements
+- [Intake form](./intake-form.md) (public, no sign-in)
 - [Partners](./partners.md)
 - [Opportunities](./opportunities.md) (both portals, plus the partner session)
 - [Community](./community.md)
