@@ -6,5 +6,6 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|components).*)"],
+  // /components is the dev showcase; images are public files.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|components|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
 };

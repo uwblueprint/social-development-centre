@@ -1,5 +1,5 @@
-/** One key per sidebar section (the route under /admin). None yet. */
-export type AdminSection = never;
+/** One key per sidebar section (the route under /admin). */
+export type AdminSection = "members" | "admins";
 
 export interface AdminUser {
   name: string;

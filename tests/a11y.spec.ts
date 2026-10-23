@@ -72,3 +72,11 @@ test("the 404 page has no WCAG 2.2 AA violations", async ({ page }) => {
   await settle(page);
   await checkA11y(page);
 });
+
+test("the sign-in error state has no WCAG 2.2 AA violations", async ({ page }) => {
+  await page.goto("/login");
+  await settle(page);
+  await page.getByRole("button", { name: "Email me a sign-in link" }).click();
+  await expect(page.getByText("Invalid email address")).toBeVisible();
+  await checkA11y(page);
+});

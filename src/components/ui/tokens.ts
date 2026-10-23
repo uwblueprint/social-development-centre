@@ -129,6 +129,10 @@ globalStyle`
     --intake-goose-breast: #f1e8d8;
     --intake-goose-head: var(--taupe-900);
     --intake-goose-cheek: #fffef8;
+    /* SDC brand green (sign-in and public pages, from the brand mark): headings 9.7:1 on white, and the
+       tint behind brand icons. Not for portal UI, which stays taupe. */
+    --color-brand-heading: #064d45;
+    --color-brand-tint: #e3f1ee;
 
     --color-focus: var(--taupe-900);
     --color-overlay: rgb(29 24 22 / 0.4);
@@ -301,6 +305,8 @@ globalStyle`
     --intake-paper-tint: #2e2724;
     --intake-ink: var(--taupe-100);
     --intake-envelope-inside: #3a312a;
+    --color-brand-heading: #5fbfae; /* 8.5:1 on --color-bg */
+    --color-brand-tint: #12302b;
     --color-eventbrite-subtle: #2c1712;
     --color-eventbrite-border: #7a2b18;
       --color-overlay: rgb(0 0 0 / 0.6);
@@ -381,6 +387,8 @@ globalStyle`
     --intake-paper-tint: #2e2724;
     --intake-ink: var(--taupe-100);
     --intake-envelope-inside: #3a312a;
+    --color-brand-heading: #5fbfae; /* 8.5:1 on --color-bg */
+    --color-brand-tint: #12302b;
     --color-eventbrite-subtle: #2c1712;
     --color-eventbrite-border: #7a2b18;
     --color-overlay: rgb(0 0 0 / 0.6);
