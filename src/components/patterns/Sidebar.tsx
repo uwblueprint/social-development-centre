@@ -117,7 +117,7 @@ const Aside = styled.div<{ $mobileOpen: boolean }>`
   display: flex;
   flex-direction: column;
   height: 100vh;
-  width: 264px;
+  width: var(--sidebar-width);
   padding: var(--space-3);
   background: var(--color-surface);
   border-right: 1px solid var(--color-border);
