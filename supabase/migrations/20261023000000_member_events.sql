@@ -1,5 +1,6 @@
--- Member Directory, phase 2: what Automatic Emails reads, notes with history, adding many members at
--- once, and one timeline per member. Rename this file to the version Supabase assigns when applied.
+-- Member Directory, phase 2: what Automatic Emails reads and writes (member events, email sends),
+-- notes with history, subscription history, adding many members at once, and one timeline per member.
+-- Rename this file to the version Supabase assigns when applied.
 
 -- ---------- member events ----------
 
@@ -251,26 +252,207 @@ begin
 end;
 $$;
 
+-- ---------- subscription history ----------
+
+-- people holds only the current state (unsubscribed_at, bounced_at). This keeps every change, so the
+-- timeline still shows an unsubscribe after the member resubscribes.
+create table public.subscription_events (
+  id bigint generated always as identity primary key,
+  person_id uuid not null references public.people (id) on delete cascade,
+  kind text not null check (kind in ('unsubscribed', 'resubscribed', 'bounced', 'bounce_cleared')),
+  -- unsubscribed: self, admin, complaint or imported. bounced: the provider's detail.
+  detail text,
+  at timestamptz not null default now()
+);
+create index subscription_events_person_id on public.subscription_events (person_id, at desc);
+
+create function public.subscription_changed()
+returns trigger
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  if old.unsubscribed_at is null and new.unsubscribed_at is not null then
+    insert into public.subscription_events (person_id, kind, detail, at)
+    values (new.id, 'unsubscribed', new.unsubscribe_reason, new.unsubscribed_at);
+  elsif old.unsubscribed_at is not null and new.unsubscribed_at is null then
+    insert into public.subscription_events (person_id, kind) values (new.id, 'resubscribed');
+  end if;
+
+  if old.bounced_at is null and new.bounced_at is not null then
+    insert into public.subscription_events (person_id, kind, detail, at)
+    values (new.id, 'bounced', new.bounce_detail, new.bounced_at);
+  elsif old.bounced_at is not null and new.bounced_at is null then
+    insert into public.subscription_events (person_id, kind) values (new.id, 'bounce_cleared');
+  end if;
+
+  -- Unsubscribe always wins: nothing waiting goes out. These stay Not sent if they resubscribe.
+  if (old.unsubscribed_at is null and new.unsubscribed_at is not null)
+    or (old.bounced_at is null and new.bounced_at is not null) then
+    update public.email_sends
+    set status = 'not_sent', not_sent_reason = case when new.unsubscribed_at is not null then 'unsubscribed' else 'bounced' end
+    where person_id = new.id and status in ('scheduled', 'waiting_for_review');
+  end if;
+  return new;
+end;
+$$;
+
+-- ---------- email sends ----------
+
+-- One email going to one member: the unit behind the Outbox, each email's recipients, a member's email
+-- history and Email Insights. Automatic and one-off emails both create sends. The worker that sends
+-- them uses the service role; admins only read here.
+--
+-- Statuses (shared by every email): scheduled, waiting_for_review, sent, not_sent (always with a
+-- reason). "Couldn't send" is not a status: it's a send still scheduled or waiting with failed_at set.
+create table public.email_sends (
+  id uuid primary key default gen_random_uuid(),
+  person_id uuid not null references public.people (id) on delete cascade,
+  -- Which email: exactly one. Automatic Emails and One-off Emails add the foreign keys when they add
+  -- their tables.
+  automatic_email_id uuid,
+  one_off_email_id uuid,
+  -- The email's name when the send was made, so history reads right after a rename or trash.
+  email_name text not null,
+  -- The occurrence an automatic send came from. Unique per automatic email: one send per occurrence.
+  member_event_id bigint references public.member_events (id) on delete cascade,
+  send_at timestamptz not null,
+  status text not null default 'scheduled'
+    check (status in ('scheduled', 'waiting_for_review', 'sent', 'not_sent')),
+  not_sent_reason text
+    check (not_sent_reason in ('no_longer_matched', 'unpublished', 'unsubscribed', 'bounced', 'removed_by_admin')),
+  -- The admin's own copy for this member, edited in the Outbox. Null means the email's own text.
+  edited_subject text,
+  edited_body text,
+  edited_by uuid references public.people (id) on delete set null,
+  edited_at timestamptz,
+  -- Exactly what went out.
+  sent_subject text,
+  sent_body text,
+  sent_at timestamptz,
+  provider_message_id text,
+  -- Provider failures: retried for 24 hours, then shown as Couldn't send.
+  attempts integer not null default 0,
+  last_error text,
+  failed_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint one_email check ((automatic_email_id is null) <> (one_off_email_id is null)),
+  constraint automatic_has_occurrence check ((automatic_email_id is null) = (member_event_id is null)),
+  constraint not_sent_has_reason check ((status = 'not_sent') = (not_sent_reason is not null)),
+  constraint sent_keeps_copy check ((status = 'sent') = (sent_at is not null and sent_subject is not null and sent_body is not null))
+);
+create unique index email_sends_once_per_occurrence on public.email_sends (automatic_email_id, member_event_id);
+create index email_sends_person_id on public.email_sends (person_id, send_at desc);
+create index email_sends_due on public.email_sends (send_at) where status in ('scheduled', 'waiting_for_review');
+create index email_sends_automatic_email_id on public.email_sends (automatic_email_id) where automatic_email_id is not null;
+create index email_sends_one_off_email_id on public.email_sends (one_off_email_id) where one_off_email_id is not null;
+
+-- Every status a send has been through, and who moved it: how the admin answers "why didn't Jane get
+-- it?" after we've left.
+create table public.email_send_changes (
+  id bigint generated always as identity primary key,
+  send_id uuid not null references public.email_sends (id) on delete cascade,
+  status text not null,
+  not_sent_reason text,
+  by_person_id uuid references public.people (id) on delete set null,
+  at timestamptz not null default now()
+);
+create index email_send_changes_send_id on public.email_send_changes (send_id, at);
+
+-- The rules that never break, enforced here so no code path can get them wrong.
+create function public.email_send_rules()
+returns trigger
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  if tg_op = 'INSERT' then
+    if new.member_event_id is not null
+      and (select person_id from public.member_events where id = new.member_event_id) <> new.person_id then
+      raise exception 'A send goes to the member its occurrence happened to' using errcode = '23514';
+    end if;
+    -- Unsubscribed or bounced: recorded, never sent.
+    if new.status in ('scheduled', 'waiting_for_review') and not public.can_email(new.person_id) then
+      new.status := 'not_sent';
+      new.not_sent_reason := case
+        when (select unsubscribed_at from public.people where id = new.person_id) is not null then 'unsubscribed'
+        else 'bounced' end;
+    end if;
+    return new;
+  end if;
+
+  if old.status = 'sent' then
+    raise exception 'A sent email can''t change' using errcode = '23514';
+  end if;
+  -- Not sent is final, except that republishing brings back sends removed by unpublishing.
+  if old.status = 'not_sent' and new.status <> 'not_sent'
+    and (old.not_sent_reason <> 'unpublished' or new.status = 'sent') then
+    raise exception 'This send was not sent and can''t come back' using errcode = '23514';
+  end if;
+  if new.status = 'sent' and not public.can_email(new.person_id) then
+    raise exception 'This member can''t be emailed' using errcode = '23514';
+  end if;
+  if new.status <> 'not_sent' then
+    new.not_sent_reason := null;
+  end if;
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+create trigger email_send_rules before insert or update on public.email_sends
+for each row execute function public.email_send_rules();
+
+create function public.email_send_changed()
+returns trigger
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  if tg_op = 'INSERT' or old.status is distinct from new.status then
+    insert into public.email_send_changes (send_id, status, not_sent_reason, by_person_id)
+    values (new.id, new.status, new.not_sent_reason, public.current_person_id());
+  end if;
+  return new;
+end;
+$$;
+
+create trigger email_send_changed after insert or update of status on public.email_sends
+for each row execute function public.email_send_changed();
+
+create trigger subscription_changed after update of unsubscribed_at, bounced_at on public.people
+for each row execute function public.subscription_changed();
+
+-- A member's email history: every send, upcoming ones included however far out, with what started it.
+create view public.member_email_history with (security_invoker = true) as
+  select s.id as send_id, s.person_id, s.email_name, s.automatic_email_id, s.one_off_email_id,
+    e.kind as started_by, e.tag_name as started_by_tag, e.at as started_at,
+    s.status, s.not_sent_reason, s.send_at, s.sent_at, s.failed_at is not null as could_not_send,
+    coalesce(s.sent_subject, s.edited_subject) as subject, s.edited_at is not null as edited
+  from public.email_sends s
+  left join public.member_events e on e.id = s.member_event_id;
+
 -- ---------- timeline ----------
 
--- Everything that happened to one member, newest first, for the member page. Email sends join this
--- view when Automatic Emails adds them. Runs with the caller's rights, so only admins see rows.
+-- Everything that happened to one member, for the member page: joins, referrals, tags added and
+-- removed, notes, emails and subscription changes. An email shows once, at its send date, with its
+-- current status. Runs with the caller's rights, so only admins see rows.
 create view public.member_timeline with (security_invoker = true) as
   select e.person_id, e.at, e.kind, e.tag_name, e.referral_id, null::uuid as note_id,
-    null::text as body, null::uuid as by_person_id, false as edited
+    null::uuid as send_id, null::text as email_status, null::text as body, null::uuid as by_person_id,
+    false as edited
   from public.member_events e
   union all
-  select t.person_id, t.at, 'tag_removed', t.tag_name, null, null, null, t.by_person_id, false
+  select t.person_id, t.at, 'tag_removed', t.tag_name, null, null, null, null, null, t.by_person_id, false
   from public.tag_events t where t.kind = 'removed'
   union all
-  select n.person_id, n.created_at, 'note', null, null, n.id, n.body, n.created_by, n.updated_at is not null
+  select n.person_id, n.created_at, 'note', null, null, n.id, null, null, n.body, n.created_by, n.updated_at is not null
   from public.member_notes n where n.deleted_at is null
   union all
-  select p.id, p.unsubscribed_at, 'unsubscribed', null, null, null, p.unsubscribe_reason, null, false
-  from public.people p where p.unsubscribed_at is not null
+  select s.person_id, coalesce(s.sent_at, s.send_at), 'email', null, null, null, s.id, s.status,
+    s.email_name, null, s.edited_at is not null
+  from public.email_sends s
   union all
-  select p.id, p.bounced_at, 'bounced', null, null, null, p.bounce_detail, null, false
-  from public.people p where p.bounced_at is not null;
+  select c.person_id, c.at, c.kind, null, null, null, null, null, c.detail, null, false
+  from public.subscription_events c;
 
 -- ---------- what already happened ----------
 
@@ -291,6 +473,12 @@ where r.joined_at is not null;
 insert into public.member_events (person_id, kind, at, tag_id, tag_name)
 select person_id, 'tag_added', at, tag_id, tag_name from public.tag_events where kind = 'added';
 
+-- Who is unsubscribed or bounced today. Earlier changes weren't kept, so history starts here.
+insert into public.subscription_events (person_id, kind, detail, at)
+select id, 'unsubscribed', unsubscribe_reason, unsubscribed_at from public.people where unsubscribed_at is not null;
+insert into public.subscription_events (person_id, kind, detail, at)
+select id, 'bounced', bounce_detail, bounced_at from public.people where bounced_at is not null;
+
 -- ---------- access ----------
 
 revoke execute on function
@@ -302,14 +490,22 @@ revoke execute on function
 from public, anon;
 
 -- Triggers only.
-revoke execute on function public.referral_recorded(), public.membership_started(), public.tag_added()
+revoke execute on function
+  public.referral_recorded(), public.membership_started(), public.tag_added(),
+  public.subscription_changed(), public.email_send_rules(), public.email_send_changed()
 from public, anon, authenticated;
 
 alter table public.member_events enable row level security;
 alter table public.member_notes enable row level security;
 alter table public.member_note_revisions enable row level security;
+alter table public.subscription_events enable row level security;
+alter table public.email_sends enable row level security;
+alter table public.email_send_changes enable row level security;
 
 -- Reads for admins; every write goes through the functions and triggers above.
 create policy "Admins see member events" on public.member_events for select to authenticated using ((select public.is_admin()));
 create policy "Admins see notes" on public.member_notes for select to authenticated using ((select public.is_admin()));
 create policy "Admins see note history" on public.member_note_revisions for select to authenticated using ((select public.is_admin()));
+create policy "Admins see subscription history" on public.subscription_events for select to authenticated using ((select public.is_admin()));
+create policy "Admins see email sends" on public.email_sends for select to authenticated using ((select public.is_admin()));
+create policy "Admins see email send history" on public.email_send_changes for select to authenticated using ((select public.is_admin()));

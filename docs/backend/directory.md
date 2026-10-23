@@ -63,12 +63,33 @@ Every automatic email trigger is one row in `public.member_events`, written by t
 - Personalization: the referred person's name is on `referrals` (`referred_first_name`,
   `referred_last_name`) until they join, then on `people` via `referrals.referred_id`.
 - Still to wire: `recheck_member(person_id)` is an empty stub called after tag changes; fill it in
-  when sends exist. `delete_tag` must refuse a tag an automatic email uses once that table exists.
+  with the condition check. `delete_tag` must refuse a tag an automatic email uses, and
+  `email_sends` needs foreign keys to the automatic and one-off email tables, once those exist.
+
+## For Automatic Emails and One-off Emails: `email_sends`
+One row is one email to one member. The Outbox, recipients, email history and Insights all read it.
+The sending worker writes it with the service role; admins only read.
+
+- Status: `scheduled`, `waiting_for_review`, `sent`, `not_sent` (with `not_sent_reason`). "Couldn't
+  send" is `failed_at` set on a send that isn't sent.
+- Set `automatic_email_id` + `member_event_id`, or `one_off_email_id`, and `email_name` (kept as it
+  was, for history).
+- The database enforces, so the worker can't get them wrong:
+  - one send per occurrence (unique `automatic_email_id`, `member_event_id`);
+  - the send goes to the member the occurrence happened to;
+  - unsubscribed or bounced: inserted as Not sent, waiting sends become Not sent the moment they
+    unsubscribe or bounce, and marking one sent fails;
+  - sent is final and keeps `sent_subject`, `sent_body`, `sent_at`;
+  - Not sent is final, except `unpublished`, which republishing can bring back.
+- `email_send_changes` logs every status change and who made it.
+- `member_email_history`: one member's sends with what started each one.
 
 ## Notes and timeline
 - `member_notes`: `add_note`, `edit_note` (keeps the earlier text in `member_note_revisions`),
   `delete_note` (hides it; the row stays).
-- `member_timeline`: one member's joins, referrals, tags added and removed, notes, unsubscribe and
-  bounce, for the member page. Email sends join it when they exist.
+- `member_timeline`: one member's joins, referrals, tags added and removed, notes, emails (once, at
+  the send date, with the current status) and subscription changes, for the member page.
+- `subscription_events`: every unsubscribe, resubscribe, bounce and cleared bounce (people only keeps
+  the current state).
 - `add_members(jsonb, joined_at, join_emails)`: many at once; returns `added`, `already_member` or
   `invalid_email` per row.
