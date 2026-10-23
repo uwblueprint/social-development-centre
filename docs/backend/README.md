@@ -9,9 +9,6 @@ The UI is built so the backend plugs in at a few fixed seams. Nothing in `src/co
   - Reading the session makes every admin route dynamic, so no admin page is prerendered or cached.
   - **Depends on `record_sign_in()`** being called when a sign-in link is used (`src/app/auth/confirm/route.ts`). That is what sets `people.user_id`, and without it `is_admin()` is false for everyone.
 
-`src/app/partner/_data/session.ts`
-- `getCurrentPartner()`: returns `null` in production today. Nothing in the database links a signed-in person to a partner organization yet, so the partner portal fails closed — every `/partner` route redirects to `/login`. See [partners.md](./partners.md#partner-sign-in) for what it needs.
-
 ### Schema this depends on
 `public.people`, `public.admins` and the `is_admin()` / `current_person_id()` / `record_sign_in()` functions exist in the Supabase project, but the migrations that create them are **not in this repo yet** — they arrive with the magic-link-auth branch. `supabase/migrations/20260922000000_profiles.sql` describes a `profiles` table that the project no longer has; it should be removed when those migrations land.
 
@@ -31,25 +28,20 @@ Each admin page (`src/app/admin/<section>/page.tsx`) is a Server Component. Fetc
 ## 4. Local development
 Without Supabase credentials, `next dev` skips the sign-in redirect (`src/lib/supabase/proxy.ts`) and `getCurrentAdmin()` returns a placeholder admin. With credentials set, local development behaves like production: you sign in for real, and only an address in `public.admins` reaches the admin portal. Production always requires both.
 
-`getCurrentPartner()` returns the in-memory store's first active contact in development whether or not credentials are set, because there is no real partner session to fall back to yet.
-
 ## 5. Accounts
-There is no My account screen (owner decision, 28 Sep 2026: logins can be shared, and the app doesn't use the name). The sidebar footer is **Documentation** (`/admin/documentation`, `/partner/documentation`, rendered from `docs/user-guide/`) and a red **Sign out**. Only `signOut` (`src/app/login/actions.ts`) is needed. Profile pictures, name editing and account deletion are **not** needed (that code has been removed).
+There is no My account screen (owner decision, 28 Sep 2026: logins can be shared, and the app doesn't use the name). The sidebar footer is **Documentation** (`/admin/documentation`, rendered from `docs/user-guide/`) and a red **Sign out**. Only `signOut` (`src/app/login/actions.ts`) is needed. Profile pictures, name editing and account deletion are **not** needed (that code has been removed).
 
 ## Dates and times (owner, 28 Sep 2026)
 Every timestamp and date-time the backend sends or stores is UTC, as ISO 8601 with a `Z` (e.g. `2026-10-02T21:30:00Z`). The UI converts to the person's own time zone for display and converts their input back to UTC before saving. Date-only values with no time (e.g. a petition deadline) are plain `yyyy-mm-dd` and mean "until the end of that day in Waterloo Region" (America/Toronto). To avoid server/browser mismatches, the time zone should come from the browser (saved in a cookie on first visit) so server-rendered pages format in the same zone.
 
 ## Duplicate submits (owner, 28 Sep 2026)
-The UI blocks a second click or Enter while a save is pending (`SubmitButton`: busy state, aria-busy, repeat clicks ignored). The backend should still be idempotent: each form render gets a one-time token sent with the save, and a repeated token returns the first result instead of creating a second record (a double Publish never makes two listings).
+The UI blocks a second click or Enter while a save is pending (`SubmitButton`: busy state, aria-busy, repeat clicks ignored). The backend should still be idempotent: each form render gets a one-time token sent with the save, and a repeated token returns the first result instead of creating a second record.
 
 ## Offline (owner, 28 Sep 2026)
-No backend work. When there's no connection, what's on screen stays readable; submits and page changes are stopped with the "Goose stole your wifi." screen; route errors while offline show the same screen. The opportunity form also keeps unsaved work in the browser (`localStorage`, key `nexus-draft:{scope}:{id or new}`) until it saves.
+No backend work. When there's no connection, what's on screen stays readable; submits and page changes are stopped with the "Goose stole your wifi." screen; route errors while offline show the same screen.
 
 ## Feature requirements
 - [Intake form](./intake-form.md) (public, no sign-in)
-- [Partners](./partners.md)
-- [Opportunities](./opportunities.md) (both portals, plus the partner session)
-- [Community](./community.md)
 
 ## Support address
 `BSF_SUPPORT_EMAIL` (`src/lib/contact.ts`) is where admins escalate a page that keeps failing to load. It is still the placeholder `{BSF email}`; set the real address there, and the load-error page turns it into a mailto link automatically.

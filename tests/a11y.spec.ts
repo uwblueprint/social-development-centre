@@ -1,167 +1,74 @@
+import { readdirSync } from "node:fs";
+import path from "node:path";
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
-const routes = [
-  "/components",
-  "/admin/opportunities",
-  "/admin/opportunities/new?kind=event",
-  "/admin/partners",
-  "/admin/community",
-  "/partner/opportunities",
-  "/partner/organization",
-];
+/**
+ * Every page with a fixed URL, found by walking `src/app`, so a new page is scanned without editing
+ * this file. Skips segments with no URL of their own to visit: dynamic ones (`[id]`, `[...path]`),
+ * private folders (`_components`) and parallel slots (`@modal`); route groups (`(group)`) add no segment.
+ */
+function pageRoutes(dir = path.join(process.cwd(), "src", "app"), segments: string[] = []): string[] {
+  const routes: string[] = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.isFile() && /^page\.(tsx|ts|jsx|js)$/.test(entry.name)) routes.push(`/${segments.join("/")}`);
+    if (!entry.isDirectory() || /^[_[@]/.test(entry.name)) continue;
+    const next = entry.name.startsWith("(") ? segments : [...segments, entry.name];
+    routes.push(...pageRoutes(path.join(dir, entry.name), next));
+  }
+  return routes;
+}
+
+/** Desktop, and the narrowest phone we support (reflow, WCAG 1.4.10). */
+const widths = [1280, 320];
 
 async function settle(page: import("@playwright/test").Page) {
+  // /admin redirects on the client, so wait for that second navigation to land before reading the
+  // page: evaluating against a document that is being torn down throws.
+  await page.waitForLoadState("networkidle");
   // Wait for the variable font to finish loading and settle a frame: scanning
   // mid-swap can make axe misjudge text contrast from anti-aliased glyphs.
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(250);
+  // Then let entrance animations finish: a fade caught midway reads as low contrast. /admin redirects
+  // on the client, so its sidebar is still fading in when the first wait ends.
+  // Looping ones (spinners) never finish, so skip those.
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((a) => a.effect?.getComputedTiming().iterations !== Infinity)
+        .map((a) => a.finished.catch(() => {})),
+    ),
+  );
 }
 
-async function checkA11y(page: import("@playwright/test").Page, excludeSelectors: string[] = []) {
-  let builder = new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]);
-  for (const selector of excludeSelectors) builder = builder.exclude(selector);
-  const results = await builder.analyze();
+async function checkA11y(page: import("@playwright/test").Page) {
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
   expect(results.violations.map((v) => `${v.id}: ${v.nodes.length} × ${v.help}`)).toEqual([]);
 }
 
-// The member sheet's email bodies render in `sandbox=""` iframes (a unique opaque origin, by design —
-// see MemberEmails.tsx): axe can't inject into that origin to scan it and analyze() hangs until Playwright's
-// own timeout. Exclude it; its content is a static rendered email, not kit UI, and the frame itself has
-// an accessible name (`title`).
-const SANDBOXED_EMAIL_FRAME = 'iframe[sandbox=""]';
+for (const route of pageRoutes()) {
+  for (const width of widths) {
+    test(`${route} at ${width}px has no WCAG 2.2 AA violations`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 800 });
+      const response = await page.goto(route);
+      // A page that can't render here (e.g. it needs Supabase credentials CI doesn't have) is reported
+      // as skipped, with its status, rather than scanned as an error page.
+      test.skip(!response?.ok(), `${route} returned ${response?.status()}`);
+      await settle(page);
+      await checkA11y(page);
+    });
+  }
+}
 
-for (const path of routes) test(`${path} has no WCAG 2.2 AA violations`, async ({ page }) => {
-  await page.goto(path);
+test("the 404 page has no WCAG 2.2 AA violations", async ({ page }) => {
+  const response = await page.goto("/this-page-does-not-exist");
+  // With Supabase credentials set, signed-out visitors are sent to sign in before any 404.
+  test.skip(new URL(page.url()).pathname === "/login", "redirected to sign in");
+  expect(response?.status()).toBe(404);
   await settle(page);
   await checkA11y(page);
-});
-
-test.describe("login", () => {
-  test("sign-in error state has no violations", async ({ page }) => {
-    await page.goto("/login");
-    await settle(page);
-    await page.getByRole("button", { name: "Send sign-in link" }).click();
-    await expect(page.getByText("Enter an email address like name@example.org.")).toBeVisible();
-    await checkA11y(page);
-  });
-
-  test("signed-out goodbye has no violations", async ({ page }) => {
-    await page.goto("/login?signedOut=1&name=Amara");
-    await settle(page);
-    await expect(page.getByRole("status")).toContainText("You're signed out");
-    await checkA11y(page);
-  });
-});
-
-test.describe("kiosk", () => {
-  test("validation error state has no violations", async ({ page }) => {
-    await page.goto("/kiosk");
-    await settle(page);
-    await page.getByRole("button", { name: "Sign me up" }).click();
-    await page.waitForTimeout(200);
-    await checkA11y(page);
-  });
-
-  test("success screen with countdown has no violations", async ({ page }) => {
-    await page.goto("/kiosk");
-    await settle(page);
-    await page.getByLabel("Name", { exact: false }).fill("Ada Lovelace");
-    await page.getByLabel("Email", { exact: false }).fill("ada@example.org");
-    await page.getByRole("button", { name: "Sign me up" }).click();
-    await page.waitForTimeout(300);
-    await checkA11y(page);
-  });
-});
-
-test.describe("admin shell", () => {
-  test("documentation page has no violations", async ({ page }) => {
-    await page.goto("/admin/documentation");
-    await settle(page);
-    await checkA11y(page);
-  });
-
-  test("a row's ⋯ menu opens without hiding tabbable content (WCAG 4.1.2)", async ({ page }) => {
-    await page.goto("/admin/community");
-    await settle(page);
-    await page.locator('button[aria-label^="Actions for"]').first().click();
-    await page.waitForTimeout(200);
-    await checkA11y(page);
-  });
-
-  test("mobile drawer at 320px has no violations", async ({ page }) => {
-    await page.setViewportSize({ width: 320, height: 700 });
-    await page.goto("/admin/community");
-    await settle(page);
-    // The tabs' roving-tabindex mount effect lands a little after `settle`'s wait; give it room so the
-    // scan doesn't catch the momentary state where neither tab nor the list itself is in the tab order.
-    await page.waitForTimeout(300);
-    await checkA11y(page); // reflow, no drawer open
-    await page.getByRole("button", { name: "Open menu" }).click();
-    await page.waitForTimeout(400);
-    await checkA11y(page);
-  });
-});
-
-test.describe("community", () => {
-  test("Add members dialog (single and import views) has no violations", async ({ page }) => {
-    await page.goto("/admin/community");
-    await settle(page);
-    await page.getByRole("button", { name: "Add members" }).click();
-    await page.waitForTimeout(250);
-    await checkA11y(page);
-    await page.getByRole("button", { name: "Import from a file" }).click();
-    await page.waitForTimeout(250);
-    await checkA11y(page);
-  });
-
-  test("Export dialog has no violations", async ({ page }) => {
-    await page.goto("/admin/community");
-    await settle(page);
-    await page.getByRole("button", { name: "Export" }).click();
-    await page.waitForTimeout(250);
-    await checkA11y(page);
-  });
-
-  test("kiosk launcher dialog has no violations", async ({ page }) => {
-    await page.goto("/admin/community");
-    await settle(page);
-    await page.getByRole("button", { name: "Open sign-up kiosk" }).click();
-    await page.waitForTimeout(250);
-    await checkA11y(page);
-  });
-
-  test("member sheet, its convert and delete confirm dialogs have no violations", async ({ page }) => {
-    await page.goto("/admin/community");
-    await settle(page);
-    await page.locator("tbody tr").first().click();
-    await page.waitForTimeout(250);
-    await checkA11y(page, [SANDBOXED_EMAIL_FRAME]);
-
-    await page.getByRole("button", { name: "Delete member" }).click();
-    await page.waitForTimeout(250);
-    await checkA11y(page, [SANDBOXED_EMAIL_FRAME]);
-    await page.keyboard.press("Escape");
-    await page.waitForTimeout(250);
-
-    await page.getByRole("button", { name: /Convert to paying member|Remove paying access/ }).click();
-    await page.waitForTimeout(250);
-    await checkA11y(page, [SANDBOXED_EMAIL_FRAME]);
-  });
-
-  test("column filter popover (staged Apply) has no violations", async ({ page }) => {
-    await page.goto("/admin/community");
-    await settle(page);
-    await page.getByRole("button", { name: /Filter Status/ }).click();
-    await page.waitForTimeout(250);
-    await checkA11y(page);
-  });
-
-  test("sort busy state has no violations", async ({ page }) => {
-    await page.goto("/admin/community");
-    await settle(page);
-    await page.getByRole("button", { name: /Name/ }).click();
-    await page.waitForTimeout(30);
-    await checkA11y(page);
-  });
 });

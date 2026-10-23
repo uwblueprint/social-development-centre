@@ -194,6 +194,8 @@ globalStyle`
     --row-height: 44px;
     /* List page search in the header row: wide enough for a name or email, narrow enough to leave room for actions. */
     --search-width: 280px;
+    /* The desktop sidebar's width; the design zone's nav placeholder uses it too, so swapping in the real sidebar doesn't shift screens. */
+    --sidebar-width: 264px;
 
     /*
      * Dashed borders (disabled controls, drop targets): drawn as 4px dashes with 4px gaps, because the
