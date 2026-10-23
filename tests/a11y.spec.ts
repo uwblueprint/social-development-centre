@@ -27,6 +27,17 @@ async function settle(page: import("@playwright/test").Page) {
   // mid-swap can make axe misjudge text contrast from anti-aliased glyphs.
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(250);
+  // Then let entrance animations finish: a fade caught midway reads as low contrast. /admin redirects
+  // on the client, so its sidebar is still fading in when the first wait ends.
+  // Looping ones (spinners) never finish, so skip those.
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((a) => a.effect?.getComputedTiming().iterations !== Infinity)
+        .map((a) => a.finished.catch(() => {})),
+    ),
+  );
 }
 
 async function checkA11y(page: import("@playwright/test").Page) {
