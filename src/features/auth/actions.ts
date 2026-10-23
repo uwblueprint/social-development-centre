@@ -4,11 +4,15 @@ import { redirect } from "next/navigation";
 import { normalizeEmail } from "@/lib/email";
 import { createClient } from "@/lib/supabase/server";
 import { emailSignInLink } from "./links";
-import { isPortal, portals, type Portal } from "./portals";
+import { isPortal, portals, safeAdminPath, type Portal } from "./portals";
 
 export type SignInResult = "sent" | "invalid-email" | "not-allowed" | "failed";
 
-export async function sendSignInLink(portal: Portal, input: string): Promise<SignInResult> {
+/**
+ * `next` is where an admin was going when they were asked to sign in. The admin page answers the same
+ * way whether or not the email has access, so it doesn't reveal who the admins are.
+ */
+export async function sendSignInLink(portal: Portal, input: string, next?: string): Promise<SignInResult> {
   const email = normalizeEmail(input);
   if (!email) return "invalid-email";
   if (!isPortal(portal)) return "failed";
@@ -19,9 +23,9 @@ export async function sendSignInLink(portal: Portal, input: string): Promise<Sig
     console.error("can_sign_in failed:", error.message);
     return "failed";
   }
-  if (!allowed) return "not-allowed";
+  if (!allowed) return portal === "admin" ? "sent" : "not-allowed";
 
-  const { error: sendError } = await emailSignInLink(email, portal);
+  const { error: sendError } = await emailSignInLink(email, portal, portal === "admin" ? safeAdminPath(next) : undefined);
   if (sendError) {
     console.error("Sign-in email failed:", sendError.code ?? sendError.message);
     return "failed";

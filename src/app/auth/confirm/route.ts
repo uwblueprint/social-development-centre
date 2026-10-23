@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { isPortal, portals } from "@/features/auth/portals";
+import { isPortal, portals, safeAdminPath } from "@/features/auth/portals";
 import { createClient } from "@/lib/supabase/server";
 
 /** Where sign-in links land: verify the link, link the login to its person, then send them home. */
@@ -25,5 +25,5 @@ export async function GET(request: NextRequest) {
     await supabase.auth.signOut({ scope: "local" });
     return redirectTo(`${signInPath}?error=failed`);
   }
-  return redirectTo(homePath);
+  return redirectTo((portal === "admin" && safeAdminPath(params.get("next"))) || homePath);
 }

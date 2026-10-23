@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { signInPathFor } from "@/features/auth/portals";
+import { portals, safeAdminPath, signInPathFor } from "@/features/auth/portals";
 
 export async function updateSession(request: NextRequest) {
   // Lets people work on UI locally without Supabase credentials; production always enforces auth.
@@ -35,7 +35,13 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const signInPath = signInPathFor(request.nextUrl.pathname);
   if (!data?.claims && signInPath) {
-    return NextResponse.redirect(new URL(signInPath, request.url));
+    const url = new URL(signInPath, request.url);
+    // Admins come back to the page they asked for after signing in.
+    const next = request.nextUrl.pathname + request.nextUrl.search;
+    if (signInPath === portals.admin.signInPath && safeAdminPath(next) && next !== portals.admin.homePath) {
+      url.searchParams.set("next", next);
+    }
+    return NextResponse.redirect(url);
   }
 
   return supabaseResponse;

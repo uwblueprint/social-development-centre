@@ -5,13 +5,14 @@ Members and admins sign in with a link emailed to them. There are no passwords.
 | Who | Sign-in page | After signing in |
 |---|---|---|
 | Members | `/login` | `/` |
-| Admins | `/login/admin` | `/admin/admins` |
+| Admins | `/login/admin` | the admin page they asked for, or `/admin/admins` |
 
 ## How it works
 
-1. The sign-in form calls `sendSignInLink` (`src/features/auth/actions.ts`). It asks the database whether the email may use that page (`can_sign_in`) and only then has Supabase email a link.
+1. The sign-in form calls `sendSignInLink` (`src/features/auth/actions.ts`). It asks the database whether the email may use that page (`can_sign_in`) and only then has Supabase email a link. The admin page answers "If this email has access, a sign-in link is on its way." either way, so it doesn't reveal who the admins are.
 2. The link opens `/auth/confirm`, which verifies it, links the Supabase login to the person (`record_sign_in`) and redirects.
-3. `src/proxy.ts` sends signed-out visitors of `/` and `/admin/**` to the right sign-in page. Pages check roles themselves with `requireMember()` and `requireAdmin()` (`src/features/auth/session.ts`).
+3. `src/proxy.ts` sends signed-out visitors of `/` and `/admin/**` to the right sign-in page; admins come back to the page they asked for (`?next=`, admin paths only). Pages check roles themselves with `requireMember()` and `requireAdmin()` (`src/features/auth/session.ts`).
+4. Being an admin is decided by the database's `is_admin()`: a row in `admins` **and** a sign-in less than 7 days old (the session's `amr` sign-in time). Pages, server actions and row-level security all use it, so a week-old admin session stops working everywhere at once and the admin signs in again. Member sessions don't expire.
 
 Expired or used links come back to the sign-in page with `?error=expired`; anything else with `?error=failed`.
 
@@ -33,7 +34,7 @@ Partners will get `partner_organizations` and `partner_contacts` tables pointing
 
 ### Adding a member
 
-Admins add them on **Members** (`/admin/community`), which adds them to SDC's list if they're new and emails them a sign-in link. See [user-guide/admin-members.md](user-guide/admin-members.md).
+Admins add them on **Members** (`/admin/members`), which adds them to SDC's list if they're new and emails them a sign-in link.
 
 ## Setup
 
@@ -51,13 +52,16 @@ In the Supabase dashboard:
 - The first admin is seeded by the migration. Admins add and remove admins at `/admin/admins`; the invite is a sign-in link. See [decisions/admins.md](decisions/admins.md).
 - One kind of member, and membership doesn't expire. The platform doesn't track payments; admins tag donors instead. See [decisions/members.md](decisions/members.md).
 - Changing email: members contact SDC. When someone's login email changes, a trigger updates `people.email` to match. When an admin changes a `people.email` directly, also clear its `user_id` so the new address can sign in.
-- Links last 1 hour (Supabase's default).
+- Links last 1 hour (Supabase's default). The spec's 7-day invites aren't possible (Supabase allows at most 24 hours); an expired invite never blocks anyone, because the person can ask for a new link on the sign-in page.
+- Admin sessions last 7 days from signing in; member sessions don't expire.
 
 ## Not built yet
 
 - Partner sign-in.
-- The Member Directory (tags, unsubscribes, imports, email history). `/admin/community` is a plain list of members for now.
+- The Member Directory screens. The data is built (see [backend/directory.md](backend/directory.md)); `/admin/members` is a plain list of members for now.
+- The 6-digit code in the sign-in email, as a fallback for opening the link on another device or links used up by email scanners. Needs `{{ .Token }}` in the template and a code box on Check your email.
+- Making the admin page's neutral answer airtight: `can_sign_in` is callable with the public key, so someone could still ask the database directly whether an email is an admin. Fix by calling it from the server with a secret key (`SUPABASE_SECRET_KEY` in Vercel) and revoking it from `anon`.
 - Self-service email change.
 - Supabase's "Before User Created" hook, to stop people creating logins by calling Supabase directly with an email that has no access. Such logins can't see or do anything today, but the hook would keep them out of `auth.users`.
-- Final copy for `/admin/admins` and `/admin/community`, which aren't in Figma yet.
+- Final copy for `/admin/admins` and `/admin/members`, which aren't in Figma yet.
 - Separate member, admin and invite emails as in Figma. Supabase uses one template per kind of email, so this needs the Send Email Hook.

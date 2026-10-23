@@ -11,6 +11,17 @@ export function isPortal(value: unknown): value is Portal {
 }
 
 /**
+ * `path` if it's an admin page to return to after signing in, else undefined. Only same-site /admin
+ * paths, so a crafted link can't send someone to another site.
+ */
+export function safeAdminPath(path: string | null | undefined): string | undefined {
+  if (!path || !(path === "/admin" || path.startsWith("/admin/")) || path.includes("//") || path.includes("\\")) {
+    return undefined;
+  }
+  return path;
+}
+
+/**
  * Static files under `public/` that pages load. They are not secrets, and gating them breaks pages:
  * `next/image` fetches the file back through the proxy, gets the sign-in redirect instead of a PNG and
  * renders nothing, so the intake letter loses its logos and the 404 its illustration.
