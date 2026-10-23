@@ -8,7 +8,7 @@ import { Field } from "@/components/ui/Field";
 import { Input } from "@/components/ui/Input";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { SDC_CONTACT_EMAIL, SDC_MEMBERSHIP_URL, SDC_NEWSLETTER_URL } from "@/lib/contact";
-import { sendSignInLink } from "./actions";
+import { sendSignInLink, signInWithCode } from "./actions";
 import {
   AuthActions,
   AuthColumn,
@@ -20,6 +20,7 @@ import {
   LinkButton,
   SdcLogo,
 } from "./AuthScreen";
+import type { CodeResult } from "./actions";
 import type { Portal } from "./portals";
 
 const RESEND_AFTER_MS = 60_000;
@@ -78,7 +79,17 @@ export function SignIn({ portal, linkError, next }: { portal: Portal; linkError?
   return (
     <AuthScreen>
       {view.name === "sent" ? (
-        <CheckEmail portal={portal} email={view.email} sentAt={view.sentAt} onSubmit={submit} />
+        <CheckEmail
+          portal={portal}
+          email={view.email}
+          sentAt={view.sentAt}
+          onSubmit={submit}
+          onCode={async (code) => {
+            const result = await signInWithCode(portal, view.email, code, next).catch(() => "failed" as const);
+            if (result === "failed") show({ name: "failed" });
+            return result;
+          }}
+        />
       ) : view.name === "not-member" ? (
         <NotOnMemberList onTryAgain={showForm} />
       ) : view.name === "expired" ? (
@@ -118,13 +129,27 @@ function CheckEmail({
   email,
   sentAt,
   onSubmit,
+  onCode,
 }: {
   portal: Portal;
   email: string;
   sentAt: number;
   onSubmit: (formData: FormData) => void;
+  /** Resolves only when the code didn't work; a good code signs them in and leaves the page. */
+  onCode: (code: string) => Promise<CodeResult | void>;
 }) {
   const secondsLeft = useSecondsUntil(sentAt + RESEND_AFTER_MS);
+  const [codeError, setCodeError] = useState<string>();
+  async function submitCode(formData: FormData) {
+    const result = await onCode(String(formData.get("code") ?? ""));
+    setCodeError(
+      result === "invalid-code"
+        ? "Enter the 6-digit code from the email."
+        : result === "wrong-code"
+          ? "That code didn’t work. Check it, or resend the link for a new one."
+          : undefined,
+    );
+  }
   // The admin page doesn't say whether the email has access, so it can't reveal who the admins are.
   const sentTo =
     portal === "admin" ? "If this email has access, a sign-in link is on its way." : `We sent a sign-in link to ${email}.`;
@@ -133,6 +158,14 @@ function CheckEmail({
     <AuthColumn>
       <IconWell icon={MailCheck} tone="brand" />
       <AuthHeading title="Check your email" description={`${sentTo}\nThe link expires in ${LINK_LIFETIME}.`} />
+      <AuthForm action={submitCode} noValidate>
+        <Field label="Sign-in code" hint="Or enter the code from the email." error={codeError}>
+          {(props) => (
+            <Input {...props} name="code" inputMode="numeric" autoComplete="one-time-code" maxLength={10} spellCheck={false} />
+          )}
+        </Field>
+        <SubmitButton $size="lg">Sign in with code</SubmitButton>
+      </AuthForm>
       <AuthForm action={onSubmit} noValidate>
         <Field label="Email address">
           {(props) => <Input {...props} type="email" name="email" autoComplete="email" defaultValue={email} />}
