@@ -1,5 +1,3 @@
-const MB = 1024 * 1024;
-
 /** Limits agreed with design. The backend must enforce the same ones (see docs/backend/email-editor.md). */
 export const EMAIL_LIMITS = {
   /** Phones cut subjects off around here: warn, don't block. */
@@ -9,24 +7,11 @@ export const EMAIL_LIMITS = {
   bodyWarn: 10_000,
   urlMax: 2048,
   linkTextMax: 100,
-  /** Per attachment. */
-  fileMax: 10 * MB,
-  /** All attachments together. Encoding adds about a third, and Gmail refuses mail over 25 MB. */
-  totalMax: 20 * MB,
-  fileCount: 10,
-  /** Per image in the message. */
-  imageMax: 5 * MB,
 } as const;
-
-export const ATTACHMENT_EXTENSIONS = ["pdf", "png", "jpg", "jpeg", "gif", "webp", "txt", "docx", "csv"] as const;
-export const IMAGE_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp"] as const;
-
-export function formatSize(bytes: number) {
-  return bytes < MB ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / MB).toFixed(1)} MB`;
-}
 
 export const emailEditorCopy = {
   subjectLabel: "Subject:",
+  messageLabel: "Message",
   bodyPlaceholder: "Draft your email here",
   subjectRequired: "Please include a subject.",
   bodyRequired: "Please include a message.",
@@ -38,19 +23,16 @@ export const emailEditorCopy = {
   toolbar: {
     bold: "Bold",
     italic: "Italic",
-    underline: "Underline",
-    strike: "Strikethrough",
-    heading: "Heading",
     bulletList: "Bulleted list",
     orderedList: "Numbered list",
-    quote: "Quote",
-    image: "Image",
     link: "Link",
     personalize: "Personalize",
     personalizeTip: "Insert a member detail",
   },
 
   link: {
+    textLabel: "Link text",
+    urlLabel: "Link",
     textPlaceholder: "Text to show",
     urlPlaceholder: "Paste or type a link",
     add: "Add",
@@ -75,27 +57,6 @@ export const emailEditorCopy = {
     fallbackPlaceholder: "Nothing",
     cancel: "Cancel",
     save: "Save",
-  },
-
-  image: {
-    notImage: (name: string) => `“${name}” isn’t an image. Use a PNG, JPG, GIF or WebP file.`,
-    tooBig: (name: string, size: string) => `“${name}” is ${size}. Images can be up to 5 MB.`,
-    dropToAttach: "Drop to attach",
-  },
-
-  attachments: {
-    label: "Attachments",
-    add: "Add attachment",
-    remove: (name: string) => `Remove ${name}`,
-    limitReached: "Max file limit reached",
-    used: (mb: string) => `${mb}/20 MB used`,
-    uploadFailed: "Upload failed",
-    retry: "Retry",
-    wrongType: (name: string) => `“${name}” can’t be attached. Use a PDF, image, text, Word or CSV file.`,
-    tooBig: (name: string, size: string) => `“${name}” is ${size}. Each file can be up to 10 MB.`,
-    overTotal: (name: string) => `“${name}” would take this email over 20 MB. Remove a file or attach a smaller one.`,
-    atLimit: "This email has reached the 20 MB attachment limit. Remove a file to add another.",
-    tooMany: `Emails can have up to ${EMAIL_LIMITS.fileCount} attachments. Remove one to add another.`,
   },
 
   footerSettings: "Edit footer in Settings",

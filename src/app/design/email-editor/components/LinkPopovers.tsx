@@ -5,13 +5,12 @@ import { styled } from "next-yak";
 import type { Editor } from "@tiptap/react";
 import { Check, Copy, Pencil, Unlink } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { ErrorIcon } from "@/components/ui/Field";
+import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
 import { Input } from "@/components/ui/Input";
 import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/Popover";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { EMAIL_LIMITS, emailEditorCopy as copy } from "../copy";
-import { BrandButton } from "./BrandButton";
 import { normalizeUrl } from "./shortcuts";
 
 /** Where a link popup points: the toolbar's link button, or a link in the text. */
@@ -20,10 +19,9 @@ export type LinkUi =
   | { kind: "menu"; rect: DOMRect; href: string }
   | null;
 
-function useVirtualAnchor(rect: DOMRect) {
-  const ref = React.useRef({ getBoundingClientRect: () => rect });
-  ref.current.getBoundingClientRect = () => rect;
-  return ref;
+/** Radix positions against this; a new object whenever the rect changes. */
+function useVirtualAnchor(rect: DOMRect): React.RefObject<{ getBoundingClientRect: () => DOMRect }> {
+  return React.useMemo(() => ({ current: { getBoundingClientRect: () => rect } }), [rect]);
 }
 
 /**
@@ -68,39 +66,40 @@ export function LinkEditor({ editor, rect, onClose }: { editor: Editor; rect: DO
       <SmallPopover side="top" align="center" showClose={false}>
         <Form onSubmit={submit} noValidate>
           {needText && (
-            <Input
-              aria-label="Link text"
-              placeholder={copy.link.textPlaceholder}
-              value={text}
-              maxLength={EMAIL_LIMITS.linkTextMax}
-              onChange={(e) => {
-                setText(e.target.value);
-                setError(null);
-              }}
-            />
+            <Field label={copy.link.textLabel}>
+              {(props) => (
+                <Input
+                  {...props}
+                  placeholder={copy.link.textPlaceholder}
+                  value={text}
+                  maxLength={EMAIL_LIMITS.linkTextMax}
+                  onChange={(e) => {
+                    setText(e.target.value);
+                    setError(null);
+                  }}
+                />
+              )}
+            </Field>
           )}
-          <Row>
-            <Input
-              aria-label="Link"
-              type="url"
-              placeholder={copy.link.urlPlaceholder}
-              value={url}
-              aria-invalid={error ? true : undefined}
-              onChange={(e) => {
-                setUrl(e.target.value);
-                setError(null); // the error goes away as soon as they type again
-              }}
-            />
-            <BrandButton type="submit" $size="sm">
+          <Field label={copy.link.urlLabel} error={error && <span role="alert">{error}</span>}>
+            {(props) => (
+              <Input
+                {...props}
+                type="url"
+                placeholder={copy.link.urlPlaceholder}
+                value={url}
+                onChange={(e) => {
+                  setUrl(e.target.value);
+                  setError(null); // the error goes away as soon as they type again
+                }}
+              />
+            )}
+          </Field>
+          <Actions>
+            <Button type="submit" $size="sm">
               {editing ? copy.link.save : copy.link.add}
-            </BrandButton>
-          </Row>
-          {error && (
-            <ErrorLine role="alert">
-              <ErrorIcon />
-              {error}
-            </ErrorLine>
-          )}
+            </Button>
+          </Actions>
         </Form>
       </SmallPopover>
     </Popover>
@@ -142,12 +141,12 @@ export function LinkMenu({
         <Divider aria-hidden="true" />
         <Tooltip content={copied ? copy.link.copied : copy.link.copy} pinOnClick={false}>
           <IconButton type="button" $variant="ghost" aria-label={copy.link.copy} onClick={copyLink}>
-            <Icon icon={copied ? Check : Copy} size={16} strokeWidth={2} />
+            <Icon icon={copied ? Check : Copy} size={16} />
           </IconButton>
         </Tooltip>
         <Tooltip content={copy.link.edit} pinOnClick={false}>
           <IconButton type="button" $variant="ghost" aria-label={copy.link.edit} onClick={onEdit}>
-            <Icon icon={Pencil} size={16} strokeWidth={2} />
+            <Icon icon={Pencil} size={16} />
           </IconButton>
         </Tooltip>
         <Tooltip content={copy.link.remove} pinOnClick={false}>
@@ -160,7 +159,7 @@ export function LinkMenu({
               onClose();
             }}
           >
-            <Icon icon={Unlink} size={16} strokeWidth={2} />
+            <Icon icon={Unlink} size={16} />
           </IconButton>
         </Tooltip>
       </MenuPopover>
@@ -169,17 +168,7 @@ export function LinkMenu({
 }
 
 const SmallPopover = styled(PopoverContent)`
-  width: 288px;
-  font-size: var(--text-2xs);
-  line-height: var(--leading-2xs);
-
-  input {
-    height: 32px;
-    font-size: var(--text-2xs);
-  }
-  button {
-    font-size: var(--text-2xs);
-  }
+  width: min(288px, calc(100vw - var(--space-5)));
 `;
 
 const MenuPopover = styled(PopoverContent)`
@@ -188,8 +177,8 @@ const MenuPopover = styled(PopoverContent)`
   align-items: center;
   gap: var(--space-1);
   padding: var(--space-1);
-  font-size: var(--text-2xs);
-  line-height: var(--leading-2xs);
+  font-size: var(--text-xs);
+  line-height: var(--leading-ui);
 `;
 
 const Form = styled.form`
@@ -197,22 +186,9 @@ const Form = styled.form`
   gap: var(--space-2);
 `;
 
-const Row = styled.div`
+const Actions = styled.div`
   display: flex;
-  gap: var(--space-2);
-  align-items: center;
-
-  > :first-child {
-    flex: 1;
-    min-width: 0;
-  }
-`;
-
-const ErrorLine = styled.span`
-  display: flex;
-  gap: var(--space-1);
-  align-items: flex-start;
-  color: var(--color-danger);
+  justify-content: flex-end;
 `;
 
 const Url = styled.span`
@@ -221,7 +197,7 @@ const Url = styled.span`
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  color: var(--color-link);
+  color: var(--color-text-muted);
 `;
 
 const Divider = styled.span`

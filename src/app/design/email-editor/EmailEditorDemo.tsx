@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import type { JSONContent } from "@tiptap/react";
-import { EmailEditor } from "@/features/email-editor";
+import { EmailEditor } from ".";
 
 const chip = (id: string): JSONContent => ({ type: "personalizedText", attrs: { id } });
 const p = (...content: JSONContent[]): JSONContent => ({ type: "paragraph", content });
@@ -15,7 +15,7 @@ const body: JSONContent = {
   content: [
     p(t("Hi "), chip("first_name"), t(",")),
     p(t("Thank you for joining the Social Development Centre. "), chip("referrer_first_name"), t(" told us you'd be a great fit, and we're glad you're here.")),
-    { type: "heading", attrs: { level: 1 }, content: [t("What happens next")] },
+    p(t("What happens next:", [{ type: "bold" }])),
     {
       type: "bulletList",
       content: [
@@ -26,13 +26,12 @@ const body: JSONContent = {
         },
       ],
     },
-    { type: "blockquote", content: [p(t("The first time I came, I only meant to drop off a form. I stayed for three hours."))] },
     p(t("If anything is unclear, just reply to this email. It comes straight to me.")),
     p(t("Suhanya")),
   ],
 };
 
-/** Saves "draft" a second after typing stops, the way a page using the editor should. */
+/** Demo data only: saves "draft" a second after typing stops, the way a page using the editor should. */
 export function EmailEditorDemo() {
   const [saveState, setSaveState] = React.useState<"idle" | "saving" | "saved">("idle");
   const [fallbacks, setFallbacks] = React.useState<Record<string, string>>({});

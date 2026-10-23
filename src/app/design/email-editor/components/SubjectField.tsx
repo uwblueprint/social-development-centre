@@ -38,6 +38,7 @@ export interface SubjectFieldProps {
   getItems: (query: string) => PersonalizationVariable[];
   onChange: (json: JSONContent, empty: boolean) => void;
   onFocusEditor: (editor: Editor) => void;
+  /** Enter in the subject. Read once when the editor is created, so pass a stable callback. */
   onEnter: () => void;
   invalid?: boolean;
   errorId?: string;
@@ -45,9 +46,8 @@ export interface SubjectFieldProps {
 }
 
 export function SubjectField({ content, getItems, onChange, onFocusEditor, onEnter, invalid, errorId, onReady }: SubjectFieldProps) {
+  const labelId = React.useId();
   const [count, setCount] = React.useState(0);
-  const onEnterRef = React.useRef(onEnter);
-  onEnterRef.current = onEnter;
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -57,13 +57,13 @@ export function SubjectField({ content, getItems, onChange, onFocusEditor, onEnt
       Text,
       PersonalizedText.configure({ getItems }),
       CharacterCount.configure({ limit: EMAIL_LIMITS.subjectMax }),
-      SingleLine.configure({ onEnter: () => onEnterRef.current() }),
+      SingleLine.configure({ onEnter }),
     ],
     content,
     editorProps: {
       attributes: {
         role: "textbox",
-        "aria-labelledby": "email-subject-label",
+        "aria-labelledby": labelId,
         "aria-multiline": "false",
       },
       // Pasted subjects keep only their text, on one line.
@@ -103,7 +103,9 @@ export function SubjectField({ content, getItems, onChange, onFocusEditor, onEnt
   return (
     <div>
       <Row data-invalid={invalid || undefined}>
-        <Label id="email-subject-label">{copy.subjectLabel}</Label>
+        <Label id={labelId} onClick={() => editor?.commands.focus()}>
+          {copy.subjectLabel}
+        </Label>
         <Line>
           <EditorContent editor={editor} />
         </Line>
@@ -147,7 +149,7 @@ const Line = styled.div`
     border-bottom-color: var(--color-border-strong);
   }
   &:focus-within {
-    border-bottom-color: var(--color-brand);
+    border-bottom-color: var(--color-focus);
   }
   [data-invalid] & {
     border-bottom-color: var(--color-danger);
@@ -157,7 +159,6 @@ const Line = styled.div`
     min-height: 32px;
     padding: var(--space-2) 0 var(--space-1);
     outline: none;
-    font-family: var(--font-email);
     font-size: var(--text-md);
     line-height: var(--leading-body);
     white-space: pre;

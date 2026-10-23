@@ -2,15 +2,16 @@
 
 import * as React from "react";
 
+const subscribeNever = () => () => {};
+const detectMac = () => /Mac|iPhone|iPad/i.test(navigator.platform || navigator.userAgent);
+const serverIsMac = () => true;
+
 /**
  * Turns "mod+shift+X" into "⌘⇧X" on a Mac or "Ctrl+Shift+X" elsewhere.
- * Starts as Mac on the server so the first render matches, then corrects on the client.
+ * Renders as Mac on the server so hydration matches, then corrects on the client.
  */
 export function useShortcutLabel() {
-  const [isMac, setIsMac] = React.useState(true);
-  React.useEffect(() => {
-    setIsMac(/Mac|iPhone|iPad/i.test(navigator.platform || navigator.userAgent));
-  }, []);
+  const isMac = React.useSyncExternalStore(subscribeNever, detectMac, serverIsMac);
   return React.useCallback(
     (keys: string) =>
       keys
@@ -34,14 +35,4 @@ export function normalizeUrl(raw: string): string | null {
   } catch {
     return null;
   }
-}
-
-/** Opens the system file picker (the repo's pattern: no <input> in the tree). */
-export function pickFiles(accept: string, onPick: (files: File[]) => void) {
-  const input = document.createElement("input");
-  input.type = "file";
-  input.multiple = true;
-  input.accept = accept;
-  input.addEventListener("change", () => onPick(Array.from(input.files ?? [])));
-  input.click();
 }

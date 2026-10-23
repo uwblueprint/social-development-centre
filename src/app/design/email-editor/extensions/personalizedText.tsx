@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
 import { Tooltip } from "@/components/ui/Tooltip";
-import { BrandButton } from "../components/BrandButton";
 import { emailEditorCopy as copy } from "../copy";
 import { useEmailEditorContext } from "../EmailEditorContext";
 import { GROUP_SUBJECTS, isAvailable, MOMENT_LABELS, variableById, type PersonalizationVariable } from "../variables";
@@ -141,6 +140,7 @@ function VariableChip({ node }: NodeViewProps) {
   const fallback = variable ? (fallbacks[variable.id] ?? variable.fallback) : "";
   const [open, setOpen] = React.useState(false);
   const [draft, setDraft] = React.useState(fallback);
+  const inputId = React.useId();
   const label = `{ ${variable?.label ?? "Unknown detail"} }`;
 
   if (!variable || !available) {
@@ -200,11 +200,11 @@ function VariableChip({ node }: NodeViewProps) {
               save();
             }}
           >
-            <FallbackLabel htmlFor={`fallback-${variable.id}`}>
+            <FallbackLabel htmlFor={inputId}>
               {copy.personalize.fallbackLabel(GROUP_SUBJECTS[variable.group], variable.shortLabel.toLowerCase())}
             </FallbackLabel>
             <Input
-              id={`fallback-${variable.id}`}
+              id={inputId}
               value={draft}
               maxLength={40}
               placeholder={copy.personalize.fallbackPlaceholder}
@@ -215,9 +215,9 @@ function VariableChip({ node }: NodeViewProps) {
               <Button type="button" $variant="ghost" $size="sm" onClick={() => setOpen(false)}>
                 {copy.personalize.cancel}
               </Button>
-              <BrandButton type="submit" $size="sm">
+              <Button type="submit" $size="sm">
                 {copy.personalize.save}
-              </BrandButton>
+              </Button>
             </Actions>
           </FallbackForm>
         </PopoverContent>
@@ -261,8 +261,8 @@ const Chip = styled.span`
 const FallbackForm = styled.form`
   display: grid;
   gap: var(--space-2);
-  font-size: var(--text-2xs);
-  line-height: var(--leading-2xs);
+  font-size: var(--text-xs);
+  line-height: var(--leading-ui);
 `;
 
 const FallbackLabel = styled.label`

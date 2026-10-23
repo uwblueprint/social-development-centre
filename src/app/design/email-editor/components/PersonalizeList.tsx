@@ -43,13 +43,11 @@ export const PersonalizeList = React.forwardRef<PersonalizeListHandle, Personali
     },
   }));
 
-  let lastGroup: string | null = null;
   return (
     <Panel role="listbox" aria-label={copy.toolbar.personalize}>
       {items.length === 0 && <Empty>{copy.personalize.noMatch(query)}</Empty>}
       {items.map((item, i) => {
-        const heading = item.group !== lastGroup && item.group !== "member" ? GROUP_LABELS[item.group] : null;
-        lastGroup = item.group;
+        const heading = item.group !== items[i - 1]?.group && item.group !== "member" ? GROUP_LABELS[item.group] : null;
         return (
           <React.Fragment key={item.id}>
             {heading && <Group>{heading}</Group>}
@@ -84,8 +82,8 @@ const Panel = styled.div`
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
-  font-size: var(--text-2xs);
-  line-height: var(--leading-2xs);
+  font-size: var(--text-xs);
+  line-height: var(--leading-ui);
 `;
 
 const Group = styled.div`
