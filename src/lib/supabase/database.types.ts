@@ -114,7 +114,7 @@ export type Database = {
           left_via: string | null
           link_token: string
           page_key: string
-          person_id: string | null
+          person_id: string
           total_ms: number | null
         }
         Insert: {
@@ -127,7 +127,7 @@ export type Database = {
           left_via?: string | null
           link_token: string
           page_key: string
-          person_id?: string | null
+          person_id: string
           total_ms?: number | null
         }
         Update: {
@@ -140,7 +140,7 @@ export type Database = {
           left_via?: string | null
           link_token?: string
           page_key?: string
-          person_id?: string | null
+          person_id?: string
           total_ms?: number | null
         }
         Relationships: [
