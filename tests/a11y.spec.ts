@@ -23,6 +23,9 @@ function pageRoutes(dir = path.join(process.cwd(), "src", "app"), segments: stri
 const widths = [1280, 320];
 
 async function settle(page: import("@playwright/test").Page) {
+  // /admin redirects on the client, so wait for that second navigation to land before reading the
+  // page: evaluating against a document that is being torn down throws.
+  await page.waitForLoadState("networkidle");
   // Wait for the variable font to finish loading and settle a frame: scanning
   // mid-swap can make axe misjudge text contrast from anti-aliased glyphs.
   await page.evaluate(() => document.fonts.ready);
