@@ -47,6 +47,145 @@ export type Database = {
           },
         ]
       }
+      email_send_changes: {
+        Row: {
+          at: string
+          by_person_id: string | null
+          id: number
+          not_sent_reason: string | null
+          send_id: string
+          status: string
+        }
+        Insert: {
+          at?: string
+          by_person_id?: string | null
+          id?: never
+          not_sent_reason?: string | null
+          send_id: string
+          status: string
+        }
+        Update: {
+          at?: string
+          by_person_id?: string | null
+          id?: never
+          not_sent_reason?: string | null
+          send_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_send_changes_by_person_id_fkey"
+            columns: ["by_person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_send_changes_send_id_fkey"
+            columns: ["send_id"]
+            isOneToOne: false
+            referencedRelation: "email_sends"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_sends: {
+        Row: {
+          attempts: number
+          automatic_email_id: string | null
+          created_at: string
+          edited_at: string | null
+          edited_body: string | null
+          edited_by: string | null
+          edited_subject: string | null
+          email_name: string
+          failed_at: string | null
+          id: string
+          last_error: string | null
+          member_event_id: number | null
+          not_sent_reason: string | null
+          one_off_email_id: string | null
+          person_id: string
+          provider_message_id: string | null
+          send_at: string
+          sent_at: string | null
+          sent_body: string | null
+          sent_subject: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          automatic_email_id?: string | null
+          created_at?: string
+          edited_at?: string | null
+          edited_body?: string | null
+          edited_by?: string | null
+          edited_subject?: string | null
+          email_name: string
+          failed_at?: string | null
+          id?: string
+          last_error?: string | null
+          member_event_id?: number | null
+          not_sent_reason?: string | null
+          one_off_email_id?: string | null
+          person_id: string
+          provider_message_id?: string | null
+          send_at: string
+          sent_at?: string | null
+          sent_body?: string | null
+          sent_subject?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          automatic_email_id?: string | null
+          created_at?: string
+          edited_at?: string | null
+          edited_body?: string | null
+          edited_by?: string | null
+          edited_subject?: string | null
+          email_name?: string
+          failed_at?: string | null
+          id?: string
+          last_error?: string | null
+          member_event_id?: number | null
+          not_sent_reason?: string | null
+          one_off_email_id?: string | null
+          person_id?: string
+          provider_message_id?: string | null
+          send_at?: string
+          sent_at?: string | null
+          sent_body?: string | null
+          sent_subject?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_sends_edited_by_fkey"
+            columns: ["edited_by"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_sends_member_event_id_fkey"
+            columns: ["member_event_id"]
+            isOneToOne: false
+            referencedRelation: "member_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_sends_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       intake_submissions: {
         Row: {
           answers: Json
@@ -76,6 +215,168 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      member_events: {
+        Row: {
+          at: string
+          created_at: string
+          id: number
+          join_emails: boolean | null
+          kind: string
+          person_id: string
+          referral_id: string | null
+          tag_id: string | null
+          tag_name: string | null
+        }
+        Insert: {
+          at: string
+          created_at?: string
+          id?: never
+          join_emails?: boolean | null
+          kind: string
+          person_id: string
+          referral_id?: string | null
+          tag_id?: string | null
+          tag_name?: string | null
+        }
+        Update: {
+          at?: string
+          created_at?: string
+          id?: never
+          join_emails?: boolean | null
+          kind?: string
+          person_id?: string
+          referral_id?: string | null
+          tag_id?: string | null
+          tag_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_events_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_events_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: false
+            referencedRelation: "referrals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_events_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      member_note_revisions: {
+        Row: {
+          body: string
+          id: number
+          note_id: string
+          written_at: string
+          written_by: string | null
+        }
+        Insert: {
+          body: string
+          id?: never
+          note_id: string
+          written_at: string
+          written_by?: string | null
+        }
+        Update: {
+          body?: string
+          id?: never
+          note_id?: string
+          written_at?: string
+          written_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_note_revisions_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: false
+            referencedRelation: "member_notes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_note_revisions_written_by_fkey"
+            columns: ["written_by"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      member_notes: {
+        Row: {
+          body: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          id: string
+          person_id: string
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          person_id: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          person_id?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_notes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_notes_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_notes_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_notes_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       member_tags: {
         Row: {
@@ -206,6 +507,8 @@ export type Database = {
           id: string
           joined_at: string | null
           referred_email: string
+          referred_first_name: string | null
+          referred_last_name: string | null
           referred_id: string | null
           referrer_id: string
         }
@@ -214,6 +517,8 @@ export type Database = {
           id?: string
           joined_at?: string | null
           referred_email: string
+          referred_first_name?: string | null
+          referred_last_name?: string | null
           referred_id?: string | null
           referrer_id: string
         }
@@ -222,6 +527,8 @@ export type Database = {
           id?: string
           joined_at?: string | null
           referred_email?: string
+          referred_first_name?: string | null
+          referred_last_name?: string | null
           referred_id?: string | null
           referrer_id?: string
         }
@@ -236,6 +543,38 @@ export type Database = {
           {
             foreignKeyName: "referrals_referrer_id_fkey"
             columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_events: {
+        Row: {
+          at: string
+          detail: string | null
+          id: number
+          kind: string
+          person_id: string
+        }
+        Insert: {
+          at?: string
+          detail?: string | null
+          id?: never
+          kind: string
+          person_id: string
+        }
+        Update: {
+          at?: string
+          detail?: string | null
+          id?: never
+          kind?: string
+          person_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_events_person_id_fkey"
+            columns: ["person_id"]
             isOneToOne: false
             referencedRelation: "people"
             referencedColumns: ["id"]
@@ -343,7 +682,42 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      member_email_history: {
+        Row: {
+          automatic_email_id: string | null
+          could_not_send: boolean | null
+          edited: boolean | null
+          email_name: string | null
+          not_sent_reason: string | null
+          one_off_email_id: string | null
+          person_id: string | null
+          send_at: string | null
+          send_id: string | null
+          sent_at: string | null
+          started_at: string | null
+          started_by: string | null
+          started_by_tag: string | null
+          status: string | null
+          subject: string | null
+        }
+        Relationships: []
+      }
+      member_timeline: {
+        Row: {
+          at: string | null
+          body: string | null
+          by_person_id: string | null
+          edited: boolean | null
+          email_status: string | null
+          kind: string | null
+          note_id: string | null
+          person_id: string | null
+          referral_id: string | null
+          send_id: string | null
+          tag_name: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       add_admin: {
@@ -359,6 +733,19 @@ export type Database = {
         }
         Returns: string
       }
+      add_members: {
+        Args: { p_join_emails?: boolean; p_joined_at?: string; p_members: Json }
+        Returns: {
+          email: string
+          result: string
+        }[]
+      }
+      add_note: { Args: { p_body: string; p_person_id: string }; Returns: string }
+      add_referral: {
+        Args: { p_email: string; p_full_name?: string; p_referrer_id: string }
+        Returns: string
+      }
+      admin_signed_in_at: { Args: never; Returns: string }
       apply_suppression: { Args: { p_person_id: string }; Returns: undefined }
       can_email: { Args: { p_person_id: string }; Returns: boolean }
       can_sign_in: {
@@ -367,7 +754,12 @@ export type Database = {
       }
       create_tag: { Args: { p_name: string }; Returns: string }
       current_person_id: { Args: never; Returns: string }
+      delete_note: { Args: { p_note_id: string }; Returns: undefined }
       delete_tag: { Args: { p_tag_id: string }; Returns: string }
+      edit_note: {
+        Args: { p_body: string; p_note_id: string }
+        Returns: undefined
+      }
       email_hash: { Args: { p_email: string }; Returns: string }
       import_unsubscribes: {
         Args: { p_emails: string[] }
