@@ -44,7 +44,7 @@ Decisions made while designing the email editor component (subject, message, att
 - The section has no visible heading (owner); screen readers still announce it as Attachments. Errors appear in red above the tiles, and "x/20 MB used" under them.
 
 ## 6. Preview and saving
-- **Preview** is the editor's one button, in SDC green. It looks disabled when the subject or message is empty but stays clickable: clicking shows "Please include a subject." or "Please include a message." under that field. The screen it opens is designed separately (with Automatic Emails); this component only calls `onPreview`.
+- **Preview** is the editor's one button, in SDC green. Its eye icon blinks once on hover, except while Preview is blocked. It looks disabled when the subject or message is empty but stays clickable: clicking shows "Please include a subject." or "Please include a message." under that field. The screen it opens is designed separately (with Automatic Emails); this component only calls `onPreview`.
 - **Drafts autosave** about a second after typing stops, with "Saving…" then "Draft saved" next to Preview. In the Outbox, edits still apply only when the admin presses Update (PRD).
 
 ## 7. Type and spacing in the editor

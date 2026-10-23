@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { styled } from "next-yak";
+import { keyframes, styled } from "next-yak";
 import type { Editor, JSONContent } from "@tiptap/react";
 import { Check, Eye } from "lucide-react";
 import { ErrorIcon } from "@/components/ui/Field";
@@ -268,7 +268,7 @@ export function EmailEditor({
             </SaveStatus>
           )}
           <Tooltip content={previewBlocked ? copy.previewDisabled : copy.preview} pinOnClick={false}>
-            <BrandButton
+            <PreviewButton
               type="button"
               aria-disabled={previewBlocked}
               onClick={() => {
@@ -279,7 +279,7 @@ export function EmailEditor({
             >
               <Icon icon={Eye} size={16} strokeWidth={2} />
               {copy.preview}
-            </BrandButton>
+            </PreviewButton>
           </Tooltip>
         </Actions>
       </Root>
@@ -317,6 +317,21 @@ const Actions = styled.div`
   justify-content: flex-end;
   align-items: center;
   gap: var(--space-3);
+`;
+
+/* The eye blinks once on hover (owner). Not while Preview is blocked; reduced motion is handled globally. */
+const blink = keyframes`
+  0%, 100% { transform: scaleY(1); }
+  45%, 55% { transform: scaleY(0.1); }
+`;
+
+const PreviewButton = styled(BrandButton)`
+  svg {
+    transform-origin: center;
+  }
+  &:hover:not([aria-disabled="true"]) svg {
+    animation: ${blink} var(--duration-slow) var(--ease);
+  }
 `;
 
 const SaveStatus = styled.span`
