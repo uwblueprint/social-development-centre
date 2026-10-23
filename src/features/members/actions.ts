@@ -33,7 +33,7 @@ export async function addMember(_prev: ActionState<NewMember>, formData: FormDat
   if (result === "already_member") {
     return { status: "error", fieldErrors: { email: "This person is already a member." }, data: values };
   }
-  revalidatePath("/admin/community");
+  revalidatePath("/admin/members");
 
   const name = values.fullName || email;
   if ((await sendSignInLink("member", email)) !== "sent") {
@@ -54,6 +54,6 @@ export async function removeMember(personId: string): Promise<ActionState> {
     console.error("remove_member failed:", error.message);
     return { status: "error", message: "We couldn’t remove this member. Try again." };
   }
-  revalidatePath("/admin/community");
+  revalidatePath("/admin/members");
   return { status: "success" };
 }

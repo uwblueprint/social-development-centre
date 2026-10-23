@@ -6,7 +6,7 @@ everything); every write goes through a function. Product decisions: [../decisio
 
 ## People and memberships
 - `people.first_name`, `people.last_name` are stored; `full_name` is generated from them. Functions that
-  still take one name (`add_admin`, `add_member`, `submit_welcome`) split it at the first space.
+  still take one name (`add_admin`, `add_member`) split it at the first space.
 - `memberships.joined_at`: the join date. Defaults to now; `add_member(..., p_joined_at)` backdates a
   new member. Nothing changes it afterwards.
 - `memberships.join_emails`: the admin's "Send join emails" choice when adding (default true). The emails
