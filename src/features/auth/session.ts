@@ -19,17 +19,22 @@ export const getSignedInPerson = cache(async (): Promise<Person | null> => {
 
   const { data, error } = await supabase
     .from("people")
-    .select("id, email, full_name, admins!admins_person_id_fkey(person_id), memberships(person_id)")
+    .select("id, email, full_name, memberships(person_id)")
     .eq("user_id", auth.claims.sub)
     .maybeSingle();
   if (error) throw error;
   if (!data) return null;
 
+  // The database decides who is an admin (is_admin()), including ending admin sessions after 7 days,
+  // so pages, actions and row-level security always agree.
+  const { data: isAdmin, error: adminError } = await supabase.rpc("is_admin");
+  if (adminError) throw adminError;
+
   return {
     id: data.id,
     email: data.email,
     fullName: data.full_name,
-    isAdmin: data.admins !== null,
+    isAdmin: isAdmin === true,
     isMember: data.memberships !== null,
   };
 });

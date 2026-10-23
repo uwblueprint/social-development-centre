@@ -42,7 +42,7 @@ type View =
   | { name: "failed" };
 
 /** `linkError` comes from /auth/confirm when an emailed link didn't work. */
-export function SignIn({ portal, linkError }: { portal: Portal; linkError?: string }) {
+export function SignIn({ portal, linkError, next }: { portal: Portal; linkError?: string; next?: string }) {
   const [view, setView] = useState<View>(
     linkError === "expired" ? { name: "expired" } : linkError ? { name: "failed" } : { name: "form", email: "" },
   );
@@ -61,16 +61,14 @@ export function SignIn({ portal, linkError }: { portal: Portal; linkError?: stri
   const showForm = () => show({ name: "form", email: "" });
 
   async function send(email: string) {
-    const result = await sendSignInLink(portal, email).catch(() => "failed" as const);
+    const result = await sendSignInLink(portal, email, next).catch(() => "failed" as const);
     if (result === "sent") {
       rememberEmail(portal, email);
       show({ name: "sent", email, sentAt: Date.now() });
     } else if (result === "invalid-email") {
       show({ name: "form", email, error: "Invalid email address" });
-    } else if (result === "not-allowed" && portal === "member") {
-      show({ name: "not-member" });
     } else if (result === "not-allowed") {
-      show({ name: "form", email, error: "This email isn’t on the SDC admin list" });
+      show({ name: "not-member" });
     } else {
       show({ name: "failed" });
     }
@@ -80,7 +78,7 @@ export function SignIn({ portal, linkError }: { portal: Portal; linkError?: stri
   return (
     <AuthScreen>
       {view.name === "sent" ? (
-        <CheckEmail email={view.email} sentAt={view.sentAt} onSubmit={submit} />
+        <CheckEmail portal={portal} email={view.email} sentAt={view.sentAt} onSubmit={submit} />
       ) : view.name === "not-member" ? (
         <NotOnMemberList onTryAgain={showForm} />
       ) : view.name === "expired" ? (
@@ -115,13 +113,26 @@ export function SignIn({ portal, linkError }: { portal: Portal; linkError?: stri
   );
 }
 
-function CheckEmail({ email, sentAt, onSubmit }: { email: string; sentAt: number; onSubmit: (formData: FormData) => void }) {
+function CheckEmail({
+  portal,
+  email,
+  sentAt,
+  onSubmit,
+}: {
+  portal: Portal;
+  email: string;
+  sentAt: number;
+  onSubmit: (formData: FormData) => void;
+}) {
   const secondsLeft = useSecondsUntil(sentAt + RESEND_AFTER_MS);
+  // The admin page doesn't say whether the email has access, so it can't reveal who the admins are.
+  const sentTo =
+    portal === "admin" ? "If this email has access, a sign-in link is on its way." : `We sent a sign-in link to ${email}.`;
 
   return (
     <AuthColumn>
       <IconWell icon={MailCheck} tone="brand" />
-      <AuthHeading title="Check your email" description={`We sent a sign-in link to ${email}.\nThe link expires in ${LINK_LIFETIME}.`} />
+      <AuthHeading title="Check your email" description={`${sentTo}\nThe link expires in ${LINK_LIFETIME}.`} />
       <AuthForm action={onSubmit} noValidate>
         <Field label="Email address">
           {(props) => <Input {...props} type="email" name="email" autoComplete="email" defaultValue={email} />}
