@@ -43,3 +43,32 @@ to it yet.
 ## Not here yet
 The sends table (scheduled / waiting for review / sent / not sent, with reasons) belongs to the emails engine
 (see PR #29's `docs/backend/emails-engine.md`). The directory's email history reads it once it exists.
+
+## For Automatic Emails: `member_events`
+Every automatic email trigger is one row in `public.member_events`, written by triggers on
+`memberships`, `referrals` and `tag_events`, so no path can skip or double one. Read this table only.
+
+| `kind` | `person_id` | Automatic email trigger |
+|---|---|---|
+| `joined` | the new member | joins (any way); without a referral when `referral_id` is null; via referral when set |
+| `referred_someone` | the referrer | member refers someone |
+| `referral_joined` | the referrer | member's referral joins |
+| `tag_added` | the tagged member | tag added (`tag_id`, `tag_name`) |
+
+- One send per occurrence: make (automatic email, `member_events.id`) unique on sends.
+- Send date: `at` plus the delay. A backdated join has `at` = the join date.
+- `join_emails = false` on `joined` and `referral_joined`: join triggers don't fire (backfilled members).
+- Adding, removing and re-adding a tag gives two `tag_added` rows. Rejoining after removal gives a
+  new `joined` row without a referral.
+- Personalization: the referred person's name is on `referrals` (`referred_first_name`,
+  `referred_last_name`) until they join, then on `people` via `referrals.referred_id`.
+- Still to wire: `recheck_member(person_id)` is an empty stub called after tag changes; fill it in
+  when sends exist. `delete_tag` must refuse a tag an automatic email uses once that table exists.
+
+## Notes and timeline
+- `member_notes`: `add_note`, `edit_note` (keeps the earlier text in `member_note_revisions`),
+  `delete_note` (hides it; the row stays).
+- `member_timeline`: one member's joins, referrals, tags added and removed, notes, unsubscribe and
+  bounce, for the member page. Email sends join it when they exist.
+- `add_members(jsonb, joined_at, join_emails)`: many at once; returns `added`, `already_member` or
+  `invalid_email` per row.
