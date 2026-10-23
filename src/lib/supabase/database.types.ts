@@ -47,6 +47,36 @@ export type Database = {
           },
         ]
       }
+      intake_submissions: {
+        Row: {
+          answers: Json
+          created_at: string
+          email: string
+          first_name: string
+          last_name: string
+          submission_id: string
+          updated_at: string
+        }
+        Insert: {
+          answers?: Json
+          created_at?: string
+          email: string
+          first_name: string
+          last_name: string
+          submission_id: string
+          updated_at?: string
+        }
+        Update: {
+          answers?: Json
+          created_at?: string
+          email?: string
+          first_name?: string
+          last_name?: string
+          submission_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       member_tags: {
         Row: {
           added_at: string
@@ -311,32 +341,6 @@ export type Database = {
           },
         ]
       }
-      welcome_answers: {
-        Row: {
-          answers: Json
-          person_id: string
-          submitted_at: string
-        }
-        Insert: {
-          answers: Json
-          person_id: string
-          submitted_at?: string
-        }
-        Update: {
-          answers?: Json
-          person_id?: string
-          submitted_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "welcome_answers_person_id_fkey"
-            columns: ["person_id"]
-            isOneToOne: true
-            referencedRelation: "people"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
     Views: {
       [_ in never]: never
@@ -388,8 +392,14 @@ export type Database = {
         Args: { p_full_name: string }
         Returns: Record<string, unknown>
       }
-      submit_welcome: {
-        Args: { p_answers: Json; p_full_name: string }
+      submit_intake: {
+        Args: {
+          p_answers: Json
+          p_email: string
+          p_first_name: string
+          p_last_name: string
+          p_submission_id: string
+        }
         Returns: undefined
       }
       tag_members: {
