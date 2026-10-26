@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/AlertDialog";
 import { Field } from "@/components/ui/Field";
 import { Input } from "@/components/ui/Input";
+import { Label } from "@/components/ui/Label";
 import { Select } from "@/components/ui/Select";
 import { TagInput } from "@/components/ui/TagInput";
 import { Textarea } from "@/components/ui/Textarea";
@@ -42,16 +43,15 @@ const Row = styled.div`
   }
 `;
 
+const Stack = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+`;
+
 /* Keeps a dialog the same size while its toggle switches: hidden fields keep their space. */
 const Reserve = styled.div<{ $shown: boolean }>`
   visibility: ${({ $shown }) => ($shown ? "visible" : "hidden")};
-`;
-
-const ToggleLabel = styled.span`
-  display: block;
-  margin-bottom: var(--space-2);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
 `;
 
 /* Destructive action on the left, Cancel and Save on the right. */
@@ -227,13 +227,13 @@ export function PaymentDialog({
             {(props) => <Select {...props} options={methodOptions} value={method} onValueChange={(v) => setMethod(v as PaymentMethod)} />}
           </Field>
           {!editing && (
-            <div>
-              <ToggleLabel id="pays-for">This pays for</ToggleLabel>
+            <Stack>
+              <Label id="pays-for">This pays for</Label>
               <ToggleGroup type="single" value={forWhom} onValueChange={(v) => v && setForWhom(v as "own" | "other")} aria-labelledby="pays-for">
                 <ToggleGroupItem value="own">Their own membership</ToggleGroupItem>
                 <ToggleGroupItem value="other">Someone else&apos;s</ToggleGroupItem>
               </ToggleGroup>
-            </div>
+            </Stack>
           )}
           {!editing && (
             <Reserve $shown={forWhom === "other"} inert={forWhom !== "other"}>

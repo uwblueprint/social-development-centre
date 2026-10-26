@@ -67,7 +67,7 @@ const Tools = styled.div`
 
 const FilterPanel = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(calc(var(--space-8) * 3), 1fr));
   gap: var(--space-3) var(--space-4);
   padding: var(--space-4);
   border: 1px solid var(--color-border);
@@ -289,7 +289,7 @@ function Directory() {
   const columns: TableColumn<Member>[] = [
     {
       key: "select",
-      width: "48px",
+      width: "var(--space-7)",
       header: (
         <Checkbox
           aria-label="Select all"

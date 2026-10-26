@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/Collapsible";
 import { CreatableCombobox } from "@/components/ui/CreatableCombobox";
 import {
   DropdownMenu,
@@ -73,13 +74,19 @@ const NameRow = styled.div`
 `;
 
 /* Edit and copy appear when the person points at the header, and always on touch screens. */
-const HoverAction = styled.span`
+/*
+ * Controls that appear when the person points at (or tabs into) the nearest `[data-reveal]` area: edit and
+ * copy in the header, edit and delete on notes and payments. Always visible on touch screens.
+ */
+const Reveal = styled.span`
   display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
   opacity: 0;
   transition: opacity var(--duration) var(--ease);
 
-  *:hover > &,
-  &:focus-within {
+  [data-reveal]:hover &,
+  [data-reveal]:focus-within & {
     opacity: 1;
   }
 
@@ -175,19 +182,28 @@ const ItemCard = styled.div<{ $flash?: boolean }>`
     css`
       animation: ${flash} calc(var(--duration-slow) * 6) var(--ease);
     `}
+`;
 
-  & > [data-hover] {
-    opacity: 0;
-    transition: opacity var(--duration) var(--ease);
+/* Notes: plain entries separated by a line, no card per note. */
+const NoteList = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+const NoteRow = styled(ItemCard)`
+  padding: var(--space-3) 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+
+  &:first-child {
+    padding-top: 0;
   }
-  &:hover > [data-hover],
-  &:focus-within > [data-hover] {
-    opacity: 1;
+  &:last-child {
+    padding-bottom: 0;
   }
-  @media (hover: none) {
-    & > [data-hover] {
-      opacity: 1;
-    }
+  & + & {
+    border-top: 1px solid var(--color-border);
   }
 `;
 
@@ -405,25 +421,31 @@ const TimelineDate = styled.time`
 `;
 
 /* An email row spans to the date column, so its preview runs the full width. */
-const EmailDetails = styled.details`
+const EmailCollapsible = styled(Collapsible)`
   grid-column: 2 / 4;
   grid-row: 1;
 
-  & > summary {
-    padding-right: calc(var(--space-8) + var(--space-5));
-    list-style: none;
-    cursor: pointer;
-  }
-  & > summary::-webkit-details-marker {
-    display: none;
-  }
-  &[open] > summary svg {
-    transform: rotate(180deg);
-  }
   & ~ time {
     grid-column: 3;
     grid-row: 1;
     pointer-events: none;
+  }
+`;
+
+const EmailTrigger = styled(CollapsibleTrigger)`
+  all: unset;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding-right: calc(var(--space-8) + var(--space-5));
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+
+  &:focus-visible {
+    box-shadow: var(--focus-ring);
+  }
+  &[data-state="open"] svg {
+    transform: rotate(180deg);
   }
 `;
 
@@ -447,7 +469,7 @@ const EmailPreview = styled.div`
 
 const Details = styled.dl`
   display: grid;
-  grid-template-columns: minmax(0, 10rem) minmax(0, 1fr);
+  grid-template-columns: minmax(0, calc(var(--space-8) * 2.5)) minmax(0, 1fr);
   gap: var(--space-2) var(--space-4);
   margin: 0;
   font-size: var(--text-sm);
@@ -619,18 +641,18 @@ function MemberPanel({
           </DropdownMenu>
         }
       >
-        <Head>
+        <Head data-reveal="">
           <NameRow>
             <SheetTitle>{fullName(m)}</SheetTitle>
-            <HoverAction>
+            <Reveal>
               <IconAction label="Edit details" icon={Pencil} onClick={actions.onEditDetails} />
-            </HoverAction>
+            </Reveal>
           </NameRow>
           <Email>
             {m.email}
-            <HoverAction>
+            <Reveal>
               <IconAction label="Copy email" icon={Copy} onClick={() => actions.onCopy(m.email, "Email copied")} />
-            </HoverAction>
+            </Reveal>
           </Email>
         </Head>
         <TagsRow member={m} tagColors={tagColors} allTags={allTags} onSetTags={actions.onSetTags} />
@@ -697,7 +719,7 @@ function TagsRow({
   const [picker, setPicker] = React.useState(0);
   const options = allTags.filter((t) => !m.tags.includes(t)).map((t) => ({ value: t, label: t }));
   return (
-    <Chips>
+    <Chips data-reveal="">
       <Badge $variant={m.status === "ended" ? "danger" : m.status === "waiting" ? "warning" : "success"}>{statusLabel[m.status]}</Badge>
       <Badge $variant={m.subscribed ? "success" : "danger"}>{m.subscribed ? "Subscribed" : "Unsubscribed"}</Badge>
       {editing
@@ -735,9 +757,9 @@ function TagsRow({
           </Button>
         </>
       ) : (
-        <HoverAction>
+        <Reveal>
           <IconAction label="Edit tags" icon={Pencil} onClick={() => setEditing(true)} />
-        </HoverAction>
+        </Reveal>
       )}
     </Chips>
   );
@@ -751,22 +773,22 @@ function NotesSection({ member: m, actions }: { member: Member; actions: MemberS
         <SectionAction icon={Plus} onClick={actions.onAddNote}>Add</SectionAction>
       </SectionHeader>
       {notes.length ? (
-        <Cards>
+        <NoteList>
           {notes.map((n) => (
-            <ItemCard key={n.id}>
+            <NoteRow key={n.id} data-reveal="">
               <Grow>
                 <NoteText>{n.text}</NoteText>
                 <Meta>
                   {formatDate(n.at)} · {n.by}
                 </Meta>
               </Grow>
-              <SectionActions data-hover="">
+              <Reveal>
                 <IconAction label="Edit note" icon={Pencil} onClick={() => actions.onEditNote(n)} />
                 <IconAction label="Delete note" icon={Trash2} onClick={() => actions.onDeleteNote(n)} />
-              </SectionActions>
-            </ItemCard>
+              </Reveal>
+            </NoteRow>
           ))}
-        </Cards>
+        </NoteList>
       ) : (
         <Muted>Birthdays, family news, what they care about.</Muted>
       )}
@@ -836,7 +858,7 @@ function PaymentsSection({ member: m, flashPaymentId, actions }: { member: Membe
           {payments.map((p) => {
             const extra = [p.giftFor ? `Gift for ${p.giftFor}` : "", p.note ?? ""].filter(Boolean).join(" · ");
             return (
-              <ItemCard key={p.id} $flash={p.id === flashPaymentId}>
+              <ItemCard key={p.id} $flash={p.id === flashPaymentId} data-reveal="">
                 <Grow>
                   <PayTop>
                     <b>{formatMoney(p.amount)}</b>
@@ -845,9 +867,9 @@ function PaymentsSection({ member: m, flashPaymentId, actions }: { member: Membe
                   </PayTop>
                   {extra && <Meta>{extra}</Meta>}
                 </Grow>
-                <SectionActions data-hover="">
+                <Reveal>
                   <IconAction label="Edit payment" icon={Pencil} onClick={() => actions.onEditPayment(p)} />
-                </SectionActions>
+                </Reveal>
               </ItemCard>
             );
           })}
@@ -907,20 +929,22 @@ function ActivityRow({ item: a, colour }: { item: ActivityItem; colour: boolean 
         <Icon icon={ICONS[a.kind]} size={16} />
       </TimelineDot>
       {a.kind === "email" ? (
-        <EmailDetails>
-          <summary>
+        <EmailCollapsible>
+          <EmailTrigger>
             <TimelineTitle>{a.title}</TimelineTitle>
             <TimelineSub>
               {a.detail}
               {a.opened ? " · Opened" : ""}
               <Icon icon={ChevronDown} size={16} />
             </TimelineSub>
-          </summary>
-          <EmailPreview>
+          </EmailTrigger>
+          <CollapsibleContent>
+            <EmailPreview>
             <strong>{a.title}</strong>
             {a.body}
-          </EmailPreview>
-        </EmailDetails>
+            </EmailPreview>
+          </CollapsibleContent>
+        </EmailCollapsible>
       ) : (
         <div>
           <TimelineTitle>{a.title}</TimelineTitle>
