@@ -128,19 +128,17 @@ export async function addMembers(
 }
 
 function parseMemberLine(line: string): { email: string; fullName: string } {
-  const parts = line
-    .replace(/[<>"]/g, " ")
-    .split(/[,\t;]|\s{2,}/)
-    .map((part) => part.trim())
+  const words = line
+    .replace(/mailto:/gi, " ")
+    .replace(/[<>"()[\]]/g, " ")
+    .split(/[\s,;]+/)
+    // Quotes around a word ('jane@x.org') go; apostrophes inside a name (O'Neil) stay.
+    .map((word) => word.replace(/^'+|'+$/g, ""))
     .filter(Boolean);
-  const emailPart = parts.find((part) => normalizeEmail(part)) ?? line.split(/\s+/).find((word) => normalizeEmail(word));
-  if (!emailPart) return { email: line, fullName: "" };
-  const name = parts
-    .filter((part) => part !== emailPart)
-    .join(" ")
-    .replace(emailPart, "")
-    .trim();
-  return { email: normalizeEmail(emailPart)!, fullName: name };
+  const emails = words.filter((word) => normalizeEmail(word));
+  // One member per line. A line with two addresses (or none) is reported back rather than guessed at.
+  if (emails.length !== 1) return { email: line, fullName: "" };
+  return { email: normalizeEmail(emails[0])!, fullName: words.filter((word) => word !== emails[0]).join(" ") };
 }
 
 // ---------- tags ----------
@@ -204,7 +202,11 @@ export async function tagByEmails(
   const wanted = [...new Set(emails.split(/[\s,;]+/).map(normalizeEmail).filter((e): e is string => e !== null))];
   if (wanted.length === 0) return { status: "error", fieldErrors: { emails: "Add at least one email address." } };
   const supabase = await createClient();
-  const { data: people, error } = await supabase.from("people").select("id, email").in("email", wanted);
+  // Members only: an admin's or a removed member's address counts as not found.
+  const { data: people, error } = await supabase
+    .from("people")
+    .select("id, email, memberships!inner(person_id)")
+    .in("email", wanted);
   if (error) return failed("tag lookup", error);
   const found = new Set(people.map((p) => p.email));
   const result = await tagMembers(tagId, people.map((p) => p.id));

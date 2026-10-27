@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { unstable_rethrow } from "next/navigation";
 import { CircleAlert, Clock, MailCheck } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { DisabledArea } from "@/components/ui/DisabledReason";
@@ -85,7 +86,12 @@ export function SignIn({ portal, linkError, next }: { portal: Portal; linkError?
           sentAt={view.sentAt}
           onSubmit={submit}
           onCode={async (code) => {
-            const result = await signInWithCode(portal, view.email, code, next).catch(() => "failed" as const);
+            // A good code redirects, which Next delivers to the client as a rejected promise: rethrow it
+            // so the navigation goes ahead instead of showing the failure screen.
+            const result = await signInWithCode(portal, view.email, code, next).catch((error: unknown) => {
+              unstable_rethrow(error);
+              return "failed" as const;
+            });
             if (result === "failed") show({ name: "failed" });
             return result;
           }}
