@@ -381,7 +381,18 @@ begin
   end if;
 
   if old.status = 'sent' then
-    raise exception 'A sent email can''t change' using errcode = '23514';
+    -- Nothing about a sent email changes, except edited_by emptying when that admin's record is
+    -- deleted (its foreign key), which must not block deleting a person.
+    if (new.id, new.person_id, new.automatic_email_id, new.one_off_email_id, new.email_name, new.member_event_id,
+        new.send_at, new.status, new.not_sent_reason, new.edited_subject, new.edited_body, new.edited_at,
+        new.sent_subject, new.sent_body, new.sent_at, new.provider_message_id)
+      is distinct from
+       (old.id, old.person_id, old.automatic_email_id, old.one_off_email_id, old.email_name, old.member_event_id,
+        old.send_at, old.status, old.not_sent_reason, old.edited_subject, old.edited_body, old.edited_at,
+        old.sent_subject, old.sent_body, old.sent_at, old.provider_message_id) then
+      raise exception 'A sent email can''t change' using errcode = '23514';
+    end if;
+    return new;
   end if;
   -- Not sent is final, except that republishing brings back sends removed by unpublishing.
   if old.status = 'not_sent' and new.status <> 'not_sent'
@@ -390,6 +401,14 @@ begin
   end if;
   if new.status = 'sent' and not public.can_email(new.person_id) then
     raise exception 'This member can''t be emailed' using errcode = '23514';
+  end if;
+  -- Unsubscribe always wins: a send coming back (republished) to someone who can't be emailed stays
+  -- Not sent, with the reason.
+  if new.status in ('scheduled', 'waiting_for_review') and not public.can_email(new.person_id) then
+    new.status := 'not_sent';
+    new.not_sent_reason := case
+      when (select unsubscribed_at from public.people where id = new.person_id) is not null then 'unsubscribed'
+      else 'bounced' end;
   end if;
   if new.status <> 'not_sent' then
     new.not_sent_reason := null;

@@ -28,7 +28,9 @@ export async function sendSignInLink(portal: Portal, input: string, next?: strin
   const { error: sendError } = await emailSignInLink(email, portal, portal === "admin" ? safeAdminPath(next) : undefined);
   if (sendError) {
     console.error("Sign-in email failed:", sendError.code ?? sendError.message);
-    return "failed";
+    // On the admin page a failure would differ from the answer an unknown email gets, so it would
+    // reveal that this email is an admin. Answer the same; the error is in the logs.
+    return portal === "admin" ? "sent" : "failed";
   }
   return "sent";
 }

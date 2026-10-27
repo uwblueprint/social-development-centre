@@ -21,8 +21,9 @@ create or replace function public.is_admin()
 returns boolean
 language sql stable security definer set search_path = ''
 as $$
+  -- coalesce: with no sign-in time at all the answer is no, never NULL (callers test `not is_admin()`).
   select exists (select 1 from public.admins where person_id = public.current_person_id())
-    and public.admin_signed_in_at() > now() - interval '7 days'
+    and coalesce(public.admin_signed_in_at() > now() - interval '7 days', false)
 $$;
 
 revoke execute on function public.admin_signed_in_at() from public, anon;
