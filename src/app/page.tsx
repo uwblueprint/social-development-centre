@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
-import { styled } from "next-yak";
 import { signOut } from "@/app/login/actions";
-import { createClient } from "@/lib/supabase/server";
+import { requireMember } from "@/features/auth/session";
 import { Button } from "@/components/ui/Button";
 
 // Placeholder until the members-only opportunities feed exists.
@@ -11,8 +10,8 @@ export default async function MembersHome() {
 
   return (
     <main>
-      <Heading>Signed in as {profile?.email ?? claims.email}</Heading>
-      <form action={signOut}>
+      <h1>Signed in as {member.email}</h1>
+      <form action={signOut.bind(null, "member")}>
         <Button type="submit" $variant="secondary">Sign out</Button>
       </form>
     </main>

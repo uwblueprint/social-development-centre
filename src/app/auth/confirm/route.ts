@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
   const portal = params.get("portal");
-  const { signInPath, homePath } = portals[isPortal(portal) ? portal : "member"];
+  const { signInPath } = portals[isPortal(portal) ? portal : "member"];
   const redirectTo = (path: string) => NextResponse.redirect(new URL(path, request.url));
 
   const tokenHash = params.get("token_hash");
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
   if (error) {
     // Never put the provider's message in the URL: the sign-in page shows plain copy instead.
     console.error("Sign-in link failed:", error.message);
-    return NextResponse.redirect(`${origin}/login?error=link`);
+    return redirectTo("/login?error=link");
   }
 
   // Link this login to its row in `public.people`, which is what makes the person's role findable
@@ -28,8 +28,8 @@ export async function GET(request: NextRequest) {
     // leaving them signed in with no role.
     console.error("record_sign_in found no person:", linkError?.message ?? "no match");
     await supabase.auth.signOut({ scope: "local" });
-    return NextResponse.redirect(`${origin}/login?error=link`);
+    return redirectTo("/login?error=link");
   }
 
-  return NextResponse.redirect(`${origin}/`);
+  return redirectTo("/");
 }
