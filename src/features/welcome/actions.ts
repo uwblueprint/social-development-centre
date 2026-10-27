@@ -12,7 +12,6 @@ const pageVisitLeaveVias = new Set(["next", "back", "close", "submit"]);
 const maxPageVisitBytes = 64 * 1024;
 
 type PageVisitPayload = {
-  link_token: string;
   page_key: string;
   total_ms: number;
   active_ms: number;
@@ -45,7 +44,6 @@ function isJson(value: unknown, depth = 0): value is Json {
 
 function isPageVisitPayload(value: unknown): value is PageVisitPayload {
   if (!isRecord(value)) return false;
-  if (typeof value.link_token !== "string" || value.link_token.length === 0 || value.link_token.length > 256) return false;
   if (typeof value.page_key !== "string" || value.page_key.length === 0 || value.page_key.length > 128) return false;
   if (!isNonNegativeInteger(value.total_ms) || !isNonNegativeInteger(value.active_ms)) return false;
   if (value.first_answer_ms !== null && !isNonNegativeInteger(value.first_answer_ms)) return false;
@@ -105,7 +103,7 @@ export async function recordPageVisit(input: unknown): Promise<void> {
     const supabase = await createClient();
     const { error } = await supabase.from("page_visits").insert({
       person_id: member.id,
-      link_token: input.link_token,
+      key_id: member.email,
       page_key: input.page_key,
       total_ms: input.total_ms,
       active_ms: input.active_ms,

@@ -112,7 +112,7 @@ export type Database = {
           id: number
           last_answer_ms: number | null
           left_via: string | null
-          link_token: string
+          key_id: string
           page_key: string
           person_id: string
           total_ms: number | null
@@ -125,7 +125,7 @@ export type Database = {
           id?: never
           last_answer_ms?: number | null
           left_via?: string | null
-          link_token: string
+          key_id: string
           page_key: string
           person_id: string
           total_ms?: number | null
@@ -138,7 +138,7 @@ export type Database = {
           id?: never
           last_answer_ms?: number | null
           left_via?: string | null
-          link_token?: string
+          key_id?: string
           page_key?: string
           person_id?: string
           total_ms?: number | null

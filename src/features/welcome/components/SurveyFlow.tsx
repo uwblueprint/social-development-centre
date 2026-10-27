@@ -253,7 +253,7 @@ export function SurveyFlow({ email, initialName }: { email: string; initialName:
   const [submissionId] = useState(() => crypto.randomUUID());
   const router = useRouter();
   const firstRender = useRef(true);
-  const pageMetrics = usePageVisitMetrics({ linkToken: submissionId, pageKey: step });
+  const pageMetrics = usePageVisitMetrics({ pageKey: step });
 
   const set = <K extends keyof SurveyAnswers>(key: K, value: SurveyAnswers[K]) => {
     if (key === "topics" || key === "ways" || key === "location" || key === "time") {

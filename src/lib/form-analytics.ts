@@ -21,7 +21,6 @@ type PageVisitAnswer = {
 };
 
 type PageVisitPayload = {
-  link_token: string;
   page_key: string;
   total_ms: number;
   active_ms: number;
@@ -32,7 +31,6 @@ type PageVisitPayload = {
 };
 
 type PageVisitMetricsOptions = {
-  linkToken: string;
   pageKey: string;
 };
 
@@ -45,10 +43,7 @@ class PageVisitMetrics {
   private answers: PageVisitAnswer[] = [];
   private finished = false;
 
-  constructor(
-    private readonly linkToken: string,
-    private readonly pageKey: string,
-  ) {
+  constructor(private readonly pageKey: string) {
     document.addEventListener("visibilitychange", this.onVisibilityChange);
     window.addEventListener("pagehide", this.onPageHide);
   }
@@ -81,7 +76,6 @@ class PageVisitMetrics {
     if (this.activeSince !== null) this.activeMs += now - this.activeSince;
 
     const payload: PageVisitPayload = {
-      link_token: this.linkToken,
       page_key: this.pageKey,
       total_ms: Math.round(now - this.enteredAt),
       active_ms: Math.round(this.activeMs),
@@ -118,11 +112,11 @@ class PageVisitMetrics {
   }
 }
 
-export function usePageVisitMetrics({ linkToken, pageKey }: PageVisitMetricsOptions) {
+export function usePageVisitMetrics({ pageKey }: PageVisitMetricsOptions) {
   const metricsRef = useRef<PageVisitMetrics | null>(null);
 
   useEffect(() => {
-    const metrics = new PageVisitMetrics(linkToken, pageKey);
+    const metrics = new PageVisitMetrics(pageKey);
     metricsRef.current = metrics;
 
     return () => {
@@ -130,7 +124,7 @@ export function usePageVisitMetrics({ linkToken, pageKey }: PageVisitMetricsOpti
         if (metricsRef.current === metrics) void metrics.finish("close");
       });
     };
-  }, [linkToken, pageKey]);
+  }, [pageKey]);
 
   return {
     recordAnswer(questionKey: string, value: AnalyticsValue) {
