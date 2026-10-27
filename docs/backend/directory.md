@@ -93,3 +93,20 @@ The sending worker writes it with the service role; admins only read.
   the current state).
 - `add_members(jsonb, joined_at, join_emails)`: many at once; returns `added`, `already_member` or
   `invalid_email` per row.
+
+## App code (`src/features/members/`)
+The contract the directory screens build against. Types in `types.ts`.
+
+- Reads (`queries.ts`): `listMembers()` (with tags, join date, subscription), `getMember(id)` (everything on the
+  member page: tags, referrals, who referred them, notes, timeline, email history), `listTags()` (with member
+  counts), `getNoteRevisions(noteId)`.
+- Writes (`actions.ts`, each returns `ActionState`):
+  - `addMember` (form: `fullName`, `email`, optional `joinedAt` YYYY-MM-DD and `joinEmails`), `addMembers`
+    (form: `members`, one per line as "Name, email", "Name <email>" or "email"; reports added, already
+    members and lines that weren't emails; sends no sign-in links), `removeMember`.
+  - Tags: `createTag`, `renameTag`, `deleteTag`, `tagMembers`, `untagMembers`, `tagByEmails` (paste a list:
+    the "30 people came to the event" case).
+  - Notes: `addNote`, `editNote` (keeps the earlier text), `deleteNote` (hides it).
+  - `addReferral`, `unsubscribeMember`, `importUnsubscribes`.
+- Dates from forms are YYYY-MM-DD and mean the start of that day in Waterloo Region.
+
