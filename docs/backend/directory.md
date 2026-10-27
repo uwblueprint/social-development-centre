@@ -110,3 +110,21 @@ The contract the directory screens build against. Types in `types.ts`.
   - `addReferral`, `unsubscribeMember`, `importUnsubscribes`.
 - Dates from forms are YYYY-MM-DD and mean the start of that day in Waterloo Region.
 
+
+## Links: who acted, from which email
+Every email carries its own token (`email_links`), so a click says who it was and which email it came from.
+
+- Every send gets one automatically. For emails sent outside the platform (a Mailchimp merge field),
+  `createOutsideLinks(personIds, label)` makes one per person and returns their intake, unsubscribe
+  and referral URLs.
+- URLs (`src/features/links/urls.ts`): intake `/intake-form?t=<token>`, unsubscribe `/unsubscribe/<token>`,
+  referral `/refer/<token>`. The last two pages aren't built yet; their paths skip sign-in already.
+- No sign-in on these pages; the token is the proof. Functions callable with the public key:
+  `open_link(token, page)` (logs the open, returns the first name for a greeting),
+  `unsubscribe_by_link`, `resubscribe_by_link` (record which email it came from on
+  `subscription_events.send_id`), `refer_by_link(token, email, full_name)` (the referrer is whoever the
+  link was for), `submit_intake(..., p_link_token)` (attributes the submission: `intake_submissions.person_id`).
+- `link_events` logs every open and action per token. Intake opens and submissions show on the member
+  timeline.
+- Intake analytics: key per-person logs on the same token. `/intake-form` passes it to `IntakeForm` as
+  `linkToken` (only when it's a real token); the open link has none and stays anonymous.

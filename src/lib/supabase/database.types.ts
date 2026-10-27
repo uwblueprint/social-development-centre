@@ -47,6 +47,55 @@ export type Database = {
           },
         ]
       }
+      email_links: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          label: string | null
+          person_id: string
+          send_id: string | null
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          label?: string | null
+          person_id: string
+          send_id?: string | null
+          token?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          label?: string | null
+          person_id?: string
+          send_id?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_links_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_links_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_links_send_id_fkey"
+            columns: ["send_id"]
+            isOneToOne: true
+            referencedRelation: "email_sends"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_send_changes: {
         Row: {
           at: string
@@ -193,6 +242,8 @@ export type Database = {
           email: string
           first_name: string
           last_name: string
+          link_token: string | null
+          person_id: string | null
           submission_id: string
           updated_at: string
         }
@@ -202,6 +253,8 @@ export type Database = {
           email: string
           first_name: string
           last_name: string
+          link_token?: string | null
+          person_id?: string | null
           submission_id: string
           updated_at?: string
         }
@@ -211,10 +264,41 @@ export type Database = {
           email?: string
           first_name?: string
           last_name?: string
+          link_token?: string | null
+          person_id?: string | null
           submission_id?: string
           updated_at?: string
         }
         Relationships: []
+      }
+      link_events: {
+        Row: {
+          at: string
+          id: number
+          kind: string
+          token: string
+        }
+        Insert: {
+          at?: string
+          id?: never
+          kind: string
+          token: string
+        }
+        Update: {
+          at?: string
+          id?: never
+          kind?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "link_events_token_fkey"
+            columns: ["token"]
+            isOneToOne: false
+            referencedRelation: "email_links"
+            referencedColumns: ["token"]
+          },
+        ]
       }
       member_events: {
         Row: {
@@ -506,30 +590,33 @@ export type Database = {
           created_at: string
           id: string
           joined_at: string | null
+          link_token: string | null
           referred_email: string
           referred_first_name: string | null
-          referred_last_name: string | null
           referred_id: string | null
+          referred_last_name: string | null
           referrer_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           joined_at?: string | null
+          link_token?: string | null
           referred_email: string
           referred_first_name?: string | null
-          referred_last_name?: string | null
           referred_id?: string | null
+          referred_last_name?: string | null
           referrer_id: string
         }
         Update: {
           created_at?: string
           id?: string
           joined_at?: string | null
+          link_token?: string | null
           referred_email?: string
           referred_first_name?: string | null
-          referred_last_name?: string | null
           referred_id?: string | null
+          referred_last_name?: string | null
           referrer_id?: string
         }
         Relationships: [
@@ -556,6 +643,7 @@ export type Database = {
           id: number
           kind: string
           person_id: string
+          send_id: string | null
         }
         Insert: {
           at?: string
@@ -563,6 +651,7 @@ export type Database = {
           id?: never
           kind: string
           person_id: string
+          send_id?: string | null
         }
         Update: {
           at?: string
@@ -570,6 +659,7 @@ export type Database = {
           id?: never
           kind?: string
           person_id?: string
+          send_id?: string | null
         }
         Relationships: [
           {
@@ -752,6 +842,14 @@ export type Database = {
         Args: { p_email: string; p_portal: string }
         Returns: boolean
       }
+      create_outside_links: {
+        Args: { p_label: string; p_person_ids: string[] }
+        Returns: {
+          email: string
+          person_id: string
+          token: string
+        }[]
+      }
       create_tag: { Args: { p_name: string }; Returns: string }
       current_person_id: { Args: never; Returns: string }
       delete_note: { Args: { p_note_id: string }; Returns: undefined }
@@ -770,15 +868,26 @@ export type Database = {
         }[]
       }
       is_admin: { Args: never; Returns: boolean }
+      open_link: {
+        Args: { p_page: string; p_token: string }
+        Returns: {
+          first_name: string
+        }[]
+      }
       recheck_member: { Args: { p_person_id: string }; Returns: undefined }
       record_email_event: {
         Args: { p_detail?: string; p_email: string; p_kind: string }
         Returns: undefined
       }
       record_sign_in: { Args: never; Returns: boolean }
+      refer_by_link: {
+        Args: { p_email: string; p_full_name: string; p_token: string }
+        Returns: string
+      }
       remove_admin: { Args: { p_person_id: string }; Returns: string }
       remove_member: { Args: { p_person_id: string }; Returns: undefined }
       rename_tag: { Args: { p_name: string; p_tag_id: string }; Returns: string }
+      resubscribe_by_link: { Args: { p_token: string }; Returns: string }
       resubscribe_by_token: { Args: { p_token: string }; Returns: string }
       split_name: {
         Args: { p_full_name: string }
@@ -790,6 +899,7 @@ export type Database = {
           p_email: string
           p_first_name: string
           p_last_name: string
+          p_link_token?: string
           p_submission_id: string
         }
         Returns: undefined
@@ -798,6 +908,7 @@ export type Database = {
         Args: { p_person_ids: string[]; p_tag_id: string }
         Returns: number
       }
+      unsubscribe_by_link: { Args: { p_token: string }; Returns: string }
       unsubscribe_by_token: { Args: { p_token: string }; Returns: string }
       unsubscribe_member: { Args: { p_person_id: string }; Returns: undefined }
       untag_members: {

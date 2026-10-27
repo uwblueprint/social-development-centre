@@ -1,7 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { sendSignInLink } from "@/features/auth/actions";
+import { linkPaths } from "@/features/links/urls";
 import { requireAdmin } from "@/features/auth/session";
 import { normalizeEmail } from "@/lib/email";
 import type { ActionState } from "@/lib/forms";
@@ -290,4 +292,35 @@ export async function importUnsubscribes(
   if (error) return failed("import_unsubscribes", error);
   refresh();
   return { status: "success", data: data[0] };
+}
+
+// ---------- links for emails sent elsewhere ----------
+
+export interface OutsideLink {
+  email: string;
+  intakeUrl: string;
+  unsubscribeUrl: string;
+  referralUrl: string;
+}
+
+/**
+ * One personal link per member for an email sent outside the platform (e.g. a Mailchimp merge field
+ * for the Ride for Refuge pilot), so their clicks are still attributed. `label` says what it was for.
+ */
+export async function createOutsideLinks(personIds: string[], label: string): Promise<ActionState<OutsideLink[]>> {
+  await requireAdmin();
+  if (!label.trim()) return { status: "error", fieldErrors: { label: "Say what these links are for." } };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("create_outside_links", { p_person_ids: personIds, p_label: label });
+  if (error) return failed("create_outside_links", error);
+  const origin = (await headers()).get("origin") ?? "";
+  return {
+    status: "success",
+    data: data.map(({ email, token }) => ({
+      email,
+      intakeUrl: origin + linkPaths.intake(token),
+      unsubscribeUrl: origin + linkPaths.unsubscribe(token),
+      referralUrl: origin + linkPaths.referral(token),
+    })),
+  };
 }
