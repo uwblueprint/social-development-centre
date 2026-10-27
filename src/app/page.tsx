@@ -1,10 +1,21 @@
+import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { signOut } from "@/features/auth/actions";
 import { AuthActions, AuthColumn, AuthHeading, AuthScreen, SdcLogo } from "@/features/auth/AuthScreen";
-import { requireMember } from "@/features/auth/session";
+import { getSignedInPerson, requireMember } from "@/features/auth/session";
 
-// Placeholder until the members-only opportunities feed exists.
-export default async function MembersHome() {
+/**
+ * The front door. Admins go to the admin portal, where everything they do lives. Members get the
+ * members' area (a placeholder until the member portal exists). The proxy has already sent anyone
+ * without a session to `/login`.
+ *
+ * The public intake form at `/intake-form` is reached by its own link, not from here.
+ */
+export default async function Home() {
+  // Without Supabase credentials (local UI work) there's no session to read; the admin portal has its
+  // own placeholder admin for that case.
+  if (process.env.NODE_ENV !== "production" && !process.env.NEXT_PUBLIC_SUPABASE_URL) redirect("/admin");
+  if ((await getSignedInPerson())?.isAdmin) redirect("/admin");
   const member = await requireMember();
 
   return (
