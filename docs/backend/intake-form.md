@@ -7,7 +7,7 @@ The form is **open to anyone with the link** — no sign-in, no session. So ever
 including the person's name and email, comes from the browser and is treated as untrusted.
 
 ## Storage
-`public.intake_submissions`, created by `supabase/migrations/20261022000000_intake_submissions.sql`.
+`public.intake_submissions`, created by `supabase/migrations/20261022142839_intake_submissions.sql`.
 
 | Column | Type | Notes |
 |---|---|---|

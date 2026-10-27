@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { portals, safeAdminPath, signInPathFor } from "@/features/auth/portals";
 
 export async function updateSession(request: NextRequest) {
   // Lets people work on UI locally without Supabase credentials; production always enforces auth.
@@ -30,35 +31,19 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
+  // Signed-out visitors go to their portal's sign-in page. Pages still check roles themselves.
   const { data } = await supabase.auth.getClaims();
-  const { pathname } = request.nextUrl;
-
-  if (!data?.claims && !isPublic(pathname)) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
+  const signInPath = signInPathFor(request.nextUrl.pathname);
+  if (!data?.claims && signInPath) {
+    const url = new URL(signInPath, request.url);
+    // Admins come back to the page they asked for after signing in.
+    const next = request.nextUrl.pathname + request.nextUrl.search;
+    if (signInPath === portals.admin.signInPath && safeAdminPath(next) && next !== portals.admin.homePath) {
+      url.searchParams.set("next", next);
+    }
     return NextResponse.redirect(url);
   }
 
   return supabaseResponse;
 }
 
-/**
- * Pages that work without a session: the sign-in page, the sign-in link's landing route, and the
- * intake form, which is deliberately open to anyone with the link (docs/decisions/intake-form.md).
- *
- * Static files under `public/` are public too. They are not secrets, and gating them breaks the
- * pages above: `next/image` fetches the file back through this proxy, gets the redirect to /login
- * instead of a PNG and renders nothing, so the intake letter loses both its logos and the 404 loses
- * its illustration. The matcher already skips `_next/static` and `favicon.ico` for the same reason;
- * these are the rest.
- */
-const PUBLIC_ASSETS = ["/brand/", "/illustrations/"];
-
-function isPublic(pathname: string): boolean {
-  return (
-    pathname.startsWith("/login") ||
-    pathname.startsWith("/auth") ||
-    pathname.startsWith("/intake-form") ||
-    PUBLIC_ASSETS.some((prefix) => pathname.startsWith(prefix))
-  );
-}
