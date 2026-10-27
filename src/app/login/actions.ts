@@ -55,7 +55,7 @@ export async function signIn(_prev: SignInResult, formData: FormData): Promise<S
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithOtp({
     email,
-    options: { emailRedirectTo: `${origin}/auth/confirm` },
+    options: { emailRedirectTo: `${origin}/auth/confirm?portal=member` },
   });
 
   if (error) {
