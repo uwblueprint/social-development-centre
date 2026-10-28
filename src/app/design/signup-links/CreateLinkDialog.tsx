@@ -7,7 +7,7 @@ import { Dialog, DialogActions, DialogContent, DialogTitle } from "@/components/
 import { Field } from "@/components/ui/Field";
 import { Input } from "@/components/ui/Input";
 import { uniqueSlug, type SignupLink } from "./data";
-import { LinkDetails } from "./LinkDetails";
+import { LinkModalContent } from "./modal-versions";
 
 const Body = styled.div`
   display: flex;
@@ -55,13 +55,10 @@ export function CreateLinkDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent aria-describedby={undefined}>
-        {created ? (
-          <>
-            <DialogTitle>{created.name}</DialogTitle>
-            <LinkDetails link={created} onDone={() => onOpenChange(false)} />
-          </>
-        ) : (
+      {created ? (
+        <LinkModalContent link={created} onDone={() => onOpenChange(false)} />
+      ) : (
+        <DialogContent aria-describedby={undefined}>
           <form onSubmit={submit} noValidate>
             <DialogTitle>Create link</DialogTitle>
             <Body>
@@ -84,8 +81,8 @@ export function CreateLinkDialog({
               <Button type="submit">Create link</Button>
             </DialogActions>
           </form>
-        )}
-      </DialogContent>
+        </DialogContent>
+      )}
     </Dialog>
   );
 }

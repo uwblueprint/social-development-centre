@@ -16,6 +16,7 @@ import type { TableColumn, TableSort } from "@/components/ui/Table";
 - `rows`: `T[]`.
 - `getRowId`: `(row: T) => string` — stable React key per row.
 - `onRowClick?`: `(row: T) => void` — makes the whole row open a detail view; the row becomes keyboard-focusable and `Enter` activates it, same as a click. Omit it for a plain, non-interactive table.
+- `rowFocusable?`: default `true`. With `onRowClick`, `false` leaves the row without a tab stop or Enter handler so it only takes the mouse click. Use it when the row holds its own focusable control that opens the same thing (a name `Button` stretched over the row with a `::after`), so each row has exactly one tab stop. Other controls in such a row (a Copy button) must call `event.stopPropagation()` in their `onClick` so they don't also trigger the row.
 - `sticky?`: keeps the header row visible while the body scrolls — wrap `Table` in a container with its own `max-height` and `overflow-y: auto`.
 - `empty?`: rendered in place of the table when `rows` is empty (e.g. an `EmptyState`).
 - `emptyBelowHeader?`: with no rows, keeps the column headings and shows `empty` below them instead of replacing the table.
@@ -119,7 +120,9 @@ Show the chosen sort at once (`useListSort` does this optimistically) so the spi
 `stickyColumns={n}` keeps the first `n` columns (header and cells) in place while the rest scroll sideways, with the table background behind them. Columns only freeze when the table is actually wider than its container; a table that fits behaves like any other. The 1px `--color-border` divider and a soft `--shadow-edge` shadow after the last frozen column appear only while the table is scrolled sideways (the wrapper's `data-scrolled`, set on scroll), so an unscrolled table has no extra line. Freeze what identifies a row, usually the name (1) or name and organization (2), never more. Below 600px only the first column freezes, so frozen columns never fill a phone screen. It works with `sticky` (the header row stays up too). Row focus rings are drawn inside the cells, so the scroll container never clips them.
 
 ## Hover
-Row hover is pure CSS on every cell (`tbody tr:hover > td`, frozen cells included) with no transition and no script, so the whole row highlights in the same frame. Don't add a hover transition to rows or cells: frozen cells paint their own background, and a transition makes them lag behind the rest of the row.
+Row hover is pure CSS on every cell (`tbody tr:is(:hover, :focus-within) > td`, frozen cells included) with no transition and no script, so the whole row highlights in the same frame. Don't add a hover transition to rows or cells: frozen cells paint their own background, and a transition makes them lag behind the rest of the row.
+
+At rest the text and the inset dividers sit on the page edges. On hover or `:focus-within` the row becomes a box: the `--color-bg-hover` fill, a 1px `--color-border` outline that runs the full width of the fill (`--space-3` past the text on both sides), and `--radius-sm` (4px) corners. The outline is drawn on the cells' `::before`, so it never shifts layout; the next row's divider and, for the first row, the header line are hidden while the box is showing so they don't double up against its edges. The table uses `border-collapse: separate` (no spacing) so the end cells can take the radius.
 
 ## Content rules
 Header labels are short nouns in sentence case ("Date added", not "DATE ADDED"). A cell with no value reads as muted placeholder text ("No name"), never a blank cell — a blank cell reads as missing data, not "not set".

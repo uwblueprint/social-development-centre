@@ -124,6 +124,12 @@ export interface TableProps<T> {
   getRowId: (row: T) => string;
   /** Makes the whole row open a detail view: focusable, and Enter activates it, same as a click. */
   onRowClick?: (row: T) => void;
+  /**
+   * Default true: a row with `onRowClick` is a tab stop and Enter activates it. Pass false when the row
+   * holds its own focusable control that does the same thing (a name button stretched over the row);
+   * the row then only takes the mouse click.
+   */
+  rowFocusable?: boolean;
   /** Keeps the header row visible while the body scrolls. Wrap the table in a container with its own `max-height` and `overflow-y: auto`. */
   sticky?: boolean;
   /** Rendered instead of the table when `rows` is empty (e.g. an `EmptyState`). */
@@ -229,7 +235,9 @@ const StyledTable = styled.table`
   /* Below this, columns are squeezed unreadably; the wrapper scrolls
      horizontally instead (rule: a pointer/touch path at 360px). */
   min-width: 560px;
-  border-collapse: collapse;
+  /* Separate (with no spacing) so the hovered row's end cells can take a corner radius. */
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: var(--text-sm);
 
   /* When every column has a fixed width, the table uses fixed layout (data-fixed). */
@@ -251,8 +259,13 @@ const StyledTable = styled.table`
    * Row hover is pure CSS on every cell (frozen ones too), with no transition, so the whole row
    * highlights in the same frame.
    */
-  tbody tr:hover > td {
+  tbody tr:is(:hover, :focus-within) > td {
     background: var(--color-bg-hover);
+  }
+
+  /* The header line sits right above the first row; the first row's box draws that edge instead. */
+  &:has(tbody tr:first-child:is(:hover, :focus-within)) th::after {
+    background: transparent;
   }
 
 `;
@@ -796,6 +809,52 @@ const Row = styled.tr<{ $clickable?: boolean }>`
     right: var(--space-3);
   }
 
+  /*
+   * Hover and focus-within turn the row into a box: the hover fill, a 1px --color-border outline that
+   * runs the full width of the fill (12px past the text), and --radius-sm corners. The outline is the
+   * cells' ::before (the divider's slot), so nothing shifts, and the next row's divider is hidden so
+   * it doesn't double up against the box's bottom edge.
+   */
+  &:is(:hover, :focus-within) > td::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    height: auto;
+    background: transparent;
+    border-style: solid;
+    border-color: var(--color-border);
+    border-width: 1px 0;
+    pointer-events: none;
+  }
+
+  &:is(:hover, :focus-within) > td:first-child::before {
+    left: 0;
+    border-left-width: 1px;
+    border-top-left-radius: var(--radius-sm);
+    border-bottom-left-radius: var(--radius-sm);
+  }
+
+  &:is(:hover, :focus-within) > td:last-child::before {
+    right: 0;
+    border-right-width: 1px;
+    border-top-right-radius: var(--radius-sm);
+    border-bottom-right-radius: var(--radius-sm);
+  }
+
+  &:is(:hover, :focus-within) > td:first-child {
+    border-top-left-radius: var(--radius-sm);
+    border-bottom-left-radius: var(--radius-sm);
+  }
+
+  &:is(:hover, :focus-within) > td:last-child {
+    border-top-right-radius: var(--radius-sm);
+    border-bottom-right-radius: var(--radius-sm);
+  }
+
+  &:is(:hover, :focus-within) + tr > td::before {
+    background: transparent;
+  }
+
   ${({ $clickable }) =>
     $clickable &&
     css`
@@ -863,6 +922,7 @@ export function Table<T>({
   rows,
   getRowId,
   onRowClick,
+  rowFocusable = true,
   sticky,
   empty,
   emptyBelowHeader,
@@ -993,10 +1053,10 @@ export function Table<T>({
               <Row
                 key={id}
                 $clickable={clickable}
-                tabIndex={clickable ? 0 : undefined}
+                tabIndex={clickable && rowFocusable ? 0 : undefined}
                 onClick={clickable ? () => onRowClick(row) : undefined}
                 onKeyDown={
-                  clickable
+                  clickable && rowFocusable
                     ? (event) => {
                         if (event.key === "Enter") {
                           event.preventDefault();

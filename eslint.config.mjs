@@ -74,7 +74,7 @@ const eslintConfig = defineConfig([
     files: ["src/components/ui/tokens.ts"],
     rules: { "@typescript-eslint/no-unused-expressions": "off" },
   },
-  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", "playwright-report/**", "test-results/**", ".claude/worktrees/**"]),
+  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", "playwright-report/**", "test-results/**"]),
 ]);
 
 export default eslintConfig;

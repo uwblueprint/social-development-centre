@@ -2,10 +2,10 @@
 
 import * as React from "react";
 import { styled } from "next-yak";
-import { Copy, Link2, Plus, QrCode } from "lucide-react";
+import { Copy, Download, Link2, Plus } from "lucide-react";
 import { ListPage, ListPageHeader } from "@/components/patterns/ListPage";
 import { Button } from "@/components/ui/Button";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/Dialog";
+import { Dialog } from "@/components/ui/Dialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Icon } from "@/components/ui/Icon";
 import { List, ListRow } from "@/components/ui/ListRow";
@@ -14,8 +14,10 @@ import { AppToastProvider } from "@/components/ui/Toast";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { TruncatedText } from "@/components/ui/TruncatedText";
 import { CreateLinkDialog } from "./CreateLinkDialog";
-import { LinkDetails, useCopyLink } from "./LinkDetails";
+import { downloadSignupLinksCsv } from "./csv";
 import { conversion, type SignupLink } from "./data";
+import { LinkModalContent, ModalVersionProvider } from "./modal-versions";
+import { useCopyLink } from "./modal-versions/useLinkActions";
 
 const Number = styled.span`
   font-variant-numeric: tabular-nums;
@@ -66,10 +68,35 @@ const CardStats = styled.span`
   font-variant-numeric: tabular-nums;
 `;
 
-export function SignupLinksPage({ initialLinks }: { initialLinks: SignupLink[] }) {
+/**
+ * The name is the row's one tab stop: Enter or Space opens the link dialog. A click anywhere else on
+ * the row opens it too (the Table's onRowClick). Text-like, so it is the ghost variant with its box
+ * taken away; the row's hover box does the hovering.
+ */
+const NameButton = styled(Button)`
+  display: block;
+  width: 100%;
+  height: auto;
+  padding: 0;
+  overflow: hidden;
+  text-align: left;
+  font-size: inherit;
+  line-height: inherit;
+  border-radius: var(--radius-sm);
+
+  &:hover:not(:disabled),
+  &:active:not(:disabled) {
+    background: transparent;
+    transform: none;
+  }
+`;
+
+export function SignupLinksPage({ initialLinks, modal }: { initialLinks: SignupLink[]; modal?: string }) {
   return (
     <AppToastProvider>
-      <Links initialLinks={initialLinks} />
+      <ModalVersionProvider initial={modal}>
+        <Links initialLinks={initialLinks} />
+      </ModalVersionProvider>
     </AppToastProvider>
   );
 }
@@ -88,7 +115,16 @@ function Links({ initialLinks }: { initialLinks: SignupLink[] }) {
   }
 
   const columns: TableColumn<SignupLink>[] = [
-    { key: "name", header: "Name", width: "400px", render: (l) => <TruncatedText tooltip>{l.name}</TruncatedText> },
+    {
+      key: "name",
+      header: "Name",
+      width: "400px",
+      render: (l) => (
+        <NameButton type="button" $variant="ghost" onClick={() => setQrLink(l)}>
+          <TruncatedText tooltip>{l.name}</TruncatedText>
+        </NameButton>
+      ),
+    },
     { key: "clicks", header: "Clicks", width: "120px", render: (l) => <Number>{l.clicks.toLocaleString("en-CA")}</Number> },
     { key: "joins", header: "Joins", width: "120px", render: (l) => <Number>{l.joins.toLocaleString("en-CA")}</Number> },
     { key: "conversion", header: "Conversion", width: "144px", render: (l) => <Number>{conversion(l)}</Number> },
@@ -99,13 +135,17 @@ function Links({ initialLinks }: { initialLinks: SignupLink[] }) {
       render: (l) => (
         <Actions>
           <Tooltip content="Copy link" pinOnClick={false}>
-            <Button type="button" $variant="ghost" $size="sm" aria-label="Copy link" onClick={() => copyLink(l)}>
+            <Button
+              type="button"
+              $variant="ghost"
+              $size="sm"
+              aria-label="Copy link"
+              onClick={(event) => {
+                event.stopPropagation();
+                copyLink(l);
+              }}
+            >
               <Icon icon={Copy} />
-            </Button>
-          </Tooltip>
-          <Tooltip content="QR code" pinOnClick={false}>
-            <Button type="button" $variant="ghost" $size="sm" aria-label="QR code" onClick={() => setQrLink(l)}>
-              <Icon icon={QrCode} />
             </Button>
           </Tooltip>
         </Actions>
@@ -131,10 +171,16 @@ function Links({ initialLinks }: { initialLinks: SignupLink[] }) {
       <ListPageHeader
         title="Signup links"
         actions={
-          <Button type="button" onClick={openCreate}>
-            <Icon icon={Plus} />
-            Create link
-          </Button>
+          <>
+            <Button type="button" $variant="secondary" onClick={() => downloadSignupLinksCsv(links)}>
+              <Icon icon={Download} />
+              Export CSV
+            </Button>
+            <Button type="button" onClick={openCreate}>
+              <Icon icon={Plus} />
+              Create link
+            </Button>
+          </>
         }
       />
       <DesktopOnly>
@@ -145,6 +191,8 @@ function Links({ initialLinks }: { initialLinks: SignupLink[] }) {
           aria-label="Signup links"
           empty={empty}
           emptyBelowHeader
+          onRowClick={setQrLink}
+          rowFocusable={false}
         />
       </DesktopOnly>
       <MobileOnly>
@@ -173,14 +221,7 @@ function Links({ initialLinks }: { initialLinks: SignupLink[] }) {
         onCreate={(link) => setLinks((current) => [link, ...current])}
       />
       <Dialog open={qrLink !== null} onOpenChange={(open) => !open && setQrLink(null)}>
-        <DialogContent aria-describedby={undefined} onOpenAutoFocus={(event) => event.preventDefault()}>
-          {qrLink && (
-            <>
-              <DialogTitle>{qrLink.name}</DialogTitle>
-              <LinkDetails link={qrLink} />
-            </>
-          )}
-        </DialogContent>
+        {qrLink && <LinkModalContent link={qrLink} />}
       </Dialog>
     </ListPage>
   );
