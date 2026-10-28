@@ -114,15 +114,22 @@ The contract the directory screens build against. Types in `types.ts`.
 ## Links: who acted, from which email
 Every email carries its own token (`email_links`), so a click says who it was and which email it came from.
 
-- Every send gets one automatically. For emails sent outside the platform (a Mailchimp merge field),
-  `createOutsideLinks(personIds, label)` makes one per person and returns their intake, unsubscribe
-  and referral URLs.
+- Every send gets one automatically. Every email goes through our own sender (SMTP, no Mailchimp), so
+  there are no links without a send.
 - URLs (`src/features/links/urls.ts`): intake `/intake-form?t=<token>`, unsubscribe `/unsubscribe/<token>`,
-  referral `/refer/<token>`. The last two pages aren't built yet; their paths skip sign-in already.
+  referral `/refer/<token>`. None of them need sign-in.
+- **Unsubscribe page:** opening it never unsubscribes; the member clicks Unsubscribe, can then pick an
+  optional reason (`give_unsubscribe_reason`, stored on `subscription_events.reason` as an id), and can
+  resubscribe from the same page. The reasons in `src/features/links/reasons.ts` are placeholders until
+  SDC lists theirs. Not built yet: the one-click unsubscribe POST that Gmail and Yahoo need
+  (`List-Unsubscribe-Post`); add it with the sender. Also open: whether unsubscribing should offer to end
+  the membership too (needs payments; Unsubscribe & Cancel Membership PRD).
+- **Referral page:** a placeholder following the PRD (the friend leaves their own name and email). The
+  client demo had the member type in their friend's details instead; rework once that's decided.
 - No sign-in on these pages; the token is the proof. Functions callable with the public key:
   `open_link(token, page)` (logs the open, returns the first name for a greeting),
   `unsubscribe_by_link`, `resubscribe_by_link` (record which email it came from on
-  `subscription_events.send_id`), `refer_by_link(token, email, full_name)` (the referrer is whoever the
+  `subscription_events.send_id`), `give_unsubscribe_reason(token, reason)`, `refer_by_link(token, email, full_name)` (the referrer is whoever the
   link was for), `submit_intake(..., p_link_token)` (attributes the submission: `intake_submissions.person_id`).
 - `link_events` logs every open and action per token. Intake opens and submissions show on the member
   timeline.

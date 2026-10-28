@@ -1,7 +1,6 @@
 /**
  * Where each email's link token goes. One token per email (see docs/backend/directory.md, "Links"):
- * the page reads it to know who acted and from which email. The unsubscribe and referral pages
- * aren't built yet; these paths are reserved for them.
+ * the page reads it to know who acted and from which email.
  */
 export const linkPaths = {
   intake: (token: string) => `/intake-form?t=${token}`,

@@ -50,36 +50,23 @@ export type Database = {
       email_links: {
         Row: {
           created_at: string
-          created_by: string | null
-          label: string | null
           person_id: string
-          send_id: string | null
+          send_id: string
           token: string
         }
         Insert: {
           created_at?: string
-          created_by?: string | null
-          label?: string | null
           person_id: string
-          send_id?: string | null
+          send_id: string
           token?: string
         }
         Update: {
           created_at?: string
-          created_by?: string | null
-          label?: string | null
           person_id?: string
-          send_id?: string | null
+          send_id?: string
           token?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "email_links_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "people"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "email_links_person_id_fkey"
             columns: ["person_id"]
@@ -643,6 +630,7 @@ export type Database = {
           id: number
           kind: string
           person_id: string
+          reason: string | null
           send_id: string | null
         }
         Insert: {
@@ -651,6 +639,7 @@ export type Database = {
           id?: never
           kind: string
           person_id: string
+          reason?: string | null
           send_id?: string | null
         }
         Update: {
@@ -659,6 +648,7 @@ export type Database = {
           id?: never
           kind?: string
           person_id?: string
+          reason?: string | null
           send_id?: string | null
         }
         Relationships: [
@@ -842,14 +832,6 @@ export type Database = {
         Args: { p_email: string; p_portal: string }
         Returns: boolean
       }
-      create_outside_links: {
-        Args: { p_label: string; p_person_ids: string[] }
-        Returns: {
-          email: string
-          person_id: string
-          token: string
-        }[]
-      }
       create_tag: { Args: { p_name: string }; Returns: string }
       current_person_id: { Args: never; Returns: string }
       delete_note: { Args: { p_note_id: string }; Returns: undefined }
@@ -859,6 +841,10 @@ export type Database = {
         Returns: undefined
       }
       email_hash: { Args: { p_email: string }; Returns: string }
+      give_unsubscribe_reason: {
+        Args: { p_reason: string; p_token: string }
+        Returns: boolean
+      }
       import_unsubscribes: {
         Args: { p_emails: string[] }
         Returns: {

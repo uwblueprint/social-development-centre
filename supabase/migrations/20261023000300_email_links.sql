@@ -5,17 +5,13 @@
 
 -- ---------- links ----------
 
--- One row per link token. Every send gets one automatically. Admins can also make them for emails
--- that don't go through our sender (a Mailchimp merge field for the Ride for Refuge pilot): those have
--- no send and a label saying what they were for.
+-- One row per link token. Every send gets one automatically; every email goes through our own sender
+-- (SMTP, no Mailchimp), so there are no links without a send.
 create table public.email_links (
   token uuid primary key default gen_random_uuid(),
   person_id uuid not null references public.people (id) on delete cascade,
-  send_id uuid unique references public.email_sends (id) on delete cascade,
-  label text,
-  created_by uuid references public.people (id) on delete set null,
-  created_at timestamptz not null default now(),
-  constraint outside_links_have_label check (send_id is not null or label is not null)
+  send_id uuid not null unique references public.email_sends (id) on delete cascade,
+  created_at timestamptz not null default now()
 );
 create index email_links_person_id on public.email_links (person_id);
 
@@ -45,27 +41,6 @@ $$;
 create trigger send_link_created after insert on public.email_sends
 for each row execute function public.send_link_created();
 
--- Links for emails sent outside the platform, one per person, for a mail-merge column. Returns each
--- person's email and token; the URL is built in the app.
-create function public.create_outside_links(p_person_ids uuid[], p_label text)
-returns table (person_id uuid, email text, token uuid)
-language plpgsql security definer set search_path = ''
-as $$
-begin
-  if not public.is_admin() then
-    raise exception 'Only admins can make links' using errcode = '42501';
-  end if;
-  if btrim(coalesce(p_label, '')) = '' then
-    raise exception 'Say what the links are for' using errcode = '22023';
-  end if;
-
-  return query
-  insert into public.email_links (person_id, label, created_by)
-  select p.id, btrim(p_label), public.current_person_id() from public.people p where p.id = any (p_person_ids)
-  returning email_links.person_id, (select p.email from public.people p where p.id = email_links.person_id), email_links.token;
-end;
-$$;
-
 -- ---------- opening a link (no sign-in: the token is the proof) ----------
 
 -- Records that a link page was opened and returns the person's first name for a greeting, or no row
@@ -91,8 +66,12 @@ $$;
 
 -- ---------- unsubscribe ----------
 
--- Which send someone unsubscribed from, on top of the unsubscribe itself.
-alter table public.subscription_events add column send_id uuid references public.email_sends (id) on delete set null;
+-- Which send someone unsubscribed from, on top of the unsubscribe itself, and why (if they say). The
+-- reason is an id from the app's list (src/features/links/reasons.ts), so the list can change without
+-- a migration.
+alter table public.subscription_events
+  add column send_id uuid references public.email_sends (id) on delete set null,
+  add column reason text check (reason ~ '^[a-z_]{1,40}$');
 
 -- 'unsubscribed', 'already' or null for an unknown token. Opening the page never unsubscribes; this
 -- runs when they click Unsubscribe.
@@ -142,6 +121,32 @@ begin
   where id = (select max(id) from public.subscription_events where person_id = link.person_id and kind = 'resubscribed');
   insert into public.link_events (token, kind) values (p_token, 'resubscribed');
   return 'resubscribed';
+end;
+$$;
+
+-- After unsubscribing, the member can say why (optional, a short dropdown). Sets the reason on their
+-- latest unsubscribe from this link. True if it was recorded; false for an unknown token or if they
+-- aren't unsubscribed through this link (e.g. they resubscribed since).
+create function public.give_unsubscribe_reason(p_token uuid, p_reason text)
+returns boolean
+language plpgsql security definer set search_path = ''
+as $$
+declare
+  link public.email_links;
+begin
+  if p_reason is null or p_reason !~ '^[a-z_]{1,40}$' then
+    raise exception 'Unknown reason' using errcode = '22023';
+  end if;
+  select * into link from public.email_links where token = p_token;
+  if link.token is null then
+    return false;
+  end if;
+
+  update public.subscription_events e set reason = p_reason
+  where e.id = (select max(id) from public.subscription_events where person_id = link.person_id and kind = 'unsubscribed')
+    and e.send_id = link.send_id
+    and exists (select 1 from public.people p where p.id = link.person_id and p.unsubscribed_at is not null);
+  return found;
 end;
 $$;
 
@@ -259,10 +264,10 @@ create or replace view public.member_timeline with (security_invoker = true) as
   from public.subscription_events c
   union all
   -- Intake opened and submitted (unsubscribes and referrals already show through the rows above).
-  select l.person_id, ev.at, ev.kind, null, null, null, l.send_id, null, coalesce(s.email_name, l.label), null, false
+  select l.person_id, ev.at, ev.kind, null, null, null, l.send_id, null, s.email_name, null, false
   from public.link_events ev
   join public.email_links l on l.token = ev.token
-  left join public.email_sends s on s.id = l.send_id
+  join public.email_sends s on s.id = l.send_id
   where ev.kind in ('intake_opened', 'intake_submitted');
 
 -- ---------- access ----------
@@ -270,14 +275,14 @@ create or replace view public.member_timeline with (security_invoker = true) as
 -- The link pages work without signing in; the token is the proof.
 revoke execute on function
   public.open_link(uuid, text), public.unsubscribe_by_link(uuid), public.resubscribe_by_link(uuid),
-  public.refer_by_link(uuid, text, text), public.submit_intake(uuid, text, text, text, jsonb, uuid)
+  public.give_unsubscribe_reason(uuid, text), public.refer_by_link(uuid, text, text),
+  public.submit_intake(uuid, text, text, text, jsonb, uuid)
 from public;
 grant execute on function
   public.open_link(uuid, text), public.unsubscribe_by_link(uuid), public.resubscribe_by_link(uuid),
-  public.refer_by_link(uuid, text, text), public.submit_intake(uuid, text, text, text, jsonb, uuid)
+  public.give_unsubscribe_reason(uuid, text), public.refer_by_link(uuid, text, text),
+  public.submit_intake(uuid, text, text, text, jsonb, uuid)
 to anon, authenticated;
-
-revoke execute on function public.create_outside_links(uuid[], text) from public, anon;
 revoke execute on function public.send_link_created() from public, anon, authenticated;
 
 alter table public.email_links enable row level security;
