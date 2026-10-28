@@ -79,7 +79,9 @@ export type TimelineKind =
   | "unsubscribed"
   | "resubscribed"
   | "bounced"
-  | "bounce_cleared";
+  | "bounce_cleared"
+  | "intake_opened"
+  | "intake_submitted";
 
 /** One line on a member's timeline, newest first. */
 export interface TimelineEntry {

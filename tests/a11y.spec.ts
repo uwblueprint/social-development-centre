@@ -73,6 +73,17 @@ test("the 404 page has no WCAG 2.2 AA violations", async ({ page }) => {
   await checkA11y(page);
 });
 
+// The email link pages have a token in the path, so the walk above skips them. An unknown token shows
+// the "This link doesn't work" screen, with or without Supabase credentials.
+for (const route of ["/unsubscribe", "/refer"]) {
+  test(`${route}/<unknown token> has no WCAG 2.2 AA violations`, async ({ page }) => {
+    await page.goto(`${route}/00000000-0000-4000-8000-000000000000`);
+    await expect(page.getByRole("heading", { name: "This link doesn’t work" })).toBeVisible();
+    await settle(page);
+    await checkA11y(page);
+  });
+}
+
 test("the sign-in error state has no WCAG 2.2 AA violations", async ({ page }) => {
   await page.goto("/login");
   await settle(page);

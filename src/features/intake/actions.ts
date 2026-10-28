@@ -1,6 +1,7 @@
 "use server";
 
 import type { ActionState } from "@/lib/forms";
+import { parseLinkToken } from "@/features/links/urls";
 import { createClient } from "@/lib/supabase/server";
 import { intakeCopy } from "./copy";
 import { EMAIL_PATTERN, type IntakeSubmission } from "./submit";
@@ -31,6 +32,7 @@ export async function submitIntake(submission: IntakeSubmission): Promise<Action
   const supabase = await createClient();
   const { error } = await supabase.rpc("submit_intake", {
     p_submission_id: submission.submissionId,
+    p_link_token: parseLinkToken(submission.linkToken),
     p_first_name: firstName,
     p_last_name: lastName,
     p_email: email,

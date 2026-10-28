@@ -11,6 +11,8 @@ import type { IntakeAnswers } from "./types";
  */
 export interface IntakeSubmission {
   submissionId: string;
+  /** From a personal link (`?t=`), so the submission is attributed to that person. */
+  linkToken?: string;
   /** UTC ISO 8601 with a Z. */
   submittedAt: string;
   firstName: string;
@@ -34,9 +36,10 @@ const labels = (choices: Choices, ids: string[]) => ids.map((id) => label(choice
 const withOther = (choices: Choices, ids: string[]) =>
   ids.includes(OTHER) ? [...labels(choices, ids), otherLabel] : labels(choices, ids);
 
-export function toSubmission(submissionId: string, a: IntakeAnswers): IntakeSubmission {
+export function toSubmission(submissionId: string, a: IntakeAnswers, linkToken?: string): IntakeSubmission {
   return {
     submissionId,
+    linkToken,
     submittedAt: new Date().toISOString(),
     firstName: a.firstName.trim(),
     lastName: a.lastName.trim(),

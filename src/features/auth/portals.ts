@@ -34,6 +34,8 @@ const PUBLIC_ASSETS = ["/brand/", "/illustrations/"];
  */
 export function signInPathFor(pathname: string): string | null {
   if (pathname.startsWith("/login") || pathname.startsWith("/auth/") || pathname.startsWith("/intake-form")) return null;
+  // Email link pages: the link's token is the proof, so no sign-in (see src/features/links/urls.ts).
+  if (pathname.startsWith("/unsubscribe/") || pathname.startsWith("/refer/")) return null;
   if (PUBLIC_ASSETS.some((prefix) => pathname.startsWith(prefix))) return null;
   if (pathname === "/admin" || pathname.startsWith("/admin/")) return portals.admin.signInPath;
   return portals.member.signInPath;

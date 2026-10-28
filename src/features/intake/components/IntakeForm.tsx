@@ -276,7 +276,8 @@ function contactErrorsIn(a: IntakeAnswers): Partial<Record<ContactField, string>
   return errors;
 }
 
-export function IntakeForm() {
+/** `linkToken` is set when they came from their own email link, so the answers are attributed to them. */
+export function IntakeForm({ linkToken }: { linkToken?: string }) {
   const [step, setStep] = useState<Step>("envelope");
   const [answers, setAnswers] = useState<IntakeAnswers>(emptyAnswers);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -322,7 +323,7 @@ export function IntakeForm() {
     setSaveError(null);
     let result: { status: string; message?: string };
     try {
-      result = await submitIntake(toSubmission(submissionId, answers));
+      result = await submitIntake(toSubmission(submissionId, answers, linkToken));
     } catch {
       result = { status: "error" };
     }
