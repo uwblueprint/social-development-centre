@@ -110,3 +110,19 @@ The contract the directory screens build against. Types in `types.ts`.
   - `addReferral`, `unsubscribeMember`, `importUnsubscribes`.
 - Dates from forms are YYYY-MM-DD and mean the start of that day in Waterloo Region.
 
+
+## Membership end date
+- `memberships.ends_at` (date): 12 months after joining, in Waterloo Region's calendar, unless an admin
+  moved it (a renewal). New memberships get it automatically. The 3, 6 and 9-month check-ins are worked
+  out in the app from the start of the current membership year (`src/features/members/directory/dates.ts`).
+- `setMembershipEnd(personId, endsAt)` → `set_membership_end`: admins only; not before they joined.
+- Adding a member no longer sends a sign-in link: members don't sign in (self-serve page ruled out, 23 Oct).
+
+## Not built yet (Shallot's design, PR #41, has them)
+- Payments and payment history (the client's #1 field; needs a product decision first).
+- Membership type (paid, complimentary, gifted, sponsored), gifting, and the "Waiting for payment" /
+  "Not renewed" statuses.
+- Editing a member's name and email; address.
+- Intake form answers on the member page (`intake_submissions.person_id` arrives with PR #47).
+- Tag colours; automatic tags (separate PRD).
+- Email previews in the activity list (the sent body isn't in `member_email_history` yet).

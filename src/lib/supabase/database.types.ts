@@ -431,18 +431,21 @@ export type Database = {
       memberships: {
         Row: {
           created_at: string
+          ends_at: string
           join_emails: boolean
           joined_at: string
           person_id: string
         }
         Insert: {
           created_at?: string
+          ends_at?: string
           join_emails?: boolean
           joined_at?: string
           person_id: string
         }
         Update: {
           created_at?: string
+          ends_at?: string
           join_emails?: boolean
           joined_at?: string
           person_id?: string
@@ -801,6 +804,10 @@ export type Database = {
         Returns: string
       }
       resubscribe_by_token: { Args: { p_token: string }; Returns: string }
+      set_membership_end: {
+        Args: { p_ends_at: string; p_person_id: string }
+        Returns: undefined
+      }
       split_name: {
         Args: { p_full_name: string }
         Returns: Record<string, unknown>
