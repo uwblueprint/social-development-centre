@@ -277,13 +277,33 @@ const CellBox = styled.div`
 
 const Th = styled.th<{ $align?: "left" | "right"; $sticky?: boolean }>`
   height: var(--row-height);
+  position: relative;
   padding: 0 var(--space-3);
-  border-bottom: 1px solid var(--color-border);
   font-size: var(--text-xs);
   font-weight: var(--weight-medium);
   color: var(--color-text-muted);
   text-align: ${({ $align }) => $align ?? "left"};
   white-space: nowrap;
+
+  /* The header's bottom line, inset like the row dividers. */
+  &::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 1px;
+    background: var(--color-border);
+    pointer-events: none;
+  }
+
+  &:first-child::after {
+    left: var(--space-3);
+  }
+
+  &:last-child::after {
+    right: var(--space-3);
+  }
 
   ${({ $sticky }) =>
     $sticky &&
@@ -739,6 +759,7 @@ const Body = styled.tbody``;
  * so they stay fully legible — and 78% keeps even the palette's most muted table text at 4.5:1+.
  */
 const Td = styled.td<{ $align?: "left" | "right"; $busy?: boolean }>`
+  position: relative;
   height: var(--row-height);
   padding: 0 var(--space-3);
   white-space: nowrap;
@@ -755,8 +776,24 @@ const Td = styled.td<{ $align?: "left" | "right"; $busy?: boolean }>`
 `;
 
 const Row = styled.tr<{ $clickable?: boolean }>`
-  &:not(:first-child) {
-    border-top: 1px solid var(--color-border);
+  &:not(:first-child) > td::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--color-border);
+    pointer-events: none;
+  }
+
+  /* The table's edges are padded to give the hover fill room; the dividers stop at the text edges. */
+  &:not(:first-child) > td:first-child::before {
+    left: var(--space-3);
+  }
+
+  &:not(:first-child) > td:last-child::before {
+    right: var(--space-3);
   }
 
   ${({ $clickable }) =>

@@ -173,7 +173,7 @@ function Links({ initialLinks }: { initialLinks: SignupLink[] }) {
         onCreate={(link) => setLinks((current) => [link, ...current])}
       />
       <Dialog open={qrLink !== null} onOpenChange={(open) => !open && setQrLink(null)}>
-        <DialogContent aria-describedby={undefined}>
+        <DialogContent aria-describedby={undefined} onOpenAutoFocus={(event) => event.preventDefault()}>
           {qrLink && (
             <>
               <DialogTitle>{qrLink.name}</DialogTitle>

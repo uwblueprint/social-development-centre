@@ -140,7 +140,7 @@ export function LinkDetails({ link, onDone }: { link: SignupLink; onDone?: () =>
         <Frame>{image && <Image src={image} alt={`QR code for ${link.name}`} />}</Frame>
       </Stack>
       <Footer>
-        <Button type="button" $variant="secondary" autoFocus onClick={copyImage}>
+        <Button type="button" $variant="secondary" onClick={copyImage}>
           Copy image
         </Button>
         <Button type="button" $variant="secondary" onClick={download}>
