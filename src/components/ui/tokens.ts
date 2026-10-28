@@ -25,6 +25,9 @@ globalStyle`
 
     --color-bg: #ffffff;
     --color-surface: var(--taupe-50);
+    /* QR codes only scan as dark modules on a light ground, so these stay the same in dark mode. */
+    --qr-ink: var(--taupe-900);
+    --qr-ground: #ffffff;
     --color-surface-raised: #ffffff;
     --color-text: var(--taupe-900);
     --color-text-muted: var(--taupe-600);
