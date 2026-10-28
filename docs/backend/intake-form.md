@@ -1,13 +1,13 @@
 # Intake form: backend
 
-How `/intake-form` stores what people answer. Decisions and their rationale:
+How the two public intake-form variants store what people answer. Decisions and their rationale:
 [docs/decisions/intake-form.md](../decisions/intake-form.md).
 
 The form is **open to anyone with the link** — no sign-in, no session. So everything it sends,
 including the person's name and email, comes from the browser and is treated as untrusted.
 
 ## Storage
-`public.intake_submissions`, created by `supabase/migrations/20261022142839_intake_submissions.sql`.
+`public.intake_submissions`, created by `supabase/migrations/20261022142839_intake_submissions.sql` and extended by `supabase/migrations/20261027000100_intake_form_variants.sql`.
 
 | Column | Type | Notes |
 |---|---|---|
@@ -15,7 +15,8 @@ including the person's name and email, comes from the browser and is treated as 
 | `first_name` | `text not null` | Trimmed. |
 | `last_name` | `text not null` | Trimmed. |
 | `email` | `text not null` | Trimmed and lowercased. Not unique: the same address may answer twice (a correction, a shared family address), and which one wins is SDC's call, not the form's. |
-| `answers` | `jsonb not null` | The five questions, stored as **labels, not ids**, so a row reads as it was answered. Also holds the browser's `submittedAt`. |
+| `form_source` | `text` nullable for rows created before the variants | `ride-for-refuage` or `sdc-members`, set from the route that was opened. |
+| `answers` | `jsonb not null` | The five questions, stored as **labels, not ids**, so a row reads as it was answered. Topic labels include their explicit rank. Also holds the browser's `submittedAt`. |
 | `created_at`, `updated_at` | `timestamptz not null` | `updated_at` moves on a retry. |
 
 Indexed on `created_at desc` (reading recent submissions) and `email` (finding someone's answers).
@@ -25,20 +26,27 @@ Indexed on `created_at desc` (reading recent submissions) and `email` (finding s
 ```json
 {
   "submittedAt": "2026-10-22T14:03:11.482Z",
-  "topics": ["Housing and homelessness"], "topicsOther": "",
-  "ways": ["Volunteer my time or skills"], "waysOther": "",
-  "location": "Kitchener", "locationOther": "",
+  "topics": [
+    { "rank": 1, "topic": "Housing, tenant rights, and eviction prevention" },
+    { "rank": 2, "topic": "Homelessness, encampments, and ending chronic homelessness" }
+  ],
+  "topicsOther": "",
+  "ways": ["Receive invitations to occasional workshops, discussions, or community events"],
+  "waysOther": "",
+  "location": "Kitchener",
   "timeAvailable": "A few hours for an event or activity",
   "hopes": "Meet people doing housing work locally."
 }
 ```
 
-Every question can be skipped, so any of these may be `[]` or `""`. Only the three contact fields
-are required.
+Every question can be skipped, so answers may be `[]` or `""`. Dragging or moving any topic assigns
+the full ordered list unique ranks from 1 to 9. Only the three contact fields are required.
 
 ## Writing
-`public.submit_intake(p_submission_id uuid, p_first_name text, p_last_name text, p_email text, p_answers jsonb)`
-returns `void`. Security definer, executable by `anon` and `authenticated`.
+`public.submit_intake(p_submission_id uuid, p_first_name text, p_last_name text, p_email text, p_form_source text, p_answers jsonb)`
+returns `void`. Security definer, executable by `anon` and `authenticated`. The route source is
+required, validated, and saved in `form_source`; the function also validates the optional complete
+topic ranking.
 
 **It is the only way into the table.** Row-level security is on with **no policies**, so neither
 `anon` nor `authenticated` can read or write `intake_submissions` directly; a `select` returns an
@@ -52,8 +60,43 @@ sees which field is wrong, on the step where they can fix it), in the server act
 (`src/features/intake/actions.ts`), and inside `submit_intake` itself. The pattern the browser and
 the action share is `EMAIL_PATTERN` in `src/features/intake/submit.ts`.
 
+## Form analytics
+`public.page_visits`, created by `supabase/migrations/20261027000000_intake_page_visits.sql` and
+extended by `supabase/migrations/20261027000100_intake_form_variants.sql`, records
+one row when someone leaves a form step or closes/navigates away from the page. Tracking starts on
+the welcome letter, after its privacy notice is visible; the envelope itself is not tracked.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `bigint` identity primary key | One row per visited step. |
+| `person_id` | `uuid not null` | Random ID generated once per form attempt. It is not a `people.id` and has no foreign key. |
+| `key_id` | `text` nullable | Normalized email after it is entered; null before then. |
+| `page_key` | `text not null` | `welcome`, `contact`, `topics`, `ways`, `location`, `time`, or `hopes`. |
+| `total_ms`, `active_ms` | `bigint not null` | Total time on the step, and time while the page is visible. |
+| `first_answer_ms`, `last_answer_ms` | `bigint` nullable | Elapsed time from entering the step to the first and last edit. |
+| `left_via` | `text not null` | `next`, `skip`, `back`, `submit`, `not_interested`, or `exit`. |
+| `answers` | `jsonb not null` | Array of `{ "field": "...", "value": ... }` entries for non-contact answers on that step. Contact fields are excluded; free-text answers are stored as entered. |
+| `created_at` | `timestamptz not null` | Time the visit was recorded. |
+| `"from"` | `text` | Route source: `ride-for-refuage` or `sdc-members`. No external referrer is collected. |
+| `user_found` | `boolean` nullable | `true` when `key_id` matches `public.people.email`, `false` when it does not, and `NULL` before an email is entered. This indicates a matching `people` row, not a verified identity. |
+
+`active_ms` counts only time while the browser page is visible. Answer times are elapsed from step
+entry and therefore include time spent in a hidden tab. The contact step records answer timing, but
+its `answers` array is empty; the email is used only as `key_id`. After a valid email is entered,
+the database applies that email and its `user_found` result to earlier visits in the same attempt.
+For an abandoned attempt before email entry, `key_id` and `user_found` remain `NULL`.
+
+The table has RLS enabled and no client read/write grants. The public route
+`/api/intake/page-visits` is explicitly public in the auth proxy, validates the request, and calls the security-definer
+`record_intake_page_visit` function. The function also validates the route source and analytics data.
+Page visits do not change the idempotent `intake_submissions` save behavior.
+
+Apply the variants migration after the original page-visits migration. It adds `form_source`, updates
+the allowed `"from"` values and replaces both public write functions; the old RPC signatures are
+removed so a write cannot omit its source.
+
 ## Reading
-Nothing in the product reads these rows. SDC reads them in the Supabase dashboard.
+Nothing in the product reads these rows. SDC can read them in the Supabase dashboard.
 
 ## Not built
 - **No spam protection.** `submit_intake` is a public, unauthenticated write with no rate limit,
@@ -65,10 +108,6 @@ Nothing in the product reads these rows. SDC reads them in the Supabase dashboar
   second attempt writes a second row.
 - **No admin screen**, and no link to `people`: an intake submission does not create a person, a
   membership or a tag. Joining these rows to `public.people` is a later decision.
-- **No "not interested" record, and no suppression.** Choosing it saves nothing, so SDC cannot count
-  who opened the form and left, and cannot stop sending that person invitations. The 22 Oct review
-  named this button as the replacement for an **Unsubscribe** link
-  (`docs/decisions/intake-form.md`, decisions 5 and 8), so if SDC expects it to act like one, it
-  needs two things that do not exist: an event log to record the refusal, and a suppression list the
-  mailing-list campaign actually reads before sending. Until then the screen does not promise it,
-  and the user guide tells people to reply to SDC's email instead.
+- **No suppression.** Choosing **Not interested** is recorded as a page visit, but there is no
+  suppression list the mailing-list campaign reads before sending. The button is not an
+  unsubscribe; the user guide tells people to reply to SDC's email instead.

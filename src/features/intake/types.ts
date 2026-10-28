@@ -2,13 +2,13 @@ export interface IntakeAnswers {
   firstName: string;
   lastName: string;
   email: string;
-  /** Choice ids (see copy.ts). */
-  topics: string[];
+  /** Topic id to rank, where 1 is the highest priority and null means unranked. */
+  topicRanks: Record<string, number | null>;
   topicsOther: string;
+  /** Choice ids (see copy.ts). */
   ways: string[];
   waysOther: string;
   location: string;
-  locationOther: string;
   time: string;
   hopes: string;
 }
@@ -17,12 +17,11 @@ export const emptyAnswers: IntakeAnswers = {
   firstName: "",
   lastName: "",
   email: "",
-  topics: [],
+  topicRanks: {},
   topicsOther: "",
   ways: [],
   waysOther: "",
   location: "",
-  locationOther: "",
   time: "",
   hopes: "",
 };

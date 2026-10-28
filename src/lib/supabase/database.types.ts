@@ -192,6 +192,7 @@ export type Database = {
           created_at: string
           email: string
           first_name: string
+          form_source: string | null
           last_name: string
           submission_id: string
           updated_at: string
@@ -201,6 +202,7 @@ export type Database = {
           created_at?: string
           email: string
           first_name: string
+          form_source?: string | null
           last_name: string
           submission_id: string
           updated_at?: string
@@ -210,9 +212,58 @@ export type Database = {
           created_at?: string
           email?: string
           first_name?: string
+          form_source?: string | null
           last_name?: string
           submission_id?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      page_visits: {
+        Row: {
+          active_ms: number
+          answers: Json
+          created_at: string
+          first_answer_ms: number | null
+          from: string | null
+          id: number
+          key_id: string | null
+          last_answer_ms: number | null
+          left_via: string
+          page_key: string
+          person_id: string
+          total_ms: number
+          user_found: boolean | null
+        }
+        Insert: {
+          active_ms: number
+          answers?: Json
+          created_at?: string
+          first_answer_ms?: number | null
+          from?: string | null
+          id?: never
+          key_id?: string | null
+          last_answer_ms?: number | null
+          left_via: string
+          page_key: string
+          person_id: string
+          total_ms: number
+          user_found?: boolean | null
+        }
+        Update: {
+          active_ms?: number
+          answers?: Json
+          created_at?: string
+          first_answer_ms?: number | null
+          from?: string | null
+          id?: never
+          key_id?: string | null
+          last_answer_ms?: number | null
+          left_via?: string
+          page_key?: string
+          person_id?: string
+          total_ms?: number
+          user_found?: boolean | null
         }
         Relationships: []
       }
@@ -776,6 +827,21 @@ export type Database = {
         Returns: undefined
       }
       record_sign_in: { Args: never; Returns: boolean }
+      record_intake_page_visit: {
+        Args: {
+          p_active_ms: number
+          p_answers: Json
+          p_first_answer_ms: number | null
+          p_from: string
+          p_key_id: string | null
+          p_last_answer_ms: number | null
+          p_left_via: string
+          p_page_key: string
+          p_person_id: string
+          p_total_ms: number
+        }
+        Returns: undefined
+      }
       remove_admin: { Args: { p_person_id: string }; Returns: string }
       remove_member: { Args: { p_person_id: string }; Returns: undefined }
       rename_tag: { Args: { p_name: string; p_tag_id: string }; Returns: string }
@@ -789,6 +855,7 @@ export type Database = {
           p_answers: Json
           p_email: string
           p_first_name: string
+          p_form_source: string
           p_last_name: string
           p_submission_id: string
         }

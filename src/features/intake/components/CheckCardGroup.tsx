@@ -3,8 +3,7 @@
 import type { CSSProperties } from "react";
 import { keyframes, styled } from "next-yak";
 import { Checkbox } from "@/components/ui/Checkbox";
-import { Icon } from "@/components/ui/Icon";
-import { OTHER, type IconChoice } from "../copy";
+import { OTHER, type Choice } from "../copy";
 import { OtherChoice } from "./OtherChoice";
 
 /*
@@ -58,12 +57,6 @@ const Card = styled.label`
   }
 `;
 
-const Glyph = styled.span`
-  display: inline-flex;
-  flex-shrink: 0;
-  color: var(--color-text);
-`;
-
 const Text = styled.span`
   flex: 1;
   min-width: 0;
@@ -89,7 +82,7 @@ export function CheckCardGroup({
   labelledBy: string;
   describedBy?: string;
   /** The listed options; "Other" is always added at the end. */
-  options: IconChoice[];
+  options: Choice[];
   value: string[];
   onChange: (next: string[]) => void;
   otherValue: string;
@@ -106,9 +99,6 @@ export function CheckCardGroup({
         const id = `${name}-${option.id}`;
         return (
           <Card key={option.id} htmlFor={id} data-checked={checked ? "" : undefined} style={{ "--i": i } as CSSProperties}>
-            <Glyph>
-              <Icon icon={option.icon} size={20} />
-            </Glyph>
             <Text>{option.label}</Text>
             <Checkbox id={id} name={name} value={option.id} checked={checked} onCheckedChange={(next) => toggle(option.id, next === true)} />
           </Card>
