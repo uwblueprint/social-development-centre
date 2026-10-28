@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.18"
   }
   public: {
     Tables: {
@@ -86,6 +86,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "email_sends"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_send_changes_send_id_fkey"
+            columns: ["send_id"]
+            isOneToOne: false
+            referencedRelation: "member_email_history"
+            referencedColumns: ["send_id"]
           },
         ]
       }
@@ -424,18 +431,21 @@ export type Database = {
       memberships: {
         Row: {
           created_at: string
+          ends_at: string
           join_emails: boolean
           joined_at: string
           person_id: string
         }
         Insert: {
           created_at?: string
+          ends_at?: string
           join_emails?: boolean
           joined_at?: string
           person_id: string
         }
         Update: {
           created_at?: string
+          ends_at?: string
           join_emails?: boolean
           joined_at?: string
           person_id?: string
@@ -474,7 +484,7 @@ export type Database = {
           email: string
           first_name?: string | null
           first_signed_in_at?: string | null
-          full_name?: never
+          full_name?: string | null
           id?: string
           last_name?: string | null
           last_signed_in_at?: string | null
@@ -490,7 +500,7 @@ export type Database = {
           email?: string
           first_name?: string | null
           first_signed_in_at?: string | null
-          full_name?: never
+          full_name?: string | null
           id?: string
           last_name?: string | null
           last_signed_in_at?: string | null
@@ -508,8 +518,8 @@ export type Database = {
           joined_at: string | null
           referred_email: string
           referred_first_name: string | null
-          referred_last_name: string | null
           referred_id: string | null
+          referred_last_name: string | null
           referrer_id: string
         }
         Insert: {
@@ -518,8 +528,8 @@ export type Database = {
           joined_at?: string | null
           referred_email: string
           referred_first_name?: string | null
-          referred_last_name?: string | null
           referred_id?: string | null
+          referred_last_name?: string | null
           referrer_id: string
         }
         Update: {
@@ -528,8 +538,8 @@ export type Database = {
           joined_at?: string | null
           referred_email?: string
           referred_first_name?: string | null
-          referred_last_name?: string | null
           referred_id?: string | null
+          referred_last_name?: string | null
           referrer_id?: string
         }
         Relationships: [
@@ -612,7 +622,7 @@ export type Database = {
         Insert: {
           at?: string
           by_person_id?: string | null
-          id?: number
+          id?: never
           kind: string
           person_id: string
           tag_id?: string | null
@@ -621,7 +631,7 @@ export type Database = {
         Update: {
           at?: string
           by_person_id?: string | null
-          id?: number
+          id?: never
           kind?: string
           person_id?: string
           tag_id?: string | null
@@ -700,7 +710,15 @@ export type Database = {
           status: string | null
           subject: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "email_sends_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       member_timeline: {
         Row: {
@@ -740,7 +758,10 @@ export type Database = {
           result: string
         }[]
       }
-      add_note: { Args: { p_body: string; p_person_id: string }; Returns: string }
+      add_note: {
+        Args: { p_body: string; p_person_id: string }
+        Returns: string
+      }
       add_referral: {
         Args: { p_email: string; p_full_name?: string; p_referrer_id: string }
         Returns: string
@@ -778,8 +799,15 @@ export type Database = {
       record_sign_in: { Args: never; Returns: boolean }
       remove_admin: { Args: { p_person_id: string }; Returns: string }
       remove_member: { Args: { p_person_id: string }; Returns: undefined }
-      rename_tag: { Args: { p_name: string; p_tag_id: string }; Returns: string }
+      rename_tag: {
+        Args: { p_name: string; p_tag_id: string }
+        Returns: string
+      }
       resubscribe_by_token: { Args: { p_token: string }; Returns: string }
+      set_membership_end: {
+        Args: { p_ends_at: string; p_person_id: string }
+        Returns: undefined
+      }
       split_name: {
         Args: { p_full_name: string }
         Returns: Record<string, unknown>

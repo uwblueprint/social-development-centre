@@ -23,18 +23,21 @@ export async function listMembers(): Promise<MemberRow[]> {
   const { data, error } = await supabase
     .from("memberships")
     .select(
-      "joined_at, person:people!person_id(id, email, full_name, created_at, first_signed_in_at, unsubscribed_at, bounced_at, member_tags!member_tags_person_id_fkey(tag:tags(id, name)))",
+      "joined_at, ends_at, person:people!person_id(id, email, first_name, last_name, full_name, created_at, first_signed_in_at, unsubscribed_at, bounced_at, member_tags!member_tags_person_id_fkey(tag:tags(id, name)))",
     );
   if (error) throw error;
 
   return data
-    .map(({ joined_at, person }) => ({
+    .map(({ joined_at, ends_at, person }) => ({
       id: person.id,
       name: person.full_name,
+      firstName: person.first_name,
+      lastName: person.last_name,
       email: person.email,
       addedAt: person.created_at,
       hasSignedIn: person.first_signed_in_at !== null,
       joinedAt: joined_at,
+      endsAt: ends_at,
       tags: person.member_tags.map(({ tag }) => tag).sort((a, b) => a.name.localeCompare(b.name)),
       subscription: subscriptionOf(person),
     }))
@@ -56,7 +59,7 @@ export async function getMember(personId: string): Promise<MemberDetail | null> 
     supabase
       .from("people")
       .select(
-        "id, email, first_name, last_name, full_name, first_signed_in_at, unsubscribed_at, unsubscribe_reason, bounced_at, bounce_detail, memberships(joined_at, join_emails), member_tags!member_tags_person_id_fkey(tag:tags(id, name))",
+        "id, email, first_name, last_name, full_name, first_signed_in_at, unsubscribed_at, unsubscribe_reason, bounced_at, bounce_detail, memberships(joined_at, ends_at, join_emails), member_tags!member_tags_person_id_fkey(tag:tags(id, name))",
       )
       .eq("id", personId)
       .maybeSingle(),
@@ -98,6 +101,7 @@ export async function getMember(personId: string): Promise<MemberDetail | null> 
     lastName: p.last_name,
     fullName: p.full_name,
     joinedAt: p.memberships.joined_at,
+    endsAt: p.memberships.ends_at,
     joinEmails: p.memberships.join_emails,
     hasSignedIn: p.first_signed_in_at !== null,
     subscription: subscriptionOf(p),

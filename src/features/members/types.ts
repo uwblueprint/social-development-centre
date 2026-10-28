@@ -15,7 +15,11 @@ export interface Tag {
 
 /** A row on the members list. */
 export interface MemberRow extends PersonRow {
+  firstName: string | null;
+  lastName: string | null;
   joinedAt: string;
+  /** YYYY-MM-DD: 12 months after joining unless an admin moved it (a renewal). */
+  endsAt: string;
   tags: Tag[];
   subscription: Subscription;
 }
@@ -105,6 +109,8 @@ export interface MemberDetail {
   lastName: string | null;
   fullName: string | null;
   joinedAt: string;
+  /** YYYY-MM-DD. */
+  endsAt: string;
   joinEmails: boolean;
   hasSignedIn: boolean;
   subscription: Subscription;
