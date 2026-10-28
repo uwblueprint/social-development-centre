@@ -32,3 +32,6 @@ The rules behind the component kit.
 ## 7. Content is part of the component
 - Sentence case. Buttons start with a verb. Errors say what happened and how to fix it. Empty states say what goes here and how to add it.
 - Each component doc carries its own content rules, so designers, engineers and AI agents share one reference.
+
+## 8. One navigation pattern
+- Navigation is always a left sidebar. No design has a top nav.
