@@ -1,7 +1,7 @@
 # Signup links: backend
 
 What `/design/signup-links` needs. The screen builds against `SignupLink` in
-`src/features/signup-links/data.ts`; the demo data there is replaced by these. PRD: Automatic Tags &
+`src/app/design/signup-links/data.ts`; the demo data there is replaced by these. PRD: Automatic Tags &
 Signup Links (Notion).
 
 A link is made for one event. People open `https://join.socialdevelopmentcentre.ca/join?source=<slug>`,

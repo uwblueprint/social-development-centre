@@ -18,6 +18,8 @@ import type { TableColumn, TableSort } from "@/components/ui/Table";
 - `onRowClick?`: `(row: T) => void` — makes the whole row open a detail view; the row becomes keyboard-focusable and `Enter` activates it, same as a click. Omit it for a plain, non-interactive table.
 - `sticky?`: keeps the header row visible while the body scrolls — wrap `Table` in a container with its own `max-height` and `overflow-y: auto`.
 - `empty?`: rendered in place of the table when `rows` is empty (e.g. an `EmptyState`).
+- `emptyBelowHeader?`: with no rows, keeps the column headings and shows `empty` below them instead of replacing the table.
+- Edge alignment: the table cancels its cell padding at the left and right edges (negative inline margin of `--space-3`), so at rest the first column's text lines up with the page heading and the last column's content with the header button. The row hover fill and dividers reach that padding past both edges. Left-align every column, numbers included, and right-align the last column's content only when it is controls (row actions).
 - `sort?`: `{ key, direction: "asc" | "desc" }`, the active sort. Controlled.
 - `onSortChange?`: `(next: TableSort) => void`. Without it, every header renders as plain text, even with a `sortKey`.
 - `busy?`: the next rows are loading. See Loading.

@@ -6,26 +6,14 @@ import { Button } from "@/components/ui/Button";
 import { Dialog, DialogActions, DialogContent, DialogTitle } from "@/components/ui/Dialog";
 import { Field } from "@/components/ui/Field";
 import { Input } from "@/components/ui/Input";
-import { useToast } from "@/components/ui/Toast";
-import { signupLinkUrl, uniqueSlug, type SignupLink } from "./data";
-import { QrPanel } from "./QrPanel";
+import { uniqueSlug, type SignupLink } from "./data";
+import { LinkDetails } from "./LinkDetails";
 
 const Body = styled.div`
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
   margin-top: var(--space-4);
-`;
-
-const UrlRow = styled.div`
-  display: flex;
-  align-items: flex-end;
-  gap: var(--space-2);
-
-  & > :first-child {
-    flex: 1;
-    min-width: 0;
-  }
 `;
 
 /**
@@ -43,7 +31,6 @@ export function CreateLinkDialog({
   existing: SignupLink[];
   onCreate: (link: SignupLink) => void;
 }) {
-  const { toast } = useToast();
   const [name, setName] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
   const [created, setCreated] = React.useState<SignupLink | null>(null);
@@ -66,37 +53,13 @@ export function CreateLinkDialog({
     onCreate(link);
   }
 
-  async function copyLink(link: SignupLink) {
-    try {
-      await navigator.clipboard.writeText(signupLinkUrl(link.slug));
-      toast({ title: "Link copied" });
-    } catch {
-      toast({ title: "Couldn’t copy the link", description: "Your browser blocked it. Select the link and copy it." });
-    }
-  }
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent aria-describedby={undefined}>
         {created ? (
           <>
             <DialogTitle>{created.name}</DialogTitle>
-            <Body>
-              <UrlRow>
-                <Field label="Link">
-                  {(props) => <Input {...props} readOnly value={signupLinkUrl(created.slug)} />}
-                </Field>
-                <Button type="button" $variant="secondary" onClick={() => copyLink(created)}>
-                  Copy
-                </Button>
-              </UrlRow>
-              <QrPanel link={created} />
-            </Body>
-            <DialogActions>
-              <Button type="button" onClick={() => onOpenChange(false)}>
-                Done
-              </Button>
-            </DialogActions>
+            <LinkDetails link={created} onDone={() => onOpenChange(false)} />
           </>
         ) : (
           <form onSubmit={submit} noValidate>

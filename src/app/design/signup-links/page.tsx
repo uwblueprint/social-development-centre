@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { PageLoading } from "@/components/patterns/PageLoading";
-import { demoSignupLinks } from "@/features/signup-links/data";
-import { SignupLinksPage } from "@/features/signup-links/SignupLinksPage";
+import { demoSignupLinks } from "./data";
+import { SignupLinksPage } from "./SignupLinksPage";
 
 export const metadata: Metadata = { title: "Signup links" };
 

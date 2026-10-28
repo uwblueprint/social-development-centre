@@ -128,6 +128,8 @@ export interface TableProps<T> {
   sticky?: boolean;
   /** Rendered instead of the table when `rows` is empty (e.g. an `EmptyState`). */
   empty?: React.ReactNode;
+  /** With no rows, keep the column headings and show `empty` below them, instead of replacing the whole table. */
+  emptyBelowHeader?: boolean;
   /** The active sort, controlled. The page does the sorting (usually on the server); `Table` only shows it. */
   sort?: TableSort;
   /** Called with the next sort when a sortable header is selected. Without it, headers render as plain text. */
@@ -165,7 +167,11 @@ const Wrapper = styled.div`
   /* Contains absolutely positioned cell content (e.g. visually hidden text) so it scrolls with the
      table instead of widening the page at 360px. */
   position: relative;
-  width: 100%;
+  /* The cells' inline padding gives the row hover fill room. Cancel it at the edges so, at rest, the
+     first column's text lines up with the page heading and the last column's content with the header
+     button; the hover fill reaches past them by that padding. */
+  width: calc(100% + 2 * var(--space-3));
+  margin-inline: calc(var(--space-3) * -1);
   overflow-x: auto;
 
   &[data-overflowing] [data-frozen] {
@@ -234,6 +240,11 @@ const StyledTable = styled.table`
   /* Frozen cells paint their own background so scrolled cells don't show through. */
   [data-frozen] {
     background: var(--color-bg);
+  }
+
+  /* Fixed layout hands columns extra width, so cell content fills its column instead of the width asked for. */
+  &[data-fixed] [data-cell-box] {
+    width: calc(100% + 2 * var(--space-1));
   }
 
   /*
@@ -817,6 +828,7 @@ export function Table<T>({
   onRowClick,
   sticky,
   empty,
+  emptyBelowHeader,
   sort,
   onSortChange,
   busy = false,
@@ -876,11 +888,12 @@ export function Table<T>({
     };
   }, [frozen, hasRows]);
 
-  if (!hasRows) return <>{empty}</>;
+  if (!hasRows && !emptyBelowHeader) return <>{empty}</>;
 
   const fixed = visibleColumns.every((col) => col.width);
 
   return (
+    <>
     <Wrapper ref={wrapperRef}>
       <StyledTable
         ref={tableRef}
@@ -959,7 +972,7 @@ export function Table<T>({
                 {visibleColumns.map((col, index) => (
                   <Td key={col.key} $align={col.align} $busy={busy} {...frozenProps(index, frozen, offsets)}>
                     {col.width ? (
-                      <CellBox style={{ "--column-width": col.width } as React.CSSProperties}>{col.render(row)}</CellBox>
+                      <CellBox data-cell-box="" style={{ "--column-width": col.width } as React.CSSProperties}>{col.render(row)}</CellBox>
                     ) : (
                       col.render(row)
                     )}
@@ -971,5 +984,7 @@ export function Table<T>({
         </Body>
       </StyledTable>
     </Wrapper>
+    {!hasRows && empty}
+    </>
   );
 }
