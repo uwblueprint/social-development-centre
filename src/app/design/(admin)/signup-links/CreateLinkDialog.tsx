@@ -7,7 +7,7 @@ import { Dialog, DialogActions, DialogContent, DialogTitle } from "@/components/
 import { Field } from "@/components/ui/Field";
 import { Input } from "@/components/ui/Input";
 import { uniqueSlug, type SignupLink } from "./data";
-import { LinkModalContent } from "./modal-versions";
+import { LinkDialogContent } from "./LinkDialog";
 
 const Body = styled.div`
   display: flex;
@@ -56,7 +56,7 @@ export function CreateLinkDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {created ? (
-        <LinkModalContent link={created} onDone={() => onOpenChange(false)} />
+        <LinkDialogContent link={created} />
       ) : (
         <DialogContent aria-describedby={undefined}>
           <form onSubmit={submit} noValidate>

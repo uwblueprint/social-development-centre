@@ -16,8 +16,8 @@ import { TruncatedText } from "@/components/ui/TruncatedText";
 import { CreateLinkDialog } from "./CreateLinkDialog";
 import { downloadSignupLinksCsv } from "./csv";
 import { conversion, type SignupLink } from "./data";
-import { LinkModalContent, ModalVersionProvider } from "./modal-versions";
-import { useCopyLink } from "./modal-versions/useLinkActions";
+import { LinkDialogContent } from "./LinkDialog";
+import { useCopyLink } from "./useLinkActions";
 
 const Number = styled.span`
   font-variant-numeric: tabular-nums;
@@ -91,12 +91,10 @@ const NameButton = styled(Button)`
   }
 `;
 
-export function SignupLinksPage({ initialLinks, modal }: { initialLinks: SignupLink[]; modal?: string }) {
+export function SignupLinksPage({ initialLinks }: { initialLinks: SignupLink[] }) {
   return (
     <AppToastProvider>
-      <ModalVersionProvider initial={modal}>
-        <Links initialLinks={initialLinks} />
-      </ModalVersionProvider>
+      <Links initialLinks={initialLinks} />
     </AppToastProvider>
   );
 }
@@ -221,7 +219,7 @@ function Links({ initialLinks }: { initialLinks: SignupLink[] }) {
         onCreate={(link) => setLinks((current) => [link, ...current])}
       />
       <Dialog open={qrLink !== null} onOpenChange={(open) => !open && setQrLink(null)}>
-        {qrLink && <LinkModalContent link={qrLink} />}
+        {qrLink && <LinkDialogContent link={qrLink} />}
       </Dialog>
     </ListPage>
   );
