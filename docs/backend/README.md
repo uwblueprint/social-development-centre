@@ -42,6 +42,7 @@ No backend work. When there's no connection, what's on screen stays readable; su
 
 ## Feature requirements
 - [Intake form](./intake-form.md) (public, no sign-in)
+- [Automatic emails](./automatic-emails.md) (storage, lifecycle, conditions, Outbox; the daily run route comes next)
 
 ## Support address
 `BSF_SUPPORT_EMAIL` (`src/lib/contact.ts`) is where admins escalate a page that keeps failing to load. It is still the placeholder `{BSF email}`; set the real address there, and the load-error page turns it into a mailto link automatically.

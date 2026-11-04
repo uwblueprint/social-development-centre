@@ -59,6 +59,8 @@ function isPublic(pathname: string): boolean {
     pathname.startsWith("/login") ||
     pathname.startsWith("/auth") ||
     pathname.startsWith("/intake-form") ||
+    // Vercel cron, which has no session; the route checks CRON_SECRET itself.
+    pathname === "/api/automatic-emails/run" ||
     PUBLIC_ASSETS.some((prefix) => pathname.startsWith(prefix))
   );
 }
