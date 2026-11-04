@@ -29,12 +29,14 @@ export function safeAdminPath(path: string | null | undefined): string | undefin
 const PUBLIC_ASSETS = ["/brand/", "/illustrations/"];
 
 /**
- * Every page needs a session except the sign-in pages, /auth, public assets and the intake form, which is
- * deliberately open to anyone with the link (docs/decisions/intake-form.md).
+ * Every page needs a session except the sign-in pages, /auth, public assets, the intake form and the join
+ * steps, which are deliberately open to anyone with the link (docs/decisions/intake-form.md,
+ * docs/decisions/signup-links.md).
  */
 export function signInPathFor(pathname: string): string | null {
   if (pathname.startsWith("/login") || pathname.startsWith("/auth/") || pathname.startsWith("/intake-form")) return null;
   if (pathname === "/api/intake/page-visits") return null;
+  if (pathname === "/join" || pathname.startsWith("/join/")) return null;
   if (PUBLIC_ASSETS.some((prefix) => pathname.startsWith(prefix))) return null;
   if (pathname === "/admin" || pathname.startsWith("/admin/")) return portals.admin.signInPath;
   return portals.member.signInPath;

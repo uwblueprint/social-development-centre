@@ -1,4 +1,4 @@
-import { conversion, signupLinkUrl, type SignupLink } from "./data";
+import { conversion, signupLinkUrl, type SignupLink } from "./links";
 
 /** One CSV field: quoted when it holds a comma, quote or line break, with quotes doubled. */
 function field(value: string | number): string {

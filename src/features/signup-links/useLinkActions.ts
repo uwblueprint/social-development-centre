@@ -3,7 +3,7 @@
 import * as React from "react";
 import QRCode from "qrcode";
 import { useToast } from "@/components/ui/Toast";
-import { signupLinkUrl, type SignupLink } from "./data";
+import { signupLinkUrl, type SignupLink } from "./links";
 
 /** Copies a link's URL and confirms with a toast. */
 export function useCopyLink() {

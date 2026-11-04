@@ -5,7 +5,7 @@ import { Copy, Download } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { DialogActions, DialogContent, DialogTitle } from "@/components/ui/Dialog";
 import { Icon } from "@/components/ui/Icon";
-import type { SignupLink } from "./data";
+import type { SignupLink } from "./links";
 import { useLinkActions } from "./useLinkActions";
 
 /* A narrow column; the code fills its width. */

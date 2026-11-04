@@ -10,12 +10,11 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Icon } from "@/components/ui/Icon";
 import { List, ListRow } from "@/components/ui/ListRow";
 import { Table, type TableColumn } from "@/components/ui/Table";
-import { AppToastProvider } from "@/components/ui/Toast";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { TruncatedText } from "@/components/ui/TruncatedText";
 import { CreateLinkDialog } from "./CreateLinkDialog";
 import { downloadSignupLinksCsv } from "./csv";
-import { conversion, type SignupLink } from "./data";
+import { conversion, type SignupLink } from "./links";
 import { LinkDialogContent } from "./LinkDialog";
 import { useCopyLink } from "./useLinkActions";
 
@@ -91,17 +90,13 @@ const NameButton = styled(Button)`
   }
 `;
 
-export function SignupLinksPage({ initialLinks }: { initialLinks: SignupLink[] }) {
-  return (
-    <AppToastProvider>
-      <Links initialLinks={initialLinks} />
-    </AppToastProvider>
-  );
+function count(n: number, one: string, many: string) {
+  return `${n.toLocaleString("en-CA")} ${n === 1 ? one : many}`;
 }
 
-function Links({ initialLinks }: { initialLinks: SignupLink[] }) {
+/** The admin portal's toast provider (AdminShell) shows the copy confirmations. */
+export function SignupLinksPage({ links }: { links: SignupLink[] }) {
   const copyLink = useCopyLink();
-  const [links, setLinks] = React.useState(initialLinks);
   const [createOpen, setCreateOpen] = React.useState(false);
   // A new key each time the dialog opens, so it starts empty.
   const [createKey, setCreateKey] = React.useState(0);
@@ -203,7 +198,7 @@ function Links({ initialLinks }: { initialLinks: SignupLink[] }) {
                 <CardText>
                   <TruncatedText>{l.name}</TruncatedText>
                   <CardStats>
-                    {l.clicks.toLocaleString("en-CA")} clicks · {l.joins.toLocaleString("en-CA")} joins · {conversion(l)}
+                    {count(l.clicks, "click", "clicks")} · {count(l.joins, "join", "joins")} · {conversion(l)}
                   </CardStats>
                 </CardText>
               </ListRow>
@@ -215,8 +210,6 @@ function Links({ initialLinks }: { initialLinks: SignupLink[] }) {
         key={createKey}
         open={createOpen}
         onOpenChange={setCreateOpen}
-        existing={links}
-        onCreate={(link) => setLinks((current) => [link, ...current])}
       />
       <Dialog open={qrLink !== null} onOpenChange={(open) => !open && setQrLink(null)}>
         {qrLink && <LinkDialogContent link={qrLink} />}
