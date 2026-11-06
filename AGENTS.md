@@ -15,7 +15,7 @@ Check `git config user.name` and work in that person's folder:
 - `src/components/ui/`: the component kit. Import from here and nowhere else.
 - `src/components/patterns/`: layouts composed from the kit, e.g. `SidebarLayout` and `ListPage` (docs in `docs/patterns/`).
 - `src/app/admin/`: the admin portal, the product SDC staff use. Its sidebar config lives in `src/app/admin/_components/AdminShell.tsx`; each section is a route under `/admin/`. Sub-areas of a section use in-page tabs, not new sidebar items.
-- `src/app/design/<feature>/`: designers' screens on demo data. The folder's layout draws a blank placeholder where the sidebar will go. Devs build the real feature in `src/app/admin/` from these.
+- `src/app/design/(admin)/<feature>/`: designers' admin screens on demo data. The group's layout draws a blank placeholder where the sidebar will go. Member-facing screens go in `(member)/` and have no nav. Devs build the real feature in `src/app/admin/` from these.
 - `src/app/prototypes/<feature>/`: PM prototypes for scoping. Throwaway: never import from them.
 - `src/features/`: feature code, e.g. `src/features/intake/` (the public intake form).
 - `src/components/ui/tokens.ts`: every color, space, radius, type size, line height, shadow and duration.

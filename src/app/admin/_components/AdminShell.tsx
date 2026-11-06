@@ -2,7 +2,7 @@
 
 import { OfflineWatcher } from "@/app/_components/OfflineWatcher";
 import type { ReactNode } from "react";
-import { UserCog, UsersRound } from "lucide-react";
+import { Link2, UserCog, UsersRound } from "lucide-react";
 import { AppToastProvider } from "@/components/ui/Toast";
 import { SidebarLayout, type SidebarNavItem } from "@/components/patterns/Sidebar";
 import type { AdminSection } from "../_data/types";
@@ -11,6 +11,12 @@ import { signOut } from "@/features/auth/actions";
 /** `description` shows as a delayed tooltip on the sidebar item; it replaces the old page descriptions. */
 const sections: { key: AdminSection; label: string; description: string; icon: SidebarNavItem["icon"] }[] = [
   { key: "members", label: "Members", description: "People in SDC's community who can sign in to the members' area.", icon: UsersRound },
+  {
+    key: "signup-links",
+    label: "Signup links",
+    description: "A link and QR code for each event, with how many people opened it and joined.",
+    icon: Link2,
+  },
   { key: "admins", label: "Admins", description: "Who can sign in to the admin portal.", icon: UserCog },
 ];
 

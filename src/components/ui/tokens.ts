@@ -25,6 +25,9 @@ globalStyle`
 
     --color-bg: #ffffff;
     --color-surface: var(--taupe-50);
+    /* QR codes only scan as dark modules on a light ground, so these stay the same in dark mode. */
+    --qr-ink: var(--taupe-900);
+    --qr-ground: #ffffff;
     --color-surface-raised: #ffffff;
     --color-text: var(--taupe-900);
     --color-text-muted: var(--taupe-600);
@@ -182,6 +185,8 @@ globalStyle`
     --search-width: 280px;
     /* The desktop sidebar's width; the design zone's nav placeholder uses it too, so swapping in the real sidebar doesn't shift screens. */
     --sidebar-width: 264px;
+    /* Narrow dialogs (a signup link's QR code and actions): a phone-sized column, so the code scans at a glance. */
+    --dialog-width-narrow: 364px;
 
     /*
      * Dashed borders (disabled controls, drop targets): drawn as 4px dashes with 4px gaps, because the
