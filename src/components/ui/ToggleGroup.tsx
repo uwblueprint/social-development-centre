@@ -10,25 +10,20 @@ const Root = styled(ToggleGroupPrimitive.Root)`
   width: fit-content;
   align-items: center;
   gap: 2px;
-  padding: 4px;
+  padding: 2px;
   border-radius: var(--radius-md);
-  background: var(--color-border);
+  background: var(--color-secondary);
 `;
 
 const Indicator = styled.div`
   position: absolute;
-  top: 4px;
-  bottom: 4px;
+  top: 2px;
+  bottom: 2px;
   left: 0;
   border-radius: var(--radius-sm);
   background: var(--color-bg);
   box-shadow: var(--shadow-sm);
   pointer-events: none;
-  will-change: transform;
-  transition:
-    transform var(--duration-slow) var(--ease-spring),
-    width var(--duration-slow) var(--ease-spring),
-    opacity var(--duration) var(--ease);
 `;
 
 export const ToggleGroupItem = styled(ToggleGroupPrimitive.Item)`
@@ -38,22 +33,19 @@ export const ToggleGroupItem = styled(ToggleGroupPrimitive.Item)`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 34px;
-  padding: 0 var(--space-4);
+  height: 28px;
+  padding: 0 var(--space-3);
   border-radius: var(--radius-sm);
-  /* Mixing in more of --color-text than --color-text-muted carries (which
-     only hits ~4.1:1 on the --color-border container background) reaches
-     ~6.8:1, comfortably clearing WCAG 2.2 AA's 4.5:1 for text. */
-  color: color-mix(in srgb, var(--color-text) 75%, transparent);
+  /* Unselected labels are muted on the light --color-secondary track: 6.9:1, clear of WCAG 2.2 AA's 4.5:1. */
+  color: var(--color-text-muted);
   font-family: inherit;
   font-size: var(--text-sm);
   font-weight: var(--weight-regular);
   line-height: var(--leading-ui);
   cursor: pointer;
   transition:
-    color var(--duration) var(--ease),
-    background-color var(--duration) var(--ease),
-    box-shadow var(--duration) var(--ease);
+    color var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out);
 
   &:hover:not([data-disabled]) {
     color: var(--color-text);

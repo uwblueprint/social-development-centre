@@ -29,9 +29,9 @@ const Root = styled(TogglePrimitive.Root)`
   line-height: var(--leading-ui);
   cursor: pointer;
   transition:
-    background-color var(--duration) var(--ease),
-    color var(--duration) var(--ease),
-    border-color var(--duration) var(--ease);
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
 
   &:hover:not([data-disabled]) {
     background: var(--color-bg-hover);

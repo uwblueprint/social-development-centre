@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { Send } from "lucide-react";
+import { EMAIL_FOOTER } from "./EmailEditor";
 import { styled } from "next-yak";
 import { Button } from "@/components/ui/Button";
 import {
@@ -12,12 +14,32 @@ import {
   DialogTitle,
 } from "@/components/ui/Dialog";
 import { Field } from "@/components/ui/Field";
+import { Icon } from "@/components/ui/Icon";
 import { Select } from "@/components/ui/Select";
 import { useToast } from "@/components/ui/Toast";
-import { type AutomaticEmail, MEMBERS, type ScheduledRecipient } from "../_data";
-import { Row, RowMain, RowSide } from "./parts";
+import { VARIABLES } from "@/app/design/email-editor/variables";
+import { type AutomaticEmail, MEMBERS, upcomingRecipients, TODAY, textToDoc } from "../_data";
+import { renderEmailDoc, renderEmailText } from "./renderEmail";
 
-const MEMBER_OPTIONS = MEMBERS.map((m) => ({ value: m.n, label: m.n }));
+const SAMPLE = "Maya Chen";
+const SAMPLE_ADDRESS = "maya@example.com";
+
+/** The previewed member's details by variable id. Referrer and referred names use the editor's examples. */
+function valuesFor(name: string): Record<string, string> {
+  const m = MEMBERS.find((x) => x.n === name) ?? { n: name, d: 0 };
+  const [first, ...rest] = m.n.split(" ");
+  const joined = new Date(TODAY);
+  joined.setDate(joined.getDate() - m.d);
+  const examples = Object.fromEntries(VARIABLES.filter((v) => v.group !== "member").map((v) => [v.id, v.example]));
+  return {
+    ...examples,
+    first_name: first,
+    last_name: rest.join(" "),
+    full_name: m.n,
+    email: m.n === SAMPLE ? SAMPLE_ADDRESS : `${m.n.toLowerCase().split(" ").join(".")}@example.org`,
+    join_date: joined.toLocaleDateString("en-CA", { month: "long", day: "numeric", year: "numeric" }),
+  };
+}
 
 const Mail = styled.div`
   margin-top: var(--space-4);
@@ -64,7 +86,7 @@ const BodyPlaceholder = styled.div`
   border: 1px dashed var(--color-border-strong);
   border-radius: var(--radius-sm);
   font-size: var(--text-sm);
-  line-height: var(--leading-body);
+  line-height: var(--leading-footer);
   color: var(--color-text-muted);
 `;
 
@@ -72,32 +94,16 @@ const MailFooter = styled.div`
   padding: var(--space-3) var(--space-4);
   border-top: 1px solid var(--color-border);
   font-size: var(--text-xs);
-  line-height: var(--leading-body);
+  line-height: var(--leading-footer);
   color: var(--color-text-muted);
-`;
 
-const ColumnHeads = styled(Row)`
-  padding-top: var(--space-2);
-  padding-bottom: var(--space-2);
-  background: var(--color-surface);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-medium);
-  color: var(--color-text-muted);
+  p {
+    margin: 0;
+  }
 `;
 
 const Underlined = styled.span`
   text-decoration: underline;
-`;
-
-const Scroll = styled.div`
-  margin: var(--space-3) calc(var(--space-5) * -1) 0;
-  border-top: 1px solid var(--color-border);
-  border-bottom: 1px solid var(--color-border);
-`;
-
-const Small = styled.span`
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
 `;
 
 const Strong = styled.span`
@@ -105,37 +111,43 @@ const Strong = styled.span`
   font-weight: var(--weight-medium);
 `;
 
-const Right = styled(RowSide)`
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0;
-  text-align: right;
-  font-size: var(--text-sm);
-`;
-
 export function EmailPreviewDialog({
   open,
   onOpenChange,
   email,
+  fallbacks,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   email: AutomaticEmail;
+  fallbacks: Record<string, string>;
 }) {
   const { toast } = useToast();
-  const [asMember, setAsMember] = useState(MEMBERS[0].n);
+  const eligible = useMemo(() => upcomingRecipients(email).map((m) => m.name), [email]);
+  const [picked, setPicked] = useState(eligible[0] ?? SAMPLE);
+  const sample = eligible.length === 0;
+  const asMember = sample ? SAMPLE : eligible.includes(picked) ? picked : eligible[0];
   const first = asMember.split(" ")[0];
-  const address = `${asMember.toLowerCase().split(" ").join(".")}@example.org`;
-  const subject = email.subject ? email.subject.split("[First name]").join(first) : "(No subject yet)";
+  const address = sample ? SAMPLE_ADDRESS : `${asMember.toLowerCase().split(" ").join(".")}@example.org`;
+  const options = eligible.map((n) => ({ value: n, label: n }));
+  const values = valuesFor(asMember);
+  const subjectDoc = email.subjectDoc ?? (email.subject ? textToDoc(email.subject) : undefined);
+  const subject = renderEmailText(subjectDoc, values, fallbacks) || "(No subject yet)";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogTitle>Preview email</DialogTitle>
-        <DialogDescription>Shown with {first}&apos;s details. Fields with no value use their fallback.</DialogDescription>
-        <Field label="Preview as">
-          {(props) => <Select {...props} options={MEMBER_OPTIONS} value={asMember} onValueChange={setAsMember} />}
-        </Field>
+        <DialogDescription style={{ lineHeight: "var(--leading-prose)" }}>
+          {sample
+            ? "Shown with a sample member. Fields with no value use their backup text."
+            : `Shown with ${first}'s details. Fields with no value use their backup text.`}
+        </DialogDescription>
+        {!sample && (
+          <Field label="Preview as">
+            {(props) => <Select {...props} options={options} value={asMember} onValueChange={setPicked} />}
+          </Field>
+        )}
         <Mail>
           <MailHeaders>
             <dt>From</dt>
@@ -152,24 +164,19 @@ export function EmailPreviewDialog({
             </dd>
           </MailHeaders>
           <MailBody>
-            <p>Hi {first},</p>
-            <BodyPlaceholder>
-              The message body goes here. It&apos;s written in the Email Editor, and personalization fields like first
-              name fill in for each member.
-            </BodyPlaceholder>
-            <p>
-              Warmly,
-              <br />
-              The Social Development Centre team
-            </p>
+            {email.body ? renderEmailDoc(email.body, values, fallbacks) : <BodyPlaceholder>No message yet.</BodyPlaceholder>}
           </MailBody>
           <MailFooter>
-            You&apos;re getting this email because you&apos;re a member of the Social Development Centre.{" "}
-            <Underlined>Unsubscribe</Underlined>
+            <p>{EMAIL_FOOTER.organization}</p>
+            <p>{`${EMAIL_FOOTER.address} · ${EMAIL_FOOTER.contact}`}</p>
+            <p>
+              {EMAIL_FOOTER.reason} <Underlined>Unsubscribe from emails</Underlined> · <Underlined>Cancel membership</Underlined>
+            </p>
           </MailFooter>
         </Mail>
         <DialogActions>
           <Button $variant="outline" onClick={() => toast({ title: `Test sent to your inbox, previewed as ${asMember}` })}>
+            <Icon icon={Send} size={14} />
             Send test to my inbox
           </Button>
           <DialogClose asChild>
@@ -181,48 +188,3 @@ export function EmailPreviewDialog({
   );
 }
 
-export function ScheduledDialog({
-  open,
-  onOpenChange,
-  title,
-  recipients,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  title: string;
-  recipients: ScheduledRecipient[];
-}) {
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogTitle>{title}</DialogTitle>
-        <DialogDescription>
-          Members scheduled to get this email so far. More are added as their trigger happens.
-        </DialogDescription>
-        <Scroll>
-          <ColumnHeads aria-hidden="true">
-            <RowMain>Recipient</RowMain>
-            <Right>Sends on</Right>
-          </ColumnHeads>
-          {recipients.map((p) => (
-            <Row key={p.name}>
-              <RowMain>
-                <Strong>{p.name}</Strong>
-                <Small>{p.email}</Small>
-              </RowMain>
-              <Right>
-                <span>{p.sendDate}</span>
-                <Small>{p.when}</Small>
-              </Right>
-            </Row>
-          ))}
-        </Scroll>
-        <DialogActions>
-          <DialogClose asChild>
-            <Button>Done</Button>
-          </DialogClose>
-        </DialogActions>
-      </DialogContent>
-    </Dialog>
-  );
-}

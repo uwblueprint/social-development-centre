@@ -10,6 +10,7 @@ import {
   SelectDemo,
   CreatableComboboxDemo,
   TagInputDemo,
+  TagComboboxDemo,
   ErrorSummaryDemo,
   TextareaDemo,
 } from "./demos/FormDemos";
@@ -20,6 +21,8 @@ import {
   SliderDemo,
   SwitchDemo,
   ToggleDemo,
+  RangeCalendarDemo,
+  DateRulePickerDemo,
   ToggleGroupDemo,
 } from "./demos/ControlDemos";
 import { OverlayDemos } from "./demos/OverlayDemos";
@@ -38,8 +41,11 @@ const sections: { id: string; title: string; description: string; demo: ReactNod
   { id: "search-field", title: "Search field", description: "Instant search for a list: results update 300ms after typing stops, Enter searches now, × clears.", demo: <SearchFieldDemo /> },
   { id: "textarea", title: "Textarea", description: "Multi-line text entry.", demo: <TextareaDemo /> },
   { id: "date-picker", title: "Date picker", description: "Type a date or pick one from a calendar.", demo: <DatePickerDemo /> },
+  { id: "range-calendar", title: "Range calendar", description: "A month calendar for a date rule: pick one date for before or after, or a start and end for between.", demo: <RangeCalendarDemo /> },
+  { id: "date-rule-picker", title: "Date rule picker", description: "A date rule as plain text that opens Before / After / Between and a range calendar.", demo: <DateRulePickerDemo /> },
   { id: "select", title: "Select", description: "Pick one option from a list.", demo: <SelectDemo /> },
   { id: "creatable-combobox", title: "Creatable combobox", description: "Pick an existing option or create one inline.", demo: <CreatableComboboxDemo /> },
+  { id: "tag-combobox", title: "Tag combobox", description: "Pick several options from a list, shown as tags in one field. Type to search; click or Enter adds. Backspace selects the last tag, a second Backspace removes it, and for 5 seconds after that Backspace removes straight away.", demo: <TagComboboxDemo /> },
   { id: "tag-input", title: "Tag input", description: "Type or paste many entries, such as email addresses; each becomes a removable tag. Invalid entries are marked with an icon and a reason. Click, Shift-click or Cmd/Ctrl-click tags to select them (Cmd/Ctrl+A in the empty field selects all), then Backspace removes and Cmd/Ctrl+C copies them.", demo: <TagInputDemo /> },
   { id: "error-summary", title: "Error summary", description: "A persistent list of a long form's errors, each linking to its field.", demo: <ErrorSummaryDemo /> },
   { id: "checkbox", title: "Checkbox", description: "Independent on/off choices, including indeterminate.", demo: <CheckboxDemo /> },

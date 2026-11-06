@@ -12,16 +12,27 @@ import {
 } from "@/components/ui/AlertDialog";
 import { Button } from "@/components/ui/Button";
 import { AppToastProvider, useToast } from "@/components/ui/Toast";
-import { type AutomaticEmail, SEED, displayName, newEmail, previewFor } from "../_data";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/Accordion";
+import { type AutomaticEmail, SEED, audienceSentence, displayName, effectiveAudience, upcomingRecipients, missingAttachment, newEmail, timingPhrase } from "../_data";
 import { EmailEditor } from "./EmailEditor";
 import { EmailList } from "./EmailList";
+import { MemberRows } from "./parts";
 
-export type SaveStatus = "saved" | "saving" | "error";
+/** "idle": a new email nobody has touched yet, so there is nothing saved to report. */
+export type SaveStatus = "idle" | "saved" | "saving" | "error";
 type ModalKind = "publish" | "unpublish" | "trash" | "leave";
 
 function clone<T>(x: T): T {
   return JSON.parse(JSON.stringify(x)) as T;
 }
+/** Comparable form of a field: empty docs, "", 0 and missing all count as blank. */
+function norm(v: unknown) {
+  const json = JSON.stringify(v ?? null);
+  // Only rich-text docs can be blank; other objects (like the audience) always count.
+  const blankDoc = typeof v === "object" && v !== null && json.includes('"type":"doc"') && !/"type":"(text|personalizedText|emailImage|image)"/.test(json);
+  return v == null || v === "" || v === 0 || blankDoc ? "" : json;
+}
+
 function snapshotAll(list: AutomaticEmail[]) {
   return Object.fromEntries(list.map((e) => [e.id, clone(e)]));
 }
@@ -38,7 +49,7 @@ export function AutomaticEmails({ empty, failSaves }: { empty: boolean; failSave
 function Screen({ empty, failSaves }: { empty: boolean; failSaves: boolean }) {
   const { toast } = useToast();
   const [emails, setEmails] = useState<AutomaticEmail[]>(() => (empty ? [] : clone(SEED)));
-  const [lastSaved, setLastSaved] = useState<Record<string, AutomaticEmail>>(() => snapshotAll(emails));
+  const [, setLastSaved] = useState<Record<string, AutomaticEmail>>(() => snapshotAll(emails));
   const [editId, setEditId] = useState<string | null>(null);
   const [saved, setSaved] = useState<SaveStatus>("saved");
   const [modal, setModal] = useState<{ kind: ModalKind; id: string } | null>(null);
@@ -79,13 +90,17 @@ function Screen({ empty, failSaves }: { empty: boolean; failSaves: boolean }) {
 
   function update(patch: Partial<AutomaticEmail>) {
     if (!editId) return;
+    // The editors report their content once on mount; only a real change counts as an edit worth saving.
+    const current = emailsRef.current.find((e) => e.id === editId) as Record<string, unknown> | undefined;
+    const changed = Object.entries(patch).some(([k, v]) => norm(current?.[k]) !== norm(v));
+    if (!changed) return;
     patchEmail(editId, patch);
     save(editId);
   }
 
-  function open(id: string) {
+  function open(id: string, fresh = false) {
     setEditId(id);
-    setSaved("saved");
+    setSaved(fresh ? "idle" : "saved");
   }
 
   function create() {
@@ -94,7 +109,7 @@ function Screen({ empty, failSaves }: { empty: boolean; failSaves: boolean }) {
     setEmails((list) => [...list, e]);
     setLastSaved((snap) => ({ ...snap, [id]: clone(e) }));
     setNextId((n) => n + 1);
-    open(id);
+    open(id, true);
   }
 
   function duplicate(e: AutomaticEmail) {
@@ -121,9 +136,13 @@ function Screen({ empty, failSaves }: { empty: boolean; failSaves: boolean }) {
     toast({ title: `“${displayName(e)}” restored to Drafts` });
   }
 
+
   function leave() {
-    if (saved !== "saved" && editId) setModal({ kind: "leave", id: editId });
-    else setEditId(null);
+    clearTimeout(saveTimer.current);
+    // A new email left untouched was never saved, so it doesn't stay behind as an empty draft.
+    if (saved === "idle" && editId) setEmails((list) => list.filter((e) => e.id !== editId));
+    setEditId(null);
+    setSaved("saved");
   }
 
   function confirm() {
@@ -142,12 +161,8 @@ function Screen({ empty, failSaves }: { empty: boolean; failSaves: boolean }) {
       setEditId(null);
       toast({ title: `“${displayName(e)}” moved to trash` });
     } else {
-      clearTimeout(saveTimer.current);
-      const last = lastSaved[e.id];
-      if (last) patchEmail(e.id, clone(last));
-      setEditId(null);
-      setSaved("saved");
-      toast({ title: "Unsaved changes discarded" });
+      // Only reached when the last save failed or is still running.
+      leave();
     }
   }
 
@@ -161,11 +176,10 @@ function Screen({ empty, failSaves }: { empty: boolean; failSaves: boolean }) {
           email={cur}
           saved={saved}
           onUpdate={update}
-          onBack={leave}
           onRetrySave={() => save(cur.id)}
-          onSaveDraft={() => save(cur.id, true)}
           onAsk={(kind) => setModal({ kind, id: cur.id })}
           onRestore={() => restore(cur)}
+          onBack={() => (cur.state === "draft" && (saved === "saving" || saved === "error") ? setModal({ kind: "leave", id: cur.id }) : leave())}
         />
       ) : (
         <EmailList
@@ -194,9 +208,17 @@ function confirmCopy(kind: ModalKind, e: AutomaticEmail) {
     if (e.waiting) lines.push(`${e.waiting}${e.waiting === 1 ? " email waiting for review comes" : " emails waiting for review come"} back when you publish.`);
     return { title: `Unpublish “${name}”?`, lines, confirm: "Unpublish", cancel: "Cancel", danger: false };
   }
+  if (kind === "publish" && missingAttachment(e)) {
+    return {
+      title: "Publish without an attachment?",
+      lines: ["The email mentions an attachment, but nothing is attached."],
+      confirm: "Publish anyway",
+      cancel: "Go back",
+      danger: false,
+    };
+  }
   if (kind === "publish") {
-    const n = previewFor(e).length;
-    const lines = [n ? `${n}${n === 1 ? " member is" : " members are"} scheduled as normal.` : "No one is scheduled yet. Members get it when the trigger happens."];
+    const lines = [`It sends ${timingPhrase(e)}.`, `Who gets it: ${audienceSentence(effectiveAudience(e))}`];
     if (e.wasPublished) {
       const back = e.waiting + e.approved;
       if (back) lines.push(`${back}${back === 1 ? " email comes" : " emails come"} back for review.`);
@@ -215,12 +237,9 @@ function confirmCopy(kind: ModalKind, e: AutomaticEmail) {
   }
   return {
     title: "Leave without saving?",
-    lines: [
-      `Your latest changes to “${name}” haven't saved yet.`,
-      "If you leave now, they're lost and the email goes back to its last saved version.",
-    ],
+    lines: ["Your latest changes didn't save. If you leave now, they're lost."],
     confirm: "Leave anyway",
-    cancel: "Stay and keep editing",
+    cancel: "Stay",
     danger: true,
   };
 }
@@ -233,6 +252,7 @@ function ConfirmContent({ kind, email, onConfirm }: { kind: ModalKind; email: Au
       {copy.lines.map((line) => (
         <AlertDialogDescription key={line}>{line}</AlertDialogDescription>
       ))}
+      {kind === "publish" && !missingAttachment(email) && <EligibleAccordion email={email} />}
       <AlertDialogActions>
         <AlertDialogCancel asChild>
           <Button $variant="outline">{copy.cancel}</Button>
@@ -244,5 +264,27 @@ function ConfirmContent({ kind, email, onConfirm }: { kind: ModalKind; email: Au
         </AlertDialogAction>
       </AlertDialogActions>
     </AlertDialogContent>
+  );
+}
+
+function EligibleAccordion({ email }: { email: AutomaticEmail }) {
+  const members = upcomingRecipients(email);
+  if (!members.length) return <AlertDialogDescription>No members are scheduled to get this yet.</AlertDialogDescription>;
+  return (
+    <>
+      <AlertDialogDescription>
+        {members.length === 1 ? "1 member is scheduled to get this." : `${members.length} members are scheduled to get this.`}
+      </AlertDialogDescription>
+      <Accordion type="single" collapsible>
+        <AccordionItem value="members">
+          <AccordionTrigger>View members</AccordionTrigger>
+          <AccordionContent>
+            <div>
+              <MemberRows members={members} />
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+    </>
   );
 }

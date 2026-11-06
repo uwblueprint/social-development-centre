@@ -38,7 +38,7 @@ const PageButton = styled.button<{ $active?: boolean }>`
   font-size: var(--text-sm);
   color: var(--color-text);
   cursor: pointer;
-  transition: background-color var(--duration) var(--ease), color var(--duration) var(--ease);
+  transition: background-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
 
   &:hover {
     background: var(--color-bg-hover);

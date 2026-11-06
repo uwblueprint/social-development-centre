@@ -3,7 +3,10 @@
 import * as React from "react";
 import { styled } from "next-yak";
 import { Lock } from "lucide-react";
+import { Button } from "./Button";
 import { Icon } from "./Icon";
+
+type ButtonProps = React.ComponentProps<typeof Button>;
 import { Tooltip } from "./Tooltip";
 
 /*
@@ -71,7 +74,11 @@ export function DisabledArea({
   );
 }
 
-/** Inline wrapper for single controls (checkbox rows, switches, buttons): control, then lock icon. */
+/**
+ * Inline wrapper for single controls. A `Button` gets the lock inside it, before its label, and stays
+ * focusable (aria-disabled instead of disabled) so the reason opens on hover, focus or tap. Other
+ * controls (checkbox rows, switches) get the lock after them.
+ */
 export function DisabledReason({
   reason,
   children,
@@ -79,6 +86,18 @@ export function DisabledReason({
   reason: DisabledReasonText;
   children: React.ReactNode;
 }) {
+  if (reason && React.isValidElement<ButtonProps>(children) && children.type === Button) {
+    const { children: label, ...props } = children.props;
+    return (
+      <Tooltip content={reason}>
+        {/* The button's own onClick never runs: it's disabled. */}
+        <Button {...props} disabled={undefined} aria-disabled onClick={(event) => event.preventDefault()}>
+          <Icon icon={Lock} size={14} />
+          {label}
+        </Button>
+      </Tooltip>
+    );
+  }
   return (
     <DisabledArea reason={reason}>
       {children}
