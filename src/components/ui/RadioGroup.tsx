@@ -25,7 +25,7 @@ const Item = styled(RadioGroupPrimitive.Item)`
   border: 1px solid var(--color-border-strong);
   background: var(--color-bg);
   cursor: pointer;
-  transition: border-color var(--duration) var(--ease);
+  transition: border-color var(--duration-fast) var(--ease-out);
 
   &[data-state="checked"] {
     border-color: var(--color-primary);
@@ -74,7 +74,7 @@ const Row = styled.label`
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: background-color var(--duration) var(--ease);
+  transition: background-color var(--duration-fast) var(--ease-out);
 
   &:hover:not([data-disabled]) {
     background: var(--color-bg-hover);
@@ -168,13 +168,9 @@ const Card = styled(RadioGroupPrimitive.Item)`
   background: var(--color-bg);
   cursor: pointer;
   transition:
-    border-color var(--duration) var(--ease),
-    background-color var(--duration) var(--ease),
-    translate var(--duration) var(--ease-spring);
+    border-color var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out);
 
-  &:hover {
-    translate: 0 -1px;
-  }
   &:hover [data-draw] rect {
     stroke-dashoffset: 0;
   }
@@ -212,7 +208,6 @@ const DrawBorder = styled.svg`
     stroke-width: 1;
     stroke-dasharray: 1;
     stroke-dashoffset: 1;
-    transition: stroke-dashoffset var(--duration-enter) var(--ease);
   }
 `;
 
@@ -230,14 +225,10 @@ const CardCheck = styled.span`
   background: var(--card-accent, var(--color-primary));
   color: var(--color-bg);
   opacity: 0;
-  scale: 0.6;
-  transition:
-    opacity var(--duration) var(--ease),
-    scale var(--duration) var(--ease-spring);
+  transition: opacity var(--duration-fast) var(--ease-out);
 
   [data-state="checked"] > & {
     opacity: 1;
-    scale: 1;
   }
 `;
 

@@ -23,7 +23,6 @@ const Scrollbar = styled(ScrollAreaPrimitive.Scrollbar)`
   user-select: none;
   padding: 2px;
   background: transparent;
-  transition: background-color var(--duration) var(--ease);
 
   &[data-orientation="vertical"] {
     width: 10px;

@@ -10,6 +10,8 @@ import { SliderField } from "@/components/ui/Slider";
 import { Toggle } from "@/components/ui/Toggle";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/ToggleGroup";
 import { DatePicker } from "@/components/ui/DatePicker";
+import { RangeCalendar, type RangeCalendarMode, type RangeCalendarValue } from "@/components/ui/RangeCalendar";
+import { DateRulePicker, type DateRule } from "@/components/ui/DateRulePicker";
 import { DisabledReason } from "@/components/ui/DisabledReason";
 import { Field } from "@/components/ui/Field";
 
@@ -239,6 +241,26 @@ export function DatePickerDemo() {
   );
 }
 
+export function RangeCalendarDemo() {
+  const [mode, setMode] = React.useState<RangeCalendarMode>("between");
+  const [value, setValue] = React.useState<RangeCalendarValue>({ from: "2026-11-01", to: "2026-11-30" });
+  return (
+    <DatePickerStack>
+      <ToggleGroup type="single" value={mode} onValueChange={(v) => v && setMode(v as RangeCalendarMode)} aria-label="Rule">
+        <ToggleGroupItem value="before">Before</ToggleGroupItem>
+        <ToggleGroupItem value="after">After</ToggleGroupItem>
+        <ToggleGroupItem value="between">Between</ToggleGroupItem>
+      </ToggleGroup>
+      <RangeCalendar mode={mode} value={value} onValueChange={setValue} aria-label="Joined" />
+    </DatePickerStack>
+  );
+}
+
+export function DateRulePickerDemo() {
+  const [rule, setRule] = React.useState<DateRule>({ op: "between", from: "2026-11-01", to: "2026-11-30" });
+  return <DateRulePicker label="Join date" value={rule} onValueChange={setRule} />;
+}
+
 export function ControlDemos() {
   return (
     <div>
@@ -249,6 +271,8 @@ export function ControlDemos() {
       <ToggleDemo />
       <ToggleGroupDemo />
       <DatePickerDemo />
+      <RangeCalendarDemo />
+      <DateRulePickerDemo />
     </div>
   );
 }

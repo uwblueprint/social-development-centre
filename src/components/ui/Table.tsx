@@ -307,8 +307,8 @@ const FilterButton = styled.button<{ $active?: boolean }>`
   color: ${({ $active }) => ($active ? "var(--color-text)" : "var(--color-text-subtle)")};
   cursor: pointer;
   transition:
-    background-color var(--duration) var(--ease),
-    color var(--duration) var(--ease);
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
 
   &:hover,
   &[data-state="open"] {
@@ -561,7 +561,7 @@ const SortHint = styled.span`
   flex: none;
   color: var(--color-text-subtle);
   opacity: 0;
-  transition: opacity var(--duration) var(--ease);
+  transition: opacity var(--duration-fast) var(--ease-out);
 `;
 
 /*
@@ -584,8 +584,8 @@ const SortButton = styled.button<{ $align?: "left" | "right"; $active?: boolean 
   color: ${({ $active }) => ($active ? "var(--color-text)" : "inherit")};
   cursor: pointer;
   transition:
-    background-color var(--duration) var(--ease),
-    color var(--duration) var(--ease);
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
 
   &:hover {
     background: var(--color-bg-hover);
@@ -734,7 +734,7 @@ const Td = styled.td<{ $align?: "left" | "right"; $busy?: boolean }>`
   color: var(--color-text);
   text-align: ${({ $align }) => $align ?? "left"};
   vertical-align: middle;
-  transition: color var(--duration) var(--ease);
+  transition: color var(--duration-fast) var(--ease-out);
 
   ${({ $busy }) =>
     $busy &&

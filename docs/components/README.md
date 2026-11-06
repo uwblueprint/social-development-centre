@@ -20,6 +20,9 @@ Each doc covers when to use it, its API, a working example, content rules, and a
 - [Switch](./Switch.md) — an immediate-effect on/off setting.
 - [Slider](./Slider.md) — a labeled numeric range with synced number inputs.
 - [DatePicker](./DatePicker.md) — a typed date field with an assistive calendar.
+- [RangeCalendar](./RangeCalendar.md) — a month calendar for before, after or between dates.
+- [DateRulePicker](./DateRulePicker.md) — a date rule as text that opens Before / After / Between and a range calendar.
+- [TagCombobox](./TagCombobox.md) — pick several options from a list as tags in one field.
 - [Tag](./Tag.md) — static, selectable, and removable pill chips.
 
 ## Overlays

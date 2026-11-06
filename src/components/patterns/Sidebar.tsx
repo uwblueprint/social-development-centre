@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { css, keyframes, styled } from "next-yak";
+import { css, styled } from "next-yak";
 import type { LucideIcon } from "lucide-react";
 import { BookOpen, LogOut, Menu, X } from "lucide-react";
 import { Icon } from "@/components/ui/Icon";
@@ -67,50 +67,8 @@ const Shell = styled.div`
   background: var(--color-bg);
 `;
 
-// Entrance on first load. Uses `translate` (not `transform`) so it can't fight the mobile drawer's transform.
-const slideIn = keyframes`
-  from {
-    opacity: 0;
-    translate: calc(var(--enter-offset) * -1) 0;
-  }
-  to {
-    opacity: 1;
-    translate: 0 0;
-  }
-`;
-
-const fadeIn = keyframes`
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-`;
-
-/* Switching sections: the new page rises a little and fades in. */
-const pageIn = keyframes`
-  from {
-    opacity: 0;
-    translate: 0 var(--enter-offset);
-  }
-  to {
-    opacity: 1;
-    translate: 0 0;
-  }
-`;
-
-const enter = css`
-  animation: ${slideIn} var(--duration-enter) var(--ease) both;
-
-  @media (prefers-reduced-motion: reduce) {
-    animation: none;
-  }
-`;
-
 // A div, not an aside: below 768px it becomes a modal dialog, a role <aside> can't take. The nav inside is the landmark.
 const Aside = styled.div<{ $mobileOpen: boolean }>`
-  ${enter}
   position: sticky;
   top: 0;
   flex-shrink: 0;
@@ -133,7 +91,7 @@ const Aside = styled.div<{ $mobileOpen: boolean }>`
     transform: translateX(-100%);
     visibility: hidden;
     transition:
-      transform var(--duration-slow) var(--ease),
+      transform var(--duration-slow) var(--ease-out),
       visibility 0s linear var(--duration-slow);
 
     ${({ $mobileOpen }) =>
@@ -141,7 +99,7 @@ const Aside = styled.div<{ $mobileOpen: boolean }>`
       css`
         transform: translateX(0);
         visibility: visible;
-        transition: transform var(--duration-slow) var(--ease);
+        transition: transform var(--duration-slow) var(--ease-out);
       `}
   }
 `;
@@ -160,26 +118,12 @@ const Scrim = styled.button`
 `;
 
 /*
- * Re-keyed per section, so its entrance replays when you move between sections in the nav, not on
- * tab or filter changes within one. Fill mode "backwards" leaves no translate behind afterwards, so
- * sticky headers and fixed children inside the page behave normally once it has landed.
- * The global reduced-motion rule in tokens.ts cuts it to an instant change.
- */
+ * Re-keyed per section so page state resets when you move between sections. No entrance: the page just changes. */
 const PageTransition = styled.div`
-  animation: ${pageIn} var(--duration-slow) var(--ease) backwards;
-
-  @media (prefers-reduced-motion: reduce) {
-    animation: none;
-  }
+  display: contents;
 `;
 
 const Main = styled.main`
-  animation: ${fadeIn} var(--duration-enter) var(--ease) calc(var(--stagger) * 6) both;
-
-  @media (prefers-reduced-motion: reduce) {
-    animation: none;
-  }
-
   flex: 1;
   min-width: 0;
 `;
@@ -232,8 +176,8 @@ const iconButton = css`
   color: var(--color-text-muted);
   cursor: pointer;
   transition:
-    background-color var(--duration) var(--ease),
-    color var(--duration) var(--ease);
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
 
   &:hover {
     background: var(--color-bg-hover);
@@ -265,8 +209,6 @@ const Nav = styled.nav`
 `;
 
 const ItemLink = styled(Link)`
-  ${enter}
-  animation-delay: calc(var(--stagger) * (var(--i, 0) + 2));
 
   display: flex;
   align-items: center;
@@ -279,8 +221,8 @@ const ItemLink = styled(Link)`
   line-height: var(--leading-ui);
   text-decoration: none;
   transition:
-    background-color var(--duration) var(--ease),
-    color var(--duration) var(--ease);
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
 
   &:hover {
     background: var(--color-bg-hover);
@@ -380,12 +322,6 @@ const RecentContext = styled.span`
 `;
 
 const Footer = styled.div`
-  animation: ${fadeIn} var(--duration-enter) var(--ease) calc(var(--stagger) * 7) both;
-
-  @media (prefers-reduced-motion: reduce) {
-    animation: none;
-  }
-
   margin-top: auto;
   padding-top: var(--space-3);
   border-top: 1px solid var(--color-border);
@@ -402,7 +338,7 @@ const FooterLink = styled(Link)`
   font-size: var(--text-md);
   line-height: var(--leading-ui);
   text-decoration: none;
-  transition: background-color var(--duration) var(--ease), color var(--duration) var(--ease);
+  transition: background-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
 
   &:hover {
     background: var(--color-bg-hover);
@@ -432,7 +368,7 @@ const SignOutButton = styled.button`
   font-size: var(--text-md);
   line-height: var(--leading-ui);
   cursor: pointer;
-  transition: background-color var(--duration) var(--ease);
+  transition: background-color var(--duration-fast) var(--ease-out);
 
   &:hover {
     background: var(--color-danger-subtle);
@@ -499,11 +435,10 @@ function SidebarContent({
       </Header>
 
       <Nav aria-label={config.navLabel}>
-        {config.items.map((item, i) => {
+        {config.items.map((item) => {
           const link = (
             <ItemLink
               key={item.href}
-              style={{ "--i": i } as React.CSSProperties}
               href={item.href}
               aria-current={isActive(current, item.href) ? "page" : undefined}
               onClick={choose(item.href)}

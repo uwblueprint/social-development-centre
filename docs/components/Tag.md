@@ -1,6 +1,6 @@
 # Tag
 
-A small pill: a static label (`Tag`), a togglable filter chip (`SelectableTag`), or a removable selection chip (`RemovableTag`).
+A small pill with one look everywhere (grey fill, hairline border, small text), shared with the pills in `TagCombobox`. A static label (`Tag`), a togglable filter chip (`SelectableTag`), or a removable selection chip (`RemovableTag`).
 
 ## Use when / Don't use when
 - `Tag`: a static, non-interactive label (status, category).
@@ -13,6 +13,7 @@ A small pill: a static label (`Tag`), a togglable filter chip (`SelectableTag`),
 import { Tag, SelectableTag, RemovableTag, TagList } from "@/components/ui/Tag";
 ```
 - `Tag`: plain `<span>` props, `children`.
+- `Tag` and `RemovableTag` take an optional `color?: TagColor`, one of five calm hues (`stone`, `sky`, `emerald`, `amber`, `rose`; list in `TAG_COLORS`, in palette order): `--tag-*-bg` fill (Tailwind 50) and `--tag-*-text` (800, 6.8:1 or better; dark mode 200 text, 8.5:1 or better), no border. Without it they are grey. Use it when each tag has its own colour (member tags); keep the label, so colour is never the only signal. `tagColorStyle(color)` gives the same look to custom pills built on `tagPill`. `SelectableTag` keeps its hairline border.
 - `SelectableTag({ selected?: boolean, disabled?: true, disabledReason, ...button props })` — sets `aria-pressed`; shows a check/plus icon plus color change. `disabled` needs `disabledReason: DisabledReasonText` (ask the owner; `null` only if they decline). See Disabled.
 - `RemovableTag({ children, onRemove: () => void, ...span props })` — auto-labels its remove button when `children` is a string.
 - `TagList` — flex-wrap container with the standard gap.

@@ -12,7 +12,7 @@ Wraps a disabled or read-only control with a hover/focus-reachable tooltip expla
 import { DisabledReason, DisabledArea, DisabledIcon, type DisabledReasonText } from "@/components/ui/DisabledReason";
 ```
 - `DisabledReasonText = string | null` — product copy: ask for it, use their words. `null` only if declined/unknown.
-- `DisabledReason({ reason, children })` — `children` then a lock icon (only if `reason` is set).
+- `DisabledReason({ reason, children })` — with a `Button` child, the lock goes inside the button before its label, and the button stays focusable (`aria-disabled`, clicks do nothing) so the reason opens on hover, focus or tap. Any other child gets the lock after it. No lock when `reason` is `null`.
 - `DisabledArea({ reason, block?, children })` — layout wrapper used internally by `Checkbox`/`Field`/`RadioGroupOption`/`SliderField`.
 - `DisabledIcon({ reason })` — the lock glyph alone.
 
@@ -30,7 +30,7 @@ import { Button } from "@/components/ui/Button";
 State what's blocking the action and, where possible, how to unblock it. Sentence case, no fragments like "Missing data".
 
 ## Accessibility
-The lock icon is a focusable `<button>`, reachable by keyboard; hovering, focusing, or tapping it opens the tooltip.
+A wrapped `Button` stays in the tab order with `aria-disabled`; focusing, hovering or tapping it opens the tooltip. For other controls the lock icon is a focusable `<button>`, reachable by keyboard; hovering, focusing, or tapping it opens the tooltip.
 
 ## Don't
 1. Inventing a reason — always ask; pass `disabledReason={null}` if none is given.
