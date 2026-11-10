@@ -15,3 +15,10 @@ Decisions behind the Admins page (`/admin/admins`). Sign-in decisions are in [..
 
 ## 3. Removing an invited admin is the same action
 - **Decision (assumption, 8 Oct 2026):** admins who haven't signed in yet have **Remove** too. There's no separate "cancel invite".
+
+## 4. The Admins page is a table, and confirmations are dialogs (10 Nov 2026)
+- **Decision:** one row per admin with name, email and a status badge, **Active** or **Invited**. Each row has a **Remove** button (**Leave** on your own row). **Invite admin** at the top opens a dialog for name and email. Invited admins also have **Resend invite**, because the invite email can fail and an admin who never gets it needs another.
+- **Replaces:** the popover in decision 1. Remove and Leave now ask in a dialog ("Remove {name} as an admin?" / "Leave the admin portal?"); the wording and what happens are unchanged.
+- **If the invite email fails:** the person is already added (the row shows **Invited**), so this is reported as a message, not a form error, and **Resend invite** is the way to try again.
+- **Page:** Admin → Admins.
+- **When encountered:** adding someone, someone leaves SDC, or an invite never arrived.
