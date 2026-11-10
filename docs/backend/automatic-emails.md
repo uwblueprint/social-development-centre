@@ -1,7 +1,8 @@
 # Automatic Emails: backend
 
 Emails that send themselves when something happens to a member: a thank-you after joining, a
-check-in a month later, a weekly or monthly update. Design references: the "Automatic Emails
+check-in a month later. Every email starts from an event plus a delay; there are no recurring
+emails (PM, 9 Nov 2026). Design references: the "Automatic Emails
 Prototype" and the conditions prototype (Oct 2026).
 
 **Built:** storage, the draft / published / trash lifecycle, conditions, the Outbox, and the database
@@ -12,10 +13,10 @@ half of the daily run (`supabase/migrations/20261028120000_automatic_emails.sql`
 ## The model: facts are stored, eligibility is checked live
 
 ```
-event happens (join, tag added, referral)     recurring schedule (weekly / monthly / yearly)
-        │  database trigger                          │  on publish, and topped up by each daily run
-        ▼                                            ▼
-email_occurrences   facts: "this email is due on this date, for this member (or for every member)"
+event happens (join, tag added, referral)
+        │  database trigger
+        ▼
+email_occurrences   facts: "this email is due for this member on this date"
         │
         │  automatic_email_matches(email, person): conditions, checked live, never stored
         ▼
@@ -73,8 +74,8 @@ Stored on `automatic_emails.conditions` and validated on save (`22023` if malfor
 |---|---|
 | `name`, `subject` | Blank allowed while a draft is set up; publishing requires both. |
 | `state` | `draft`, `published`, `trash`. Only drafts can be edited. |
-| `trigger` | Events: `join_any`, `join_no_referral`, `join_referral`, `refers`, `referral_joins` (both referral triggers send to the referrer), `tag_added` (with `trigger_tag_id`). Recurring: `weekly` (`week_day`, 0 = Sunday), `monthly` (`month_day`), `yearly` (`year_month` + `month_day`). A day the month doesn't have means its last day. |
-| `delay_amount`, `delay_unit` | Event triggers only. `days` ≤ 365, `weeks` ≤ 52, `months` ≤ 24, `years` ≤ 5. Calendar months and years: 31 Jan + 1 month = 28 Feb. |
+| `trigger` | Events: `join_any`, `join_no_referral`, `join_referral`, `refers`, `referral_joins` (both referral triggers send to the referrer), `tag_added` (with `trigger_tag_id`). |
+| `delay_amount`, `delay_unit` | `days` ≤ 365, `weeks` ≤ 52, `months` ≤ 24, `years` ≤ 5. Calendar months and years: 31 Jan + 1 month = 28 Feb. |
 | `conditions` | See above. |
 | `mode` | `auto`, or `review` (each send waits in the Outbox for approval). |
 | `alert_enabled`, `alert_to`, `alert_when` | Review mode only. `alert_to` defaults to suhanya@waterlooregion.org (PM, 3 Nov 2026). `alert_when`: `waiting`, `due_soon`, `past_due`. |
@@ -83,11 +84,10 @@ Stored on `automatic_emails.conditions` and validated on save (`22023` if malfor
 ### `email_occurrences`
 One per (email, `key`), so an event that fires twice still queues once. Keys:
 `join:<person>:<joined epoch>`, `tag:<tag event id>`, `refers:<referral id>`,
-`referral_joins:<referral id>`, `recurring:YYYY-MM-DD`.
+`referral_joins:<referral id>`.
 
-Each row stores `person_id` (null for recurring emails, which go to every member), `event_at`,
-`context` (`tag_id`, `referral_id`, …), `due_on`, `missed`, and `status`: `pending`, `resolved`,
-`paused` or `cancelled`. Recurring emails keep 30 days of dates queued.
+Each row stores `person_id` (who it goes to), `event_at`, `context` (`tag_id`, `referral_id`, …),
+`due_on`, `missed`, and `status`: `pending`, `resolved`, `paused` or `cancelled`.
 
 Whether a join counted as referred is checked live too, because how referrals get matched to new
 members is still open, and by send day the match has had time to happen.
@@ -103,7 +103,7 @@ A row exists only once something is decided for one person:
 | `not_sent` | `not_a_member` (removed before send day), `no_longer_matched`, `unsubscribed`, `bounced`, `trashed`, or `failed` (three attempts). |
 
 **Access:** admins can read all three tables (RLS). Writes go through the functions below.
-`email_candidate_state`, the internal view that pairs each occurrence with its people, isn't
+`email_candidate_state`, the internal view that pairs each occurrence with its member's current state, isn't
 readable by `anon` or `authenticated`, because it sees every member's tags.
 
 ## Functions
@@ -116,7 +116,7 @@ All admin functions raise `42501` for non-admins and `55000` when the email is i
 | `create_automatic_email()` → `uuid` | A blank draft. |
 | `save_automatic_email(id, patch jsonb)` | Autosave: applies only the fields present in `patch`. Drafts only. An unknown field or bad conditions raise `22023`. |
 | `duplicate_automatic_email(id)` → `uuid` | A draft named "Copy of …". History stays with the original. |
-| `publish_automatic_email(id)` → `text[]` | Returns what's still missing, in the editor's words (`add a name`, `pick a tag`, `pick a day of the week`, `pick a day of the month`, `pick a date`, `add a subject`, `fix the alert email`). Empty = published. No backfill: only events after publishing count. |
+| `publish_automatic_email(id)` → `text[]` | Returns what's still missing, in the editor's words (`add a name`, `pick a tag`, `add a subject`, `fix the alert email`). Empty = published. No backfill: only events after publishing count. |
 | `unpublish_automatic_email(id)` | Back to draft, and no longer live: nothing sends and new events aren't recorded until it's published again. What was already queued waits, paused. Outbox edits and approvals are deleted. |
 | `trash_automatic_email(id)` | Everyone in its Outbox, and anything in flight, is recorded Not sent (`trashed`). Occurrences are cancelled; history is kept. |
 | `restore_automatic_email(id)` | Back to Drafts. Nothing from while it was in trash comes back. |
@@ -127,13 +127,11 @@ All admin functions raise `42501` for non-admins and `55000` when the email is i
   date has passed are due today with `missed = true`, so they wait for review whatever the mode.
   Events from while it was unpublished were never recorded, so they don't come back.
 - Rejoining is a new join: a member who's removed and added again gets the join emails again.
-- Recurring dates that passed are missed the same way. Future ones are rebuilt from the current
-  schedule.
 
 ### Outbox (admin)
 | Function | Returns |
 |---|---|
-| `outbox_upcoming(days = 30)` | One row per (occurrence, person) due in the next `days`, for people who match now and can be emailed. `status`: `scheduled` (sends on its own), `waiting_review`, `approved`, `past_due` (needed review and its day passed). Also `missed`, `subject` (with any override) and `edited`. |
+| `outbox_upcoming(days = 30)` | One row per occurrence due in the next `days`, for people who match now and can be emailed. `status`: `scheduled` (sends on its own), `waiting_review`, `approved`, `past_due` (needed review and its day passed). Also `missed`, `subject` (with any override) and `edited`. |
 | `automatic_email_eligible(id)` | The editor's "N members currently eligible": every member the conditions match right now. |
 | `approve_send(occurrence_id, person_id)` | Approves one send. Raises `55000` if it's no longer in the Outbox. |
 | `edit_send(occurrence_id, person_id, subject, body)` | Overrides one send's subject and/or body (null = use the template's). |
@@ -141,7 +139,7 @@ All admin functions raise `42501` for non-admins and `55000` when the email is i
 ### Daily run (service role)
 | Function | Effect |
 |---|---|
-| `prepare_due_sends(today = toronto_today())` → ready count | Tops up recurring dates. Then, for each occurrence due on or before today, checks everyone again: those who match and can be emailed become `sending` (in review mode, only once approved); the rest are recorded `not_sent` with a reason. For recurring emails, people who never matched get no row. An occurrence resolves once nobody in it is waiting for approval. Running it twice does nothing new. |
+| `prepare_due_sends(today = toronto_today())` → ready count | For each occurrence due on or before today, checks its member again: if they match and can be emailed it becomes `sending` (in review mode, only once approved); otherwise it's recorded `not_sent` with a reason. An occurrence resolves unless it's waiting for approval. Running it twice does nothing new. |
 | `email_deliveries()` | For each `sending` row of a published email: address, first name, subject and body (with overrides), unsubscribe token. |
 | `record_send_result(send_id, provider_message_id, error)` | `error` null = `sent`. Otherwise it counts the attempt, and the third failure is `not_sent` / `failed`. |
 

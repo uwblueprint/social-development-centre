@@ -2,17 +2,18 @@
 -- half of the daily run. docs/backend/automatic-emails.md explains the model. In short:
 --
 --   automatic_emails   what to send and when (trigger, delay, conditions, template, mode)
---   email_occurrences  facts: "this email is due on this date" for one event or one recurring date,
---                      queued the moment the event happens. Conditions play no part here.
+--   email_occurrences  facts: "this email is due for this member on this date", queued the moment
+--                      the event happens. Conditions play no part here.
 --   email_sends        only final or admin-touched sends: approved or edited in the Outbox, being
 --                      sent, sent, or not sent with a reason
 --
--- Who gets an occurrence is decided live by automatic_email_matches(): the Outbox shows who matches
--- now, and the daily run checks again before sending. Nothing is rescheduled when tags change or an
+-- Whether an occurrence's member still gets it is decided live by automatic_email_matches(): the
+-- Outbox shows who matches now, and the daily run checks again before sending. Nothing is rescheduled when tags change or an
 -- email is edited, because nothing stored depends on the conditions.
 --
 -- Emails go out once a day (PM, 27 Oct 2026: no "immediately"), so due dates are calendar dates in
--- Waterloo Region, not times.
+-- Waterloo Region, not times. Every email starts from an event; there are no recurring emails (PM,
+-- 9 Nov 2026).
 
 -- ---------- automatic emails ----------
 
@@ -22,21 +23,13 @@ create table public.automatic_emails (
   name text not null default '' check (length(name) <= 200),
   state text not null default 'draft' check (state in ('draft', 'published', 'trash')),
   -- join_*: a member joins (any way, without a referral, via a referral). refers / referral_joins:
-  -- sent to the referrer. tag_added: trigger_tag_id is added to a member. weekly / monthly /
-  -- yearly: on a date, to every member who matches.
+  -- sent to the referrer. tag_added: trigger_tag_id is added to a member.
   trigger text not null default 'join_any' check (trigger in (
-    'join_any', 'join_no_referral', 'join_referral', 'refers', 'referral_joins', 'tag_added',
-    'weekly', 'monthly', 'yearly'
+    'join_any', 'join_no_referral', 'join_referral', 'refers', 'referral_joins', 'tag_added'
   )),
   -- Null after the tag is deleted while the email is in trash; publishing asks for a tag again.
   trigger_tag_id uuid references public.tags (id) on delete set null,
-  -- weekly: 0 = Sunday … 6 = Saturday.
-  week_day smallint check (week_day between 0 and 6),
-  -- monthly and yearly. A day the month doesn't have means its last day (31 = end of every month).
-  month_day smallint check (month_day between 1 and 31),
-  -- yearly: 1 = January.
-  year_month smallint check (year_month between 1 and 12),
-  -- Event triggers only. 0 = within a day of the event (the next daily run).
+  -- 0 = within a day of the event (the next daily run).
   delay_amount integer not null default 0 check (delay_amount >= 0),
   delay_unit text not null default 'days' check (delay_unit in ('days', 'weeks', 'months', 'years')),
   -- Who gets it, checked live by automatic_email_matches(). Tag ids, so a renamed tag still works:
@@ -68,15 +61,14 @@ create table public.email_occurrences (
   automatic_email_id uuid not null references public.automatic_emails (id) on delete cascade,
   -- What makes it unique for this email, so the same event or date never queues twice:
   -- 'join:<person>:<joined epoch>', 'tag:<tag event id>', 'refers:<referral id>',
-  -- 'referral_joins:<referral id>', 'recurring:YYYY-MM-DD'.
+  -- 'referral_joins:<referral id>'.
   key text not null,
   -- The email's trigger when this was queued. Publishing drops paused ones that no longer match.
   trigger text not null,
-  -- The member the event happened to; for referral triggers, the referrer. Null for recurring
-  -- emails, whose candidates are every member.
-  person_id uuid references public.people (id) on delete cascade,
-  -- When the event happened. Null for recurring. Kept so a changed delay can recompute due_on.
-  event_at timestamptz,
+  -- Who it goes to: the member the event happened to; for referral triggers, the referrer.
+  person_id uuid not null references public.people (id) on delete cascade,
+  -- When the event happened. Kept so a changed delay can recompute due_on.
+  event_at timestamptz not null,
   -- Extra facts about the event: tag_id, tag_event_id, referral_id, referred_id.
   context jsonb not null default '{}'::jsonb,
   due_on date not null,
@@ -90,7 +82,7 @@ create table public.email_occurrences (
 );
 
 create index email_occurrences_due on public.email_occurrences (due_on) where status = 'pending';
-create index email_occurrences_person on public.email_occurrences (person_id) where person_id is not null;
+create index email_occurrences_person on public.email_occurrences (person_id);
 
 -- ---------- sends ----------
 
@@ -149,25 +141,6 @@ as $$
     when 'months' then make_interval(months => p_amount)
     when 'years' then make_interval(years => p_amount)
     else make_interval(days => p_amount) end)::date
-$$;
-
--- The dates from p_from to p_to that a weekly, monthly or yearly email falls on.
-create function public.recurrence_dates(
-  p_trigger text, p_week_day integer, p_month_day integer, p_year_month integer, p_from date, p_to date
-)
-returns setof date
-language sql immutable set search_path = ''
-as $$
-  select d::date
-  from generate_series(p_from::timestamp, p_to::timestamp, interval '1 day') d
-  where case p_trigger
-    when 'weekly' then extract(dow from d) = p_week_day
-    when 'monthly' then extract(day from d) = least(p_month_day,
-      extract(day from date_trunc('month', d) + interval '1 month - 1 day'))
-    when 'yearly' then extract(month from d) = p_year_month and extract(day from d) = least(p_month_day,
-      extract(day from date_trunc('month', d) + interval '1 month - 1 day'))
-    else false
-  end
 $$;
 
 -- ---------- conditions ----------
@@ -232,40 +205,32 @@ as $$
   )
 $$;
 
--- Every (occurrence, person) an email could go to, with what's known about them now. An event's
--- candidate is its member (if the trigger's referral rule holds); a recurring email's are all
--- members. matched also requires a tag-triggered email's member to still have that tag. Internal:
--- the Outbox, the daily run and the lifecycle functions read it.
+-- Every occurrence with what's known about its member now. Join emails that depend on a referral
+-- only count while the referral rule holds. matched also requires a tag-triggered email's member to
+-- still have that tag. Internal: the Outbox, the daily run and the lifecycle functions read it.
 create view public.email_candidate_state as
 select
   o.id as occurrence_id,
   o.automatic_email_id,
-  c.person_id,
+  o.person_id,
   o.due_on,
   o.missed,
   o.status as occurrence_status,
-  o.person_id is null as recurring,
   (e.mode = 'review' or o.missed) as needs_review,
-  exists (select 1 from public.memberships m where m.person_id = c.person_id) as is_member,
-  public.automatic_email_matches(e.id, c.person_id)
+  exists (select 1 from public.memberships m where m.person_id = o.person_id) as is_member,
+  public.automatic_email_matches(e.id, o.person_id)
     and (e.trigger <> 'tag_added' or exists (
-      select 1 from public.member_tags t where t.person_id = c.person_id and t.tag_id = e.trigger_tag_id)) as matched,
-  public.can_email(c.person_id) as emailable,
+      select 1 from public.member_tags t where t.person_id = o.person_id and t.tag_id = e.trigger_tag_id)) as matched,
+  public.can_email(o.person_id) as emailable,
   s.id as send_id,
   s.status as send_status,
   s.approved_at,
   (s.subject_override is not null or s.body_override is not null) as edited
 from public.email_occurrences o
 join public.automatic_emails e on e.id = o.automatic_email_id
-cross join lateral (
-  select o.person_id
-  where o.person_id is not null
-    and (e.trigger <> 'join_referral' or exists (select 1 from public.referrals r where r.referred_id = o.person_id))
-    and (e.trigger <> 'join_no_referral' or not exists (select 1 from public.referrals r where r.referred_id = o.person_id))
-  union all
-  select m.person_id from public.memberships m where o.person_id is null
-) c
-left join public.email_sends s on s.occurrence_id = o.id and s.person_id = c.person_id;
+left join public.email_sends s on s.occurrence_id = o.id and s.person_id = o.person_id
+where (e.trigger <> 'join_referral' or exists (select 1 from public.referrals r where r.referred_id = o.person_id))
+  and (e.trigger <> 'join_no_referral' or not exists (select 1 from public.referrals r where r.referred_id = o.person_id));
 
 -- ---------- queueing ----------
 
@@ -292,22 +257,6 @@ as $$
     and (e.trigger <> 'tag_added' or e.trigger_tag_id = p_tag_id)
     and d.due >= public.toronto_today()
   on conflict (automatic_email_id, key) do nothing
-$$;
-
--- Queues a published recurring email's dates from tomorrow to 30 days out (the Outbox horizon).
--- A date that was cancelled or paused comes back if the current schedule still has it.
-create function public.queue_recurring_occurrences(p_email_id uuid, p_today date)
-returns void
-language sql security definer set search_path = ''
-as $$
-  insert into public.email_occurrences (automatic_email_id, key, trigger, due_on)
-  select e.id, 'recurring:' || d, e.trigger, d
-  from public.automatic_emails e,
-    lateral public.recurrence_dates(e.trigger, e.week_day, e.month_day, e.year_month, p_today + 1, p_today + 30) d
-  where e.id = p_email_id and e.state = 'published' and e.trigger in ('weekly', 'monthly', 'yearly')
-  on conflict (automatic_email_id, key) do update
-    set status = 'pending', missed = false, trigger = excluded.trigger, due_on = excluded.due_on
-    where public.email_occurrences.status in ('cancelled', 'paused')
 $$;
 
 -- ---------- lifecycle ----------
@@ -342,9 +291,8 @@ begin
     raise exception 'Only admins can edit automatic emails' using errcode = '42501';
   end if;
   select k into unknown from jsonb_object_keys(p_patch) k
-  where k not in ('name', 'trigger', 'trigger_tag_id', 'week_day', 'month_day', 'year_month',
-                  'delay_amount', 'delay_unit', 'conditions', 'mode', 'alert_enabled', 'alert_to',
-                  'alert_when', 'subject', 'body')
+  where k not in ('name', 'trigger', 'trigger_tag_id', 'delay_amount', 'delay_unit', 'conditions',
+                  'mode', 'alert_enabled', 'alert_to', 'alert_when', 'subject', 'body')
   limit 1;
   if unknown is not null then
     raise exception 'Unknown field %', unknown using errcode = '22023';
@@ -357,9 +305,6 @@ begin
     name = case when p_patch ? 'name' then replace(coalesce(p_patch ->> 'name', ''), E'\n', ' ') else name end,
     trigger = case when p_patch ? 'trigger' then p_patch ->> 'trigger' else trigger end,
     trigger_tag_id = case when p_patch ? 'trigger_tag_id' then (p_patch ->> 'trigger_tag_id')::uuid else trigger_tag_id end,
-    week_day = case when p_patch ? 'week_day' then (p_patch ->> 'week_day')::smallint else week_day end,
-    month_day = case when p_patch ? 'month_day' then (p_patch ->> 'month_day')::smallint else month_day end,
-    year_month = case when p_patch ? 'year_month' then (p_patch ->> 'year_month')::smallint else year_month end,
     delay_amount = case when p_patch ? 'delay_amount' then (p_patch ->> 'delay_amount')::integer else delay_amount end,
     delay_unit = case when p_patch ? 'delay_unit' then p_patch ->> 'delay_unit' else delay_unit end,
     conditions = case when p_patch ? 'conditions' then p_patch -> 'conditions' else conditions end,
@@ -389,12 +334,11 @@ begin
     raise exception 'Only admins can duplicate automatic emails' using errcode = '42501';
   end if;
   insert into public.automatic_emails (
-    name, trigger, trigger_tag_id, week_day, month_day, year_month, delay_amount, delay_unit,
-    conditions, mode, alert_enabled, alert_to, alert_when, subject, body, created_by
+    name, trigger, trigger_tag_id, delay_amount, delay_unit, conditions, mode, alert_enabled,
+    alert_to, alert_when, subject, body, created_by
   )
-  select left('Copy of ' || name, 200), trigger, trigger_tag_id, week_day, month_day, year_month,
-         delay_amount, delay_unit, conditions, mode, alert_enabled, alert_to, alert_when, subject, body,
-         public.current_person_id()
+  select left('Copy of ' || name, 200), trigger, trigger_tag_id, delay_amount, delay_unit, conditions,
+         mode, alert_enabled, alert_to, alert_when, subject, body, public.current_person_id()
   from public.automatic_emails where id = p_id
   returning id into new_id;
   if new_id is null then
@@ -408,8 +352,7 @@ $$;
 -- Nothing is backfilled: events that happen while an email isn't published are never recorded.
 -- Publishing again after an unpublish brings back what was already queued: event occurrences for
 -- the current trigger get due dates from the current delay, and any whose date passed are marked
--- missed so they wait for review. Recurring dates that passed are missed the same way; future ones
--- follow the current schedule.
+-- missed so they wait for review.
 create function public.publish_automatic_email(p_id uuid)
 returns text[]
 language plpgsql security definer set search_path = ''
@@ -429,9 +372,6 @@ begin
 
   if btrim(e.name) = '' then blockers := blockers || 'add a name'::text; end if;
   if e.trigger = 'tag_added' and e.trigger_tag_id is null then blockers := blockers || 'pick a tag'::text; end if;
-  if e.trigger = 'weekly' and e.week_day is null then blockers := blockers || 'pick a day of the week'::text; end if;
-  if e.trigger = 'monthly' and e.month_day is null then blockers := blockers || 'pick a day of the month'::text; end if;
-  if e.trigger = 'yearly' and (e.year_month is null or e.month_day is null) then blockers := blockers || 'pick a date'::text; end if;
   if btrim(e.subject) = '' then blockers := blockers || 'add a subject'::text; end if;
   if e.mode = 'review' and e.alert_enabled and coalesce(btrim(e.alert_to), '') !~ '^[^\s@]+@[^\s@]+\.[^\s@]+$' then
     blockers := blockers || 'fix the alert email'::text;
@@ -444,27 +384,23 @@ begin
   set state = 'published', published_at = now(), updated_at = now()
   where id = p_id;
 
-  -- Paused occurrences from a trigger (or tag) the email no longer uses don't apply any more, and
-  -- future recurring dates are rebuilt from the current schedule below.
+  -- Paused occurrences from a trigger (or tag) the email no longer uses don't apply any more.
   update public.email_occurrences o set status = 'cancelled'
   where o.automatic_email_id = p_id and o.status = 'paused'
     and (o.trigger <> e.trigger
-         or (e.trigger = 'tag_added' and o.context ->> 'tag_id' is distinct from e.trigger_tag_id::text)
-         or (o.person_id is null and o.due_on > today));
+         or (e.trigger = 'tag_added' and o.context ->> 'tag_id' is distinct from e.trigger_tag_id::text));
 
   update public.email_occurrences o set
     due_on = greatest(d.due, today),
     missed = d.due < today,
     status = 'pending'
   from (
-    select id, case when person_id is null then due_on
-                    else public.automatic_email_due_on(e.delay_amount, e.delay_unit, event_at) end as due
+    select id, public.automatic_email_due_on(e.delay_amount, e.delay_unit, event_at) as due
     from public.email_occurrences
     where automatic_email_id = p_id and status = 'paused'
   ) d
   where o.id = d.id;
 
-  perform public.queue_recurring_occurrences(p_id, today);
   return blockers;
 end;
 $$;
@@ -663,13 +599,13 @@ $$;
 
 -- ---------- daily run ----------
 
--- The database half of the daily run (service role). Tops up recurring dates, then for every
--- occurrence due on or before p_today checks each candidate once more:
+-- The database half of the daily run (service role). Every occurrence due on or before p_today is
+-- checked once more:
 --   still matches and can be emailed -> sending (review mode: only once approved)
---   no longer matches                -> not_sent (no_longer_matched); for recurring emails, only
---                                       people who had an Outbox row are recorded
+--   not a member any more            -> not_sent (not_a_member)
+--   no longer matches                -> not_sent (no_longer_matched)
 --   unsubscribed or bounced          -> not_sent
--- An occurrence is resolved once nobody in it is waiting for approval. Safe to run twice: a second
+-- An occurrence is resolved unless it's waiting for approval. Safe to run twice: a second
 -- run finds nothing new. Returns how many sends are ready for email_deliveries().
 create function public.prepare_due_sends(p_today date default public.toronto_today())
 returns integer
@@ -679,9 +615,6 @@ declare
   occ record;
   ready integer;
 begin
-  perform public.queue_recurring_occurrences(id, p_today)
-  from public.automatic_emails where state = 'published' and trigger in ('weekly', 'monthly', 'yearly');
-
   for occ in
     select o.id from public.email_occurrences o
     join public.automatic_emails e on e.id = o.automatic_email_id
@@ -704,7 +637,6 @@ begin
     ) r
     where s.occurrence_id = occ.id
       and (s.send_status is null or s.send_status = 'pending')
-      and not (s.recurring and s.send_status is null and r.reason is not null)
       and not (r.reason is null and s.needs_review and s.approved_at is null)
     on conflict (occurrence_id, person_id) do update
       set status = excluded.status, not_sent_reason = excluded.not_sent_reason, updated_at = now()
@@ -878,12 +810,10 @@ from public, anon;
 revoke execute on function
   public.toronto_today(),
   public.automatic_email_due_on(integer, text, timestamptz),
-  public.recurrence_dates(text, integer, integer, integer, date, date),
   public.validate_conditions(jsonb),
   public.automatic_email_matches(uuid, uuid),
   public.assert_in_outbox(uuid, uuid),
   public.queue_occurrences(text[], uuid, uuid, text, timestamptz, jsonb),
-  public.queue_recurring_occurrences(uuid, date),
   public.prepare_due_sends(date),
   public.email_deliveries(),
   public.record_send_result(uuid, text, text),
