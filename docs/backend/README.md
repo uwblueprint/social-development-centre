@@ -24,7 +24,7 @@ Each admin page (`src/app/admin/<section>/page.tsx`) is a Server Component. Fetc
 Without Supabase credentials, `next dev` skips the sign-in redirect (`src/lib/supabase/proxy.ts`) and `getCurrentAdmin()` returns a placeholder admin. With credentials set, local development behaves like production: you sign in for real, and only an address in `public.admins` reaches the admin portal. Production always requires both.
 
 ## 5. Accounts
-There is no My account screen (owner decision, 28 Sep 2026: logins can be shared, and the app doesn't use the name). The sidebar footer is **Documentation** (`/admin/documentation`, rendered from `docs/user-guide/`) and a red **Sign out**. Only `signOut` (`src/features/auth/actions.ts`) is needed. Profile pictures, name editing and account deletion are **not** needed (that code has been removed).
+An admin can change their own name and delete their own account on **Settings** (`/admin/settings`; owner decision, 10 Nov 2026, reversing 28 Sep: there used to be no My account screen). See [Settings](./settings.md) and [../decisions/account.md](../decisions/account.md). The sidebar footer is **Documentation** (`/admin/documentation`, rendered from `docs/user-guide/`) and a red **Sign out**. Profile pictures are not needed.
 
 ## Dates and times (owner, 28 Sep 2026)
 Every timestamp and date-time the backend sends or stores is UTC, as ISO 8601 with a `Z` (e.g. `2026-10-02T21:30:00Z`). The UI converts to the person's own time zone for display and converts their input back to UTC before saving. Date-only values with no time (e.g. a petition deadline) are plain `yyyy-mm-dd` and mean "until the end of that day in Waterloo Region" (America/Toronto). To avoid server/browser mismatches, the time zone should come from the browser (saved in a cookie on first visit) so server-rendered pages format in the same zone.
@@ -37,6 +37,7 @@ No backend work. When there's no connection, what's on screen stays readable; su
 
 ## Feature requirements
 - [Intake form](./intake-form.md) (public, no sign-in)
+- [Settings](./settings.md) (your name and delete account are connected; the rest of the design has no backend yet)
 
 ## Support address
 `BSF_SUPPORT_EMAIL` (`src/lib/contact.ts`) is where admins escalate a page that keeps failing to load. It is still the placeholder `{BSF email}`; set the real address there, and the load-error page turns it into a mailto link automatically.

@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { sendSignInLink, signOut } from "@/features/auth/actions";
+import { sendSignInLink } from "@/features/auth/actions";
+import { endSessionAndSayGoodbye } from "@/features/auth/leave";
 import { requireAdmin } from "@/features/auth/session";
 import { normalizeEmail } from "@/lib/email";
 import type { ActionState } from "@/lib/forms";
@@ -42,7 +43,7 @@ export async function addAdmin(_prev: ActionState<NewAdmin>, formData: FormData)
   return { status: "success", message: `Invite sent to ${email}.` };
 }
 
-/** Removing yourself is leaving: you're signed out. The last admin can't be removed. */
+/** Removing yourself is leaving: you're signed out and shown the goodbye screen. The last admin can't be removed. */
 export async function removeAdmin(personId: string): Promise<ActionState> {
   const me = await requireAdmin();
   const supabase = await createClient();
@@ -54,7 +55,7 @@ export async function removeAdmin(personId: string): Promise<ActionState> {
   if (result === "last_admin") {
     return { status: "error", message: "You’re the only admin. Add another admin before you leave." };
   }
-  if (personId === me.id) await signOut("admin");
+  if (personId === me.id) await endSessionAndSayGoodbye();
   revalidatePath("/admin/admins");
   return { status: "success" };
 }
