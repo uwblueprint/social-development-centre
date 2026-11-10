@@ -68,9 +68,6 @@ const Box = styled.div<{ $invalid?: boolean; $disabled?: boolean }>`
   border-radius: var(--radius-md);
   background: var(--color-bg);
   cursor: text;
-  transition:
-    border-color var(--duration) var(--ease),
-    box-shadow var(--duration) var(--ease);
 
   &:hover:not(:focus-within) {
     border-color: ${({ $invalid }) => ($invalid ? "var(--color-danger)" : "var(--color-text-muted)")};

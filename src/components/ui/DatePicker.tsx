@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { css, styled } from "next-yak";
+import { css, keyframes, styled } from "next-yak";
 import { Popover as PopoverPrimitive } from "radix-ui";
 import { DayPicker, type Matcher } from "react-day-picker";
 import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
@@ -16,7 +16,7 @@ import { ErrorIcon } from "./Field";
 
 const ISO_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 
-function parseISODate(value: string | undefined): Date | undefined {
+export function parseISODate(value: string | undefined): Date | undefined {
   if (!value) return undefined;
   const match = ISO_PATTERN.exec(value.trim());
   if (!match) return undefined;
@@ -29,7 +29,7 @@ function parseISODate(value: string | undefined): Date | undefined {
   return valid ? date : undefined;
 }
 
-function formatISODate(date: Date): string {
+export function formatISODate(date: Date): string {
   const y = String(date.getFullYear()).padStart(4, "0");
   const m = String(date.getMonth() + 1).padStart(2, "0");
   const d = String(date.getDate()).padStart(2, "0");
@@ -108,9 +108,6 @@ const TextField = styled.input<{ $invalid?: boolean }>`
   font-family: inherit;
   font-size: var(--text-sm);
   line-height: var(--leading-ui);
-  transition:
-    border-color var(--duration) var(--ease),
-    box-shadow var(--duration) var(--ease);
 
   &::placeholder {
     color: var(--color-text-muted);
@@ -181,8 +178,8 @@ const TriggerButton = styled(PopoverPrimitive.Trigger)`
   color: var(--color-text-muted);
   cursor: pointer;
   transition:
-    color var(--duration) var(--ease),
-    background-color var(--duration) var(--ease);
+    color var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out);
 
   &:hover:not(:disabled) {
     color: var(--color-text);
@@ -207,6 +204,32 @@ const TriggerButton = styled(PopoverPrimitive.Trigger)`
 /* footer — spacing alone does that job.                                */
 /* ------------------------------------------------------------------ */
 
+/*
+ * Overlay enter/exit: a short fade plus a 4px nudge toward the trigger side, vertical only. The old
+ * scale + transform-origin (a Radix var that isn't measured on the first frame) and the horizontal
+ * slide made the panel twitch sideways as Radix settled its position. Exit is a plain fade. Only the
+ * inner content animates, never Radix's positioned wrapper.
+ */
+const fadeIn = keyframes`
+  from { opacity: 0; }
+  to { opacity: 1; }
+`;
+
+const fadeInBelow = keyframes`
+  from { opacity: 0; transform: translateY(calc(var(--space-1) * -1)); }
+  to { opacity: 1; transform: translateY(0); }
+`;
+
+const fadeInAbove = keyframes`
+  from { opacity: 0; transform: translateY(var(--space-1)); }
+  to { opacity: 1; transform: translateY(0); }
+`;
+
+const fadeOut = keyframes`
+  from { opacity: 1; }
+  to { opacity: 0; }
+`;
+
 const CalendarContent = styled(PopoverPrimitive.Content)`
   z-index: var(--z-popover);
   background: var(--color-surface-raised);
@@ -217,6 +240,22 @@ const CalendarContent = styled(PopoverPrimitive.Content)`
 
   &:focus {
     outline: none;
+  }
+
+  &[data-state="open"] {
+    animation: ${fadeIn} var(--duration) var(--ease-out);
+  }
+
+  &[data-state="open"][data-side="bottom"] {
+    animation: ${fadeInBelow} var(--duration) var(--ease-out);
+  }
+
+  &[data-state="open"][data-side="top"] {
+    animation: ${fadeInAbove} var(--duration) var(--ease-out);
+  }
+
+  &[data-state="closed"] {
+    animation: ${fadeOut} var(--duration-fast) var(--ease-in) forwards;
   }
 `;
 

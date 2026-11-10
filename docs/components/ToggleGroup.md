@@ -1,6 +1,6 @@
 # ToggleGroup
 
-A segmented control: a row of `ToggleGroupItem`s with a single sliding pill indicating the active choice.
+A segmented control: a row of `ToggleGroupItem`s with a single pill (no sliding: it jumps) indicating the active choice.
 
 ## Use when / Don't use when
 - Switching between a small set of views or filters, e.g. Day/Week/Month, or selecting several independent text styles (`type="multiple"`).
@@ -30,7 +30,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/ToggleGroup";
 Short nouns/labels (1–2 words), parallel across items ("Day", "Week", "Month" — not "Daily view" mixed with "Month").
 
 ## Accessibility
-`aria-label` on the group is required since there's no visible caption. `type="single"` renders one sliding indicator; `type="multiple"` shows a static background per pressed item (both states are never color-only — position/shape also changes). Full keyboard arrow navigation via Radix; visible focus ring per item.
+`aria-label` on the group is required since there's no visible caption. `type="single"` renders one indicator pill that moves instantly; `type="multiple"` shows a static background per pressed item (both states are never color-only — position/shape also changes). Full keyboard arrow navigation via Radix; visible focus ring per item.
 
 ## Don't
 1. Omitting the group's `aria-label`.

@@ -31,7 +31,7 @@ const StyledTabsList = styled(TabsPrimitive.List)`
 `;
 
 /*
- * The active line slides between tabs (owner: subtle but fun), with a slight spring. Positioned from the
+ * The active line jumps to the selected tab (no sliding: selection is instant). Positioned from the
  * selected tab's box via --tab-x / --tab-w. Reduced motion is handled globally.
  */
 const Indicator = styled.span`
@@ -43,15 +43,9 @@ const Indicator = styled.span`
   background: var(--color-text);
   translate: var(--tab-x, 0) 0;
   pointer-events: none;
-
-  [data-indicator="ready"] > & {
-    transition:
-      translate var(--duration-slow) var(--ease-spring),
-      width var(--duration-slow) var(--ease-spring);
-  }
 `;
 
-/** Every tab set shares the sliding active line. */
+/** Every tab set shares the active line. */
 export const TabsList = forwardRef<HTMLDivElement, TabsPrimitive.TabsListProps>(function TabsList({ children, ...props }, ref) {
   const listRef = useRef<HTMLDivElement>(null);
   useImperativeHandle(ref, () => listRef.current as HTMLDivElement);
@@ -111,8 +105,8 @@ const StyledTabsTrigger = styled(TabsPrimitive.Trigger)`
   cursor: pointer;
   white-space: nowrap;
   transition:
-    color var(--duration) var(--ease),
-    border-color var(--duration) var(--ease);
+    color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
 
   &:hover {
     color: var(--color-text);

@@ -22,9 +22,6 @@ const StyledInput = styled.input<{ $invalid?: boolean }>`
   font-family: inherit;
   font-size: var(--text-sm);
   line-height: 1;
-  transition:
-    border-color var(--duration) var(--ease),
-    box-shadow var(--duration) var(--ease);
 
   &::placeholder {
     color: var(--color-text-muted);

@@ -47,4 +47,4 @@ Full ARIA tabs pattern via Radix (roving tabindex, arrow-key navigation). `TabsC
 3. Using `Tabs` when there's no distinct content per option — that's `ToggleGroup`.
 4. Putting a count in the label string instead of `TabsCount` — it needs to read as muted regardless of active state.
 
-Motion: `TabsList` draws one sliding active line (measured from the selected tab, spring easing, `--duration-slow`); it jumps into place on first render and slides on later changes. Reduced motion is handled globally.
+Motion: none. The active line jumps to the selected tab; selection is instant. Tab labels fade colour on hover (`--duration-fast`). See `docs/design/motion.md`.

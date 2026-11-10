@@ -8,7 +8,7 @@ import { Button } from "./Button";
 import { Icon } from "./Icon";
 
 const slideIn = keyframes`
-  from { opacity: 0; transform: translateX(16px); }
+  from { opacity: 0; transform: translateX(var(--space-4)); }
   to { opacity: 1; transform: translateX(0); }
 `;
 
@@ -42,10 +42,10 @@ const Root = styled(ToastPrimitive.Root)`
   column-gap: var(--space-3);
 
   &[data-state="open"] {
-    animation: ${slideIn} var(--duration) var(--ease);
+    animation: ${slideIn} var(--duration) var(--ease-out);
   }
   &[data-state="closed"] {
-    animation: ${slideIn} var(--duration) var(--ease) reverse;
+    animation: ${slideIn} var(--duration-fast) var(--ease-in) reverse;
   }
 `;
 
