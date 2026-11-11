@@ -30,7 +30,7 @@ import { Input } from "@/components/ui/Input";
 Placeholder shows an example value, never the label itself (e.g. "Ada Lovelace", not "Full name"). Errors from `Field` say what happened and how to fix it.
 
 ## Accessibility
-Border color never carries the invalid state alone — an icon appears too, using reserved padding, not a layout jump. Focus ring meets 3:1 border contrast; disabled combines dashed border, muted text, and `not-allowed` cursor.
+Border color never carries the invalid state alone — an icon appears too, using reserved padding, not a layout jump. Focus thickens the border inside the field (1px to 2px dark, or 3px red with an error) instead of adding an outer ring, and meets 3:1 contrast; disabled combines dashed border, muted text, and `not-allowed` cursor.
 
 ## Don't
 1. Rendering a native `<input>` directly in app code — lint blocks it.

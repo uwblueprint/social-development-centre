@@ -38,6 +38,19 @@ export interface CreatableComboboxProps {
   "aria-describedby"?: string;
   "aria-label"?: string;
   "aria-labelledby"?: string;
+  /**
+   * The field is the search box: type to filter, and the options (plus "Create") drop down underneath. No
+   * button to open first. The field clears after each pick, so the person can add another (e.g. tags).
+   * Name it with `aria-label`; it can't take a `Field` label yet (cmdk owns the input's id and labelling).
+   */
+  inline?: boolean;
+  /** Inline only: focus the field on mount, e.g. when an Edit button reveals it. */
+  autoFocus?: boolean;
+  /**
+   * Inline only: the element the list opens under, instead of the field. For a field inside a larger box
+   * (e.g. picked tags then the cursor), so the list stays under the whole box as the cursor moves.
+   */
+  listAnchor?: React.RefObject<HTMLElement | null>;
 }
 
 function isInvalid(value: unknown) {
@@ -52,10 +65,10 @@ const Trigger = styled.button`
   justify-content: space-between;
   gap: var(--space-2);
   width: 100%;
-  height: 40px;
+  height: var(--control-height);
   padding: 0 var(--space-3);
   border-radius: var(--radius-md);
-  border: 1px solid var(--color-border-strong);
+  border: 1px solid var(--color-border-field);
   background: var(--color-bg);
   color: var(--color-text);
   font-family: inherit;
@@ -78,7 +91,7 @@ const Trigger = styled.button`
   &:focus-visible {
     outline: none;
     border-color: var(--color-focus);
-    box-shadow: var(--focus-ring);
+    box-shadow: var(--focus-ring-field);
   }
 
   &[aria-invalid="true"] {
@@ -86,10 +99,7 @@ const Trigger = styled.button`
     box-shadow: inset 0 0 0 1px var(--color-danger);
 
     &:focus-visible {
-      box-shadow:
-        inset 0 0 0 1px var(--color-danger),
-        0 0 0 2px var(--color-bg),
-        0 0 0 4px var(--color-danger);
+      box-shadow: var(--focus-ring-field-invalid);
     }
   }
 
@@ -232,7 +242,11 @@ function toDisplayValue(value: CreatableComboboxValue | undefined): CreatableCom
  * on the fly. Submits one of two hidden fields: `existingFieldName` (the
  * chosen option's id) or `createFieldName` (the typed name), never both.
  */
-export function CreatableCombobox({
+export function CreatableCombobox(props: CreatableComboboxProps) {
+  return props.inline ? <InlineCreatableCombobox {...props} /> : <PopupCreatableCombobox {...props} />;
+}
+
+function PopupCreatableCombobox({
   options,
   existingFieldName,
   createFieldName,
@@ -365,5 +379,155 @@ export function CreatableCombobox({
         </Content>
       </PopoverPrimitive.Portal>
     </PopoverPrimitive.Root>
+  );
+}
+
+/* Inline mode: the field itself is the search box, styled like the closed trigger. */
+const InlineRoot = styled(Command)`
+  width: 100%;
+`;
+
+const InlineField = styled.div<{ $invalid?: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  height: var(--control-height);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid ${({ $invalid }) => ($invalid ? "var(--color-danger)" : "var(--color-border-field)")};
+  box-shadow: ${({ $invalid }) => ($invalid ? "inset 0 0 0 1px var(--color-danger)" : "none")};
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  cursor: text;
+  transition:
+    border-color var(--duration) var(--ease),
+    box-shadow var(--duration) var(--ease);
+
+  &:hover:not(:focus-within):not([data-disabled]) {
+    border-color: ${({ $invalid }) => ($invalid ? "var(--color-danger)" : "var(--color-text-muted)")};
+  }
+
+  &:focus-within {
+    border-color: ${({ $invalid }) => ($invalid ? "var(--color-danger)" : "var(--color-focus)")};
+    box-shadow: ${({ $invalid }) => ($invalid ? "var(--focus-ring-field-invalid)" : "var(--focus-ring-field)")};
+  }
+
+  &[data-disabled] {
+    background: var(--color-surface);
+    cursor: not-allowed;
+  }
+`;
+
+const InlineContent = styled(Content)`
+  &[data-state="closed"] {
+    display: none;
+  }
+`;
+
+function InlineCreatableCombobox({
+  options,
+  existingFieldName,
+  createFieldName,
+  onValueChange,
+  placeholder = "Search or create…",
+  createLabel = defaultCreateLabel,
+  disabled,
+  required,
+  autoFocus,
+  listAnchor,
+  "aria-invalid": ariaInvalid,
+  "aria-describedby": describedBy,
+  "aria-label": ariaLabel,
+}: CreatableComboboxProps) {
+  const [open, setOpen] = React.useState(false);
+  const [search, setSearch] = React.useState("");
+  const [last, setLast] = React.useState<CreatableComboboxValue | undefined>();
+  const anchorRef = React.useRef<HTMLDivElement>(null);
+
+  const invalid = isInvalid(ariaInvalid);
+  const trimmed = search.trim();
+  const filtered = trimmed ? options.filter((o) => o.label.toLowerCase().includes(trimmed.toLowerCase())) : options;
+  const hasExactMatch = options.some((o) => o.label.trim().toLowerCase() === trimmed.toLowerCase());
+  const showCreate = trimmed.length > 0 && !hasExactMatch;
+  const hasRows = filtered.length > 0 || showCreate;
+
+  function commit(next: CreatableComboboxValue) {
+    setLast(next);
+    onValueChange?.(next);
+    setSearch("");
+    setOpen(false);
+  }
+
+  const field = (
+    <InlineField ref={anchorRef} $invalid={invalid} data-disabled={disabled ? "" : undefined}>
+      <Icon icon={Search} size={14} />
+      <SearchInput
+        value={search}
+        onValueChange={(next) => {
+          setSearch(next);
+          setOpen(true);
+        }}
+        onFocus={() => setOpen(true)}
+        onClick={() => setOpen(true)}
+        placeholder={placeholder}
+        autoFocus={autoFocus}
+        disabled={disabled}
+        aria-invalid={ariaInvalid}
+        aria-required={required}
+        aria-describedby={describedBy}
+      />
+      {invalid && (
+        <ErrorSlot aria-hidden="true">
+          <ErrorIcon />
+        </ErrorSlot>
+      )}
+    </InlineField>
+  );
+
+  return (
+    <InlineRoot shouldFilter={false} loop label={ariaLabel ?? "Search or create"}>
+      <PopoverPrimitive.Root open={open && hasRows} onOpenChange={setOpen}>
+        {listAnchor ? (
+          <>
+            {/* A virtual anchor renders nothing, so the field sits beside it instead of inside. */}
+            <PopoverPrimitive.Anchor virtualRef={listAnchor} />
+            {field}
+          </>
+        ) : (
+          <PopoverPrimitive.Anchor asChild>{field}</PopoverPrimitive.Anchor>
+        )}
+        {/* Always mounted (hidden while closed): the input's aria-controls must point at a list that exists. */}
+        <PopoverPrimitive.Portal forceMount>
+          <InlineContent
+            forceMount
+            align="start"
+            sideOffset={6}
+            onOpenAutoFocus={(event) => event.preventDefault()}
+            onCloseAutoFocus={(event) => event.preventDefault()}
+            onInteractOutside={(event) => {
+              const inside = listAnchor?.current ?? anchorRef.current;
+              if (inside?.contains(event.target as Node)) event.preventDefault();
+            }}
+          >
+            <List>
+              {filtered.map((option) => (
+                <ComboItem key={option.value} value={option.label} onSelect={() => commit({ kind: "existing", value: option.value, label: option.label })}>
+                  <ComboItemLabel>{option.label}</ComboItemLabel>
+                </ComboItem>
+              ))}
+              {showCreate && (
+                <CreateItem value={`__create__${trimmed}`} onSelect={() => commit({ kind: "create", label: trimmed })}>
+                  <Icon icon={Plus} size={14} />
+                  <ComboItemLabel>{createLabel(trimmed)}</ComboItemLabel>
+                </CreateItem>
+              )}
+            </List>
+          </InlineContent>
+        </PopoverPrimitive.Portal>
+      </PopoverPrimitive.Root>
+      <input type="hidden" name={existingFieldName} value={last?.kind === "existing" ? last.value : ""} />
+      <input type="hidden" name={createFieldName} value={last?.kind === "create" ? last.label : ""} />
+    </InlineRoot>
   );
 }

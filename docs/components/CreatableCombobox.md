@@ -20,6 +20,9 @@ import { CreatableCombobox, type CreatableComboboxValue } from "@/components/ui/
 - `searchPlaceholder?: string` — placeholder of the search box inside the list. Default `Search organizations…`.
 - `createLabel?: (query: string) => string` — label of the create row, and of the trigger once a new option is chosen. Default `` (q) => `Create “${q}”` ``. Per instance, so one screen can say `Add “{name}” as a new organization` without changing others.
 - `disabled?`, `required?`, `id?`, `aria-invalid?`, `aria-describedby?`, `aria-label?`/`aria-labelledby?` — always wrap in `Field` instead of setting these by hand.
+- `inline?: boolean` — the field itself is the search box: type to filter, and the options (plus the create row) drop down underneath, with no button to open first. The field clears after each pick so the person can add another; nothing stays "selected" in it. For adding several things in place, like a member's tags. Name it with `aria-label`: it can't take a `Field` label yet, because `cmdk` sets the input's own `id` and `aria-labelledby`.
+- `autoFocus?: boolean` — inline only: focus the field on mount, e.g. when an Edit button reveals it.
+- `listAnchor?: RefObject<HTMLElement>` — inline only: the element the list opens under, instead of the field. Use it when the field sits inside a larger box, such as picked tags followed by the cursor, so the list stays under the whole box instead of following the cursor.
 - When the typed text has no case-insensitive exact match among `options`, the list's last row is `createLabel(text)` with a plus icon.
 
 ## Example

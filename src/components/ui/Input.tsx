@@ -13,10 +13,10 @@ const Wrapper = styled.span`
 const StyledInput = styled.input<{ $invalid?: boolean }>`
   display: block;
   width: 100%;
-  height: 40px;
+  height: var(--control-height);
   padding: 0 var(--space-3);
   border-radius: var(--radius-md);
-  border: 1px solid var(--color-border-strong);
+  border: 1px solid var(--color-border-field);
   background: var(--color-bg);
   color: var(--color-text);
   font-family: inherit;
@@ -38,7 +38,7 @@ const StyledInput = styled.input<{ $invalid?: boolean }>`
   &:focus {
     outline: none;
     border-color: var(--color-focus);
-    box-shadow: var(--focus-ring);
+    box-shadow: var(--focus-ring-field);
   }
 
   ${({ $invalid }) =>
@@ -52,10 +52,7 @@ const StyledInput = styled.input<{ $invalid?: boolean }>`
 
       &:focus-visible,
       &:focus {
-        box-shadow:
-          inset 0 0 0 1px var(--color-danger),
-          0 0 0 2px var(--color-bg),
-          0 0 0 4px var(--color-danger);
+        box-shadow: var(--focus-ring-field-invalid);
       }
     `}
 
@@ -76,7 +73,7 @@ const IconSlot = styled.span`
   position: absolute;
   top: 0;
   right: 0;
-  height: 40px;
+  height: var(--control-height);
   width: 36px;
   display: inline-flex;
   align-items: center;

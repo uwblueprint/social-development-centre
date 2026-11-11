@@ -253,7 +253,28 @@ export function CreatableComboboxDemo() {
           />
         )}
       </Field>
+      <InlineTagsDemo />
     </Section>
+  );
+}
+
+/* Inline mode: the field is the search box, and it clears after each pick so several can be added. */
+function InlineTagsDemo() {
+  const [tags, setTags] = React.useState<string[]>([]);
+  const all = ["Board", "Volunteer", "Leadership donor"];
+  return (
+    <>
+      <CreatableCombobox
+        inline
+        aria-label="Add a tag"
+        options={all.filter((t) => !tags.includes(t)).map((t) => ({ value: t, label: t }))}
+        existingFieldName="tag"
+        createFieldName="newTag"
+        placeholder="Select or create a tag"
+        onValueChange={(v) => v && setTags((list) => [...list, v.kind === "existing" ? v.value : v.label])}
+      />
+      <p>Tags added: {tags.length ? tags.join(", ") : "none yet"}</p>
+    </>
   );
 }
 

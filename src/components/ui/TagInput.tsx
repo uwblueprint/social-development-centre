@@ -62,9 +62,9 @@ const Box = styled.div<{ $invalid?: boolean; $disabled?: boolean }>`
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-1);
-  min-height: 40px;
+  min-height: var(--control-height);
   padding: var(--space-1);
-  border: 1px solid ${({ $invalid }) => ($invalid ? "var(--color-danger)" : "var(--color-border-strong)")};
+  border: 1px solid ${({ $invalid }) => ($invalid ? "var(--color-danger)" : "var(--color-border-field)")};
   border-radius: var(--radius-md);
   background: var(--color-bg);
   cursor: text;
@@ -78,7 +78,7 @@ const Box = styled.div<{ $invalid?: boolean; $disabled?: boolean }>`
 
   &:focus-within {
     border-color: ${({ $invalid }) => ($invalid ? "var(--color-danger)" : "var(--color-focus)")};
-    box-shadow: var(--focus-ring);
+    box-shadow: ${({ $invalid }) => ($invalid ? "var(--focus-ring-field-invalid)" : "var(--focus-ring-field)")};
   }
 
   ${({ $disabled }) =>
@@ -165,9 +165,10 @@ const RemoveButton = styled.span`
   }
 `;
 
+/* Fills what's left of the line after the tags; drops to a new line only when under 64px. */
 const Draft = styled.input`
-  flex: 1 1 160px;
-  min-width: 120px;
+  flex: 1 1 0;
+  min-width: var(--space-8);
   height: 28px;
   padding: 0 var(--space-1);
   border: 0;

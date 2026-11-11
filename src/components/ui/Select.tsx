@@ -45,10 +45,10 @@ const triggerStyles = css`
   justify-content: space-between;
   gap: var(--space-2);
   width: 100%;
-  height: 40px;
+  height: var(--control-height);
   padding: 0 var(--space-3);
   border-radius: var(--radius-md);
-  border: 1px solid var(--color-border-strong);
+  border: 1px solid var(--color-border-field);
   background: var(--color-bg);
   color: var(--color-text);
   font-family: inherit;
@@ -71,7 +71,7 @@ const triggerStyles = css`
   &:focus-visible {
     outline: none;
     border-color: var(--color-focus);
-    box-shadow: var(--focus-ring);
+    box-shadow: var(--focus-ring-field);
   }
 
   &[aria-invalid="true"] {
@@ -79,10 +79,7 @@ const triggerStyles = css`
     box-shadow: inset 0 0 0 1px var(--color-danger);
 
     &:focus-visible {
-      box-shadow:
-        inset 0 0 0 1px var(--color-danger),
-        0 0 0 2px var(--color-bg),
-        0 0 0 4px var(--color-danger);
+      box-shadow: var(--focus-ring-field-invalid);
     }
   }
 

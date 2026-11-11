@@ -99,10 +99,10 @@ const Wrapper = styled.div`
 const TextField = styled.input<{ $invalid?: boolean }>`
   display: block;
   width: 100%;
-  height: 40px;
+  height: var(--control-height);
   padding: 0 76px 0 var(--space-3);
   border-radius: var(--radius-md);
-  border: 1px solid var(--color-border-strong);
+  border: 1px solid var(--color-border-field);
   background: var(--color-bg);
   color: var(--color-text);
   font-family: inherit;
@@ -124,7 +124,7 @@ const TextField = styled.input<{ $invalid?: boolean }>`
   &:focus {
     outline: none;
     border-color: var(--color-focus);
-    box-shadow: var(--focus-ring);
+    box-shadow: var(--focus-ring-field);
   }
 
   &[aria-invalid="true"] {
@@ -133,10 +133,7 @@ const TextField = styled.input<{ $invalid?: boolean }>`
 
     &:focus-visible,
     &:focus {
-      box-shadow:
-        inset 0 0 0 1px var(--color-danger),
-        0 0 0 2px var(--color-bg),
-        0 0 0 4px var(--color-danger);
+      box-shadow: var(--focus-ring-field-invalid);
     }
   }
 
@@ -157,7 +154,7 @@ const IconGroup = styled.span`
   position: absolute;
   top: 0;
   right: 0;
-  height: 40px;
+  height: var(--control-height);
   display: inline-flex;
   align-items: center;
   gap: 2px;
@@ -180,13 +177,11 @@ const TriggerButton = styled(PopoverPrimitive.Trigger)`
   border-radius: var(--radius-sm);
   color: var(--color-text-muted);
   cursor: pointer;
-  transition:
-    color var(--duration) var(--ease),
-    background-color var(--duration) var(--ease);
+  transition: color var(--duration) var(--ease);
 
+  /* Icon colour only: a fill would fill the field's full height and hide its border. */
   &:hover:not(:disabled) {
     color: var(--color-text);
-    background: var(--color-secondary);
   }
 
   &:focus-visible {

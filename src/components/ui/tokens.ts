@@ -32,6 +32,8 @@ globalStyle`
     --color-border: var(--taupe-200);
     /* Form control boundaries need 3:1 against white (WCAG 1.4.11); taupe-500 is 4.95:1. */
     --color-border-strong: var(--taupe-500);
+    /* Text field edges at rest (design, Nov 3): lighter than border-strong but still 3:1 (3.26 on white, 3.13 on surface). */
+    --color-border-field: color-mix(in srgb, var(--taupe-400) 60%, var(--taupe-500));
     --color-primary: var(--taupe-900);
     --color-primary-hover: var(--taupe-800);
     --color-on-primary: var(--taupe-50);
@@ -174,6 +176,8 @@ globalStyle`
 
     /* Every table row is one height (cells are single-line), so lists scan evenly; fits a 32px button. */
     --row-height: 44px;
+    /* Text fields, selects and pickers: the same height as a default Button, so a field and a button line up. */
+    --control-height: 36px;
     /* List page search in the header row: wide enough for a name or email, narrow enough to leave room for actions. */
     --search-width: 280px;
     /* The desktop sidebar's width; the design zone's nav placeholder uses it too, so swapping in the real sidebar doesn't shift screens. */
@@ -194,6 +198,9 @@ globalStyle`
     --dashed-border-repeat: repeat-x, repeat-x, repeat-y, repeat-y;
 
     --focus-ring: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-focus);
+    /* Text fields show focus inside their own edge, no outer ring (design, Nov 3): the 1px border becomes 2px dark, or 3px red with an error. */
+    --focus-ring-field: inset 0 0 0 1px var(--color-focus);
+    --focus-ring-field-invalid: inset 0 0 0 2px var(--color-danger);
     --duration: 160ms;
     --duration-slow: 240ms;
     /* First-load entrance for app shells: slow enough to feel calm, short enough not to block work. */
@@ -240,6 +247,7 @@ globalStyle`
       --color-text-subtle: #8e817c;
       --color-border: #473c39;
       --color-border-strong: var(--taupe-500);
+      --color-border-field: var(--color-border-strong);
       --color-primary: var(--taupe-100);
       --color-primary-hover: var(--taupe-300);
       --color-on-primary: var(--taupe-900);
@@ -320,6 +328,7 @@ globalStyle`
     --color-text-subtle: #8e817c;
     --color-border: #473c39;
     --color-border-strong: var(--taupe-500);
+    --color-border-field: var(--color-border-strong);
     --color-primary: var(--taupe-100);
     --color-primary-hover: var(--taupe-300);
     --color-on-primary: var(--taupe-900);

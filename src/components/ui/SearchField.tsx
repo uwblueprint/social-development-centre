@@ -27,7 +27,7 @@ const Leading = styled.span`
   position: absolute;
   top: 0;
   left: var(--space-3);
-  height: 40px;
+  height: var(--control-height);
   display: inline-flex;
   align-items: center;
   color: var(--color-text-muted);
@@ -42,11 +42,11 @@ const Spinner = styled.span`
 const StyledInput = styled.input`
   display: block;
   width: 100%;
-  height: 40px;
+  height: var(--control-height);
   /* Leading icon column (12 + 16 + 8) on the left, room for the clear button on the right. */
   padding: 0 calc(var(--space-6) + var(--space-2)) 0 calc(var(--space-3) + var(--space-5));
   border-radius: var(--radius-md);
-  border: 1px solid var(--color-border-strong);
+  border: 1px solid var(--color-border-field);
   background: var(--color-bg);
   color: var(--color-text);
   font-family: inherit;
@@ -74,7 +74,7 @@ const StyledInput = styled.input`
   &:focus {
     outline: none;
     border-color: var(--color-focus);
-    box-shadow: var(--focus-ring);
+    box-shadow: var(--focus-ring-field);
   }
 
   &:disabled {
@@ -94,7 +94,7 @@ const Actions = styled.span`
   position: absolute;
   top: 0;
   right: var(--space-1);
-  height: 40px;
+  height: var(--control-height);
   display: inline-flex;
   align-items: center;
 `;
