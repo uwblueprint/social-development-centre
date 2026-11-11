@@ -34,9 +34,10 @@ export async function addAdmin(_prev: ActionState<NewAdmin>, formData: FormData)
   revalidatePath("/admin/admins");
 
   if ((await sendSignInLink("admin", email)) !== "sent") {
+    // They were added, so this is not an error the form can fix: report it and let them use Resend invite.
     return {
-      status: "error",
-      message: `${values.fullName} was added, but the invite didn’t send. Use Resend link to try again.`,
+      status: "success",
+      message: `${values.fullName} was added, but the invite didn’t send. Use Resend invite to try again.`,
     };
   }
   return { status: "success", message: `Invite sent to ${email}.` };
