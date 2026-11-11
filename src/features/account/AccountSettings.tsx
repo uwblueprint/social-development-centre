@@ -61,6 +61,8 @@ function NameForm({ initial }: { initial: NameValues }) {
       setSaved(result.data);
       setDraft(result.data);
       toast({ title: result.message ?? "Your name is saved." });
+      // Save disappears once nothing is unsaved; move focus off it before it goes, so it isn't lost.
+      document.querySelector<HTMLInputElement>('input[name="firstName"]')?.focus();
     }
     return result;
   }, idleName);
@@ -124,7 +126,7 @@ function DeleteAccount({ onlyAdmin }: { onlyAdmin: boolean }) {
     <Section aria-labelledby="delete">
       <SectionTitle id="delete">Delete account</SectionTitle>
       <Row>
-        <RowLabel>Permanently delete your account?</RowLabel>
+        <RowLabel>You’ll lose access to the admin portal.</RowLabel>
         <div>
           {onlyAdmin ? (
             // The rule from docs/decisions/admins.md (decision 2); the database refuses the last admin too.
@@ -159,7 +161,7 @@ function DeleteForm() {
     <form action={formAction}>
       <AlertDialogTitle>Delete your account?</AlertDialogTitle>
       <AlertDialogDescription>
-        You won’t be able to log in anymore. Another admin can invite you back.
+        You’ll lose access to the admin portal right away. Another admin can add you back.
       </AlertDialogDescription>
       {state.status === "error" && state.message && (
         <FormError role="alert">

@@ -21,8 +21,8 @@ export async function updateName(_prev: ActionState<NameValues>, formData: FormD
   const fieldErrors: Record<string, string> = {};
   if (!values.firstName) fieldErrors.firstName = "Enter your first name.";
   else if (values.firstName.length > NAME_MAX) fieldErrors.firstName = `Use ${NAME_MAX} characters or fewer.`;
-  if (!values.lastName) fieldErrors.lastName = "Enter your last name.";
-  else if (values.lastName.length > NAME_MAX) fieldErrors.lastName = `Use ${NAME_MAX} characters or fewer.`;
+  // Last name is optional: admins invited with a one-word name have none.
+  if (values.lastName.length > NAME_MAX) fieldErrors.lastName = `Use ${NAME_MAX} characters or fewer.`;
   if (Object.keys(fieldErrors).length) return { status: "error", fieldErrors, data: values };
 
   const supabase = await createClient();
