@@ -16,8 +16,8 @@ Items marked **new** don't exist in the PR #40 schema yet.
   join date, end date, subscribed, tags.
 - **Membership end date (new).** The client needs it (Oct 23); PR #40 only stores `joined_at`. Default: 12 months
   after joining; editable from Change membership.
-- The "Ends in N days" / "Ended N days ago" tag shows only within 30 days of the end date or after it. The UI
-  computes it from the end date; nothing to store.
+- Flags column: the "Ends in N days" / "Ended N days ago" tag, shown only within 30 days of the end date or
+  after it. The UI computes it from the end date; nothing to store.
 
 ## Bulk actions
 - Tag many: `tag_members(tag, person_ids[])` from a selection, a filtered list, or pasted emails (unknown
@@ -25,28 +25,33 @@ Items marked **new** don't exist in the PR #40 schema yet.
 - Email many: opens a one-off email to those people (Emails feature).
 
 ## One member's panel
-- Header: name, email, status (Member / Waiting for payment / Not renewed), subscribed or unsubscribed, tags.
-- Tags edit in place: remove (`untag_members`), add an existing tag or create one (`create_tag` + `tag_members`).
+- Header: name, email, status (Member / Waiting for payment / Membership ended), subscribed or unsubscribed, tags.
+  A ⋯ menu holds Edit member and Delete member.
+- Tags edit in place: remove (`untag_members`); type a name and press Enter to add it. A name matching an
+  existing tag (any case) reuses it, otherwise `create_tag` + `tag_members`.
   **Tag colour (new):** each tag shows in one of the kit's five badge categories or neutral. Needs a `color`
   column on `tags` (nullable, 1–5). The screen shows colours; choosing one isn't designed yet.
-- **Notes (new):** one list per member, newest first: text, created at, author. Add, edit, delete.
+- **Note (new):** one running note per member (client): text, last updated at, last updated by. Edited in place;
+  saving it empty clears it.
 - **Membership (new):** type (Paid / Complimentary / Gifted / Sponsored), yearly amount for paid, end date.
   The 3, 6 and 9-month marks are computed from the start of the current membership year (end date minus 12
-  months, or the join date if later); nothing to store.
+  months, or the join date if later); nothing to store. Once it has ended, the section says "Membership ended <date>"
+  instead (Change still renews it).
 - **Payments (new):** amount, date, method (E-transfer / Cash or cheque / Online), optional note, and who it was
-  for when someone pays for another person's membership. Record, edit, delete. Total = sum of the member's
-  payments. Recording a payment for a "Waiting for payment" member makes them a member.
-- **Gift a membership (new):** adds a new member with type Gifted and records the payment on the giver.
-- Activity, newest first, exact dates, filterable by Emails / Member activity:
-  - emails from `email_sends` (title, sent automatically or by whom, opened, body without the footer);
+  for when someone pays for another person's membership. Record, edit, delete. The section shows only the total
+  (sum of the member's payments); each payment appears in Activity. Recording a payment for a "Waiting for
+  payment" member makes them a member.
+- Activity, newest first, exact dates, filterable by Emails / Member activity, searchable (title, detail, email
+  body), 12 at a time with "Show N more" (client, Oct 30: search, filter by type, load more):
+  - emails from `email_sends` (title, who sent it when an admin did rather than automatically, body without
+    the footer). No open tracking (client, Oct 23). No reply tracking or flags: replies stay in the inbox.
+  - payments (from Payments above), editable from their row;
   - `tag_events` (Tagged / Removed tag);
   - referrals (`referrals`: "X joined from their invite");
-  - joined, membership ended.
+  - joined, with how they joined (signup source): "Joined via <source>", "Joined with a gift from <name>",
+    "Added by an admin"; membership ended.
 - Intake form answers (interests, location, time they can give, what they hope for) and when they were answered.
-- Referrals: referred by, people they referred; copy their invite link.
-- Other details: how they joined (signup source), address.
-- Edit details: first name, last name, email (unique), address.
-- Delete person, copy their private link.
+- Edit member: first name, last name, email (unique), address.
 
 ## Adding a member
 First name, last name, email (unique), type, amount and method for paid, join date (backdate only while
@@ -54,3 +59,12 @@ adding; PR #40's `add_member(..., p_joined_at)`), and "Send join emails" (defaul
 
 ## Not here
 No phone numbers or call logging (client, Oct 23). No tax receipts (client, Oct 23).
+
+## Open questions
+- **A member's private link.** Earlier screens had "Copy their private link" (`/me/<id>`), a no-password
+  link to a member self-serve page (update details, change their amount, unsubscribe). It's removed from the
+  design until this is decided:
+  - Is there a self-serve page at all? The client ranked it low on Oct 23, and Suhanya didn't want members
+    making a username and password.
+  - If there is: what can a member do there, does the link expire, and how does an admin reset a link
+    someone has forwarded? Anyone holding the link gets in.
