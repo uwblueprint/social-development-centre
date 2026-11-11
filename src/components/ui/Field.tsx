@@ -10,7 +10,7 @@ import { Icon } from "./Icon";
 const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   width: 100%;
 `;
 

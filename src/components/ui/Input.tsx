@@ -16,7 +16,8 @@ const StyledInput = styled.input<{ $invalid?: boolean }>`
   height: var(--control-height);
   padding: 0 var(--space-3);
   border-radius: var(--radius-md);
-  border: 1px solid var(--color-border-field);
+  /* Subtle border at rest; the focus colour replaces it while typing. */
+  border: 1px solid var(--color-text-subtle);
   background: var(--color-bg);
   color: var(--color-text);
   font-family: inherit;

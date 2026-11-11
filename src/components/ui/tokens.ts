@@ -177,7 +177,7 @@ globalStyle`
     /* Every table row is one height (cells are single-line), so lists scan evenly; fits a 32px button. */
     --row-height: 44px;
     /* Text fields, selects and pickers: the same height as a default Button, so a field and a button line up. */
-    --control-height: 36px;
+    --control-height: 32px;
     /* List page search in the header row: wide enough for a name or email, narrow enough to leave room for actions. */
     --search-width: 280px;
     /* The desktop sidebar's width; the design zone's nav placeholder uses it too, so swapping in the real sidebar doesn't shift screens. */

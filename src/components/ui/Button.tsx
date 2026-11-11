@@ -22,7 +22,7 @@ export const Button = styled.button<{ $variant?: Variant; $size?: Size }>`
     color var(--duration) var(--ease),
     transform var(--duration) var(--ease);
 
-  height: 36px;
+  height: 32px;
   padding: 0 var(--space-4);
   font-size: var(--text-sm);
 
