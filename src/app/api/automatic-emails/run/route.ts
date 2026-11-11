@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { renderDelivery, type Delivery } from "@/features/automatic-emails/render";
+import { renderDelivery, type Delivery, type Fallbacks } from "@/features/automatic-emails/render";
 import { createSender } from "@/features/automatic-emails/sender";
 import { createSecretClient } from "@/lib/supabase/secret";
 
@@ -39,14 +39,21 @@ export async function GET(request: NextRequest) {
     return Response.json({ error: "Couldn't load sends" }, { status: 500 });
   }
 
+  const saved = await supabase.from("email_fallbacks").select("field, value");
+  if (saved.error) {
+    console.error("[automatic-emails] email_fallbacks failed:", saved.error.message);
+    return Response.json({ error: "Couldn't load sends" }, { status: 500 });
+  }
+  const fallbacks: Fallbacks = Object.fromEntries(saved.data.map((f) => [f.field, f.value]));
+
   const sender = createSender();
   const started = Date.now();
   let sent = 0;
   let failed = 0;
   // One at a time: Gmail throttles bursts, and SDC sends a few hundred a day at most.
-  for (const delivery of deliveries.data as Delivery[]) {
+  for (const delivery of deliveries.data as unknown as Delivery[]) {
     if (Date.now() - started > TIME_BUDGET_MS) break;
-    const result = await sender.send(renderDelivery(delivery, request.nextUrl.origin));
+    const result = await sender.send(renderDelivery(delivery, request.nextUrl.origin, fallbacks));
     const recorded = await supabase.rpc("record_send_result", {
       p_send_id: delivery.send_id,
       p_provider_message_id: result.ok ? result.messageId : null,
