@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 import { CircleAlert, Plus } from "lucide-react";
 import { styled } from "next-yak";
 import { ListPage, ListPageHeader } from "@/components/patterns/ListPage";
@@ -111,6 +111,8 @@ export function AdminsPage({ admins, currentAdminId }: { admins: PersonRow[]; cu
   const [resendingId, setResendingId] = useState<string | null>(null);
   // Set when a removal succeeds: that row's button is gone, so the dialog sends focus to the page heading instead.
   const [removed, setRemoved] = useState(false);
+  // The dialogs open from plain buttons (no Radix Trigger), so Radix can't return focus on close. We do.
+  const opener = useRef<HTMLElement | null>(null);
 
   // The last admin can't leave (the database refuses too), so SDC is never locked out.
   const canLeave = admins.length > 1;
@@ -153,7 +155,8 @@ export function AdminsPage({ admins, currentAdminId }: { admins: PersonRow[]; cu
             $variant="outline"
             $size="sm"
             aria-label={self ? "Leave the admin portal" : `Remove ${displayName(person)}`}
-            onClick={() => {
+            onClick={(event) => {
+              opener.current = event.currentTarget;
               setRemoving(person);
               setRemoveOpen(true);
             }}
@@ -184,7 +187,13 @@ export function AdminsPage({ admins, currentAdminId }: { admins: PersonRow[]; cu
       <ListPageHeader
         title="Admins"
         actions={
-          <Button type="button" onClick={() => setInviteOpen(true)}>
+          <Button
+            type="button"
+            onClick={(event) => {
+              opener.current = event.currentTarget;
+              setInviteOpen(true);
+            }}
+          >
             <Icon icon={Plus} />
             Invite admin
           </Button>
@@ -210,7 +219,12 @@ export function AdminsPage({ admins, currentAdminId }: { admins: PersonRow[]; cu
       </MobileOnly>
 
       <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
-        <DialogContent>
+        <DialogContent
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            opener.current?.focus();
+          }}
+        >
           <InviteForm
             onDone={(message) => {
               setInviteOpen(false);
@@ -223,10 +237,13 @@ export function AdminsPage({ admins, currentAdminId }: { admins: PersonRow[]; cu
       <AlertDialog open={removeOpen} onOpenChange={setRemoveOpen}>
         <AlertDialogContent
           onCloseAutoFocus={(event) => {
-            if (!removed) return;
             event.preventDefault();
-            setRemoved(false);
-            document.querySelector<HTMLElement>("h1")?.focus();
+            if (removed) {
+              setRemoved(false);
+              document.querySelector<HTMLElement>("h1")?.focus();
+            } else {
+              opener.current?.focus();
+            }
           }}
         >
           {removing && (
