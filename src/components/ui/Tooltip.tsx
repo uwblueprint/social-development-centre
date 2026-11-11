@@ -18,6 +18,8 @@ const Content = styled(TooltipPrimitive.Content)`
   padding: 6px 10px;
   box-shadow: var(--shadow-md);
 
+  /* Tooltips appear faster than other overlays. */
+  --overlay-duration: var(--duration-fast);
   ${overlayMotion}
 `;
 

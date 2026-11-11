@@ -26,18 +26,21 @@ const fadeOut = keyframes`
   to { opacity: 0; }
 `;
 
-/** Shared by every Radix overlay content (menus, popovers, selects, tooltips, hover cards). */
+/**
+ * Shared by every Radix overlay content (menus, popovers, selects, tooltips, hover cards).
+ * Set --overlay-duration to change how fast it enters (Tooltip uses --duration-fast).
+ */
 export const overlayMotion = css`
   &[data-state="open"] {
-    animation: ${fadeIn} var(--duration) var(--ease-out);
+    animation: ${fadeIn} var(--overlay-duration, var(--duration)) var(--ease-out);
   }
 
   &[data-state="open"][data-side="bottom"] {
-    animation: ${fadeInBelow} var(--duration) var(--ease-out);
+    animation: ${fadeInBelow} var(--overlay-duration, var(--duration)) var(--ease-out);
   }
 
   &[data-state="open"][data-side="top"] {
-    animation: ${fadeInAbove} var(--duration) var(--ease-out);
+    animation: ${fadeInAbove} var(--overlay-duration, var(--duration)) var(--ease-out);
   }
 
   &[data-state="closed"] {
