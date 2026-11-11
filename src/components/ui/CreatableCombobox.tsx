@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { keyframes, styled } from "next-yak";
+import { styled } from "next-yak";
+import { overlayMotion } from "./overlayMotion";
 import { Popover as PopoverPrimitive } from "radix-ui";
 import { Command } from "cmdk";
 import { ChevronDown, Plus, Search } from "lucide-react";
@@ -128,32 +129,6 @@ const ChevronSlot = styled.span`
   color: var(--color-text-muted);
 `;
 
-/*
- * Overlay enter/exit: a short fade plus a 4px nudge toward the trigger side, vertical only. The old
- * scale + transform-origin (a Radix var that isn't measured on the first frame) and the horizontal
- * slide made the panel twitch sideways as Radix settled its position. Exit is a plain fade. Only the
- * inner content animates, never Radix's positioned wrapper.
- */
-const fadeIn = keyframes`
-  from { opacity: 0; }
-  to { opacity: 1; }
-`;
-
-const fadeInBelow = keyframes`
-  from { opacity: 0; transform: translateY(calc(var(--space-1) * -1)); }
-  to { opacity: 1; transform: translateY(0); }
-`;
-
-const fadeInAbove = keyframes`
-  from { opacity: 0; transform: translateY(var(--space-1)); }
-  to { opacity: 1; transform: translateY(0); }
-`;
-
-const fadeOut = keyframes`
-  from { opacity: 1; }
-  to { opacity: 0; }
-`;
-
 const Content = styled(PopoverPrimitive.Content)`
   z-index: var(--z-popover);
   min-width: var(--radix-popover-trigger-width);
@@ -170,21 +145,7 @@ const Content = styled(PopoverPrimitive.Content)`
     outline: none;
   }
 
-  &[data-state="open"] {
-    animation: ${fadeIn} var(--duration) var(--ease-out);
-  }
-
-  &[data-state="open"][data-side="bottom"] {
-    animation: ${fadeInBelow} var(--duration) var(--ease-out);
-  }
-
-  &[data-state="open"][data-side="top"] {
-    animation: ${fadeInAbove} var(--duration) var(--ease-out);
-  }
-
-  &[data-state="closed"] {
-    animation: ${fadeOut} var(--duration-fast) var(--ease-in) forwards;
-  }
+  ${overlayMotion}
 `;
 
 const SearchRow = styled.div`

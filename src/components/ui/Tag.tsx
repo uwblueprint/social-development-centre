@@ -27,7 +27,7 @@ export const tagPill = css`
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  min-height: 28px;
+  min-height: var(--pill-height);
   padding: 0 var(--space-2);
   border: 0;
   border-radius: var(--radius-sm);

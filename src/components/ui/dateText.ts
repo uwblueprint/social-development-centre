@@ -12,7 +12,7 @@ function buildDate(year: number, month: number, day: number) {
 export function monthFromName(name: string) {
   const n = name.toLowerCase().replace(/\.$/, "");
   if (n.length < 3) return -1;
-  return MONTHS.findIndex((m) => m.startsWith(n) || (n === "sept" && m === "september"));
+  return MONTHS.findIndex((m) => m.startsWith(n));
 }
 
 /**
@@ -35,13 +35,12 @@ export function parseTypedDate(
     if (mo) {
       const month = monthFromName(mo[1]);
       const year = yearOf(mo[2]);
-      return month < 0 || year === undefined ? undefined : buildDate(year, month, 1);
+      return month < 0 ? undefined : buildDate(year, month, 1);
     }
   }
   let m = /^(\d{1,2})[/.-](\d{1,2})(?:[/.-](\d{4}))?$/.exec(t);
   if (m) {
     const year = yearOf(m[3]);
-    if (year === undefined) return undefined;
     let month = Number(m[1]);
     let day = Number(m[2]);
     if (month > 12 && day <= 12) [month, day] = [day, month];
@@ -51,13 +50,13 @@ export function parseTypedDate(
   if (m) {
     const month = monthFromName(m[1]);
     const year = yearOf(m[3]);
-    return month < 0 || year === undefined ? undefined : buildDate(year, month, Number(m[2]));
+    return month < 0 ? undefined : buildDate(year, month, Number(m[2]));
   }
   m = /^(\d{1,2})(?:st|nd|rd|th)?(?: of)? ([A-Za-z]+)\.?(?:,? ?(\d{4}))?$/.exec(t);
   if (m) {
     const month = monthFromName(m[2]);
     const year = yearOf(m[3]);
-    return month < 0 || year === undefined ? undefined : buildDate(year, month, Number(m[1]));
+    return month < 0 ? undefined : buildDate(year, month, Number(m[1]));
   }
   return undefined;
 }

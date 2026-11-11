@@ -155,7 +155,7 @@ globalStyle`
     --intake-goose-head: var(--taupe-900);
     --intake-goose-cheek: #fffef8;
     /* SDC brand green (sign-in and public pages, from the brand mark): headings 9.7:1 on white, and the
-       tint behind brand icons. Not for portal UI, which stays taupe. */
+       tint behind brand icons. Also the portal's --color-primary (see above). */
     --color-brand-heading: #064d45;
     /* SDC green as a Tailwind-style scale (owner): the brand green sits at 900; the other steps follow Tailwind's teal lightness curve. */
     --sdc-50: #effcf9;
@@ -258,8 +258,6 @@ globalStyle`
     --dashed-border-repeat: repeat-x, repeat-x, repeat-y, repeat-y;
 
     --focus-ring: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-focus);
-    /* Motion is calm and rare. See docs/design/motion.md. Nothing overshoots, springs or slides a pill. */
-    --duration-fast: 100ms; /* colour fades on hover, press and state change (borders, fills, text) */
     /* Motion is calm and rare. See docs/design/motion.md. Nothing overshoots, springs or slides a pill. */
     --duration-fast: 100ms; /* colour fades on hover, press and state change (borders, fills, text) */
     --duration: 160ms; /* overlays in (menu, select, popover, tooltip, dialog), switch thumb, toast */
