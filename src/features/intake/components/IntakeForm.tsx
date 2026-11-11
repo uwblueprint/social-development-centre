@@ -2,14 +2,14 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Image from "next/image";
-import { keyframes, styled } from "next-yak";
+import { styled } from "next-yak";
 import { ArrowLeft, CircleAlert } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
 import { Input } from "@/components/ui/Input";
 import { Progress } from "@/components/ui/Progress";
-import { RadioCard, RadioCardGroup } from "@/components/ui/RadioGroup";
+import { RadioCard } from "@/components/ui/RadioGroup";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Textarea } from "@/components/ui/Textarea";
 import { celebrate } from "@/lib/celebrate";
@@ -20,6 +20,17 @@ import { QUESTION_COUNT, emptyAnswers, type ContactField, type IntakeAnswers, ty
 import { CheckCardGroup } from "./CheckCardGroup";
 import { Envelope } from "./Envelope";
 import { Goose } from "./Goose";
+import {
+  PaperActions as Actions,
+  PaperCardText as CardText,
+  PaperChoices as Choices,
+  PaperHeading as Heading,
+  PaperLead as Lead,
+  PaperLogos as Logos,
+  PaperPage as Page,
+  PaperSheet as Sheet,
+  PaperStep as StepBody,
+} from "./Paper";
 
 /*
  * The intake form as a doodled letter (prototype, 8 Oct 2026): a closed envelope opens into the welcome
@@ -30,75 +41,6 @@ import { Goose } from "./Goose";
 /** Steps that show the progress bar, in order. */
 const FLOW: Step[] = ["contact", "topics", "ways", "location", "time", "hopes"];
 const HEADING_ID = "intake-heading";
-
-const fadeUp = keyframes`
-  from {
-    opacity: 0;
-    translate: 0 var(--enter-offset);
-  }
-`;
-const sheetIn = keyframes`
-  from {
-    opacity: 0;
-    transform: translateY(var(--space-6)) scale(0.96);
-  }
-`;
-
-const Page = styled.div`
-  --color-bg: var(--intake-paper);
-  --color-bg-hover: var(--intake-paper-tint);
-  display: flex;
-  flex-direction: column;
-  min-height: 100dvh;
-  background-color: var(--intake-desk);
-  background-image: radial-gradient(var(--intake-desk-dot) 1px, transparent 1.2px);
-  background-size: var(--space-5) var(--space-5);
-  color: var(--color-text);
-  font-family: var(--font-intake-body);
-  line-height: var(--leading-body);
-`;
-
-/* The letter: a hand-drawn sheet on the desk. On a phone it fills the screen instead. */
-const Sheet = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-5);
-  width: 100%;
-  max-width: 40rem;
-  min-height: calc(100dvh - var(--space-4) * 2);
-  margin: var(--space-4) auto;
-  padding: var(--space-5) var(--space-5) 0;
-  border: 2px solid var(--intake-ink);
-  border-radius: var(--radius-intake-sheet);
-  background: var(--intake-paper);
-  box-shadow: var(--shadow-intake-sheet);
-  animation: ${sheetIn} var(--duration-enter) var(--ease-spring) both;
-
-  @media (max-width: 40rem) {
-    min-height: 100dvh;
-    margin: 0;
-    padding: var(--space-4) var(--space-4) 0;
-    border: 0;
-    border-radius: 0;
-    box-shadow: none;
-  }
-`;
-
-const Logos = styled.div`
-  display: flex;
-  align-items: flex-end;
-  gap: var(--space-6);
-
-  img {
-    width: auto;
-    height: var(--space-8);
-  }
-  @media (max-height: 45rem), (max-width: 40rem) {
-    img {
-      height: var(--space-7);
-    }
-  }
-`;
 
 const ProgressBlock = styled.div`
   display: flex;
@@ -118,28 +60,6 @@ const Body = styled.form`
   display: flex;
   flex: 1;
   flex-direction: column;
-`;
-
-const StepBody = styled.div`
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: var(--space-4);
-  padding-bottom: var(--space-5);
-  animation: ${fadeUp} var(--duration-enter) var(--ease) both;
-`;
-
-const Heading = styled.h1`
-  margin: 0;
-  font-family: var(--font-intake-display);
-  font-size: var(--text-xl);
-  font-weight: var(--weight-regular);
-  line-height: var(--leading-heading);
-  overflow-wrap: anywhere;
-
-  &:focus {
-    outline: none;
-  }
 `;
 
 const Letter = styled.div`
@@ -173,30 +93,10 @@ const Hello = styled.p`
   font-weight: var(--weight-bold);
 `;
 
-const Lead = styled.p`
-  margin: 0;
-  font-size: var(--text-md);
-  color: var(--color-text-muted);
-  max-width: 60ch;
-`;
-
 const Fields = styled.div`
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-`;
-
-/* One column, as in the letter design: each place or amount of time on its own line. */
-const Choices = styled(RadioCardGroup)`
-  grid-template-columns: 1fr;
-  gap: var(--space-3);
-`;
-
-const CardText = styled.span`
-  /* Leave room for the card's check in the corner. */
-  padding-right: var(--space-6);
-  font-size: var(--text-md);
-  line-height: var(--leading-ui);
 `;
 
 const Alert = styled.p`
@@ -214,25 +114,6 @@ const Alert = styled.p`
   svg {
     flex-shrink: 0;
     margin-top: 2px;
-  }
-`;
-
-/* Stays in view on a phone, so the next step is never below a long list. */
-const Actions = styled.div`
-  position: sticky;
-  bottom: 0;
-  display: flex;
-  gap: var(--space-2);
-  margin: 0 calc(var(--space-5) * -1);
-  padding: var(--space-3) var(--space-5) var(--space-4);
-  background: var(--intake-paper);
-
-  > :last-child {
-    flex: 1;
-  }
-  @media (max-width: 40rem) {
-    margin: 0 calc(var(--space-4) * -1);
-    padding: var(--space-3) var(--space-4) var(--space-4);
   }
 `;
 

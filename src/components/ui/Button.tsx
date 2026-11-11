@@ -1,7 +1,7 @@
 import { css, styled } from "next-yak";
 
 /** No "link" variant (owner): every action is a box. Text-like actions use `ghost`. */
-type Variant = "primary" | "secondary" | "outline" | "ghost" | "danger";
+type Variant = "primary" | "secondary" | "outline" | "ghost" | "danger" | "danger-outline";
 type Size = "sm" | "md" | "lg";
 
 export const Button = styled.button<{ $variant?: Variant; $size?: Size }>`
@@ -83,6 +83,16 @@ export const Button = styled.button<{ $variant?: Variant; $size?: Size }>`
       &:hover:not(:disabled) {
         background: var(--color-danger);
         filter: brightness(0.92);
+      }
+    `}
+  ${({ $variant }) =>
+    $variant === "danger-outline" &&
+    css`
+      background: var(--color-bg);
+      color: var(--color-danger);
+      border-color: var(--color-danger);
+      &:hover:not(:disabled) {
+        background: var(--color-danger-subtle);
       }
     `}
 

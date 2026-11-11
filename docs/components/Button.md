@@ -12,7 +12,7 @@ A clickable control for a single action, styled with six variants and three size
 ```tsx
 import { Button } from "@/components/ui/Button";
 ```
-- `$variant?: "primary" | "secondary" | "outline" | "ghost" | "danger"` — default `primary`. There is no link-style variant (owner, 28 Sep): every action is a box. For a quiet in-content action ("Back", "Download template") use `ghost` or `secondary` at `$size="sm"`.
+- `$variant?: "primary" | "secondary" | "outline" | "ghost" | "danger" | "danger-outline"` — default `primary`. `danger-outline` is for a destructive choice that must stay visible beside a safer main action without competing with it (e.g. "Cancel membership", "Unsubscribe from all emails" in member-facing flows); use filled `danger` for the final confirm in a dialog. There is no link-style variant (owner, 28 Sep): every action is a box. For a quiet in-content action ("Back", "Download template") use `ghost` or `secondary` at `$size="sm"`.
 - `$size?: "sm" | "md" | "lg"` — default `md`.
 - All native `<button>` props (`type`, `disabled`, `onClick`, …).
 - Icon-only buttons need `aria-label` (hard rule #3); disabled buttons need `disabledReason` via `DisabledReason`.
