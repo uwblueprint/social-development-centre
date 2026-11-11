@@ -12,6 +12,9 @@ import { SearchField } from "@/components/ui/SearchField";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { ErrorSummary } from "@/components/ui/ErrorSummary";
 import { TagInput } from "@/components/ui/TagInput";
+import { ArrowLeftToLine, Trash2 } from "lucide-react";
+import { TagCombobox } from "@/components/ui/TagCombobox";
+import type { TagColor } from "@/components/ui/Tag";
 
 const Section = styled.div`
   display: flex;
@@ -274,6 +277,40 @@ export function ErrorSummaryDemo() {
         {(props) => <Input {...props} defaultValue="sdckw" />}
       </Field>
     </Section>
+  );
+}
+
+const DEMO_TAGS = ["$1,000+", "Volunteer", "Lapsed", "Board", "Monthly donor"].map((t) => ({ value: t, label: t }));
+
+const DEMO_TAG_COLORS: Record<string, TagColor> = { "$1,000+": "emerald", Volunteer: "sky", Board: "sky", Lapsed: "rose", "Monthly donor": "emerald" };
+
+export function TagComboboxDemo() {
+  const [tags, setTags] = React.useState(["Volunteer", "Board"]);
+  const [query, setQuery] = React.useState("");
+  return (
+    <Field label="Tags" hint="Right-click a tag, or select it with Backspace and press Shift+F10, for its actions.">
+      {(p) => (
+        <TagCombobox
+          {...p}
+          options={DEMO_TAGS}
+          value={tags}
+          onValueChange={setTags}
+          getColor={(v) => DEMO_TAG_COLORS[v]}
+          placeholder="Search tags"
+          pillActions={(v) => [
+            { label: "Move to the start", icon: ArrowLeftToLine, onSelect: () => setTags((t) => [v, ...t.filter((x) => x !== v)]) },
+            { label: "Remove", icon: Trash2, danger: true, onSelect: () => setTags((t) => t.filter((x) => x !== v)) },
+          ]}
+          onQueryChange={setQuery}
+          leadingOptionAlways
+          leadingOption={{
+            label: <>Create “{query.trim() || "new tag"}”</>,
+            textValue: `Create ${query.trim() || "new tag"}`,
+            onSelect: () => setTags((t) => [...t, query.trim() || "New tag"]),
+          }}
+        />
+      )}
+    </Field>
   );
 }
 

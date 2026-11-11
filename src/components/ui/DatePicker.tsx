@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { css, styled } from "next-yak";
+import { overlayMotion } from "./overlayMotion";
 import { Popover as PopoverPrimitive } from "radix-ui";
 import { DayPicker, type Matcher } from "react-day-picker";
 import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
@@ -16,7 +17,7 @@ import { ErrorIcon } from "./Field";
 
 const ISO_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 
-function parseISODate(value: string | undefined): Date | undefined {
+export function parseISODate(value: string | undefined): Date | undefined {
   if (!value) return undefined;
   const match = ISO_PATTERN.exec(value.trim());
   if (!match) return undefined;
@@ -29,7 +30,7 @@ function parseISODate(value: string | undefined): Date | undefined {
   return valid ? date : undefined;
 }
 
-function formatISODate(date: Date): string {
+export function formatISODate(date: Date): string {
   const y = String(date.getFullYear()).padStart(4, "0");
   const m = String(date.getMonth() + 1).padStart(2, "0");
   const d = String(date.getDate()).padStart(2, "0");
@@ -108,9 +109,6 @@ const TextField = styled.input<{ $invalid?: boolean }>`
   font-family: inherit;
   font-size: var(--text-sm);
   line-height: var(--leading-ui);
-  transition:
-    border-color var(--duration) var(--ease),
-    box-shadow var(--duration) var(--ease);
 
   &::placeholder {
     color: var(--color-text-muted);
@@ -181,8 +179,8 @@ const TriggerButton = styled(PopoverPrimitive.Trigger)`
   color: var(--color-text-muted);
   cursor: pointer;
   transition:
-    color var(--duration) var(--ease),
-    background-color var(--duration) var(--ease);
+    color var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out);
 
   &:hover:not(:disabled) {
     color: var(--color-text);
@@ -218,6 +216,8 @@ const CalendarContent = styled(PopoverPrimitive.Content)`
   &:focus {
     outline: none;
   }
+
+  ${overlayMotion}
 `;
 
 const CalendarBody = styled.div`

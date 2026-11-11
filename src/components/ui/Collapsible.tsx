@@ -20,9 +20,9 @@ export const CollapsibleContent = styled(CollapsiblePrimitive.Content)`
   overflow: hidden;
 
   &[data-state="open"] {
-    animation: ${openAnim} var(--duration) var(--ease);
+    animation: ${openAnim} var(--duration-slow) var(--ease-out);
   }
   &[data-state="closed"] {
-    animation: ${closeAnim} var(--duration) var(--ease);
+    animation: ${closeAnim} var(--duration) var(--ease-in);
   }
 `;

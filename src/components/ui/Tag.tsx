@@ -2,37 +2,57 @@
 
 import { css, styled } from "next-yak";
 import { Check, Plus } from "lucide-react";
-import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from "react";
+import type { ButtonHTMLAttributes, CSSProperties, HTMLAttributes, ReactNode } from "react";
 import { Icon } from "./Icon";
 import type { DisabledReasonText } from "./DisabledReason";
 import { Tooltip } from "./Tooltip";
 
-const tagBase = css`
+/** A tag's colour: one of five calm Tailwind hues with its --tag-* tokens, in palette order. No colour = the default grey. */
+export const TAG_COLORS = ["stone", "sky", "emerald", "amber", "rose"] as const;
+export type TagColor = (typeof TAG_COLORS)[number];
+
+/** Style for a coloured pill: sets the variables `tagPill` reads. Spread it into `style`. */
+export function tagColorStyle(color?: TagColor): CSSProperties | undefined {
+  if (!color) return undefined;
+  return {
+    "--pill-bg": `var(--tag-${color}-bg)`,
+    "--pill-bg-strong": `var(--tag-${color}-bg-strong)`,
+    "--pill-fg": `var(--tag-${color}-text)`,
+  } as CSSProperties;
+}
+
+/* The one tag look, shared with the pills in TagCombobox: grey fill, no border, small text.
+   With a colour (see tagColorStyle) it takes that colour's fill and text. */
+export const tagPill = css`
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
+  gap: var(--space-1);
+  min-height: var(--pill-height);
+  padding: 0 var(--space-2);
+  border: 0;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
-  background: var(--color-bg);
+  background: var(--pill-bg, var(--color-secondary));
+  color: var(--pill-fg, var(--color-text));
   font-size: var(--text-sm);
   font-weight: var(--weight-regular);
-  line-height: 1.2;
-  color: var(--color-text);
+  line-height: var(--leading-ui);
   white-space: nowrap;
 `;
 
+
 const StaticTagRoot = styled.span`
-  ${tagBase}
+  ${tagPill}
 `;
 
 const SelectableTagRoot = styled.button<{ $selected?: boolean }>`
-  ${tagBase}
+  ${tagPill}
+  /* A toggle keeps its hairline border: it carries hover and the disabled look. */
+  border: 1px solid var(--color-border);
   cursor: pointer;
   transition:
-    background-color var(--duration) var(--ease),
-    border-color var(--duration) var(--ease),
-    color var(--duration) var(--ease);
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
 
   &:hover {
     border-color: var(--color-border-strong);
@@ -74,7 +94,7 @@ const SelectableTagRoot = styled.button<{ $selected?: boolean }>`
 `;
 
 const RemovableTagRoot = styled.span`
-  ${tagBase}
+  ${tagPill}
   padding-right: 6px;
 `;
 
@@ -119,12 +139,18 @@ function XIcon() {
   );
 }
 
-/** Outlined, non-interactive pill for static labels. */
+/** Non-interactive pill for static labels. */
 export function Tag({
   children,
+  color,
+  style,
   ...props
-}: HTMLAttributes<HTMLSpanElement> & { children: ReactNode }) {
-  return <StaticTagRoot {...props}>{children}</StaticTagRoot>;
+}: HTMLAttributes<HTMLSpanElement> & { children: ReactNode; color?: TagColor }) {
+  return (
+    <StaticTagRoot style={{ ...tagColorStyle(color), ...style }} {...props}>
+      {children}
+    </StaticTagRoot>
+  );
 }
 
 type SelectableTagDisabledProps =
@@ -177,14 +203,17 @@ export function SelectableTag({
 export function RemovableTag({
   children,
   onRemove,
+  color,
+  style,
   ...props
 }: Omit<HTMLAttributes<HTMLSpanElement>, "children"> & {
   children: ReactNode;
   onRemove: () => void;
+  color?: TagColor;
 }) {
   const label = typeof children === "string" ? children : undefined;
   return (
-    <RemovableTagRoot {...props}>
+    <RemovableTagRoot style={{ ...tagColorStyle(color), ...style }} {...props}>
       {children}
       <RemoveButton type="button" aria-label={label ? `Remove ${label}` : "Remove"} onClick={onRemove}>
         <XIcon />

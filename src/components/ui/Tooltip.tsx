@@ -1,14 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { keyframes, styled } from "next-yak";
+import { styled } from "next-yak";
+import { overlayMotion } from "./overlayMotion";
 import { Tooltip as TooltipPrimitive } from "radix-ui";
 import type { ReactNode } from "react";
-
-const contentShow = keyframes`
-  from { opacity: 0; transform: translateY(2px); }
-  to { opacity: 1; transform: translateY(0); }
-`;
 
 const Content = styled(TooltipPrimitive.Content)`
   z-index: var(--z-tooltip);
@@ -21,8 +17,10 @@ const Content = styled(TooltipPrimitive.Content)`
   border-radius: var(--radius-sm);
   padding: 6px 10px;
   box-shadow: var(--shadow-md);
-  animation: ${contentShow} 100ms var(--ease);
-  transform-origin: var(--radix-tooltip-content-transform-origin);
+
+  /* Tooltips appear faster than other overlays. */
+  --overlay-duration: var(--duration-fast);
+  ${overlayMotion}
 `;
 
 const Arrow = styled(TooltipPrimitive.Arrow)`

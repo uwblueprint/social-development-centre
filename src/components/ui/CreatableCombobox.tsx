@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { styled } from "next-yak";
+import { overlayMotion } from "./overlayMotion";
 import { Popover as PopoverPrimitive } from "radix-ui";
 import { Command } from "cmdk";
 import { ChevronDown, Plus, Search } from "lucide-react";
@@ -63,9 +64,6 @@ const Trigger = styled.button`
   text-align: left;
   appearance: none;
   cursor: pointer;
-  transition:
-    border-color var(--duration) var(--ease),
-    box-shadow var(--duration) var(--ease);
 
   &[data-placeholder] {
     color: var(--color-text-muted);
@@ -146,6 +144,8 @@ const Content = styled(PopoverPrimitive.Content)`
   &:focus {
     outline: none;
   }
+
+  ${overlayMotion}
 `;
 
 const SearchRow = styled.div`
@@ -174,7 +174,8 @@ const SearchInput = styled(Command.Input)`
 
 const List = styled(Command.List)`
   overflow-y: auto;
-  max-height: 260px;
+  /* 7.5 rows: the half row shows there is more to scroll to. */
+  max-height: calc(var(--menu-row-height) * 7.5);
 `;
 
 const EmptyState = styled(Command.Empty)`
@@ -188,7 +189,7 @@ const ComboItem = styled(Command.Item)`
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  height: 34px;
+  height: var(--menu-row-height);
   padding: 0 var(--space-2);
   border-radius: var(--radius-sm);
   font-size: var(--text-sm);

@@ -27,10 +27,10 @@ Config must be built in a client component (icons are components and can't cross
   - The X button ("Close menu"), tapping the dimmed page or Escape closes it without navigating and returns focus to the menu button.
   - Choosing a section (or a recent item) closes it, navigates and moves focus to the destination's `h1`. `ListPageHeader` renders its h1 with `tabIndex={-1}` for this; any other page's h1 is made focusable when focus lands.
   - Widening the viewport to 768px or more closes it and shows the desktop sidebar.
-- Page entrance: `children` sit in a wrapper keyed by section (`/admin/community`), so moving between sections replays a short fade-and-rise; in-section changes (tabs, query params) don't. Off for reduced motion.
+- Page change: no entrance animation. `children` sit in a wrapper keyed by section so state resets when you move between sections.
 - Footer: **Documentation** (link), then the theme item (`ThemeSwitcher`: "Dark mode" while the app is light, "Light mode" while dark; follows the device until someone picks, then saves to localStorage via `src/lib/theme.ts`), then **Sign out** (button, `--color-danger` text, `--color-danger-subtle` hover). Sign out happens right away, with no confirmation, and lands on `/login?signedOut=1&name={first name}`, which shows "You're signed out. See you soon, {name}." above the form.
 
-- First load: the sidebar settles in, nav items slide and fade in on a stagger, then the page content fades in (`--duration-enter`, `--stagger`, `--enter-offset`). Plays once per visit, not on every navigation, and not at all with reduced motion.
+- Motion: none on load. On mobile the drawer slides in from the left edge (`--duration-slow`, `--ease-out`); see `docs/design/motion.md`.
 
 ## Accessibility
 - Nav is a labelled `<nav>` landmark; the current page uses `aria-current="page"`.
