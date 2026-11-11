@@ -12,10 +12,10 @@ export interface Admin {
 export const ME = "a1";
 
 export const SEED_ADMINS: Admin[] = [
-  { id: "a1", name: "Suhanya Ketheeswaran", email: "suhanya@waterlooregion.org", signedIn: true },
-  { id: "a2", name: "Sarah Ranco", email: "sarah@waterlooregion.org", signedIn: true },
-  { id: "a3", name: "Jesse Huang", email: "jesse@uwblueprint.org", signedIn: true },
-  { id: "a4", name: "Carolyn Zhang", email: "carolyn@uwblueprint.org", signedIn: false },
+  { id: "a1", name: "Amara Okafor", email: "amara@example.org", signedIn: true },
+  { id: "a2", name: "Daniel Reyes", email: "daniel@example.org", signedIn: true },
+  { id: "a3", name: "Mei Lin", email: "mei@example.org", signedIn: true },
+  { id: "a4", name: "Farah Haddad", email: "farah@example.org", signedIn: false },
 ];
 
 export function isEmail(v: string) {

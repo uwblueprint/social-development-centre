@@ -109,6 +109,8 @@ export function AdminsPage({ admins, currentAdminId }: { admins: PersonRow[]; cu
   const [removeOpen, setRemoveOpen] = useState(false);
   const [removing, setRemoving] = useState<PersonRow | null>(null);
   const [resendingId, setResendingId] = useState<string | null>(null);
+  // Set when a removal succeeds: that row's button is gone, so the dialog sends focus to the page heading instead.
+  const [removed, setRemoved] = useState(false);
 
   // The last admin can't leave (the database refuses too), so SDC is never locked out.
   const canLeave = admins.length > 1;
@@ -116,13 +118,16 @@ export function AdminsPage({ admins, currentAdminId }: { admins: PersonRow[]; cu
   async function resend(person: PersonRow) {
     if (resendingId) return;
     setResendingId(person.id);
-    const result = await resendSignInLink("admin", person.email);
-    setResendingId(null);
+    let sent = false;
+    try {
+      sent = (await resendSignInLink("admin", person.email)).status === "success";
+    } catch {
+      // A network or server failure: report it like any other failed send.
+    } finally {
+      setResendingId(null);
+    }
     toast({
-      title:
-        result.status === "success"
-          ? `Invite sent again to ${person.email}`
-          : `We couldn’t resend the invite to ${person.email}. Try again.`,
+      title: sent ? `Invite sent again to ${person.email}` : `We couldn’t resend the invite to ${person.email}. Try again.`,
     });
   }
 
@@ -216,17 +221,23 @@ export function AdminsPage({ admins, currentAdminId }: { admins: PersonRow[]; cu
       </Dialog>
 
       <AlertDialog open={removeOpen} onOpenChange={setRemoveOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent
+          onCloseAutoFocus={(event) => {
+            if (!removed) return;
+            event.preventDefault();
+            setRemoved(false);
+            document.querySelector<HTMLElement>("h1")?.focus();
+          }}
+        >
           {removing && (
             <RemoveForm
               key={removing.id}
               person={removing}
               self={selfRemoval}
               onDone={() => {
+                setRemoved(true);
                 setRemoveOpen(false);
                 toast({ title: `${displayName(removing)} is no longer an admin.` });
-                // The row and its button are gone, so put focus somewhere sensible.
-                document.querySelector<HTMLElement>("h1")?.focus();
               }}
             />
           )}
