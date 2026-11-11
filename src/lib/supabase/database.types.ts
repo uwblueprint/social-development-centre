@@ -64,6 +64,7 @@ export type Database = {
           published_at: string | null
           state: string
           subject: string
+          subject_doc: Json
           trigger: string
           trigger_tag_id: string | null
           updated_at: string
@@ -84,6 +85,7 @@ export type Database = {
           published_at?: string | null
           state?: string
           subject?: string
+          subject_doc?: Json
           trigger?: string
           trigger_tag_id?: string | null
           updated_at?: string
@@ -104,6 +106,7 @@ export type Database = {
           published_at?: string | null
           state?: string
           subject?: string
+          subject_doc?: Json
           trigger?: string
           trigger_tag_id?: string | null
           updated_at?: string
@@ -121,6 +124,35 @@ export type Database = {
             columns: ["trigger_tag_id"]
             isOneToOne: false
             referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_fallbacks: {
+        Row: {
+          field: string
+          updated_at: string
+          updated_by: string | null
+          value: string
+        }
+        Insert: {
+          field: string
+          updated_at?: string
+          updated_by?: string | null
+          value: string
+        }
+        Update: {
+          field?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_fallbacks_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "people"
             referencedColumns: ["id"]
           },
         ]
@@ -1015,13 +1047,20 @@ export type Database = {
         Args: never
         Returns: {
           body: Json
-          first_name: string | null
+          fields: Json
           send_id: string
           subject: string
+          subject_doc: Json
           to_email: string
           unsubscribe_token: string
         }[]
       }
+      email_doc_is_empty: { Args: { p_doc: Json }; Returns: boolean }
+      email_field_available: {
+        Args: { p_id: string; p_trigger: string }
+        Returns: boolean
+      }
+      email_personalized_ids: { Args: { p_doc: Json }; Returns: string[] }
       outbox_upcoming: {
         Args: { p_days?: number }
         Returns: {
@@ -1062,6 +1101,10 @@ export type Database = {
       restore_automatic_email: { Args: { p_id: string }; Returns: undefined }
       save_automatic_email: {
         Args: { p_id: string; p_patch: Json }
+        Returns: undefined
+      }
+      set_email_fallback: {
+        Args: { p_field: string; p_value: string }
         Returns: undefined
       }
       toronto_today: { Args: never; Returns: string }
