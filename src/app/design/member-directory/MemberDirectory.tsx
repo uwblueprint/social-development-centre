@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/Checkbox";
 import { DatePicker } from "@/components/ui/DatePicker";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
@@ -17,30 +18,29 @@ import {
 import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
 import { Input } from "@/components/ui/Input";
+import { Label } from "@/components/ui/Label";
 import { SearchField } from "@/components/ui/SearchField";
 import { Select } from "@/components/ui/Select";
 import { Table, type TableColumn, type TableSort } from "@/components/ui/Table";
-import { RemovableTag } from "@/components/ui/Tag";
-import { TagInput } from "@/components/ui/TagInput";
 import { AppToastProvider, useToast } from "@/components/ui/Toast";
 import {
   TODAY,
-  addDays,
   demoMembers,
   demoTags,
   endNotice,
   formatDate,
   fullName,
+  joinedTitle,
   kindLabel,
   plural,
   statusLabel,
   type Member,
   type MemberStatus,
-  type Note,
   type Payment,
   type TagColor,
 } from "./data";
 import { MemberSheet } from "./MemberSheet";
+import { TagPicker } from "./TagPicker";
 import {
   AddMemberDialog,
   ChangeMembershipDialog,
@@ -69,45 +69,37 @@ const FilterPanel = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(calc(var(--space-8) * 3), 1fr));
   gap: var(--space-3) var(--space-4);
-  padding: var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
 `;
 
-const EndsField = styled.div`
-  grid-column: span 2;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+/* One added filter: its labelled control, with a × level with the label. */
+const FilterSlot = styled.div`
+  position: relative;
+  min-width: 0;
+`;
 
-  @media (max-width: 767px) {
-    grid-column: auto;
+const RemoveFilter = styled(Button)`
+  &&& {
+    position: absolute;
+    top: calc(var(--space-1) * -0.5);
+    right: 0;
+    width: var(--space-5);
+    height: var(--space-5);
+    padding: 0;
   }
 `;
 
-const Range = styled.div`
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: end;
-  gap: var(--space-2);
-
-  & > span {
-    padding-bottom: var(--space-3);
-    font-size: var(--text-sm);
-    color: var(--color-text-muted);
-  }
-`;
-
-const Quick = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
-`;
-
-const Chips = styled.div`
-  display: flex;
-  flex-wrap: wrap;
+/* A name with the tags that matched the search, so a tag search shows why each row is there. */
+const NameCell = styled.span`
+  display: inline-flex;
   align-items: center;
+  gap: var(--space-2);
+`;
+
+/* The count or bulk actions on the left, Clear all on the right. */
+const Results = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: var(--space-2);
 `;
 
@@ -128,21 +120,51 @@ const Bar = styled.div`
   }
 `;
 
-const Ends = styled.div`
+const Ends = styled.span`
+  font-variant-numeric: tabular-nums;
+`;
+
+/* The tag filter: label, then the picker. 6px gap, like Field. */
+const TagFilter = styled.div`
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  gap: calc(var(--space-1) * 1.5);
+`;
+
+/*
+ * The table's select checkboxes: a 16px box, centred in the row. The ::after keeps the pointer target 24px
+ * (WCAG 2.5.8) inside the cell's clip box, which the 24px height makes room for.
+ */
+const SelectBox = styled.span`
+  display: flex;
+  align-items: center;
+  height: var(--space-5);
+
+  & > button[role="checkbox"] {
+    position: relative;
+    width: var(--space-4);
+    height: var(--space-4);
+  }
+  & > button[role="checkbox"]::after {
+    content: "";
+    position: absolute;
+    inset: calc(var(--space-1) * -1);
+  }
+`;
+
+/* The Flags column: membership ending soon or ended. */
+const Flags = styled.div`
+  display: flex;
+  align-items: center;
   gap: var(--space-1);
-  font-variant-numeric: tabular-nums;
-  font-size: var(--text-sm);
 `;
 
 
 /* ---------- filters ---------- */
 
 interface Filters {
-  endsFrom: string;
-  endsTo: string;
+  /** Membership ends on or before this date. */
+  ends: string;
   first: string;
   last: string;
   email: string;
@@ -150,7 +172,19 @@ interface Filters {
   status: "" | MemberStatus;
 }
 
-const noFilters: Filters = { endsFrom: "", endsTo: "", first: "", last: "", email: "", tags: [], status: "" };
+type FilterKey = keyof Filters;
+
+/** What the Filter menu offers, in menu order. */
+const filterLabels: Record<FilterKey, string> = {
+  first: "First name",
+  last: "Last name",
+  email: "Email",
+  status: "Status",
+  ends: "Membership ends",
+  tags: "Has tags",
+};
+
+const noFilters: Filters = { ends: "", first: "", last: "", email: "", tags: [], status: "" };
 
 const has = (value: string, query: string) => value.toLowerCase().includes(query.trim().toLowerCase());
 
@@ -161,13 +195,12 @@ function matches(m: Member, f: Filters, q: string) {
   if (f.email && !has(m.email, f.email)) return false;
   if (f.status && m.status !== f.status) return false;
   if (f.tags.length && !f.tags.every((t) => m.tags.some((x) => x.toLowerCase() === t.toLowerCase()))) return false;
-  if (f.endsFrom && m.endsAt < f.endsFrom) return false;
-  if (f.endsTo && m.endsAt > f.endsTo) return false;
+  if (f.ends && m.endsAt > f.ends) return false;
   return true;
 }
 
 const filterCount = (f: Filters) =>
-  [f.endsFrom || f.endsTo, f.first, f.last, f.email, f.status].filter(Boolean).length + f.tags.length;
+  [f.ends, f.first, f.last, f.email, f.status].filter(Boolean).length + f.tags.length;
 
 function toCsv(rows: Member[]) {
   const cell = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
@@ -193,9 +226,7 @@ function download(name: string, text: string) {
 
 type DialogState =
   | { kind: "add" }
-  | { kind: "gift" }
-  | { kind: "note"; note?: Note }
-  | { kind: "deleteNote"; note: Note }
+  | { kind: "note" }
   | { kind: "details" }
   | { kind: "membership" }
   | { kind: "payment"; payment?: Payment }
@@ -222,12 +253,15 @@ function Directory() {
   const [tagColors, setTagColors] = React.useState<Record<string, TagColor>>(() => Object.fromEntries(demoTags.map((t) => [t.name, t.color])));
   const [q, setQ] = React.useState("");
   const [filters, setFilters] = React.useState<Filters>(noFilters);
-  const [filterOpen, setFilterOpen] = React.useState(false);
+  /** The filters on screen, in the order they were added. One can be here with nothing entered yet. */
+  const [added, setAdded] = React.useState<FilterKey[]>([]);
+  const filterButton = React.useRef<HTMLButtonElement>(null);
+  const filterPanel = React.useRef<HTMLDivElement>(null);
+  const justAdded = React.useRef<FilterKey | null>(null);
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
   const [sort, setSort] = React.useState<TableSort>({ key: "ends", direction: "asc" });
   const [openId, setOpenId] = React.useState<string | null>(null);
   const [dialog, setDialog] = React.useState<DialogState>(null);
-  const [flashPaymentId, setFlashPaymentId] = React.useState<string | null>(null);
 
   const allTags = Object.keys(tagColors);
   const open = members.find((m) => m.id === openId) ?? null;
@@ -262,10 +296,16 @@ function Directory() {
     });
   }
 
-  function tagPeople(tag: string, people: Member[]) {
-    const fresh = people.filter((p) => !p.tags.includes(tag));
-    fresh.forEach((p) => setTags(p.id, [...p.tags, tag]));
-    toast({ title: `Tagged ${plural(fresh.length, "person", "people")} ${tag}` });
+  /** Adds every tag in one go per person, so each person's tags are only set once. */
+  function tagPeople(tags: string[], people: Member[]) {
+    let changed = 0;
+    people.forEach((p) => {
+      const missing = tags.filter((t) => !p.tags.includes(t));
+      if (!missing.length) return;
+      changed++;
+      setTags(p.id, [...p.tags, ...missing]);
+    });
+    toast({ title: `Tagged ${plural(changed, "person", "people")} ${tags.join(", ")}` });
   }
 
   function copy(text: string, message: string) {
@@ -286,65 +326,121 @@ function Directory() {
     setSelected(new Set());
   };
 
+  function addFilter(key: FilterKey) {
+    justAdded.current = key;
+    setAdded((list) => [...list, key]);
+  }
+
+  function removeFilter(key: FilterKey) {
+    setAdded((list) => list.filter((k) => k !== key));
+    setFilter(key, noFilters[key]);
+    filterButton.current?.focus();
+  }
+
+  function clearFilters() {
+    setAdded([]);
+    setFilters(noFilters);
+    setSelected(new Set());
+    filterButton.current?.focus();
+  }
+
+  const filterControl: Record<FilterKey, React.ReactNode> = {
+    first: <Field label="First name">{(props) => <Input {...props} value={filters.first} onChange={(e) => setFilter("first", e.target.value)} />}</Field>,
+    last: <Field label="Last name">{(props) => <Input {...props} value={filters.last} onChange={(e) => setFilter("last", e.target.value)} />}</Field>,
+    email: <Field label="Email">{(props) => <Input {...props} value={filters.email} onChange={(e) => setFilter("email", e.target.value)} />}</Field>,
+    status: (
+      <Field label="Status">
+        {(props) => (
+          <Select
+            {...props}
+            options={[{ value: "any", label: "Any" }, ...(Object.keys(statusLabel) as MemberStatus[]).map((s) => ({ value: s, label: statusLabel[s] }))]}
+            value={filters.status || "any"}
+            onValueChange={(v) => setFilter("status", v === "any" ? "" : (v as MemberStatus))}
+          />
+        )}
+      </Field>
+    ),
+    ends: <Field label="Membership ends">{(props) => <DatePicker {...props} value={filters.ends} onValueChange={(v) => setFilter("ends", v)} />}</Field>,
+    tags: (
+      <TagFilter>
+        <Label id="filter-tags">Has tags</Label>
+        <TagPicker labelledBy="filter-tags" label="Has tags" value={filters.tags} options={allTags} colors={tagColors} onValueChange={(tags) => setFilter("tags", tags)} />
+      </TagFilter>
+    ),
+  };
+
   const columns: TableColumn<Member>[] = [
     {
       key: "select",
       width: "var(--space-7)",
       header: (
-        <Checkbox
-          aria-label="Select all"
-          checked={rows.length > 0 && rows.every((m) => selected.has(m.id)) ? true : rows.some((m) => selected.has(m.id)) ? "indeterminate" : false}
-          onCheckedChange={(v) => setSelected(v === true ? new Set(rows.map((m) => m.id)) : new Set())}
-        />
+        <SelectBox>
+          <Checkbox
+            aria-label="Select all"
+            checked={rows.length > 0 && rows.every((m) => selected.has(m.id)) ? true : rows.some((m) => selected.has(m.id)) ? "indeterminate" : false}
+            onCheckedChange={(v) => setSelected(v === true ? new Set(rows.map((m) => m.id)) : new Set())}
+          />
+        </SelectBox>
       ),
       render: (m) => (
-        <Checkbox
-          aria-label={`Select ${fullName(m)}`}
-          checked={selected.has(m.id)}
-          onClick={(e) => e.stopPropagation()}
-          onKeyDown={(e) => e.stopPropagation()}
-          onCheckedChange={(v) =>
-            setSelected((s) => {
-              const next = new Set(s);
-              if (v === true) next.add(m.id);
-              else next.delete(m.id);
-              return next;
-            })
-          }
-        />
+        <SelectBox>
+          <Checkbox
+            aria-label={`Select ${fullName(m)}`}
+            checked={selected.has(m.id)}
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            onCheckedChange={(v) =>
+              setSelected((s) => {
+                const next = new Set(s);
+                if (v === true) next.add(m.id);
+                else next.delete(m.id);
+                return next;
+              })
+            }
+          />
+        </SelectBox>
       ),
     },
-    { key: "name", header: "Name", sortKey: "name", render: (m) => fullName(m) },
+    {
+      key: "name",
+      header: "Name",
+      sortKey: "name",
+      render: (m) => {
+        const needle = q.trim().toLowerCase();
+        const hits = needle ? m.tags.filter((t) => t.toLowerCase().includes(needle)) : [];
+        return (
+          <NameCell>
+            {fullName(m)}
+            {hits.map((t) => (
+              <Badge key={t} $category={tagColors[t]}>
+                {t}
+              </Badge>
+            ))}
+          </NameCell>
+        );
+      },
+    },
     { key: "email", header: "Email", sortKey: "email", render: (m) => m.email },
+    {
+      key: "flags",
+      header: "Flags",
+      render: (m) => {
+        const notice = endNotice(m.endsAt);
+        return (
+          <Flags>
+            {notice && <Badge $variant={notice.tone}>{notice.text}</Badge>}
+          </Flags>
+        );
+      },
+    },
     {
       key: "ends",
       header: "Membership ends",
       sortKey: "ends",
       align: "right",
-      render: (m) => {
-        const notice = endNotice(m.endsAt);
-        return (
-          <Ends>
-            {formatDate(m.endsAt)}
-            {notice && <Badge $variant={notice.tone}>{notice.text}</Badge>}
-          </Ends>
-        );
-      },
+      render: (m) => <Ends>{formatDate(m.endsAt)}</Ends>,
     },
   ];
-
-  const chips: { key: string; label: string; clear: () => void }[] = [];
-  if (filters.endsFrom || filters.endsTo)
-    chips.push({
-      key: "ends",
-      label: `Ends ${filters.endsFrom && filters.endsTo ? `${formatDate(filters.endsFrom)} to ${formatDate(filters.endsTo)}` : filters.endsFrom ? `after ${formatDate(filters.endsFrom)}` : `before ${formatDate(filters.endsTo)}`}`,
-      clear: () => setFilters((f) => ({ ...f, endsFrom: "", endsTo: "" })),
-    });
-  if (filters.first) chips.push({ key: "first", label: `First name: ${filters.first}`, clear: () => setFilter("first", "") });
-  if (filters.last) chips.push({ key: "last", label: `Last name: ${filters.last}`, clear: () => setFilter("last", "") });
-  if (filters.email) chips.push({ key: "email", label: `Email: ${filters.email}`, clear: () => setFilter("email", "") });
-  filters.tags.forEach((t) => chips.push({ key: `tag-${t}`, label: `Tag: ${t}`, clear: () => setFilter("tags", filters.tags.filter((x) => x !== t)) }));
-  if (filters.status) chips.push({ key: "status", label: statusLabel[filters.status], clear: () => setFilter("status", "") });
 
   const bulk = (label: string, all: boolean) => (
     <>
@@ -397,11 +493,32 @@ function Directory() {
       />
 
       <Tools>
-        <Button type="button" $variant={filterOpen || filterCount(filters) ? "outline" : "secondary"} aria-expanded={filterOpen} aria-controls="member-filters" onClick={() => setFilterOpen((o) => !o)}>
-          <Icon icon={ListFilter} size={16} />
-          Filter
-          {filterCount(filters) > 0 && <Badge $variant="outline">{filterCount(filters)}</Badge>}
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button ref={filterButton} type="button" $variant={added.length ? "outline" : "secondary"}>
+              <Icon icon={ListFilter} size={16} />
+              Filter
+              {filterCount(filters) > 0 && <Badge $variant="outline">{filterCount(filters)}</Badge>}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="start"
+            onCloseAutoFocus={(e) => {
+              if (!justAdded.current) return;
+              /* Go straight to the new filter's control, so one click is enough to start typing. */
+              e.preventDefault();
+              const control = filterPanel.current?.querySelector<HTMLElement>(`[data-filter="${justAdded.current}"] :is(input:not([type="hidden"]), [role="combobox"])`);
+              control?.focus();
+              justAdded.current = null;
+            }}
+          >
+            {(Object.keys(filterLabels) as FilterKey[]).map((key) => (
+              <DropdownMenuCheckboxItem key={key} checked={added.includes(key)} onCheckedChange={(on) => (on ? addFilter(key) : removeFilter(key))}>
+                {filterLabels[key]}
+              </DropdownMenuCheckboxItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
         <SearchField
           aria-label="Search by name, email or tag"
           placeholder="Search name, email or tag"
@@ -414,77 +531,41 @@ function Directory() {
         />
       </Tools>
 
-      {filterOpen && (
-        <FilterPanel id="member-filters" role="group" aria-label="Filters">
-          <EndsField>
-            <Range>
-              <Field label="Membership ends from">
-                {(props) => <DatePicker {...props} value={filters.endsFrom} onValueChange={(v) => setFilter("endsFrom", v)} />}
-              </Field>
-              <span>to</span>
-              <Field label="Until">{(props) => <DatePicker {...props} value={filters.endsTo} onValueChange={(v) => setFilter("endsTo", v)} />}</Field>
-            </Range>
-            <Quick>
-              {[30, 60, 90].map((n) => (
-                <Button
-                  key={n}
-                  type="button"
-                  $variant="ghost"
-                  $size="sm"
-                  onClick={() => setFilters((f) => ({ ...f, endsFrom: TODAY, endsTo: addDays(TODAY, n) }))}
-                >
-                  Next {n} days
-                </Button>
-              ))}
-            </Quick>
-          </EndsField>
-          <Field label="First name">{(props) => <Input {...props} value={filters.first} onChange={(e) => setFilter("first", e.target.value)} />}</Field>
-          <Field label="Last name">{(props) => <Input {...props} value={filters.last} onChange={(e) => setFilter("last", e.target.value)} />}</Field>
-          <Field label="Email">{(props) => <Input {...props} value={filters.email} onChange={(e) => setFilter("email", e.target.value)} />}</Field>
-          <Field label="Tags" hint="Type a tag, then press Enter">
-            {(props) => <TagInput {...props} value={filters.tags} onValueChange={(v) => setFilter("tags", v)} copy={{ tagsLabel: "Tags to filter by" }} />}
-          </Field>
-          <Field label="Status">
-            {(props) => (
-              <Select
-                {...props}
-                options={[{ value: "any", label: "Any" }, ...(Object.keys(statusLabel) as MemberStatus[]).map((s) => ({ value: s, label: statusLabel[s] }))]}
-                value={filters.status || "any"}
-                onValueChange={(v) => setFilter("status", v === "any" ? "" : (v as MemberStatus))}
-              />
-            )}
-          </Field>
+      {added.length > 0 && (
+        <FilterPanel ref={filterPanel} role="group" aria-label="Filters">
+          {added.map((key) => (
+            <FilterSlot key={key} data-filter={key}>
+              {filterControl[key]}
+              <RemoveFilter type="button" $variant="ghost" aria-label={`Remove ${filterLabels[key]} filter`} onClick={() => removeFilter(key)}>
+                <Icon icon={X} size={14} />
+              </RemoveFilter>
+            </FilterSlot>
+          ))}
         </FilterPanel>
       )}
 
-      {chips.length > 0 && (
-        <Chips role="group" aria-label="Active filters">
-          {chips.map((c) => (
-            <RemovableTag key={c.key} onRemove={c.clear}>
-              {c.label}
-            </RemovableTag>
-          ))}
-          <Button type="button" $variant="ghost" $size="sm" onClick={() => setFilters(noFilters)}>
+      <Results>
+        <Bar aria-live="polite">
+          {chosen.length ? (
+            <>
+              {bulk(`${chosen.length} selected`, false)}
+              <Button type="button" $variant="ghost" $size="sm" onClick={() => setSelected(new Set())}>
+                Clear selection
+              </Button>
+            </>
+          ) : filtered && rows.length ? (
+            bulk(plural(rows.length, "person", "people"), true)
+          ) : (
+            <span>{plural(rows.length, "person", "people")}</span>
+          )}
+        </Bar>
+        {added.length > 0 && (
+          <Button type="button" $variant="ghost" $size="sm" onClick={clearFilters}>
             <Icon icon={X} size={16} />
             Clear all
           </Button>
-        </Chips>
-      )}
-
-      <Bar aria-live="polite">
-        {chosen.length ? (
-          <>
-            {bulk(`${chosen.length} selected`, false)}
-            <Button type="button" $variant="ghost" $size="sm" onClick={() => setSelected(new Set())}>
-              Clear selection
-            </Button>
-          </>
-        ) : filtered && rows.length ? (
-          bulk(plural(rows.length, "person", "people"), true)
-        ) : (
-          <span>{plural(rows.length, "person", "people")}</span>
         )}
-      </Bar>
+      </Results>
 
       <Table
         aria-label="People"
@@ -501,10 +582,10 @@ function Directory() {
             searchedFields="names, emails and tags"
             filtered={filterCount(filters) ? "people with these filters" : undefined}
             onClearSearch={() => setQ("")}
-            onClearFilters={() => setFilters(noFilters)}
+            onClearFilters={clearFilters}
             onClearSearchAndFilters={() => {
               setQ("");
-              setFilters(noFilters);
+              clearFilters();
             }}
             empty={{ icon: UsersRound, title: "No one here yet", description: "Add a member, or import the people who already pay." }}
           />
@@ -517,17 +598,13 @@ function Directory() {
         onOpenChange={(o) => !o && setOpenId(null)}
         tagColors={tagColors}
         allTags={allTags}
-        flashPaymentId={flashPaymentId}
         onStep={step}
         actions={{
-          onAddNote: () => setDialog({ kind: "note" }),
-          onEditNote: (note) => setDialog({ kind: "note", note }),
-          onDeleteNote: (note) => setDialog({ kind: "deleteNote", note }),
+          onEditNote: () => setDialog({ kind: "note" }),
           onEditDetails: () => setDialog({ kind: "details" }),
           onChangeMembership: () => setDialog({ kind: "membership" }),
           onRecordPayment: () => setDialog({ kind: "payment" }),
           onEditPayment: (payment) => setDialog({ kind: "payment", payment }),
-          onGift: () => setDialog({ kind: "gift" }),
           onDelete: () => setDialog({ kind: "deletePerson" }),
           onSetTags: (tags) => open && setTags(open.id, tags),
           onCopy: copy,
@@ -552,9 +629,8 @@ function Directory() {
               endsAt: defaultEnd(d.joinedAt),
               subscribed: true,
               tags: [],
-              notes: [],
               payments: [],
-              activity: [{ id: newId("a"), kind: "joined", title: "Joined", at: d.joinedAt }],
+              activity: [{ id: newId("a"), kind: "joined", title: joinedTitle("Added by an admin"), at: d.joinedAt }],
               howJoined: "Added by an admin",
               referrals: [],
             };
@@ -566,68 +642,15 @@ function Directory() {
         />
       )}
 
-      {open && dialog?.kind === "gift" && (
-        <AddMemberDialog
-          open
-          title="Gift a membership"
-          submit="Gift membership"
-          onOpenChange={close}
-          emailTaken={(e) => emailTaken(e)}
-          onSave={(d) => {
-            const recipient: Member = {
-              id: newId("m"),
-              firstName: d.firstName,
-              lastName: d.lastName,
-              email: d.email,
-              status: "member",
-              kind: "gifted",
-              joinedAt: TODAY,
-              endsAt: defaultEnd(TODAY),
-              subscribed: true,
-              tags: [],
-              notes: [],
-              payments: [],
-              activity: [{ id: newId("a"), kind: "joined", title: "Joined", at: TODAY }],
-              howJoined: `Gift from ${fullName(open)}`,
-              referrals: [],
-            };
-            const payment: Payment = { id: newId("p"), amount: d.amount ?? 0, date: TODAY, method: d.method, giftFor: fullName(recipient) };
-            setMembers((list) => [recipient, ...list.map((m) => (m.id === open.id ? { ...m, payments: [payment, ...m.payments] } : m))]);
-            setFlashPaymentId(payment.id);
-            close();
-            toast({ title: `Gifted a membership to ${d.firstName}` });
-          }}
-        />
-      )}
-
       {open && dialog?.kind === "note" && (
         <NoteDialog
           open
           onOpenChange={close}
-          initial={dialog.note?.text}
+          initial={open.note?.text}
           onSave={(text) => {
-            const editing = dialog.note;
-            update(open.id, (m) => ({
-              ...m,
-              notes: editing ? m.notes.map((n) => (n.id === editing.id ? { ...n, text } : n)) : [{ id: newId("n"), text, at: TODAY, by: "Suhanya" }, ...m.notes],
-            }));
+            update(open.id, (m) => ({ ...m, note: text ? { text, updatedAt: TODAY, by: "Suhanya" } : undefined }));
             close();
-            toast({ title: editing ? "Note saved" : "Note added" });
-          }}
-        />
-      )}
-
-      {open && dialog?.kind === "deleteNote" && (
-        <ConfirmDialog
-          open
-          onOpenChange={close}
-          title="Delete this note?"
-          description="The note is removed from this member's page. This can't be undone."
-          confirm="Delete note"
-          onConfirm={() => {
-            update(open.id, (m) => ({ ...m, notes: m.notes.filter((n) => n.id !== dialog.note.id) }));
-            close();
-            toast({ title: "Note deleted" });
+            toast({ title: text ? "Note saved" : "Note cleared" });
           }}
         />
       )}
@@ -676,7 +699,6 @@ function Directory() {
               const forName = d.forId ? fullName(members.find((x) => x.id === d.forId) ?? open) : undefined;
               const payment: Payment = { id: newId("p"), amount: d.amount, date: d.date, method: d.method, note: d.note || undefined, giftFor: forName };
               update(open.id, (m) => ({ ...m, payments: [payment, ...m.payments], status: forName ? m.status : "member" }));
-              setFlashPaymentId(payment.id);
               toast({ title: `Recorded ${new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" }).format(d.amount)}` });
             }
             close();
@@ -722,10 +744,10 @@ function Directory() {
           count={dialog.kind === "tag" ? dialog.people.length : undefined}
           pasteEmails={dialog.kind === "tagPaste"}
           allTags={allTags}
+          tagColors={tagColors}
           findByEmail={(e) => members.find((m) => m.email.toLowerCase() === e.trim().toLowerCase())}
-          onSave={(tag, people) => {
-            if (!(tag in tagColors)) setTagColors((c) => ({ ...c, [tag]: undefined }));
-            tagPeople(tag, people ?? (dialog.kind === "tag" ? dialog.people : []));
+          onSave={(tags, people) => {
+            tagPeople(tags, people ?? (dialog.kind === "tag" ? dialog.people : []));
             close();
           }}
         />

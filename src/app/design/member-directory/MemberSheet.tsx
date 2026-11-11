@@ -1,17 +1,15 @@
 "use client";
 
 import * as React from "react";
-import { css, keyframes, styled } from "next-yak";
+import { styled } from "next-yak";
 import {
+  Banknote,
   CalendarCheck,
   ChevronDown,
   CircleCheck,
   Clock,
   Copy,
   Ellipsis,
-  Gift,
-  Link,
-  Lock,
   Mail,
   Pencil,
   Plus,
@@ -19,12 +17,12 @@ import {
   Trash2,
   User,
   UserPlus,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/Collapsible";
-import { CreatableCombobox } from "@/components/ui/CreatableCombobox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,50 +31,73 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/DropdownMenu";
 import { Icon } from "@/components/ui/Icon";
+import { CreatableCombobox } from "@/components/ui/CreatableCombobox";
 import { Sheet, SheetBody, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/Sheet";
-import { RemovableTag } from "@/components/ui/Tag";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/ToggleGroup";
+import { SearchField } from "@/components/ui/SearchField";
+import { ToggleGroupItem } from "@/components/ui/ToggleGroup";
 import { Tooltip } from "@/components/ui/Tooltip";
 import {
-  TODAY,
-  addMonths,
-  diffDays,
   formatDate,
   formatMoney,
   fullName,
   kindLabel,
-  membershipYear,
+  endHeadline,
   methodLabel,
   statusLabel,
   totalPaid,
-  type ActivityItem,
   type ActivityKind,
   type Member,
-  type Note,
   type Payment,
   type TagColor,
 } from "./data";
+import { PillToggle } from "./PillToggle";
 
 /* ---------- layout ---------- */
 
-const Head = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  min-width: 0;
+const Panel = styled(SheetContent)`
+  /* Section cards' fill; overlays, milestone dots and activity dot rings read it too so they match. */
+  --section-bg: var(--color-surface);
 `;
 
-const NameRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  min-width: 0;
-`;
-
-/* Edit and copy appear when the person points at the header, and always on touch screens. */
 /*
- * Controls that appear when the person points at (or tabs into) the nearest `[data-reveal]` area: edit and
- * copy in the header, edit and delete on notes and payments. Always visible on touch screens.
+ * A text-only action: muted at rest, full text colour on hover, no fill or padding, the same size as a
+ * section title. The kit Button has no variant like this yet (its doc says text-like actions use ghost).
+ * The ::after keeps the pointer target close to 24px (WCAG 2.5.8) without changing the layout.
+ */
+const QuietButton = styled(Button)`
+  && {
+    position: relative;
+    height: auto;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    line-height: var(--leading-body);
+  }
+  &&:hover:not(:disabled) {
+    background: transparent;
+    color: var(--color-text);
+  }
+  &::after {
+    content: "";
+    position: absolute;
+    inset: calc(var(--space-1) * -1);
+  }
+`;
+
+/* The × inside a tag while editing: takes the tag's own colour, so a tag looks the same in both modes. */
+const RemoveTag = styled(QuietButton)`
+  &&&,
+  &&&:hover:not(:disabled) {
+    color: inherit;
+    line-height: 1;
+  }
+`;
+
+/*
+ * Controls that appear when the person points at (or tabs into) the nearest `[data-reveal]` area: copy in
+ * the header, edit on payments. Always visible on touch screens.
  */
 const Reveal = styled.span`
   display: inline-flex;
@@ -95,37 +116,68 @@ const Reveal = styled.span`
   }
 `;
 
+/*
+ * A revealed group that floats over the right end of its line instead of taking space, so it can cover text
+ * underneath. It paints `--reveal-bg` (set by the surface it sits on) to hide what it covers.
+ * The line it sits in needs `position: relative`.
+ */
+const RevealOverlay = styled(Reveal)`
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  gap: var(--space-3);
+  padding-left: var(--space-3);
+  background: var(--reveal-bg);
+`;
+
+/* The name row is 32px (it holds the ⋯ and close buttons); the header's 8px gap makes about 12px under the name. */
 const Email = styled.div`
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-3);
   font-size: var(--text-sm);
   color: var(--color-text-muted);
   overflow-wrap: anywhere;
 `;
 
+/* The header's own gap is 8px; 4px more makes the 12px between email, tags and the ended line. */
 const Chips = styled.div`
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
-  margin-top: var(--space-3);
+  margin-top: var(--space-1);
 `;
 
+/* The tag picker and Done wrap together, so Done never sits alone on a line. */
+const TagEntry = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  max-width: 100%;
+`;
+
+const TagField = styled.span`
+  width: calc(var(--space-8) * 3);
+  max-width: 100%;
+`;
+
+/* 20px between sections. */
 const Body = styled(SheetBody)`
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
+  gap: calc(var(--space-4) + var(--space-1));
 `;
 
-/* Each section is a soft surface; items inside sit on raised cards. */
 const Section = styled.section`
+  --reveal-bg: var(--section-bg);
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
   padding: var(--space-4);
   border-radius: var(--radius-lg);
-  background: var(--color-surface);
+  background: var(--section-bg);
 `;
 
 const SectionHead = styled.div`
@@ -134,6 +186,11 @@ const SectionHead = styled.div`
   justify-content: space-between;
   gap: var(--space-2);
   margin-bottom: var(--space-1);
+
+  /* A section with nothing under its header (an empty note) keeps 16px top and bottom. */
+  &:last-child {
+    margin-bottom: 0;
+  }
 `;
 
 const SectionTitle = styled.h3`
@@ -149,67 +206,13 @@ const SectionTitle = styled.h3`
 const SectionActions = styled.div`
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-3);
 `;
 
 const Muted = styled.p`
   margin: 0;
   font-size: var(--text-sm);
   color: var(--color-text-muted);
-`;
-
-const Cards = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-`;
-
-const flash = keyframes`
-  from { background: var(--color-success-subtle); border-color: var(--color-success-border); }
-  to { background: var(--color-surface-raised); border-color: var(--color-border); }
-`;
-
-const ItemCard = styled.div<{ $flash?: boolean }>`
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-raised);
-  ${({ $flash }) =>
-    $flash &&
-    css`
-      animation: ${flash} calc(var(--duration-slow) * 6) var(--ease);
-    `}
-`;
-
-/* Notes: plain entries separated by a line, no card per note. */
-const NoteList = styled.div`
-  display: flex;
-  flex-direction: column;
-`;
-
-const NoteRow = styled(ItemCard)`
-  padding: var(--space-3) 0;
-  border: 0;
-  border-radius: 0;
-  background: none;
-
-  &:first-child {
-    padding-top: 0;
-  }
-  &:last-child {
-    padding-bottom: 0;
-  }
-  & + & {
-    border-top: 1px solid var(--color-border);
-  }
-`;
-
-const Grow = styled.div`
-  flex: 1;
-  min-width: 0;
 `;
 
 const Meta = styled.div`
@@ -223,12 +226,6 @@ const NoteText = styled.div`
   overflow-wrap: anywhere;
 `;
 
-const Range = styled.p`
-  margin: calc(var(--space-1) * -1) 0 0;
-  font-size: var(--text-sm);
-  color: var(--color-text);
-`;
-
 const Big = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -236,6 +233,7 @@ const Big = styled.div`
   gap: var(--space-2);
 `;
 
+/* The same size as the member's name in the panel title. */
 const BigNumber = styled.span`
   font-size: var(--text-lg);
   font-weight: var(--weight-medium);
@@ -250,82 +248,17 @@ const BigLabel = styled.span`
   letter-spacing: var(--tracking-prose);
 `;
 
-/* Membership year: one line, a dot per milestone, label above and date below. */
-const Milestones = styled.ol`
-  position: relative;
-  height: calc(var(--space-7) + var(--space-3));
-  margin: var(--space-2) var(--space-1) 0;
-  padding: 0;
-  list-style: none;
-
-  &::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: calc(var(--space-5) - 1px);
-    height: 2px;
-    background: var(--color-border);
-  }
-`;
-
-const Progress = styled.span`
-  position: absolute;
-  left: 0;
-  top: calc(var(--space-5) - 1px);
-  height: 2px;
-  background: var(--color-text-subtle);
-`;
-
-const Milestone = styled.li<{ $state: "past" | "next" | "future"; $edge: "first" | "last" | "mid" }>`
-  position: absolute;
-  top: 0;
+/* How long is left on a membership, with its end date small underneath. */
+const Countdown = styled.div`
   display: flex;
   flex-direction: column;
-  align-items: ${({ $edge }) => ($edge === "first" ? "flex-start" : $edge === "last" ? "flex-end" : "center")};
   gap: var(--space-1);
-  transform: translateX(${({ $edge }) => ($edge === "first" ? "calc(var(--space-1) * -1)" : $edge === "last" ? "calc(-100% + var(--space-1))" : "-50%")});
-  white-space: nowrap;
+`;
+
+const CountdownDate = styled.time`
   font-size: var(--text-xs);
-
-  & > span:first-child {
-    color: ${({ $state }) => ($state === "next" ? "var(--color-success)" : "var(--color-text-muted)")};
-  }
-  & > span:last-child {
-    color: ${({ $state }) => ($state === "past" ? "var(--color-text-muted)" : "var(--color-text)")};
-    font-variant-numeric: tabular-nums;
-  }
-`;
-
-const Dot = styled.span<{ $state: "past" | "next" | "future" }>`
-  width: var(--space-2);
-  height: var(--space-2);
-  margin: calc(var(--space-1) / 2) 0;
-  border-radius: var(--radius-full);
-  background: ${({ $state }) =>
-    $state === "past" ? "var(--color-text-subtle)" : $state === "next" ? "var(--color-success)" : "var(--color-surface)"};
-  box-shadow: ${({ $state }) => ($state === "future" ? "inset 0 0 0 2px var(--color-text-subtle)" : "0 0 0 3px var(--color-surface)")};
-`;
-
-const PayTop = styled.div`
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-2);
-
-  & > b {
-    font-weight: var(--weight-medium);
-    font-variant-numeric: tabular-nums;
-  }
-  & > span {
-    font-size: var(--text-sm);
-    color: var(--color-text-muted);
-  }
-  & > time {
-    margin-left: auto;
-    font-size: var(--text-xs);
-    color: var(--color-text-muted);
-    font-variant-numeric: tabular-nums;
-  }
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
 `;
 
 /* Activity: circle, line, circle. The title sits on the dot's centre line. */
@@ -335,79 +268,97 @@ const Timeline = styled.ol`
   list-style: none;
 `;
 
+/*
+ * Each entry's dot is centred on the whole entry (title and the line under it). An opened email keeps its dot
+ * at the top. The connector runs through every row behind the dots; each dot's ring (section colour) cuts the
+ * 4px gaps, so the line meets every dot wherever it sits. 8px above and below each row makes the 16px gap.
+ */
 const TimelineItem = styled.li`
   position: relative;
   display: grid;
   grid-template-columns: var(--space-6) minmax(0, 1fr) auto;
   column-gap: var(--space-3);
-  padding-bottom: var(--space-4);
+  padding: var(--space-2) 0;
 
+  &:first-child {
+    padding-top: 0;
+  }
   &:last-child {
     padding-bottom: 0;
   }
-  &:not(:last-child)::before {
+  &:has([data-state="open"]) > :first-child {
+    align-self: start;
+  }
+
+  &::before {
     content: "";
     position: absolute;
     left: calc(var(--space-6) / 2);
-    top: calc(var(--space-6) + var(--space-1));
-    bottom: var(--space-1);
+    top: 0;
+    bottom: 0;
     width: 1px;
+    transform: translateX(-50%);
     background: var(--color-border);
+  }
+  /* First row: start inside its dot. Last row: stop inside its dot (24px = 8px padding + half a dot). */
+  &:first-child::before {
+    top: var(--space-4);
+  }
+  &:last-child::before {
+    bottom: auto;
+    height: calc(var(--space-2) + var(--space-4));
+  }
+  &:only-child::before {
+    display: none;
   }
 `;
 
-type Tone = "email" | "referral" | "event" | "danger" | undefined;
+/* Colour per kind of thing, in every view. Payments are gold (the warning palette's amber). */
+type Tone = "email" | "referral" | "event" | "danger" | "payment";
 
-const TimelineDot = styled.span<{ $tone: Tone }>`
+const TONE_COLOR: Record<Tone, string> = {
+  email: "category-1",
+  referral: "category-2",
+  event: "category-5",
+  danger: "danger",
+  payment: "warning",
+};
+
+const TimelineDot = styled.span<{ $tone?: Tone }>`
+  position: relative;
+  z-index: var(--z-raised);
+  align-self: center;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 0 0 var(--space-1) var(--section-bg);
   width: var(--space-6);
   height: var(--space-6);
   border-radius: var(--radius-full);
-  border: 1px solid
-    ${({ $tone }) =>
-      $tone === "email"
-        ? "var(--color-category-1-border)"
-        : $tone === "referral"
-          ? "var(--color-category-2-border)"
-          : $tone === "event"
-            ? "var(--color-category-5-border)"
-            : $tone === "danger"
-              ? "var(--color-danger-border)"
-              : "var(--color-border)"};
-  background: ${({ $tone }) =>
-    $tone === "email"
-      ? "var(--color-category-1-subtle)"
-      : $tone === "referral"
-        ? "var(--color-category-2-subtle)"
-        : $tone === "event"
-          ? "var(--color-category-5-subtle)"
-          : $tone === "danger"
-            ? "var(--color-danger-subtle)"
-            : "var(--color-surface-raised)"};
-  color: ${({ $tone }) =>
-    $tone === "email"
-      ? "var(--color-category-1)"
-      : $tone === "referral"
-        ? "var(--color-category-2)"
-        : $tone === "event"
-          ? "var(--color-category-5)"
-          : $tone === "danger"
-            ? "var(--color-danger)"
-            : "var(--color-text-muted)"};
+  border: 1px solid ${({ $tone }) => ($tone ? `var(--color-${TONE_COLOR[$tone]}-border)` : "var(--color-border)")};
+  background: ${({ $tone }) => ($tone ? `var(--color-${TONE_COLOR[$tone]}-subtle)` : "var(--color-surface-raised)")};
+  color: ${({ $tone }) => ($tone ? `var(--color-${TONE_COLOR[$tone]})` : "var(--color-text-muted)")};
 `;
 
+/*
+ * 14px medium, like the section titles, so the cards' headings aren't smaller than the rows inside them.
+ * 24px lines with 4px on top: the first line's centre sits on the 32px dot's centre (16px), and a long
+ * title wraps at normal spacing. An email's chevron follows the last word.
+ */
 const TimelineTitle = styled.div`
+  padding-top: var(--space-1);
+  font-size: var(--text-sm);
   font-weight: var(--weight-medium);
-  line-height: var(--space-6);
+  line-height: var(--space-5);
   overflow-wrap: anywhere;
+
+  & > svg {
+    margin-left: var(--space-1);
+    vertical-align: middle;
+  }
 `;
 
 const TimelineSub = styled.div`
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
   font-size: var(--text-xs);
   color: var(--color-text-muted);
 `;
@@ -418,6 +369,13 @@ const TimelineDate = styled.time`
   color: var(--color-text-muted);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
+`;
+
+/* A payment's date, with its edit pencil floating over it on hover. */
+const DateCell = styled.span`
+  position: relative;
+  align-self: start;
+  display: block;
 `;
 
 /* An email row spans to the date column, so its preview runs the full width. */
@@ -459,17 +417,39 @@ const EmailPreview = styled.div`
   line-height: var(--leading-body);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-
-  & > strong {
-    display: block;
-    margin-bottom: var(--space-1);
-    font-weight: var(--weight-medium);
-  }
 `;
+
+/* "Answered <date>" over the intake answers, 8px apart like the answer rows. */
+const Stack = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+`;
+
+/* A multiple-choice answer: one choice per line. */
+const AnswerList = styled.ul`
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+`;
+
+function Answers({ items }: { items: string[] }) {
+  return (
+    <AnswerList>
+      {items.map((a) => (
+        <li key={a}>{a}</li>
+      ))}
+    </AnswerList>
+  );
+}
 
 const Details = styled.dl`
   display: grid;
-  grid-template-columns: minmax(0, calc(var(--space-8) * 2.5)) minmax(0, 1fr);
+  /* Labels only as wide as the longest one, so the answers get the rest. */
+  grid-template-columns: max-content minmax(0, 1fr);
   gap: var(--space-2) var(--space-4);
   margin: 0;
   font-size: var(--text-sm);
@@ -493,7 +473,18 @@ const Details = styled.dl`
 
 /* ---------- small pieces ---------- */
 
-const ICONS: Record<ActivityKind, LucideIcon> = {
+/** One line on the activity timeline: a stored activity item, or one of the member's payments. */
+interface Row {
+  id: string;
+  kind: ActivityKind | "payment";
+  title: string;
+  at: string;
+  detail?: string;
+  body?: string;
+  payment?: Payment;
+}
+
+const ICONS: Record<Row["kind"], LucideIcon> = {
   email: Mail,
   referral: UserPlus,
   event: CalendarCheck,
@@ -501,9 +492,10 @@ const ICONS: Record<ActivityKind, LucideIcon> = {
   tag: TagIcon,
   ended: Clock,
   status: CircleCheck,
+  payment: Banknote,
 };
 
-const TONES: Partial<Record<ActivityKind, Tone>> = { email: "email", referral: "referral", event: "event", ended: "danger" };
+const TONES: Partial<Record<Row["kind"], Tone>> = { email: "email", referral: "referral", event: "event", ended: "danger", payment: "payment" };
 
 function SectionHeader({ title, badge, children }: { title: string; badge?: React.ReactNode; children?: React.ReactNode }) {
   return (
@@ -518,21 +510,31 @@ function SectionHeader({ title, badge, children }: { title: string; badge?: Reac
 }
 
 /** A quiet section action: label first, icon after. */
-function SectionAction({ icon, children, onClick }: { icon?: LucideIcon; children: React.ReactNode; onClick: () => void }) {
+function SectionAction({
+  icon,
+  iconSize = 14,
+  children,
+  onClick,
+}: {
+  icon?: LucideIcon;
+  iconSize?: number;
+  children: React.ReactNode;
+  onClick: () => void;
+}) {
   return (
-    <Button type="button" $variant="ghost" $size="sm" onClick={onClick}>
+    <QuietButton type="button" $variant="ghost" onClick={onClick}>
       {children}
-      {icon && <Icon icon={icon} size={16} />}
-    </Button>
+      {icon && <Icon icon={icon} size={iconSize} />}
+    </QuietButton>
   );
 }
 
-function IconAction({ label, icon, onClick }: { label: string; icon: LucideIcon; onClick: () => void }) {
+function IconAction({ label, icon, size = 14, onClick }: { label: string; icon: LucideIcon; size?: number; onClick: () => void }) {
   return (
     <Tooltip content={label} pinOnClick={false}>
-      <Button type="button" $variant="ghost" $size="sm" aria-label={label} onClick={onClick}>
-        <Icon icon={icon} size={16} />
-      </Button>
+      <QuietButton type="button" $variant="ghost" aria-label={label} onClick={onClick}>
+        <Icon icon={icon} size={size} />
+      </QuietButton>
     </Tooltip>
   );
 }
@@ -540,14 +542,11 @@ function IconAction({ label, icon, onClick }: { label: string; icon: LucideIcon;
 /* ---------- the panel ---------- */
 
 export interface MemberSheetActions {
-  onAddNote: () => void;
-  onEditNote: (note: Note) => void;
-  onDeleteNote: (note: Note) => void;
+  onEditNote: () => void;
   onEditDetails: () => void;
   onChangeMembership: () => void;
   onRecordPayment: () => void;
   onEditPayment: (payment: Payment) => void;
-  onGift: () => void;
   onDelete: () => void;
   onSetTags: (tags: string[]) => void;
   onCopy: (text: string, message: string) => void;
@@ -559,7 +558,6 @@ export function MemberSheet({
   onOpenChange,
   tagColors,
   allTags,
-  flashPaymentId,
   actions,
   onStep,
 }: {
@@ -568,14 +566,13 @@ export function MemberSheet({
   onOpenChange: (open: boolean) => void;
   tagColors: Record<string, TagColor>;
   allTags: string[];
-  flashPaymentId: string | null;
   actions: MemberSheetActions;
   /** Arrow keys step through the list while the panel is open. */
   onStep: (direction: 1 | -1) => void;
 }) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
+      <Panel
         aria-describedby={undefined}
         onKeyDown={(event) => {
           const target = event.target as HTMLElement;
@@ -589,17 +586,8 @@ export function MemberSheet({
           }
         }}
       >
-        {member && (
-          <MemberPanel
-            key={member.id}
-            member={member}
-            tagColors={tagColors}
-            allTags={allTags}
-            flashPaymentId={flashPaymentId}
-            actions={actions}
-          />
-        )}
-      </SheetContent>
+        {member && <MemberPanel key={member.id} member={member} tagColors={tagColors} allTags={allTags} actions={actions} />}
+      </Panel>
     </Sheet>
   );
 }
@@ -608,13 +596,11 @@ function MemberPanel({
   member: m,
   tagColors,
   allTags,
-  flashPaymentId,
   actions,
 }: {
   member: Member;
   tagColors: Record<string, TagColor>;
   allTags: string[];
-  flashPaymentId: string | null;
   actions: MemberSheetActions;
 }) {
   return (
@@ -628,82 +614,96 @@ function MemberPanel({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={() => actions.onCopy(`https://sdc.example/me/${m.id}`, "Private link copied")}>
-                <Icon icon={Lock} size={16} />
-                Copy their private link
+              <DropdownMenuItem onSelect={actions.onEditDetails}>
+                <Icon icon={Pencil} size={16} />
+                Edit member
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={actions.onDelete}>
+              <DropdownMenuItem $variant="danger" onSelect={actions.onDelete}>
                 <Icon icon={Trash2} size={16} />
-                Delete person
+                Delete member
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         }
       >
-        <Head data-reveal="">
-          <NameRow>
-            <SheetTitle>{fullName(m)}</SheetTitle>
-            <Reveal>
-              <IconAction label="Edit details" icon={Pencil} onClick={actions.onEditDetails} />
-            </Reveal>
-          </NameRow>
-          <Email>
-            {m.email}
-            <Reveal>
-              <IconAction label="Copy email" icon={Copy} onClick={() => actions.onCopy(m.email, "Email copied")} />
-            </Reveal>
-          </Email>
-        </Head>
+        <SheetTitle>{fullName(m)}</SheetTitle>
+        <Email data-reveal="">
+          {m.email}
+          <Reveal>
+            <IconAction label="Copy email" icon={Copy} onClick={() => actions.onCopy(m.email, "Email copied")} />
+          </Reveal>
+        </Email>
         <TagsRow member={m} tagColors={tagColors} allTags={allTags} onSetTags={actions.onSetTags} />
       </SheetHeader>
       <Body>
-        <NotesSection member={m} actions={actions} />
+        <Section aria-label="Note">
+          <SectionHeader title="Note">
+            <SectionAction icon={m.note ? Pencil : Plus} onClick={actions.onEditNote}>
+              {m.note ? "Edit" : "Add"}
+            </SectionAction>
+          </SectionHeader>
+          {m.note && (
+            <div>
+              <NoteText>{m.note.text}</NoteText>
+              <Meta>
+                Last updated: {formatDate(m.note.updatedAt)} · {m.note.by}
+              </Meta>
+            </div>
+          )}
+        </Section>
         <MembershipSection member={m} onChange={actions.onChangeMembership} />
-        <PaymentsSection member={m} flashPaymentId={flashPaymentId} actions={actions} />
-        <ActivitySection member={m} />
+        <Section aria-label="Payments">
+          <SectionHeader title="Payments">
+            <SectionAction icon={Plus} onClick={actions.onRecordPayment}>
+              Record
+            </SectionAction>
+          </SectionHeader>
+          <Big>
+            <BigNumber>{formatMoney(totalPaid(m))}</BigNumber>
+            <BigLabel>Total payment</BigLabel>
+          </Big>
+        </Section>
+        <ActivitySection member={m} onEditPayment={actions.onEditPayment} />
         <Section aria-label="Intake form">
-          <SectionHeader title="Intake form">{m.intake && <Muted>Answered {formatDate(m.intake.answeredAt)}</Muted>}</SectionHeader>
+          <SectionHeader title="Intake form" />
           {m.intake ? (
-            <Details>
-              {m.intake.interests && (<><dt>Interests</dt><dd>{m.intake.interests}</dd></>)}
-              {m.intake.location && (<><dt>Location</dt><dd>{m.intake.location}</dd></>)}
-              {m.intake.time && (<><dt>Time they can give</dt><dd>{m.intake.time}</dd></>)}
-              {m.intake.hopes && (<><dt>What they hope for</dt><dd>{m.intake.hopes}</dd></>)}
-            </Details>
+            <Stack>
+              <Muted>Answered {formatDate(m.intake.answeredAt)}</Muted>
+              <Details>
+                {!!m.intake.interests?.length && (<><dt>Interests</dt><dd><Answers items={m.intake.interests} /></dd></>)}
+                {!!m.intake.ways?.length && (<><dt>Involvement</dt><dd><Answers items={m.intake.ways} /></dd></>)}
+                {m.intake.location && (<><dt>Location</dt><dd>{m.intake.location}</dd></>)}
+                {m.intake.time && (<><dt>Availability</dt><dd>{m.intake.time}</dd></>)}
+                {m.intake.hopes && (<><dt>What they hope for</dt><dd>{m.intake.hopes}</dd></>)}
+              </Details>
+            </Stack>
           ) : (
             <Muted>Not answered yet.</Muted>
           )}
-        </Section>
-        <Section aria-label="Referrals">
-          <SectionHeader title="Referrals" badge={m.referrals.length ? <Badge>{m.referrals.length}</Badge> : undefined}>
-            <SectionAction icon={Link} onClick={() => actions.onCopy(`https://sdc.example/join?by=${m.id}`, "Invite link copied")}>
-              Copy invite link
-            </SectionAction>
-          </SectionHeader>
-          {m.referredBy || m.referrals.length ? (
-            <Details>
-              {m.referredBy && (<><dt>Referred by</dt><dd>{m.referredBy}</dd></>)}
-              {m.referrals.length > 0 && (<><dt>People they referred</dt><dd>{m.referrals.join(", ")}</dd></>)}
-            </Details>
-          ) : (
-            <Muted>None yet.</Muted>
-          )}
-        </Section>
-        <Section aria-label="Other details">
-          <SectionHeader title="Other details" />
-          <Details>
-            <dt>How they joined</dt>
-            <dd>{m.howJoined}</dd>
-            {m.address && (<><dt>Address</dt><dd>{m.address}</dd></>)}
-          </Details>
         </Section>
       </Body>
     </>
   );
 }
 
-/* Status, subscription and tags in one row. Edit turns the tags removable and adds a "select or create" field. */
+/*
+ * Status, subscription and tags in one row. Edit adds a × to each tag (same size and colour as before) and the
+ * tag picker, open as a field: type to filter existing tags or create one. A typed name matching an existing tag
+ * (any case) reuses it.
+ */
+/** A tag at its real size, with a × to remove it. */
+export function RemovableBadge({ name, color, onRemove }: { name: string; color?: TagColor; onRemove: () => void }) {
+  return (
+    <Badge $category={color}>
+      {name}
+      <RemoveTag type="button" $variant="ghost" aria-label={`Remove ${name}`} onClick={onRemove}>
+        <Icon icon={X} size={12} />
+      </RemoveTag>
+    </Badge>
+  );
+}
+
 function TagsRow({
   member: m,
   tagColors,
@@ -716,46 +716,49 @@ function TagsRow({
   onSetTags: (tags: string[]) => void;
 }) {
   const [editing, setEditing] = React.useState(false);
-  const [picker, setPicker] = React.useState(0);
   const options = allTags.filter((t) => !m.tags.includes(t)).map((t) => ({ value: t, label: t }));
+
+  function add(name: string) {
+    const existing = allTags.find((t) => t.toLowerCase() === name.toLowerCase()) ?? name;
+    if (!m.tags.some((t) => t.toLowerCase() === existing.toLowerCase())) onSetTags([...m.tags, existing]);
+  }
+
   return (
     <Chips data-reveal="">
       <Badge $variant={m.status === "ended" ? "danger" : m.status === "waiting" ? "warning" : "success"}>{statusLabel[m.status]}</Badge>
       <Badge $variant={m.subscribed ? "success" : "danger"}>{m.subscribed ? "Subscribed" : "Unsubscribed"}</Badge>
-      {editing
-        ? m.tags.map((t) => (
-            <RemovableTag key={t} onRemove={() => onSetTags(m.tags.filter((x) => x !== t))}>
-              {t}
-            </RemovableTag>
-          ))
-        : m.tags.map((t) => (
-            <Badge key={t} $category={tagColors[t]}>
-              {t}
-            </Badge>
-          ))}
+      {m.tags.map((t) =>
+        editing ? (
+          <RemovableBadge key={t} name={t} color={tagColors[t]} onRemove={() => onSetTags(m.tags.filter((x) => x !== t))} />
+        ) : (
+          <Badge key={t} $category={tagColors[t]}>
+            {t}
+          </Badge>
+        ),
+      )}
       {editing ? (
-        <>
-          <CreatableCombobox
-            key={picker}
-            aria-label="Add a tag"
-            options={options}
-            existingFieldName="tag"
-            createFieldName="newTag"
-            placeholder="Select or create a tag"
-            searchPlaceholder="Select or create a tag"
-            createLabel={(q) => `Create “${q}”`}
-            onValueChange={(value) => {
-              if (!value) return;
-              const name = value.kind === "existing" ? value.value : value.label.trim();
-              if (name && !m.tags.some((t) => t.toLowerCase() === name.toLowerCase())) onSetTags([...m.tags, name]);
-              setPicker((n) => n + 1);
-              setEditing(false);
-            }}
-          />
-          <Button type="button" $variant="ghost" $size="sm" onClick={() => setEditing(false)}>
+        <TagEntry>
+          <TagField>
+            <CreatableCombobox
+              inline
+              autoFocus
+              aria-label="Add a tag"
+              options={options}
+              existingFieldName="tag"
+              createFieldName="newTag"
+              placeholder="Select or create a tag"
+              createLabel={(q) => `Create “${q}”`}
+              onValueChange={(value) => value && add(value.kind === "existing" ? value.value : value.label.trim())}
+            />
+          </TagField>
+          <QuietButton
+            type="button"
+            $variant="ghost"
+            onClick={() => setEditing(false)}
+          >
             Done
-          </Button>
-        </>
+          </QuietButton>
+        </TagEntry>
       ) : (
         <Reveal>
           <IconAction label="Edit tags" icon={Pencil} onClick={() => setEditing(true)} />
@@ -765,184 +768,123 @@ function TagsRow({
   );
 }
 
-function NotesSection({ member: m, actions }: { member: Member; actions: MemberSheetActions }) {
-  const notes = [...m.notes].sort((a, b) => (a.at < b.at ? 1 : -1));
-  return (
-    <Section aria-label="Notes">
-      <SectionHeader title="Notes">
-        <SectionAction icon={Plus} onClick={actions.onAddNote}>Add</SectionAction>
-      </SectionHeader>
-      {notes.length ? (
-        <NoteList>
-          {notes.map((n) => (
-            <NoteRow key={n.id} data-reveal="">
-              <Grow>
-                <NoteText>{n.text}</NoteText>
-                <Meta>
-                  {formatDate(n.at)} · {n.by}
-                </Meta>
-              </Grow>
-              <Reveal>
-                <IconAction label="Edit note" icon={Pencil} onClick={() => actions.onEditNote(n)} />
-                <IconAction label="Delete note" icon={Trash2} onClick={() => actions.onDeleteNote(n)} />
-              </Reveal>
-            </NoteRow>
-          ))}
-        </NoteList>
-      ) : (
-        <Muted>Birthdays, family news, what they care about.</Muted>
-      )}
-    </Section>
-  );
-}
-
 function MembershipSection({ member: m, onChange }: { member: Member; onChange: () => void }) {
-  const { start, renewed } = membershipYear(m);
-  const ends = m.endsAt;
-  const span = Math.max(1, diffDays(start, ends));
-  const at = (d: string) => Math.min(100, Math.max(0, (diffDays(start, d) / span) * 100));
-  const points: [string, string][] = [
-    [renewed ? "Renewed" : "Joined", start],
-    ["3 months", addMonths(start, 3)],
-    ["6 months", addMonths(start, 6)],
-    ["9 months", addMonths(start, 9)],
-    [ends < TODAY ? "Ended" : "Ends", ends],
-  ];
-  const shown = points.filter((p, i) => i === 0 || i === points.length - 1 || p[1] < ends);
-  const next = shown.find((p) => p[1] > TODAY);
   return (
     <Section aria-label="Membership">
       <SectionHeader title="Membership" badge={<Badge>{kindLabel[m.kind]}</Badge>}>
-        <SectionAction icon={Pencil} onClick={onChange}>Change</SectionAction>
+        <SectionAction icon={Pencil} onClick={onChange}>
+          Change
+        </SectionAction>
       </SectionHeader>
-      <Range>
-        {formatDate(start)} – {formatDate(ends)}
-      </Range>
-      <Milestones aria-label="Membership year">
-        <Progress style={{ width: `${at(TODAY)}%` }} />
-        {shown.map((p, i) => {
-          const state = p[1] <= TODAY ? "past" : p === next ? "next" : "future";
-          return (
-            <Milestone
-              key={p[0]}
-              $state={state}
-              $edge={i === 0 ? "first" : i === shown.length - 1 ? "last" : "mid"}
-              style={{ left: `${at(p[1])}%` }}
-              aria-current={state === "next" ? "step" : undefined}
-            >
-              <span>{p[0]}</span>
-              <Dot $state={state} />
-              <span>{formatDate(p[1], false)}</span>
-            </Milestone>
-          );
-        })}
-      </Milestones>
-    </Section>
-  );
-}
-
-function PaymentsSection({ member: m, flashPaymentId, actions }: { member: Member; flashPaymentId: string | null; actions: MemberSheetActions }) {
-  const payments = [...m.payments].sort((a, b) => (a.date < b.date ? 1 : -1));
-  return (
-    <Section aria-label="Payments">
-      <SectionHeader title="Payments">
-        <SectionAction icon={Gift} onClick={actions.onGift}>Gift</SectionAction>
-        <SectionAction icon={Plus} onClick={actions.onRecordPayment}>Record</SectionAction>
-      </SectionHeader>
-      <Big>
-        <BigNumber>{formatMoney(totalPaid(m))}</BigNumber>
-        <BigLabel>Total</BigLabel>
-      </Big>
-      {payments.length ? (
-        <Cards>
-          {payments.map((p) => {
-            const extra = [p.giftFor ? `Gift for ${p.giftFor}` : "", p.note ?? ""].filter(Boolean).join(" · ");
-            return (
-              <ItemCard key={p.id} $flash={p.id === flashPaymentId} data-reveal="">
-                <Grow>
-                  <PayTop>
-                    <b>{formatMoney(p.amount)}</b>
-                    <span>{methodLabel[p.method]}</span>
-                    <time dateTime={p.date}>{formatDate(p.date)}</time>
-                  </PayTop>
-                  {extra && <Meta>{extra}</Meta>}
-                </Grow>
-                <Reveal>
-                  <IconAction label="Edit payment" icon={Pencil} onClick={() => actions.onEditPayment(p)} />
-                </Reveal>
-              </ItemCard>
-            );
-          })}
-        </Cards>
-      ) : (
-        <Muted>No payments yet.</Muted>
-      )}
+      <Countdown>
+        <BigNumber>{endHeadline(m.endsAt)}</BigNumber>
+        <CountdownDate dateTime={m.endsAt}>on {formatDate(m.endsAt)}</CountdownDate>
+      </Countdown>
     </Section>
   );
 }
 
 type ActivityView = "all" | "email" | "member";
 
-function ActivitySection({ member: m }: { member: Member }) {
+const PAGE = 12;
+
+/* Activity's icons (dots, chevrons) are a step up from the 14px used in other sections. */
+const ACTIVITY_ICON = 16;
+
+/** Payments join the stored activity as their own rows. */
+function activityRows(m: Member): Row[] {
+  const payments: Row[] = m.payments.map((p) => ({
+    id: p.id,
+    kind: "payment",
+    title: `Paid ${formatMoney(p.amount)}`,
+    at: p.date,
+    detail: [methodLabel[p.method], p.giftFor ? `Gift for ${p.giftFor}` : "", p.note ?? ""].filter(Boolean).join(" · "),
+    payment: p,
+  }));
+  /* Newest first; on the same day, "Joined" goes last since everything else follows it. */
+  const joined = (r: Row) => (r.kind === "joined" ? 1 : 0);
+  return [...m.activity, ...payments].sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : joined(a) - joined(b)));
+}
+
+function ActivitySection({ member: m, onEditPayment }: { member: Member; onEditPayment: (payment: Payment) => void }) {
   const [view, setView] = React.useState<ActivityView>("all");
-  const [showAll, setShowAll] = React.useState(false);
-  const all = [...m.activity]
-    .sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0))
-    .filter((a) => (view === "email" ? a.kind === "email" : view === "member" ? a.kind !== "email" : true));
-  const rows = showAll ? all : all.slice(0, 12);
+  const [q, setQ] = React.useState("");
+  const [shown, setShown] = React.useState(PAGE);
+  const needle = q.trim().toLowerCase();
+  const everything = activityRows(m);
+  const all = everything
+    .filter((a) => (view === "email" ? a.kind === "email" : view === "member" ? a.kind !== "email" : true))
+    .filter((a) => !needle || [a.title, a.detail, a.body].some((t) => t?.toLowerCase().includes(needle)));
+  const rows = all.slice(0, shown);
+  const more = Math.min(PAGE, all.length - rows.length);
   return (
     <Section aria-label="Activity">
       <SectionHeader title="Activity">
-        <ToggleGroup type="single" value={view} onValueChange={(v) => v && setView(v as ActivityView)} aria-label="Show">
+        <PillToggle
+          type="single"
+          value={view}
+          onValueChange={(v) => {
+            if (!v) return;
+            setView(v as ActivityView);
+            setShown(PAGE);
+          }}
+          aria-label="Show"
+        >
           <ToggleGroupItem value="all">All</ToggleGroupItem>
           <ToggleGroupItem value="email">Emails</ToggleGroupItem>
           <ToggleGroupItem value="member">Member activity</ToggleGroupItem>
-        </ToggleGroup>
+        </PillToggle>
       </SectionHeader>
+      {everything.length > PAGE && (
+        <SearchField
+          aria-label="Search activity"
+          placeholder="Search activity"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          onSearch={(v) => {
+            setQ(v);
+            setShown(PAGE);
+          }}
+        />
+      )}
       {rows.length ? (
         <Timeline>
           {rows.map((a) => (
-            <ActivityRow key={a.id} item={a} colour={view === "all"} />
+            <ActivityRow key={a.id} item={a} onEditPayment={onEditPayment} />
           ))}
         </Timeline>
       ) : (
-        <Muted>Nothing yet.</Muted>
+        <Muted>{needle ? `No activity matches “${q.trim()}”.` : "Nothing yet."}</Muted>
       )}
-      {all.length > rows.length && (
+      {more > 0 && (
         <div>
-          <Button type="button" $variant="ghost" $size="sm" onClick={() => setShowAll(true)}>
-            Show all {all.length}
-            <Icon icon={ChevronDown} size={16} />
-          </Button>
+          <SectionAction icon={ChevronDown} iconSize={ACTIVITY_ICON} onClick={() => setShown((n) => n + PAGE)}>
+            Show {more} more
+          </SectionAction>
         </div>
       )}
     </Section>
   );
 }
 
-/* Colour only on "All": one colour per kind of thing. */
-function ActivityRow({ item: a, colour }: { item: ActivityItem; colour: boolean }) {
-  const tone = colour ? TONES[a.kind] : undefined;
+function ActivityRow({ item: a, onEditPayment }: { item: Row; onEditPayment: (payment: Payment) => void }) {
+  const date = <TimelineDate dateTime={a.at}>{formatDate(a.at)}</TimelineDate>;
   return (
-    <TimelineItem>
-      <TimelineDot $tone={tone}>
-        <Icon icon={ICONS[a.kind]} size={16} />
+    <TimelineItem data-reveal={a.payment ? "" : undefined}>
+      <TimelineDot $tone={TONES[a.kind]}>
+        <Icon icon={ICONS[a.kind]} size={ACTIVITY_ICON} />
       </TimelineDot>
       {a.kind === "email" ? (
         <EmailCollapsible>
           <EmailTrigger>
-            <TimelineTitle>{a.title}</TimelineTitle>
-            <TimelineSub>
-              {a.detail}
-              {a.opened ? " · Opened" : ""}
-              <Icon icon={ChevronDown} size={16} />
-            </TimelineSub>
+            <TimelineTitle>
+              {a.title}
+              <Icon icon={ChevronDown} size={ACTIVITY_ICON} />
+            </TimelineTitle>
+            {a.detail && <TimelineSub>{a.detail}</TimelineSub>}
           </EmailTrigger>
           <CollapsibleContent>
-            <EmailPreview>
-            <strong>{a.title}</strong>
-            {a.body}
-            </EmailPreview>
+            <EmailPreview>{a.body}</EmailPreview>
           </CollapsibleContent>
         </EmailCollapsible>
       ) : (
@@ -951,7 +893,16 @@ function ActivityRow({ item: a, colour }: { item: ActivityItem; colour: boolean 
           {a.detail && <TimelineSub>{a.detail}</TimelineSub>}
         </div>
       )}
-      <TimelineDate dateTime={a.at}>{formatDate(a.at)}</TimelineDate>
+      {a.payment ? (
+        <DateCell>
+          {date}
+          <RevealOverlay>
+            <IconAction label="Edit payment" icon={Pencil} size={ACTIVITY_ICON} onClick={() => onEditPayment(a.payment!)} />
+          </RevealOverlay>
+        </DateCell>
+      ) : (
+        date
+      )}
     </TimelineItem>
   );
 }

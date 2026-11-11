@@ -4,9 +4,8 @@ import * as React from "react";
 import { styled } from "next-yak";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
-import { CreatableCombobox } from "@/components/ui/CreatableCombobox";
 import { DatePicker } from "@/components/ui/DatePicker";
-import { Dialog, DialogActions, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/Dialog";
+import { Dialog, DialogActions, DialogClose, DialogContent, DialogTitle } from "@/components/ui/Dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,15 +21,19 @@ import { Label } from "@/components/ui/Label";
 import { Select } from "@/components/ui/Select";
 import { TagInput } from "@/components/ui/TagInput";
 import { Textarea } from "@/components/ui/Textarea";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/ToggleGroup";
-import { TODAY, addMonths, fullName, methodLabel, type Member, type MembershipKind, type PaymentMethod } from "./data";
+import { ToggleGroupItem } from "@/components/ui/ToggleGroup";
+import { TODAY, addMonths, fullName, methodLabel, type Member, type MembershipKind, type PaymentMethod, type TagColor } from "./data";
+import { OptionToggle, PillToggle } from "./PillToggle";
+import { TagPicker } from "./TagPicker";
 
 /* ---------- shared layout ---------- */
 
+/* 16px under the popup title. It collapses with the title's own 4px margin rather than adding to it. */
 const Form = styled.form`
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  margin-top: var(--space-4);
 `;
 
 const Row = styled.div`
@@ -85,23 +88,28 @@ interface DialogBase {
 
 /* ---------- notes ---------- */
 
+/** One running note per member, edited in place. Saving it empty clears it. */
 export function NoteDialog({ open, onOpenChange, initial, onSave }: DialogBase & { initial?: string; onSave: (text: string) => void }) {
   const [text, setText] = React.useState(initial ?? "");
-  const [error, setError] = React.useState<string>();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogTitle>{initial ? "Edit note" : "Add note"}</DialogTitle>
-        <DialogDescription>Birthdays, family news, what they care about.</DialogDescription>
         <Form
           onSubmit={(e) => {
             e.preventDefault();
-            if (!text.trim()) return setError("Write a note before saving.");
             onSave(text.trim());
           }}
         >
-          <Field label="Note" error={error}>
-            {(props) => <Textarea {...props} rows={4} value={text} onChange={(e) => setText(e.target.value)} />}
+          <Field label="Note">
+            {(props) => (
+              <Textarea
+                {...props}
+                rows={10}
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+              />
+            )}
           </Field>
           <Actions submit={initial ? "Save note" : "Add note"} />
         </Form>
@@ -140,24 +148,24 @@ export function ChangeMembershipDialog({
             onSave({ kind, amount: kind === "paid" ? Number(amount) : undefined, endsAt });
           }}
         >
-          <ToggleGroup type="single" value={kind} onValueChange={(v) => v && setKind(v as MembershipKind)} aria-label="Membership type">
+          <PillToggle type="single" value={kind} onValueChange={(v) => v && setKind(v as MembershipKind)} aria-label="Membership type">
             {kindToggle.map(([value, label]) => (
               <ToggleGroupItem key={value} value={value}>
                 {label}
               </ToggleGroupItem>
             ))}
-          </ToggleGroup>
-          <Reserve $shown={kind === "paid"} inert={kind !== "paid"}>
+          </PillToggle>
+          <Field label="Ends">{(props) => <DatePicker {...props} value={endsAt} onValueChange={setEndsAt} />}</Field>
+          {kind === "paid" && (
             <Row>
-              <Field label="Amount per year" error={error}>
+              <Field label="Amount" error={error}>
                 {(props) => <Input {...props} inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />}
               </Field>
               <Field label="Paid by">
                 {(props) => <Select {...props} options={methodOptions} value={method} onValueChange={(v) => setMethod(v as PaymentMethod)} />}
               </Field>
             </Row>
-          </Reserve>
-          <Field label="Ends">{(props) => <DatePicker {...props} value={endsAt} onValueChange={setEndsAt} />}</Field>
+          )}
           <Actions submit="Save changes" />
         </Form>
       </DialogContent>
@@ -223,24 +231,29 @@ export function PaymentDialog({
               {(props) => <DatePicker {...props} value={date} max={TODAY} onValueChange={setDate} />}
             </Field>
           </Row>
-          <Field label="Method">
-            {(props) => <Select {...props} options={methodOptions} value={method} onValueChange={(v) => setMethod(v as PaymentMethod)} />}
-          </Field>
+          <Stack>
+            <Label id="payment-method">Method</Label>
+            <OptionToggle type="single" value={method} onValueChange={(v) => v && setMethod(v as PaymentMethod)} aria-labelledby="payment-method">
+              {methodOptions.map((o) => (
+                <ToggleGroupItem key={o.value} value={o.value}>
+                  {o.label}
+                </ToggleGroupItem>
+              ))}
+            </OptionToggle>
+          </Stack>
           {!editing && (
             <Stack>
               <Label id="pays-for">This pays for</Label>
-              <ToggleGroup type="single" value={forWhom} onValueChange={(v) => v && setForWhom(v as "own" | "other")} aria-labelledby="pays-for">
+              <OptionToggle type="single" value={forWhom} onValueChange={(v) => v && setForWhom(v as "own" | "other")} aria-labelledby="pays-for">
                 <ToggleGroupItem value="own">Their own membership</ToggleGroupItem>
                 <ToggleGroupItem value="other">Someone else&apos;s</ToggleGroupItem>
-              </ToggleGroup>
+              </OptionToggle>
             </Stack>
           )}
-          {!editing && (
-            <Reserve $shown={forWhom === "other"} inert={forWhom !== "other"}>
-              <Field label="Who it's for" error={errors.forId}>
-                {(props) => <Select {...props} options={others} value={forId} onValueChange={setForId} placeholder="Choose a person" />}
-              </Field>
-            </Reserve>
+          {!editing && forWhom === "other" && (
+            <Field label="Who it's for" error={errors.forId}>
+              {(props) => <Select {...props} options={others} value={forId} onValueChange={setForId} placeholder="Choose a person" />}
+            </Field>
           )}
           <Field label="Note">{(props) => <Input {...props} value={note} onChange={(e) => setNote(e.target.value)} />}</Field>
           {editing ? (
@@ -270,7 +283,6 @@ export interface PersonDraft {
   firstName: string;
   lastName: string;
   email: string;
-  address?: string;
 }
 
 export function EditDetailsDialog({
@@ -280,7 +292,7 @@ export function EditDetailsDialog({
   emailTaken,
   onSave,
 }: DialogBase & { member: Member; emailTaken: (email: string) => boolean; onSave: (draft: PersonDraft) => void }) {
-  const [d, setD] = React.useState<PersonDraft>({ firstName: member.firstName, lastName: member.lastName, email: member.email, address: member.address ?? "" });
+  const [d, setD] = React.useState<PersonDraft>({ firstName: member.firstName, lastName: member.lastName, email: member.email });
   const [errors, setErrors] = React.useState<{ firstName?: string; email?: string }>({});
   const set = (k: keyof PersonDraft) => (e: React.ChangeEvent<HTMLInputElement>) => setD({ ...d, [k]: e.target.value });
   return (
@@ -303,7 +315,6 @@ export function EditDetailsDialog({
             <Field label="Last name">{(props) => <Input {...props} value={d.lastName} onChange={set("lastName")} />}</Field>
           </Row>
           <Field label="Email" error={errors.email}>{(props) => <Input {...props} type="email" value={d.email} onChange={set("email")} />}</Field>
-          <Field label="Address">{(props) => <Input {...props} value={d.address} onChange={set("address")} />}</Field>
           <Actions submit="Save changes" />
         </Form>
       </DialogContent>
@@ -340,7 +351,6 @@ export function AddMemberDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogTitle>{title}</DialogTitle>
-        {gift && <DialogDescription>They become a member; the payment is recorded on the person giving it.</DialogDescription>}
         <Form
           onSubmit={(e) => {
             e.preventDefault();
@@ -369,13 +379,13 @@ export function AddMemberDialog({
           </Row>
           <Field label="Email" error={errors.email}>{(props) => <Input {...props} type="email" value={d.email} onChange={set("email")} />}</Field>
           {!gift && (
-            <ToggleGroup type="single" value={kind} onValueChange={(v) => v && setKind(v as MembershipKind)} aria-label="Membership type">
+            <PillToggle type="single" value={kind} onValueChange={(v) => v && setKind(v as MembershipKind)} aria-label="Membership type">
               {kindToggle.map(([value, label]) => (
                 <ToggleGroupItem key={value} value={value}>
                   {label}
                 </ToggleGroupItem>
               ))}
-            </ToggleGroup>
+            </PillToggle>
           )}
           <Reserve $shown={paid} inert={!paid}>
             <Row>
@@ -388,7 +398,7 @@ export function AddMemberDialog({
             </Row>
           </Reserve>
           {!gift && (
-            <Field label="Join date" hint="Change it only when adding someone who joined earlier. It can't be changed later.">
+            <Field label="Join date">
               {(props) => <DatePicker {...props} value={joinedAt} max={TODAY} onValueChange={setJoinedAt} />}
             </Field>
           )}
@@ -412,16 +422,18 @@ export function TagPeopleDialog({
   count,
   pasteEmails,
   allTags,
+  tagColors,
   findByEmail,
   onSave,
 }: DialogBase & {
   count?: number;
   pasteEmails?: boolean;
   allTags: string[];
+  tagColors: Record<string, TagColor>;
   findByEmail: (email: string) => Member | undefined;
-  onSave: (tag: string, people?: Member[]) => void;
+  onSave: (tags: string[], people?: Member[]) => void;
 }) {
-  const [tag, setTag] = React.useState("");
+  const [tags, setTags] = React.useState<string[]>([]);
   const [emails, setEmails] = React.useState<string[]>([]);
   const [errors, setErrors] = React.useState<{ tag?: string; emails?: string }>({});
   const found = emails.map(findByEmail).filter((m): m is Member => Boolean(m));
@@ -433,16 +445,16 @@ export function TagPeopleDialog({
           onSubmit={(e) => {
             e.preventDefault();
             const next: typeof errors = {};
-            if (!tag) next.tag = "Choose a tag or type a new one.";
+            if (!tags.length) next.tag = "Choose a tag or type a new one.";
             if (pasteEmails && !found.length) next.emails = "None of these emails are in the directory. Check them and try again.";
             setErrors(next);
-            if (!Object.keys(next).length) onSave(tag, pasteEmails ? found : undefined);
+            if (!Object.keys(next).length) onSave(tags, pasteEmails ? found : undefined);
           }}
         >
           {pasteEmails && (
             <Field
               label="Emails"
-              hint={emails.length ? `${found.length} of ${emails.length} found in the directory` : "Paste a column from a spreadsheet, or type them one at a time."}
+              hint={emails.length ? `${found.length} of ${emails.length} found in the directory` : undefined}
               error={errors.emails}
             >
               {(props) => (
@@ -456,20 +468,25 @@ export function TagPeopleDialog({
               )}
             </Field>
           )}
-          <Field label="Tag" error={errors.tag}>
+          <Field label="Tags" error={errors.tag}>
             {(props) => (
-              <CreatableCombobox
-                {...props}
-                options={allTags.map((t) => ({ value: t, label: t }))}
-                existingFieldName="tag"
-                createFieldName="newTag"
+              <TagPicker
+                label="Tags"
+                value={tags}
+                options={allTags}
+                colors={tagColors}
+                onValueChange={(next) => {
+                  setTags(next);
+                  if (next.length) setErrors((e) => ({ ...e, tag: undefined }));
+                }}
                 placeholder="Select or create a tag"
-                searchPlaceholder="Select or create a tag"
-                onValueChange={(v) => setTag(v ? (v.kind === "existing" ? v.value : v.label.trim()) : "")}
+                createLabel={(q) => `Create “${q}”`}
+                aria-describedby={props["aria-describedby"]}
+                aria-invalid={props["aria-invalid"]}
               />
             )}
           </Field>
-          <Actions submit="Add tag" />
+          <Actions submit={tags.length > 1 ? "Add tags" : "Add tag"} />
         </Form>
       </DialogContent>
     </Dialog>

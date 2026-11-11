@@ -9,10 +9,10 @@ export type PaymentMethod = "etransfer" | "cash" | "online";
 /** Badge categories from the kit (blue, violet, fuchsia, pink, lime); `undefined` is the neutral badge. */
 export type TagColor = 1 | 2 | 3 | 4 | 5 | undefined;
 
+/** The one running note on a member: staff edit it in place. */
 export interface Note {
-  id: string;
   text: string;
-  at: string;
+  updatedAt: string;
   by: string;
 }
 
@@ -36,7 +36,6 @@ export interface ActivityItem {
   detail?: string;
   /** Emails only: the message as sent, without the footer. */
   body?: string;
-  opened?: boolean;
 }
 
 export interface Member {
@@ -52,12 +51,13 @@ export interface Member {
   endsAt: string;
   subscribed: boolean;
   tags: string[];
-  notes: Note[];
+  note?: Note;
   payments: Payment[];
   activity: ActivityItem[];
   howJoined: string;
   address?: string;
-  intake?: { interests?: string; location?: string; time?: string; hopes?: string; answeredAt: string };
+  /** Intake form answers, worded as the form's choices. Every question is optional. */
+  intake?: { interests?: string[]; ways?: string[]; location?: string; time?: string; hopes?: string; answeredAt: string };
   referredBy?: string;
   referrals: string[];
 }
@@ -81,7 +81,7 @@ export const kindLabel: Record<MembershipKind, string> = {
 export const statusLabel: Record<MemberStatus, string> = {
   member: "Member",
   waiting: "Waiting for payment",
-  ended: "Not renewed",
+  ended: "Membership ended",
 };
 
 /* ---------- dates and money ---------- */
@@ -137,13 +137,21 @@ export function endNotice(endsAt: string): { text: string; tone: "warning" | "da
   return null;
 }
 
+/** The panel's membership headline: how long is left, or that it has ended. */
+export function endHeadline(endsAt: string): string {
+  const n = diffDays(TODAY, endsAt);
+  if (n < 0) return "Ended";
+  if (n === 0) return "Ends today";
+  return `Ends in ${plural(n, "day")}`;
+}
+
 export const totalPaid = (m: Member) => m.payments.reduce((sum, p) => sum + p.amount, 0);
 
-/** The current membership year: renewals get their own 3, 6 and 9-month check-ins. */
-export function membershipYear(m: Member) {
-  const yearBefore = addMonths(m.endsAt, -12);
-  const start = yearBefore > m.joinedAt ? yearBefore : m.joinedAt;
-  return { start, renewed: start !== m.joinedAt };
+/** The "Joined" activity title, from how they joined: "Joined via Website", "Joined with a gift from Helen Brooks". */
+export function joinedTitle(howJoined: string): string {
+  if (howJoined.startsWith("Gift from ")) return `Joined with a gift from ${howJoined.slice("Gift from ".length)}`;
+  if (howJoined === "Added by an admin") return "Added by an admin";
+  return `Joined via ${howJoined}`;
 }
 
 /* ---------- demo members ---------- */
@@ -157,9 +165,7 @@ const welcome = (first: string, at: string): ActivityItem => ({
   kind: "email",
   title: `Welcome to SDC, ${first}`,
   at,
-  detail: "Sent automatically",
   body: `Hi ${first},\n\nWelcome to the Social Development Centre. You're now part of a community that shows up for Waterloo Region.\n\nWe'll send you a short note each month with ways to get involved.\n\nThe SDC team`,
-  opened: true,
 });
 
 function member(
@@ -183,12 +189,12 @@ function member(
     endsAt,
     subscribed: o.subscribed ?? true,
     tags: o.tags ?? [],
-    notes: o.notes ?? [],
+    note: o.note,
     payments: o.payments ?? [],
     activity: [
       ...(o.activity ?? []),
       welcome(first, joinedAt),
-      { id: id("a"), kind: "joined", title: "Joined", at: joinedAt },
+      { id: id("a"), kind: "joined", title: joinedTitle(o.howJoined ?? "Website"), at: joinedAt },
     ],
     howJoined: o.howJoined ?? "Website",
     address: o.address,
@@ -206,6 +212,20 @@ const pay = (amount: number, daysAgo: number, method: PaymentMethod = "etransfer
   ...extra,
 });
 
+/** One monthly member email per month for the last `months` months, so long timelines have something to page through. */
+const monthlies = (months: number): ActivityItem[] =>
+  Array.from({ length: months }, (_, i) => {
+    const at = addMonths(ago(2), -i);
+    const month = toDate(at).toLocaleDateString("en-CA", { month: "long", timeZone: "UTC" });
+    return {
+      id: id("a"),
+      kind: "email",
+      title: `SDC this month: ${month}`,
+      at,
+      body: `Hi,\n\nHere's what SDC is working on this ${month}, and a few ways to get involved.\n\nThe SDC team`,
+    };
+  });
+
 export const demoTags: { name: string; color: TagColor }[] = [
   { name: "Board", color: 1 },
   { name: "Volunteer", color: 5 },
@@ -222,13 +242,13 @@ export const demoMembers: Member[] = [
     tags: ["Board"],
     howJoined: "Existing list",
     address: "39 Queen St S, Kitchener, ON",
-    notes: [{ id: id("n"), text: "Called to thank him for the referrals. Asked after his daughter, who starts at Conestoga in the fall.", at: ago(11), by: "Suhanya" }],
+    note: { text: "Called to thank him for the referrals. Asked after his daughter, who starts at Conestoga in the fall.", updatedAt: ago(11), by: "Suhanya" },
     payments: [pay(60, 150, "cash"), pay(60, 515, "cash")],
     referrals: ["Tara Novak", "Sam Whitby"],
-    intake: { interests: "Unsheltered neighbours", answeredAt: ago(870) },
+    intake: { interests: ["Homelessness and encampments"], answeredAt: ago(870) },
     activity: [
       { id: id("a"), kind: "referral", title: "Tara Novak joined from their invite", at: ago(3) },
-      { id: id("a"), kind: "email", title: "Tara joined because of you", at: ago(3), detail: "Sent automatically", opened: true, body: "Hi Dan,\n\nTara just became an SDC member through your invite. Thank you. This is how we grow.\n\nThe SDC team" },
+      { id: id("a"), kind: "email", title: "Tara joined because of you", at: ago(3), body: "Hi Dan,\n\nTara just became an SDC member through your invite. Thank you. This is how we grow.\n\nThe SDC team" },
       { id: id("a"), kind: "referral", title: "Sam Whitby joined from their invite", at: ago(12) },
     ],
   }),
@@ -247,8 +267,36 @@ export const demoMembers: Member[] = [
     activity: [{ id: id("a"), kind: "ended", title: "Membership ended", at: ago(100) }],
   }),
   member("Farid", "Nasser", { joinedDaysAgo: 340, endsAt: addDays(TODAY, 12), amount: 25, payments: [pay(25, 340)], tags: ["Volunteer"] }),
-  member("Grace", "Lindqvist", { joinedDaysAgo: 720, endsAt: addDays(TODAY, 25), amount: 30, payments: [pay(30, 355), pay(30, 720)] }),
-  member("Fay", "Underhill", { joinedDaysAgo: 6, kind: "complimentary", tags: ["Ride for Refuge"], howJoined: "Ride for Refuge" }),
+  member("Grace", "Lindqvist", {
+    joinedDaysAgo: 720,
+    endsAt: addDays(TODAY, 25),
+    amount: 30,
+    payments: [pay(30, 355), pay(30, 720)],
+    activity: [
+      {
+        id: id("a"),
+        kind: "email",
+        title: "Can we count on you for another year?",
+        at: ago(4),
+        detail: "Sent by Suhanya",
+        body: "Hi Grace,\n\nYour SDC membership ends next month. Would you like to renew? If anything's made it hard to stay involved, just reply and tell me.\n\nSuhanya",
+      },
+    ],
+  }),
+  member("Fay", "Underhill", {
+    joinedDaysAgo: 6,
+    kind: "complimentary",
+    tags: ["Ride for Refuge"],
+    howJoined: "Ride for Refuge",
+    intake: {
+      interests: ["Tenant rights and evictions", "Disability rights and accessibility", "Other: Food security"],
+      ways: ["Meet people at community lunches or events", "Volunteer my time or skills"],
+      location: "Waterloo",
+      time: "A few hours for an event or activity",
+      hopes: "I'd like to meet neighbours who care about housing, and help out at events where I can.",
+      answeredAt: ago(5),
+    },
+  }),
   member("Bea", "Morland", { joinedDaysAgo: 6, kind: "complimentary", tags: ["Ride for Refuge"], howJoined: "Ride for Refuge" }),
   member("Xavier", "Roy", { joinedDaysAgo: 6, kind: "complimentary", tags: ["Ride for Refuge"], howJoined: "Ride for Refuge", subscribed: false }),
   member("Tomas", "Rivera", { joinedDaysAgo: 5, kind: "gifted", howJoined: "Gift from Helen Brooks" }),
@@ -258,7 +306,8 @@ export const demoMembers: Member[] = [
     endsAt: addMonths(ago(7), 12),
     tags: ["Leadership donor", "Board"],
     payments: [pay(1200, 7), pay(1200, 400)],
-    notes: [{ id: id("n"), text: "Birthday is March 3. Prefers email over events.", at: ago(30), by: "Rithika" }],
+    note: { text: "Birthday is March 3. Prefers email over events.", updatedAt: ago(30), by: "Rithika" },
+    activity: monthlies(13),
   }),
   member("Priya", "Raman", { joinedDaysAgo: 6, amount: 25, payments: [pay(25, 6)], howJoined: "Fall workshop" }),
   member("Jordan", "Lee", { joinedDaysAgo: 1, amount: 25, status: "waiting" }),
