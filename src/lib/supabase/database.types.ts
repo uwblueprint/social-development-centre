@@ -47,122 +47,223 @@ export type Database = {
           },
         ]
       }
-      email_send_changes: {
+      automatic_emails: {
         Row: {
-          at: string
-          by_person_id: string | null
-          id: number
-          not_sent_reason: string | null
-          send_id: string
-          status: string
+          alert_enabled: boolean
+          alert_to: string | null
+          alert_when: string
+          body: Json
+          conditions: Json
+          created_at: string
+          created_by: string | null
+          delay_amount: number
+          delay_unit: string
+          id: string
+          mode: string
+          name: string
+          published_at: string | null
+          state: string
+          subject: string
+          trigger: string
+          trigger_tag_id: string | null
+          updated_at: string
         }
         Insert: {
-          at?: string
-          by_person_id?: string | null
-          id?: never
-          not_sent_reason?: string | null
-          send_id: string
-          status: string
+          alert_enabled?: boolean
+          alert_to?: string | null
+          alert_when?: string
+          body?: Json
+          conditions?: Json
+          created_at?: string
+          created_by?: string | null
+          delay_amount?: number
+          delay_unit?: string
+          id?: string
+          mode?: string
+          name?: string
+          published_at?: string | null
+          state?: string
+          subject?: string
+          trigger?: string
+          trigger_tag_id?: string | null
+          updated_at?: string
         }
         Update: {
-          at?: string
-          by_person_id?: string | null
-          id?: never
-          not_sent_reason?: string | null
-          send_id?: string
-          status?: string
+          alert_enabled?: boolean
+          alert_to?: string | null
+          alert_when?: string
+          body?: Json
+          conditions?: Json
+          created_at?: string
+          created_by?: string | null
+          delay_amount?: number
+          delay_unit?: string
+          id?: string
+          mode?: string
+          name?: string
+          published_at?: string | null
+          state?: string
+          subject?: string
+          trigger?: string
+          trigger_tag_id?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "email_send_changes_by_person_id_fkey"
-            columns: ["by_person_id"]
+            foreignKeyName: "automatic_emails_created_by_fkey"
+            columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "people"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "email_send_changes_send_id_fkey"
-            columns: ["send_id"]
+            foreignKeyName: "automatic_emails_trigger_tag_id_fkey"
+            columns: ["trigger_tag_id"]
             isOneToOne: false
-            referencedRelation: "email_sends"
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_occurrences: {
+        Row: {
+          automatic_email_id: string
+          context: Json
+          created_at: string
+          due_on: string
+          event_at: string
+          id: string
+          key: string
+          missed: boolean
+          person_id: string
+          resolved_at: string | null
+          status: string
+          trigger: string
+        }
+        Insert: {
+          automatic_email_id: string
+          context?: Json
+          created_at?: string
+          due_on: string
+          event_at: string
+          id?: string
+          key: string
+          missed?: boolean
+          person_id: string
+          resolved_at?: string | null
+          status?: string
+          trigger: string
+        }
+        Update: {
+          automatic_email_id?: string
+          context?: Json
+          created_at?: string
+          due_on?: string
+          event_at?: string
+          id?: string
+          key?: string
+          missed?: boolean
+          person_id?: string
+          resolved_at?: string | null
+          status?: string
+          trigger?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_occurrences_automatic_email_id_fkey"
+            columns: ["automatic_email_id"]
+            isOneToOne: false
+            referencedRelation: "automatic_emails"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_occurrences_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
             referencedColumns: ["id"]
           },
         ]
       }
       email_sends: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           attempts: number
-          automatic_email_id: string | null
+          automatic_email_id: string
+          body_override: Json | null
           created_at: string
+          due_on: string
           edited_at: string | null
-          edited_body: string | null
           edited_by: string | null
-          edited_subject: string | null
-          email_name: string
-          failed_at: string | null
           id: string
           last_error: string | null
-          member_event_id: number | null
           not_sent_reason: string | null
-          one_off_email_id: string | null
+          occurrence_id: string
           person_id: string
           provider_message_id: string | null
-          send_at: string
           sent_at: string | null
-          sent_body: string | null
-          sent_subject: string | null
           status: string
+          subject_override: string | null
           updated_at: string
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           attempts?: number
-          automatic_email_id?: string | null
+          automatic_email_id: string
+          body_override?: Json | null
           created_at?: string
+          due_on: string
           edited_at?: string | null
-          edited_body?: string | null
           edited_by?: string | null
-          edited_subject?: string | null
-          email_name: string
-          failed_at?: string | null
           id?: string
           last_error?: string | null
-          member_event_id?: number | null
           not_sent_reason?: string | null
-          one_off_email_id?: string | null
+          occurrence_id: string
           person_id: string
           provider_message_id?: string | null
-          send_at: string
           sent_at?: string | null
-          sent_body?: string | null
-          sent_subject?: string | null
           status?: string
+          subject_override?: string | null
           updated_at?: string
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           attempts?: number
-          automatic_email_id?: string | null
+          automatic_email_id?: string
+          body_override?: Json | null
           created_at?: string
+          due_on?: string
           edited_at?: string | null
-          edited_body?: string | null
           edited_by?: string | null
-          edited_subject?: string | null
-          email_name?: string
-          failed_at?: string | null
           id?: string
           last_error?: string | null
-          member_event_id?: number | null
           not_sent_reason?: string | null
-          one_off_email_id?: string | null
+          occurrence_id?: string
           person_id?: string
           provider_message_id?: string | null
-          send_at?: string
           sent_at?: string | null
-          sent_body?: string | null
-          sent_subject?: string | null
           status?: string
+          subject_override?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "email_sends_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_sends_automatic_email_id_fkey"
+            columns: ["automatic_email_id"]
+            isOneToOne: false
+            referencedRelation: "automatic_emails"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "email_sends_edited_by_fkey"
             columns: ["edited_by"]
@@ -171,10 +272,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "email_sends_member_event_id_fkey"
-            columns: ["member_event_id"]
+            foreignKeyName: "email_sends_occurrence_id_fkey"
+            columns: ["occurrence_id"]
             isOneToOne: false
-            referencedRelation: "member_events"
+            referencedRelation: "email_occurrences"
             referencedColumns: ["id"]
           },
           {
@@ -875,6 +976,98 @@ export type Database = {
         Args: { p_first_name: string; p_last_name: string }
         Returns: undefined
       }
+      approve_send: {
+        Args: { p_occurrence_id: string; p_person_id: string }
+        Returns: undefined
+      }
+      assert_in_outbox: {
+        Args: { p_occurrence_id: string; p_person_id: string }
+        Returns: undefined
+      }
+      automatic_email_due_on: {
+        Args: { p_amount: number; p_event_at: string; p_unit: string }
+        Returns: string
+      }
+      automatic_email_eligible: {
+        Args: { p_email_id: string }
+        Returns: {
+          email: string
+          full_name: string
+          person_id: string
+        }[]
+      }
+      automatic_email_matches: {
+        Args: { p_email_id: string; p_person_id: string }
+        Returns: boolean
+      }
+      create_automatic_email: { Args: never; Returns: string }
+      duplicate_automatic_email: { Args: { p_id: string }; Returns: string }
+      edit_send: {
+        Args: {
+          p_body: Json
+          p_occurrence_id: string
+          p_person_id: string
+          p_subject: string
+        }
+        Returns: undefined
+      }
+      email_deliveries: {
+        Args: never
+        Returns: {
+          body: Json
+          first_name: string | null
+          send_id: string
+          subject: string
+          to_email: string
+          unsubscribe_token: string
+        }[]
+      }
+      outbox_upcoming: {
+        Args: { p_days?: number }
+        Returns: {
+          automatic_email_id: string
+          due_on: string
+          edited: boolean
+          email: string
+          email_name: string
+          full_name: string
+          missed: boolean
+          occurrence_id: string
+          person_id: string
+          status: string
+          subject: string
+        }[]
+      }
+      prepare_due_sends: { Args: { p_today?: string }; Returns: number }
+      publish_automatic_email: { Args: { p_id: string }; Returns: string[] }
+      queue_occurrences: {
+        Args: {
+          p_context: Json
+          p_event_at: string
+          p_key: string
+          p_person_id: string
+          p_tag_id: string
+          p_triggers: string[]
+        }
+        Returns: undefined
+      }
+      record_send_result: {
+        Args: {
+          p_error: string | null
+          p_provider_message_id: string | null
+          p_send_id: string
+        }
+        Returns: undefined
+      }
+      restore_automatic_email: { Args: { p_id: string }; Returns: undefined }
+      save_automatic_email: {
+        Args: { p_id: string; p_patch: Json }
+        Returns: undefined
+      }
+      toronto_today: { Args: never; Returns: string }
+      trash_automatic_email: { Args: { p_id: string }; Returns: undefined }
+      unpublish_automatic_email: { Args: { p_id: string }; Returns: undefined }
+      validate_conditions: { Args: { p: Json }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

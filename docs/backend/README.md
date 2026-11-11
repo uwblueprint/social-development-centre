@@ -37,6 +37,7 @@ No backend work. When there's no connection, what's on screen stays readable; su
 
 ## Feature requirements
 - [Intake form](./intake-form.md) (public, no sign-in)
+- [Automatic emails](./automatic-emails.md) (storage, lifecycle, conditions, Outbox and the daily send)
 - [Settings](./settings.md) (your name and delete account are connected; the rest of the design has no backend yet)
 
 ## Support address
