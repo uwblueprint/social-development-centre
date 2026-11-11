@@ -35,8 +35,8 @@ const Root = styled(CheckboxPrimitive.Root)`
   box-shadow: inset 0 0 0 1px var(--checkbox-border);
   cursor: pointer;
   transition:
-    background-color var(--duration) var(--ease),
-    box-shadow var(--duration) var(--ease);
+    background-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
 
   &:hover:not([data-disabled]):not([data-readonly]) {
     --checkbox-border: var(--color-text-muted);
@@ -128,8 +128,20 @@ export type CheckboxProps = Omit<
 
 const LabelRow = styled.span`
   display: inline-flex;
-  align-items: center;
-  gap: var(--space-3);
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  line-height: var(--leading-ui);
+
+  /* Box centred on the first line of text: centred for one line, top-aligned for wrapped labels. */
+  & > button {
+    margin-top: calc((1lh - 20px) / 2);
+  }
+
+  /* Label's bottom margin is for stacked fields; here it would push the text off the box centre. */
+  & > label {
+    margin-bottom: 0;
+  }
 `;
 
 export function Checkbox({

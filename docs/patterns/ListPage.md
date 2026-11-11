@@ -117,4 +117,4 @@ Opportunity edit pages call `notFound()` for a missing id, which renders `[id]/n
 - Search results are announced politely through `ListPageHeader`'s (or `ListPageToolbar`'s) `results`, not by moving focus.
 - `ListEmptyState` is plain text plus one button with a leading or trailing icon and a verb label; the icon above the title is decorative.
 
-Motion: everything under the header animates in (`contentIn`: fade plus an 8px rise) when the page mounts after its loading state. The header stays put so the title never moves; `PageLoading` (aria-busy) doesn't animate.
+Motion: none. Content appears when it loads; nothing fades or rises in.

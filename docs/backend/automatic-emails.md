@@ -6,7 +6,7 @@ emails (PM, 9 Nov 2026). Design references: the "Automatic Emails
 Prototype" and the conditions prototype (Oct 2026).
 
 **Built:** storage, the draft / published / trash lifecycle, conditions, the Outbox, and the database
-half of the daily run (`supabase/migrations/20261028120000_automatic_emails.sql`).
+half of the daily run (`supabase/migrations/20261111000000_automatic_emails.sql`).
 **Also built:** the daily run route and the sender (see [Sending](#sending)).
 **Not built yet:** the unsubscribe page, review alerts and the admin UI (see [Next](#next)).
 
@@ -41,6 +41,22 @@ email_sends         only what's decided: approved or edited, sending, sent, not 
 - **Emails go out once a day** (PM, 27 Oct 2026: there is no "immediately"). Due dates are calendar
   dates in Waterloo Region (`due_on date`, compared to `toronto_today()`). A delay of 0 means
   "within a day": the next daily run.
+
+## What it replaced
+
+`20261023000000_member_events` (Member Directory, phase 2) had its own `email_sends`, built as one
+row per send created up front. This migration drops it, along with `email_send_changes`, its two
+triggers, and the unsubscribe step in `subscription_changed()` that cancelled waiting sends (the
+send-day check covers that now). `member_events`, notes and subscription history stay.
+
+The member page's views are rebuilt on the new tables with the same columns
+(`src/features/members/queries.ts` reads them):
+- `member_email_history`: every `email_sends` row. `pending` and `sending` show as `scheduled`, or
+  `waiting_for_review` while a review-mode send has no approval. `send_at` is 10:30 on `due_on`.
+- `member_timeline`: as before, with its email rows taken from `member_email_history`.
+
+Upcoming sends nobody has approved or edited have no row yet, so they aren't in the member's
+history; the Outbox lists them.
 
 ## Conditions
 

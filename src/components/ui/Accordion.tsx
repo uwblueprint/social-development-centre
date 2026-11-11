@@ -58,22 +58,17 @@ const Trigger = styled(AccordionPrimitive.Trigger)`
 `;
 
 /**
- * Plus that morphs into a minus: the horizontal bar always stays, the
- * vertical bar rotates 90deg and fades out when the item opens.
+ * Plus that becomes a minus: the horizontal bar always stays, the
+ * vertical bar disappears when the item opens (instant; the height reveal carries the motion).
  */
 const PlusMinus = styled.svg`
   flex-shrink: 0;
   color: var(--color-text-muted);
 
   rect:last-child {
-    transform-origin: 8px 8px;
-    transition:
-      transform var(--duration) var(--ease),
-      opacity var(--duration) var(--ease);
   }
 
   [data-state="open"] & rect:last-child {
-    transform: rotate(90deg);
     opacity: 0;
   }
 `;
@@ -84,10 +79,10 @@ export const AccordionContent = styled(AccordionPrimitive.Content)`
   color: var(--color-text-muted);
 
   &[data-state="open"] {
-    animation: ${openAnim} var(--duration) var(--ease);
+    animation: ${openAnim} var(--duration-slow) var(--ease-out);
   }
   &[data-state="closed"] {
-    animation: ${closeAnim} var(--duration) var(--ease);
+    animation: ${closeAnim} var(--duration) var(--ease-in);
   }
 
   & > div {

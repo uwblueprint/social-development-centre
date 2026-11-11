@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { renderDelivery, type Delivery } from "@/features/automatic-emails/render";
 import { createSender } from "@/features/automatic-emails/sender";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createSecretClient } from "@/lib/supabase/secret";
 
 // Vercel's Hobby limit. Sends left when time runs out stay ready and go in the next run.
 export const maxDuration = 60;
@@ -22,7 +22,11 @@ export async function GET(request: NextRequest) {
     return Response.json({ skipped: "Not 10 am in Toronto" });
   }
 
-  const supabase = createAdminClient();
+  const supabase = createSecretClient();
+  if (!supabase) {
+    console.error("[automatic-emails] SUPABASE_SECRET_KEY is not set");
+    return Response.json({ error: "Not configured" }, { status: 500 });
+  }
   const prepared = await supabase.rpc("prepare_due_sends");
   if (prepared.error) {
     console.error("[automatic-emails] prepare_due_sends failed:", prepared.error.message);

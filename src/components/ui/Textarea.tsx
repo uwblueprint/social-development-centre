@@ -23,9 +23,6 @@ const StyledTextarea = styled.textarea<{ $invalid?: boolean }>`
   font-size: var(--text-sm);
   line-height: 1.5;
   resize: vertical;
-  transition:
-    border-color var(--duration) var(--ease),
-    box-shadow var(--duration) var(--ease);
 
   &::placeholder {
     color: var(--color-text-muted);

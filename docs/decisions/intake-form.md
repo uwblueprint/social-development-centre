@@ -35,11 +35,11 @@ Envelope → the welcome letter → Your details → five questions, one per scr
 - **Skipping:** every question can be skipped. The button reads **Skip for now** while nothing is chosen and **Next** once something is. **Back** keeps what was entered.
 - **Progress:** a thin bar reading "Your details" then "Question n of 5".
 
-## 5. "Not interested" saves nothing (22 Oct 2026)
-- **Decision:** **Not interested** on the letter shows "No problem" with **Fill it in after all**, which opens the details step. Nothing is saved and nothing is recorded.
+## 5. "Not interested" doesn't submit (22 Oct 2026; analytics updated 27 Oct 2026)
+- **Decision:** **Not interested** on the letter shows "No problem" with **Fill it in after all**, which opens the details step. No submission is saved. Since 27 Oct, analytics records the welcome-page visit and that the person left via `not_interested`; its `answers` array is empty. If an email was already entered on this attempt, the visit can still be associated with that `key_id`.
 - **Why:** the form is public, so the same link simply works again. The earlier version had to sign people out here, because the login gate would otherwise have sent them straight back.
-- **It is not an unsubscribe.** The review that named it (decision 8) replaced an **Unsubscribe** link belonging to the sign-in-gated version, where there was a session to act on. Here there is neither a session nor anywhere to record the refusal, so the screen does not promise SDC will stop emailing, and the user guide says to reply to SDC's email instead.
-- **Not done:** SDC cannot see that someone chose it, and cannot suppress future invitations from it. Both need a backend (`docs/backend/intake-form.md`).
+- **It is not an unsubscribe.** The review that named it (decision 8) replaced an **Unsubscribe** link belonging to the sign-in-gated version, where there was a session to act on. Here there is no authenticated session; analytics records the choice but does not suppress future invitations. The screen does not promise SDC will stop emailing, and the user guide says to reply to SDC's email instead.
+- **Not done:** SDC cannot suppress future invitations from this choice; that needs a suppression list that the mailing-list campaign reads (`docs/backend/intake-form.md`).
 
 ## 6. One row per submission, keyed on a per-page-load id (22 Oct 2026)
 - **Decision:** each submission is one `intake_submissions` row, keyed on a `submissionId` the browser makes once per page load and resends on every retry, so a failed save that is retried updates the same row instead of adding a second.
@@ -72,3 +72,15 @@ Changes asked for in `#ride-for-refuge` after the letter went up, all applied:
 - Whether SDC needs a screen to read submissions, or the Supabase dashboard is enough for the pilot.
 - What stops automated submissions if the link is shared publicly (`docs/backend/intake-form.md`).
 - Whether a confirmation email is sent, and what it says.
+
+## 10. Intake form analytics (27 Oct 2026)
+- **Decision:** record a visit for each form step, including time on the step, answer timing, non-contact answers entered so far, and how the person left it. Do not collect a referrer: `"from"` is always `NULL`.
+- **Identity:** `person_id` is a random UUID per form attempt, not `public.people.id`. `key_id` is the normalized email after it is entered. `user_found` reports whether that email matches a row in `public.people`; it is `NULL` before an email is entered and does not verify identity.
+- **Privacy:** start tracking on the welcome letter, after the notice is visible. Contact fields are not copied into `answers`; free-text answers are stored as entered. The email is stored in `key_id`.
+
+## 11. Two member intake links and updated questions
+- **Decision:** serve the Ride for Refuge version at `/intake-form/ride-for-refuage` and the existing-member version at `/intake-form/sdc-members`. `/intake-form` redirects to the Ride for Refuge version. Both routes use the same flow and analytics; the existing-member version does not show the Ride for Refuge logo.
+- **Source tracking:** store the route slug in `intake_submissions.form_source` and in `page_visits."from"` for each visit. This replaces decision 10's initial `NULL`-only value; it is the form source, not an external referrer.
+- **Copy:** the Ride version thanks supporters of the 2026 Ride for Refuge and offers complimentary non-voting membership. The existing-member version thanks SDC members and asks how SDC can keep them informed, connected and engaged. Both retain the shared contact-details explanation and privacy notice.
+- **Questions:** use the nine supplied monthly-email topics, the four supplied connection options plus an optional Other response, the eight supplied locations, the five time-commitment choices, and the optional open response. Participants rank the topics by dragging them into order, with accessible move-up/move-down controls as an alternative. A participant may skip the entire ranking; once they begin, the full list is ranked 1–9.
+- **Storage:** completed submissions keep ranked topics as `{ "rank": number, "topic": label }` objects and record the route source. The forward migration `20261027000100_intake_form_variants.sql` updates the database writers and the permitted analytics source values.

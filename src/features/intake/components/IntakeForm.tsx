@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import Image from "next/image";
 import { keyframes, styled } from "next-yak";
 import { ArrowLeft, CircleAlert } from "lucide-react";
@@ -10,16 +10,32 @@ import { Icon } from "@/components/ui/Icon";
 import { Input } from "@/components/ui/Input";
 import { Progress } from "@/components/ui/Progress";
 import { RadioCard, RadioCardGroup } from "@/components/ui/RadioGroup";
+import { Select } from "@/components/ui/Select";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Textarea } from "@/components/ui/Textarea";
 import { celebrate } from "@/lib/celebrate";
-import { OUTSIDE, intakeCopy as copy, locationChoices, timeChoices, topicChoices, wayChoices } from "../copy";
+import {
+  intakeForms,
+  locationChoices,
+  timeChoices,
+  topicChoices,
+  wayChoices,
+  type IntakeFormSource,
+} from "../copy";
+import {
+  INTAKE_PAGE_KEYS,
+  type IntakePageKey,
+  type IntakePageVisitPayload,
+  type IntakeVisitAnswer,
+  type IntakeVisitExit,
+} from "../analytics";
 import { submitIntake } from "../actions";
 import { EMAIL_PATTERN, toSubmission } from "../submit";
 import { QUESTION_COUNT, emptyAnswers, type ContactField, type IntakeAnswers, type Step } from "../types";
 import { CheckCardGroup } from "./CheckCardGroup";
 import { Envelope } from "./Envelope";
 import { Goose } from "./Goose";
+import { TopicRanking } from "./TopicRanking";
 
 /*
  * The intake form as a doodled letter (prototype, 8 Oct 2026): a closed envelope opens into the welcome
@@ -30,6 +46,57 @@ import { Goose } from "./Goose";
 /** Steps that show the progress bar, in order. */
 const FLOW: Step[] = ["contact", "topics", "ways", "location", "time", "hopes"];
 const HEADING_ID = "intake-heading";
+
+interface VisitClock {
+  pageKey: IntakePageKey;
+  startedAt: number;
+  activeMs: number;
+  activeSince: number | null;
+  firstAnswerMs: number | null;
+  lastAnswerMs: number | null;
+}
+
+function isTrackedPage(step: Step): step is IntakePageKey {
+  return INTAKE_PAGE_KEYS.some((pageKey) => pageKey === step);
+}
+
+function answersForPage(
+  pageKey: IntakePageKey,
+  answers: IntakeAnswers,
+  submissionId: string,
+  source: IntakeFormSource,
+): IntakeVisitAnswer[] {
+  const submission = toSubmission(submissionId, source, answers);
+  const result: IntakeVisitAnswer[] = [];
+  const add = (field: string, value: string | string[]) => {
+    if (value.length > 0) result.push({ field, value });
+  };
+
+  if (pageKey === "topics") {
+    if (submission.topics.length > 0) result.push({ field: "topics", value: submission.topics });
+    add("topicsOther", submission.topicsOther);
+  } else if (pageKey === "ways") {
+    add("ways", submission.ways);
+    add("waysOther", submission.waysOther);
+  } else if (pageKey === "location") {
+    add("location", submission.location);
+  } else if (pageKey === "time") {
+    add("timeAvailable", submission.timeAvailable);
+  } else if (pageKey === "hopes") {
+    add("hopes", submission.hopes);
+  }
+
+  return result;
+}
+
+function isSkippedQuestion(step: Step, answers: IntakeAnswers): boolean {
+  return (
+    (step === "topics" && Object.values(answers.topicRanks).every((rank) => rank === null)) ||
+    (step === "ways" && answers.ways.length === 0) ||
+    (step === "location" && answers.location === "") ||
+    (step === "time" && answers.time === "")
+  );
+}
 
 const fadeUp = keyframes`
   from {
@@ -266,7 +333,10 @@ const Celebration = styled.div`
 `;
 
 /** Empty means "not answered yet"; the details step is the only one that must be filled in. */
-function contactErrorsIn(a: IntakeAnswers): Partial<Record<ContactField, string>> {
+function contactErrorsIn(
+  a: IntakeAnswers,
+  copy: (typeof intakeForms)[IntakeFormSource],
+): Partial<Record<ContactField, string>> {
   const errors: Partial<Record<ContactField, string>> = {};
   if (!a.firstName.trim()) errors.firstName = copy.errors.firstName;
   if (!a.lastName.trim()) errors.lastName = copy.errors.lastName;
@@ -276,16 +346,83 @@ function contactErrorsIn(a: IntakeAnswers): Partial<Record<ContactField, string>
   return errors;
 }
 
-export function IntakeForm() {
+export function IntakeForm({ source }: { source: IntakeFormSource }) {
+  const copy = intakeForms[source];
   const [step, setStep] = useState<Step>("envelope");
   const [answers, setAnswers] = useState<IntakeAnswers>(emptyAnswers);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [contactErrors, setContactErrors] = useState<Partial<Record<ContactField, string>>>({});
   // One id per page load, sent again on every retry so a repeated save is the same submission.
   const [submissionId] = useState(() => crypto.randomUUID());
+  const [personId] = useState(() => crypto.randomUUID());
+  const answersRef = useRef(answers);
+  const visitRef = useRef<VisitClock | null>(null);
   const firstRender = useRef(true);
 
-  const set = <K extends keyof IntakeAnswers>(key: K, value: IntakeAnswers[K]) => setAnswers((a) => ({ ...a, [key]: value }));
+  const sendPageVisit = useCallback((payload: IntakePageVisitPayload, useBeacon = false) => {
+    const body = JSON.stringify(payload);
+    if (useBeacon) {
+      const queued = navigator.sendBeacon("/api/intake/page-visits", new Blob([body], { type: "application/json" }));
+      if (!queued) console.error("Could not queue intake page visit");
+      return;
+    }
+
+    void fetch("/api/intake/page-visits", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body,
+      keepalive: true,
+    })
+      .then((response) => {
+        if (!response.ok) console.error("Could not record intake page visit:", response.status);
+      })
+      .catch((error: unknown) => console.error("Could not record intake page visit:", error));
+  }, []);
+
+  const finishPageVisit = useCallback((pageKey: IntakePageKey, leftVia: IntakeVisitExit, useBeacon = false) => {
+    const clock = visitRef.current;
+    if (!clock || clock.pageKey !== pageKey) return;
+    visitRef.current = null;
+
+    const endedAt = performance.now();
+    const totalMs = Math.max(0, Math.round(endedAt - clock.startedAt));
+    const activeMs = Math.min(
+      totalMs,
+      Math.max(0, Math.round(clock.activeMs + (clock.activeSince === null ? 0 : endedAt - clock.activeSince))),
+    );
+    const email = answersRef.current.email.trim().toLowerCase();
+    const payload: IntakePageVisitPayload = {
+      person_id: personId,
+      from: source,
+      key_id: EMAIL_PATTERN.test(email) ? email : null,
+      page_key: pageKey,
+      total_ms: totalMs,
+      active_ms: activeMs,
+      first_answer_ms: clock.firstAnswerMs,
+      last_answer_ms: clock.lastAnswerMs,
+      left_via: leftVia,
+      answers: answersForPage(pageKey, answersRef.current, submissionId, source),
+    };
+    sendPageVisit(payload, useBeacon);
+  }, [personId, sendPageVisit, source, submissionId]);
+
+  function moveTo(nextStep: Step, leftVia: IntakeVisitExit = "next") {
+    if (isTrackedPage(step)) finishPageVisit(step, leftVia);
+    setStep(nextStep);
+  }
+
+  const set = <K extends keyof IntakeAnswers>(key: K, value: IntakeAnswers[K]) => {
+    const nextAnswers = { ...answersRef.current, [key]: value };
+    answersRef.current = nextAnswers;
+    setAnswers(nextAnswers);
+
+    const clock = visitRef.current;
+    if (clock) {
+      const answerMs = Math.round(performance.now() - clock.startedAt);
+      clock.firstAnswerMs ??= answerMs;
+      clock.lastAnswerMs = answerMs;
+    }
+  };
 
   // Move focus to each step's heading so screen readers start there.
   useEffect(() => {
@@ -297,45 +434,94 @@ export function IntakeForm() {
     if (step === "done") celebrate();
   }, [step]);
 
+  useEffect(() => {
+    const currentStep = step;
+    if (!isTrackedPage(currentStep)) return;
+    const pageKey: IntakePageKey = currentStep;
+
+    function startClock() {
+      const startedAt = performance.now();
+      visitRef.current = {
+        pageKey,
+        startedAt,
+        activeMs: 0,
+        activeSince: document.visibilityState === "visible" ? startedAt : null,
+        firstAnswerMs: null,
+        lastAnswerMs: null,
+      };
+    }
+    startClock();
+
+    function onVisibilityChange() {
+      const clock = visitRef.current;
+      if (!clock || clock.pageKey !== pageKey) return;
+      const changedAt = performance.now();
+      if (document.visibilityState === "hidden" && clock.activeSince !== null) {
+        clock.activeMs += changedAt - clock.activeSince;
+        clock.activeSince = null;
+      } else if (document.visibilityState === "visible" && clock.activeSince === null) {
+        clock.activeSince = changedAt;
+      }
+    }
+
+    function onPageHide() {
+      finishPageVisit(pageKey, "exit", true);
+    }
+
+    function onPageShow(event: PageTransitionEvent) {
+      if (event.persisted && visitRef.current === null) startClock();
+    }
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("pagehide", onPageHide);
+    window.addEventListener("pageshow", onPageShow);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("pagehide", onPageHide);
+      window.removeEventListener("pageshow", onPageShow);
+    };
+  }, [finishPageVisit, step]);
+
   const index = FLOW.indexOf(step);
   const inFlow = index >= 0;
   const questionNumber = index; // contact is 0, topics is 1 … hopes is 5
 
   function previous() {
     setSaveError(null);
-    setStep(index > 0 ? FLOW[index - 1] : "welcome");
+    moveTo(index > 0 ? FLOW[index - 1] : "welcome", "back");
   }
 
   // The form's action: Next on every step but the last, which saves. A client action keeps `pending` for the SubmitButton.
   async function advance() {
-    if (step === "welcome") return setStep("contact");
+    if (step === "welcome") return moveTo("contact");
     if (step === "contact") {
       // The only required step: without these three there is nobody to attach the answers to.
-      const errors = contactErrorsIn(answers);
+      const errors = contactErrorsIn(answers, copy);
       setContactErrors(errors);
       if (Object.keys(errors).length > 0) return;
-      return setStep("topics");
+      return moveTo("topics");
     }
-    if (inFlow && step !== "hopes") return setStep(FLOW[index + 1]);
+    if (step === "topics") return moveTo(FLOW[index + 1], isSkippedQuestion(step, answers) ? "skip" : "next");
+    if (isTrackedPage(step) && step !== "hopes") return moveTo(FLOW[index + 1], isSkippedQuestion(step, answers) ? "skip" : "next");
     if (step !== "hopes") return;
 
     setSaveError(null);
     let result: { status: string; message?: string };
     try {
-      result = await submitIntake(toSubmission(submissionId, answers));
+      result = await submitIntake(toSubmission(submissionId, source, answers));
     } catch {
       result = { status: "error" };
     }
     if (result.status !== "success") return setSaveError(result.message ?? copy.submitFailed);
-    setStep("done");
+    moveTo("done", "submit");
   }
 
   function leave() {
-    setStep("left");
+    moveTo("left", "not_interested");
   }
 
   const empty =
-    (step === "topics" && answers.topics.length === 0) ||
+    (step === "topics" && Object.values(answers.topicRanks).every((rank) => rank === null)) ||
     (step === "ways" && answers.ways.length === 0) ||
     (step === "location" && answers.location === "") ||
     (step === "time" && answers.time === "");
@@ -363,7 +549,7 @@ export function IntakeForm() {
   if (step === "envelope") {
     return (
       <Page>
-        <Envelope copy={{ ...copy.envelope, letterTitle: copy.welcome.heading }} onOpened={() => setStep("welcome")} />
+        <Envelope copy={{ ...copy.envelope, letterTitle: copy.welcome.heading }} onOpened={() => moveTo("welcome")} />
       </Page>
     );
   }
@@ -373,7 +559,9 @@ export function IntakeForm() {
       <Sheet>
         <Logos>
           <Image src="/brand/sdc-logo-transparent.png" alt={copy.logos.sdc} width={800} height={628} loading="eager" />
-          <Image src="/brand/ride-for-refuge-logo.png" alt={copy.logos.rideForRefuge} width={568} height={456} loading="eager" />
+          {copy.showRideForRefugeLogo && (
+            <Image src="/brand/ride-for-refuge-logo.png" alt={copy.logos.rideForRefuge} width={568} height={456} loading="eager" />
+          )}
         </Logos>
 
         {inFlow && (
@@ -401,7 +589,7 @@ export function IntakeForm() {
             <Lead>{copy.left.body}</Lead>
             {/* Nothing was saved and the page is open to anyone, so the way back in is this button. */}
             <Actions>
-              <Button type="button" $size="lg" $variant="outline" onClick={() => setStep("contact")}>
+              <Button type="button" $size="lg" $variant="outline" onClick={() => moveTo("contact")}>
                 {copy.left.restart}
               </Button>
             </Actions>
@@ -495,15 +683,15 @@ export function IntakeForm() {
                   <Heading id={HEADING_ID} tabIndex={-1}>
                     {copy.topics.heading}
                   </Heading>
-                  <CheckCardGroup
-                    name="topics"
-                    labelledBy={HEADING_ID}
-                    options={topicChoices}
-                    value={answers.topics}
-                    onChange={(v) => set("topics", v)}
-                    otherValue={answers.topicsOther}
-                    onOtherChange={(v) => set("topicsOther", v)}
+                  <TopicRanking
+                    choices={topicChoices}
+                    answers={answers}
+                    hint={copy.topics.rankingHint}
                     otherLabel={copy.topics.otherLabel}
+                    onOrderChange={(orderedIds) => {
+                      set("topicRanks", Object.fromEntries(orderedIds.map((id, index) => [id, index + 1])));
+                    }}
+                    onOtherChange={(v) => set("topicsOther", v)}
                   />
                 </>
               )}
@@ -531,33 +719,18 @@ export function IntakeForm() {
                   <Heading id={HEADING_ID} tabIndex={-1}>
                     {copy.location.heading}
                   </Heading>
-                  <Choices
-                    name="location"
-                    aria-labelledby={HEADING_ID}
-                    value={answers.location}
-                    onValueChange={(v) => set("location", v)}
-                  >
-                    {locationChoices.map((c) => (
-                      <RadioCard key={c.id} value={c.id}>
-                        <CardText>{c.label}</CardText>
-                      </RadioCard>
-                    ))}
-                  </Choices>
-                  {answers.location === OUTSIDE && (
-                    <Field label={copy.location.outsideLabel}>
-                      {(props) => (
-                        <Input
-                          {...props}
-                          name="locationOther"
-                          value={answers.locationOther}
-                          maxLength={60}
-                          autoComplete="off"
-                          autoFocus
-                          onChange={(e) => set("locationOther", e.target.value)}
-                        />
-                      )}
-                    </Field>
-                  )}
+                  <Field label={copy.location.heading}>
+                    {(props) => (
+                      <Select
+                        {...props}
+                        name="location"
+                        options={locationChoices.map((choice) => ({ value: choice.id, label: choice.label }))}
+                        value={answers.location}
+                        placeholder="Select your location"
+                        onValueChange={(value) => set("location", value)}
+                      />
+                    )}
+                  </Field>
                 </>
               )}
 

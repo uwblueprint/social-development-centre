@@ -1,13 +1,9 @@
 "use client";
 
-import { keyframes, styled } from "next-yak";
+import { styled } from "next-yak";
+import { overlayMotion } from "./overlayMotion";
 import { HoverCard as HoverCardPrimitive } from "radix-ui";
 import type { ReactNode } from "react";
-
-const contentShow = keyframes`
-  from { opacity: 0; transform: translateY(4px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-`;
 
 const Content = styled(HoverCardPrimitive.Content)`
   z-index: var(--z-tooltip);
@@ -18,12 +14,12 @@ const Content = styled(HoverCardPrimitive.Content)`
   box-shadow: var(--shadow-md);
   padding: 14px 16px;
   line-height: var(--leading-body);
-  animation: ${contentShow} var(--duration) var(--ease);
-  transform-origin: var(--radix-hover-card-content-transform-origin);
 
   &:focus {
     outline: none;
   }
+
+  ${overlayMotion}
 `;
 
 const Arrow = styled(HoverCardPrimitive.Arrow)`

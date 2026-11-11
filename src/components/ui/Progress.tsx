@@ -17,7 +17,7 @@ const Indicator = styled(ProgressPrimitive.Indicator)`
   height: 100%;
   background: var(--color-primary);
   border-radius: var(--radius-full);
-  transition: transform var(--duration) var(--ease);
+  transition: transform var(--duration-slow) var(--ease-out);
 `;
 
 export function Progress({

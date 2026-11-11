@@ -11,9 +11,46 @@
 -- Outbox shows who matches now, and the daily run checks again before sending. Nothing is rescheduled when tags change or an
 -- email is edited, because nothing stored depends on the conditions.
 --
+-- This replaces the email sends from 20261023000000_member_events (its own email_sends, the change
+-- log and the unsubscribe step that cancelled waiting sends). member_events, notes and subscription
+-- history stay; member_email_history and member_timeline are rebuilt on the new tables below.
+--
 -- Emails go out once a day (PM, 27 Oct 2026: no "immediately"), so due dates are calendar dates in
 -- Waterloo Region, not times. Every email starts from an event; there are no recurring emails (PM,
 -- 9 Nov 2026).
+
+-- ---------- replaces the member_events email sends ----------
+
+drop view if exists public.member_timeline;
+drop view if exists public.member_email_history;
+drop table if exists public.email_send_changes;
+drop table if exists public.email_sends;
+drop function if exists public.email_send_changed();
+drop function if exists public.email_send_rules();
+
+-- Keeps the subscription history. The old version also cancelled waiting sends here; the daily run
+-- checks can_email() on send day instead.
+create or replace function public.subscription_changed()
+returns trigger
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  if old.unsubscribed_at is null and new.unsubscribed_at is not null then
+    insert into public.subscription_events (person_id, kind, detail, at)
+    values (new.id, 'unsubscribed', new.unsubscribe_reason, new.unsubscribed_at);
+  elsif old.unsubscribed_at is not null and new.unsubscribed_at is null then
+    insert into public.subscription_events (person_id, kind) values (new.id, 'resubscribed');
+  end if;
+
+  if old.bounced_at is null and new.bounced_at is not null then
+    insert into public.subscription_events (person_id, kind, detail, at)
+    values (new.id, 'bounced', new.bounce_detail, new.bounced_at);
+  elsif old.bounced_at is not null and new.bounced_at is null then
+    insert into public.subscription_events (person_id, kind) values (new.id, 'bounce_cleared');
+  end if;
+  return new;
+end;
+$$;
 
 -- ---------- automatic emails ----------
 
@@ -788,6 +825,49 @@ begin
   return 'deleted';
 end;
 $$;
+
+-- ---------- member page ----------
+
+-- The member page's email history and timeline (src/features/members/queries.ts), rebuilt on
+-- email_sends with the columns and statuses it already reads: pending and sending show as
+-- scheduled, or waiting_for_review while a review-mode send has no approval. Only sends with a row
+-- appear; upcoming ones nobody has touched are in the Outbox. send_at is the 10:30 run on due_on.
+create view public.member_email_history with (security_invoker = true) as
+  select s.id as send_id, s.person_id, e.name as email_name, s.automatic_email_id, null::uuid as one_off_email_id,
+    case o.trigger when 'refers' then 'referred_someone' when 'referral_joins' then 'referral_joined'
+      when 'tag_added' then 'tag_added' else 'joined' end as started_by,
+    t.name as started_by_tag, o.event_at as started_at,
+    case when s.status in ('sent', 'not_sent') then s.status
+         when (e.mode = 'review' or o.missed) and s.approved_at is null then 'waiting_for_review'
+         else 'scheduled' end as status,
+    s.not_sent_reason, (s.due_on + time '10:30') at time zone 'America/Toronto' as send_at, s.sent_at,
+    s.not_sent_reason = 'failed' as could_not_send,
+    coalesce(s.subject_override, e.subject) as subject, s.edited_at is not null as edited
+  from public.email_sends s
+  join public.automatic_emails e on e.id = s.automatic_email_id
+  join public.email_occurrences o on o.id = s.occurrence_id
+  left join public.tags t on t.id = (o.context ->> 'tag_id')::uuid;
+
+-- Everything that happened to one member: joins, referrals, tags added and removed, notes, emails
+-- and subscription changes. An email shows once, at its send date, with its current status.
+create view public.member_timeline with (security_invoker = true) as
+  select e.person_id, e.at, e.kind, e.tag_name, e.referral_id, null::uuid as note_id,
+    null::uuid as send_id, null::text as email_status, null::text as body, null::uuid as by_person_id,
+    false as edited
+  from public.member_events e
+  union all
+  select t.person_id, t.at, 'tag_removed', t.tag_name, null, null, null, null, null, t.by_person_id, false
+  from public.tag_events t where t.kind = 'removed'
+  union all
+  select n.person_id, n.created_at, 'note', null, null, n.id, null, null, n.body, n.created_by, n.updated_at is not null
+  from public.member_notes n where n.deleted_at is null
+  union all
+  select h.person_id, coalesce(h.sent_at, h.send_at), 'email', null, null, null, h.send_id, h.status,
+    h.email_name, null, h.edited
+  from public.member_email_history h
+  union all
+  select c.person_id, c.at, c.kind, null, null, null, null, null, c.detail, null, false
+  from public.subscription_events c;
 
 -- ---------- access ----------
 

@@ -28,7 +28,6 @@ export const ListRow = styled.button`
   cursor: pointer;
   text-align: left;
   color: var(--color-text);
-  transition: background-color var(--duration) var(--ease);
 
   &:hover {
     background: var(--color-bg-hover);

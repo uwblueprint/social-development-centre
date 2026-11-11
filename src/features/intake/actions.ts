@@ -3,7 +3,7 @@
 import type { ActionState } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
 import { intakeCopy } from "./copy";
-import { EMAIL_PATTERN, type IntakeSubmission } from "./submit";
+import { EMAIL_PATTERN, isIntakeFormSource, type IntakeSubmission } from "./submit";
 
 /**
  * Saves the intake form through `submit_intake`, which upserts one `intake_submissions` row keyed on
@@ -24,7 +24,7 @@ export async function submitIntake(submission: IntakeSubmission): Promise<Action
 
   // The flow validates these on the details step; reaching here invalid means the payload was built
   // some other way, so say which step to fix rather than blaming the connection.
-  if (!firstName || !lastName || !EMAIL_PATTERN.test(email)) {
+  if (!firstName || !lastName || !EMAIL_PATTERN.test(email) || !isIntakeFormSource(submission.formSource)) {
     return { status: "error", message: intakeCopy.submitInvalidDetails };
   }
 
@@ -34,6 +34,7 @@ export async function submitIntake(submission: IntakeSubmission): Promise<Action
     p_first_name: firstName,
     p_last_name: lastName,
     p_email: email,
+    p_form_source: submission.formSource,
     p_answers: {
       submittedAt: submission.submittedAt,
       topics: submission.topics,
@@ -41,7 +42,6 @@ export async function submitIntake(submission: IntakeSubmission): Promise<Action
       ways: submission.ways,
       waysOther: submission.waysOther,
       location: submission.location,
-      locationOther: submission.locationOther,
       timeAvailable: submission.timeAvailable,
       hopes: submission.hopes,
     },

@@ -47,7 +47,6 @@ const Thumb = styled(SliderPrimitive.Thumb)`
   background: var(--color-bg);
   border: 1px solid var(--color-border-strong);
   box-shadow: var(--shadow-sm);
-  transition: box-shadow var(--duration) var(--ease);
 
   &:hover {
     border-color: var(--color-primary);
@@ -135,9 +134,6 @@ const CompactInput = styled.input`
   font-size: var(--text-sm);
   line-height: var(--leading-ui);
   text-align: left;
-  transition:
-    border-color var(--duration) var(--ease),
-    box-shadow var(--duration) var(--ease);
 
   &::-webkit-outer-spin-button,
   &::-webkit-inner-spin-button {

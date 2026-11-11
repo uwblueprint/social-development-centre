@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { css, styled } from "next-yak";
+import { overlayMotion } from "./overlayMotion";
 import { Popover as PopoverPrimitive, Select as SelectPrimitive } from "radix-ui";
 import { Command } from "cmdk";
 import { Check, ChevronDown, Search } from "lucide-react";
@@ -56,9 +57,6 @@ const triggerStyles = css`
   text-align: left;
   appearance: none;
   cursor: pointer;
-  transition:
-    border-color var(--duration) var(--ease),
-    box-shadow var(--duration) var(--ease);
 
   &[data-placeholder] {
     color: var(--color-text-muted);
@@ -167,6 +165,8 @@ const Content = styled(SelectPrimitive.Content)`
   box-shadow: var(--shadow-md);
   border: 1px solid var(--color-border);
   z-index: var(--z-popover);
+
+  ${overlayMotion}
 `;
 
 const Viewport = styled(SelectPrimitive.Viewport)`
@@ -179,7 +179,7 @@ const Item = styled(SelectPrimitive.Item)`
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  height: 34px;
+  height: var(--menu-row-height);
   padding: 0 var(--space-2);
   border-radius: var(--radius-sm);
   font-size: var(--text-sm);
@@ -305,6 +305,8 @@ const ComboContent = styled(PopoverPrimitive.Content)`
   &:focus {
     outline: none;
   }
+
+  ${overlayMotion}
 `;
 
 const SearchRow = styled.div`
@@ -333,7 +335,8 @@ const SearchInput = styled(Command.Input)`
 
 const List = styled(Command.List)`
   overflow-y: auto;
-  max-height: 260px;
+  /* 7.5 rows: the half row shows there is more to scroll to. */
+  max-height: calc(var(--menu-row-height) * 7.5);
 `;
 
 const EmptyState = styled(Command.Empty)`
@@ -348,7 +351,7 @@ const ComboItem = styled(Command.Item)`
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  height: 34px;
+  height: var(--menu-row-height);
   padding: 0 var(--space-2);
   border-radius: var(--radius-sm);
   font-size: var(--text-sm);

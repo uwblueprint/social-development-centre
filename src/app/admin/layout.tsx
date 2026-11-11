@@ -8,11 +8,10 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
-  const user = await getCurrentAdmin();
-  if (!user) redirect("/login");
+  if (!(await getCurrentAdmin())) redirect("/login/admin");
 
   return (
-    <AdminShell user={user}>
+    <AdminShell>
       {children}
     </AdminShell>
   );
