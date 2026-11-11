@@ -77,6 +77,11 @@ const FilterSlot = styled.div`
   min-width: 0;
 `;
 
+/* Add filter sits in the next grid cell, level with the fields rather than their labels. */
+const AddFilterCell = styled.div`
+  align-self: end;
+`;
+
 const RemoveFilter = styled(Button)`
   &&& {
     position: absolute;
@@ -255,7 +260,9 @@ function Directory() {
   const [filters, setFilters] = React.useState<Filters>(noFilters);
   /** The filters on screen, in the order they were added. One can be here with nothing entered yet. */
   const [added, setAdded] = React.useState<FilterKey[]>([]);
-  const filterButton = React.useRef<HTMLButtonElement>(null);
+  /** The filter row is showing. Hiding it keeps the filters applied; the Filter button's count shows them. */
+  const [filterOpen, setFilterOpen] = React.useState(false);
+  const addFilterButton = React.useRef<HTMLButtonElement>(null);
   const filterPanel = React.useRef<HTMLDivElement>(null);
   const justAdded = React.useRef<FilterKey | null>(null);
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
@@ -334,14 +341,14 @@ function Directory() {
   function removeFilter(key: FilterKey) {
     setAdded((list) => list.filter((k) => k !== key));
     setFilter(key, noFilters[key]);
-    filterButton.current?.focus();
+    addFilterButton.current?.focus();
   }
 
   function clearFilters() {
     setAdded([]);
     setFilters(noFilters);
     setSelected(new Set());
-    filterButton.current?.focus();
+    addFilterButton.current?.focus();
   }
 
   const filterControl: Record<FilterKey, React.ReactNode> = {
@@ -493,32 +500,22 @@ function Directory() {
       />
 
       <Tools>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button ref={filterButton} type="button" $variant={added.length ? "outline" : "secondary"}>
-              <Icon icon={ListFilter} size={16} />
-              Filter
-              {filterCount(filters) > 0 && <Badge $variant="outline">{filterCount(filters)}</Badge>}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="start"
-            onCloseAutoFocus={(e) => {
-              if (!justAdded.current) return;
-              /* Go straight to the new filter's control, so one click is enough to start typing. */
-              e.preventDefault();
-              const control = filterPanel.current?.querySelector<HTMLElement>(`[data-filter="${justAdded.current}"] :is(input:not([type="hidden"]), [role="combobox"])`);
-              control?.focus();
-              justAdded.current = null;
-            }}
-          >
-            {(Object.keys(filterLabels) as FilterKey[]).map((key) => (
-              <DropdownMenuCheckboxItem key={key} checked={added.includes(key)} onCheckedChange={(on) => (on ? addFilter(key) : removeFilter(key))}>
-                {filterLabels[key]}
-              </DropdownMenuCheckboxItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <Button
+          type="button"
+          $variant={filterOpen || filterCount(filters) ? "outline" : "secondary"}
+          aria-expanded={filterOpen}
+          aria-controls="member-filters"
+          onClick={() => {
+            const opening = !filterOpen;
+            setFilterOpen(opening);
+            /* Opening goes straight to Add filter, so the next Enter or click opens the list. */
+            if (opening) requestAnimationFrame(() => addFilterButton.current?.focus());
+          }}
+        >
+          <Icon icon={ListFilter} size={16} />
+          Filter
+          {filterCount(filters) > 0 && <Badge $variant="outline">{filterCount(filters)}</Badge>}
+        </Button>
         <SearchField
           aria-label="Search by name, email or tag"
           placeholder="Search name, email or tag"
@@ -531,8 +528,8 @@ function Directory() {
         />
       </Tools>
 
-      {added.length > 0 && (
-        <FilterPanel ref={filterPanel} role="group" aria-label="Filters">
+      {filterOpen && (
+        <FilterPanel id="member-filters" ref={filterPanel} role="group" aria-label="Filters">
           {added.map((key) => (
             <FilterSlot key={key} data-filter={key}>
               {filterControl[key]}
@@ -541,6 +538,33 @@ function Directory() {
               </RemoveFilter>
             </FilterSlot>
           ))}
+          <AddFilterCell>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button ref={addFilterButton} type="button" $variant="secondary">
+                  <Icon icon={Plus} size={16} />
+                  Add filter
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="start"
+                onCloseAutoFocus={(e) => {
+                  if (!justAdded.current) return;
+                  /* Go straight to the new filter's control, so one click is enough to start typing. */
+                  e.preventDefault();
+                  const control = filterPanel.current?.querySelector<HTMLElement>(`[data-filter="${justAdded.current}"] :is(input:not([type="hidden"]), [role="combobox"])`);
+                  control?.focus();
+                  justAdded.current = null;
+                }}
+              >
+                {(Object.keys(filterLabels) as FilterKey[]).map((key) => (
+                  <DropdownMenuCheckboxItem key={key} checked={added.includes(key)} onCheckedChange={(on) => (on ? addFilter(key) : removeFilter(key))}>
+                    {filterLabels[key]}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </AddFilterCell>
         </FilterPanel>
       )}
 
