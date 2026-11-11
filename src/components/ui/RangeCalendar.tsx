@@ -425,7 +425,6 @@ export function RangeCalendar({ mode, value, onValueChange, "aria-label": ariaLa
     showDate(date);
   }
   const activeField: FieldName = draft?.field ?? (mode === "between" && rawFrom && !rawTo ? "end" : "start");
-  // Where the caret sat after the last click on an already-focused input, so a double-click can put it back.
   function inputProps(field: FieldName, d: Date | undefined, name: string) {
     return {
       "data-active": activeField === field,
@@ -442,10 +441,7 @@ export function RangeCalendar({ mode, value, onValueChange, "aria-label": ariaLa
       },
       onMouseDown: (e: React.MouseEvent<HTMLInputElement>) => {
         const input = e.currentTarget;
-        if (document.activeElement === input) {
-          delete input.dataset.caret; // Already focused: the browser places the caret.
-          return;
-        }
+        if (document.activeElement === input) return; // Already focused: the browser places the caret.
         // First click: focus and select everything, so typing replaces the date.
         e.preventDefault();
         input.focus();
@@ -561,7 +557,7 @@ export function RangeCalendar({ mode, value, onValueChange, "aria-label": ariaLa
                     const left = i > 0 && inBand(days[w * 7 + i - 1]);
                     const right = i < 6 && inBand(days[w * 7 + i + 1]);
                     const solid = isSolid(date);
-                                    const isToday = date.getTime() === today.getTime();
+                    const isToday = date.getTime() === today.getTime();
                     return (
                       <Cell
                         key={i}

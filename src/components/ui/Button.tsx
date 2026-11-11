@@ -97,9 +97,6 @@ export const Button = styled.button<{ $variant?: Variant; $size?: Size }>`
     `}
 
 
-  &:active:not(:disabled):not([aria-disabled="true"]) {
-  }
-
   &:focus-visible {
     outline: none;
     box-shadow: var(--focus-ring);

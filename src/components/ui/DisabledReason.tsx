@@ -5,9 +5,9 @@ import { styled } from "next-yak";
 import { Lock } from "lucide-react";
 import { Button } from "./Button";
 import { Icon } from "./Icon";
+import { Tooltip } from "./Tooltip";
 
 type ButtonProps = React.ComponentProps<typeof Button>;
-import { Tooltip } from "./Tooltip";
 
 /*
  * Every disabled control should explain why it is disabled.
