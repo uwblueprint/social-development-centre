@@ -1,6 +1,6 @@
 # Member directory: what the design needs from the backend
 
-Design screens: `src/app/design/member-directory/` (demo data in `data.ts`; the `Member` type there is the
+Design screens: `src/app/design/(admin)/member-directory/` (demo data in `data.ts`; the `Member` type there is the
 contract the screens read). Product context: the Member Directory PRD in Notion, and the Oct 23 client meeting
 notes on it. Existing schema: `docs/backend/directory.md` (PR #40).
 
