@@ -1,9 +1,9 @@
 # Referrals: backend
 
-A member refers a friend from their emails. `/design/referrals` is the page on demo data (`src/app/design/referrals/`); the real page replaces `/refer/[token]` from #47. Copy is placeholder (`copy.ts`) until Gaurav signs it off.
+A member refers a friend from their emails. `/design/referrals` is the page on demo data (`src/app/design/referrals/`); the real page will live at `/refer/[token]`. Copy is placeholder (`copy.ts`) until Gaurav signs it off.
 
 ## Flow
-1. Every member email's footer has a **Refer a friend** button: `/refer/<token>`, where `token` is that email's link token (`email_links`, #47). The token says who is referring and from which email; no sign-in.
+1. Every member email's footer has a **Refer a friend** button: `/refer/<token>`, where `token` is the member's `people.unsubscribe_token` (the same person token the Unsubscribe link uses; #52's footer adds this link). The token says who is referring; no sign-in. We chose the person token over per-email tokens (closed #47): simpler, and which email someone acted from isn't needed.
 2. The member enters the friend's name and email and picks **Email them for me** or **I'll send it myself**.
 3. Each referral gets its own friend link, `/r/<referral token>`. It goes in our email, or in the message the member copies.
 4. The friend opens it: we log it and send them to the intake form with the referral attached.
@@ -19,9 +19,9 @@ A member refers a friend from their emails. `/design/referrals` is the page on d
 - **Rate limit:** at most N referral emails per referrer per day (N to decide), since the page sends email to any address.
 
 ## Needed
-### Database (new migration; #47 is already applied to sdc-dev, so don't edit it)
+### Database (new migration)
 - `referrals`: add `token uuid unique` (the friend link), `status` (`pending`, `already_member`, `completed`), `emailed_at timestamptz` (null = we never emailed), `completed_at`, `completed_by_submission` (the intake submission that completed it).
-- `refer_friend(p_link_token, p_full_name, p_email, p_send_email bool)` replaces `refer_by_link` (in #47 the friend filled the form in; now the member does). Callable without signing in: the link token is the proof. Validates, applies every rule above, and returns one of:
+- `refer_friend(p_token, p_full_name, p_email, p_send_email bool)`, where `p_token` is the referrer's person token. Callable without signing in: the token is the proof, so the rate limit and one-email rule matter. Only current members can refer. Validates, applies every rule above, and returns one of:
   - `{ status: 'emailed', friend_name }`: we will send the one email (queue it, don't send inline)
   - `{ status: 'message', friend_name, link, referred_on? }`
   - field errors for a bad name or email, or the referrer's own address
@@ -38,5 +38,6 @@ A member refers a friend from their emails. `/design/referrals` is the page on d
 - **Refer a friend** button in every member email footer, next to unsubscribe.
 
 ## Open
+- A way to rotate a member's person token if one leaks (it's in every email and never changes).
 - N for the daily limit.
 - Whether "already a member" referrals show anywhere for staff (member timeline?).
