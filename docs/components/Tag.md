@@ -1,6 +1,6 @@
 # Tag
 
-A small pill with one look everywhere (grey fill, hairline border, small text), shared with the pills in `TagCombobox`. A static label (`Tag`), a togglable filter chip (`SelectableTag`), or a removable selection chip (`RemovableTag`).
+A small pill with one look everywhere (grey fill, no border, small text), shared with the pills in `TagCombobox`. A static label (`Tag`), a togglable filter chip (`SelectableTag`), or a removable selection chip (`RemovableTag`).
 
 ## Use when / Don't use when
 - `Tag`: a static, non-interactive label (status, category).

@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { keyframes, styled } from "next-yak";
+import { styled } from "next-yak";
+import { overlayMotion } from "./overlayMotion";
 import { Popover as PopoverPrimitive } from "radix-ui";
 import { X, type LucideIcon } from "lucide-react";
 import { Icon } from "./Icon";
@@ -131,7 +132,7 @@ const Box = styled.div`
   align-items: center;
   gap: var(--space-1);
   width: 100%;
-  min-height: 40px;
+  min-height: var(--control-height);
   padding: var(--space-1);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
@@ -236,14 +237,14 @@ const ChipText = styled.span`
   overflow-wrap: anywhere;
 `;
 
-/* Pointer-only: keyboard users remove tags with Backspace. */
+/* Pointer-only: keyboard users remove tags with Backspace. 24px is the WCAG 2.2 AA minimum target. */
 const RemoveButton = styled.span`
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: var(--space-5);
+  height: var(--space-5);
   border-radius: var(--radius-sm);
   color: var(--color-text-muted);
   cursor: pointer;
@@ -259,7 +260,7 @@ const Draft = styled.input`
   field-sizing: content;
   flex: 0 0 auto;
   min-width: 2ch;
-  height: 28px;
+  height: var(--pill-height);
   padding: 0 var(--space-1);
   border: 0;
   outline: none;
@@ -283,32 +284,6 @@ const Draft = styled.input`
   }
 `;
 
-/*
- * Overlay enter/exit: a short fade plus a 4px nudge toward the trigger side, vertical only. The old
- * scale + transform-origin (a Radix var that isn't measured on the first frame) and the horizontal
- * slide made the panel twitch sideways as Radix settled its position. Exit is a plain fade. Only the
- * inner content animates, never Radix's positioned wrapper.
- */
-const fadeIn = keyframes`
-  from { opacity: 0; }
-  to { opacity: 1; }
-`;
-
-const fadeInBelow = keyframes`
-  from { opacity: 0; transform: translateY(calc(var(--space-1) * -1)); }
-  to { opacity: 1; transform: translateY(0); }
-`;
-
-const fadeInAbove = keyframes`
-  from { opacity: 0; transform: translateY(var(--space-1)); }
-  to { opacity: 1; transform: translateY(0); }
-`;
-
-const fadeOut = keyframes`
-  from { opacity: 1; }
-  to { opacity: 0; }
-`;
-
 const List = styled(PopoverPrimitive.Content)`
   z-index: var(--z-popover);
   width: var(--radix-popover-trigger-width);
@@ -322,21 +297,7 @@ const List = styled(PopoverPrimitive.Content)`
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
 
-  &[data-state="open"] {
-    animation: ${fadeIn} var(--duration) var(--ease-out);
-  }
-
-  &[data-state="open"][data-side="bottom"] {
-    animation: ${fadeInBelow} var(--duration) var(--ease-out);
-  }
-
-  &[data-state="open"][data-side="top"] {
-    animation: ${fadeInAbove} var(--duration) var(--ease-out);
-  }
-
-  &[data-state="closed"] {
-    animation: ${fadeOut} var(--duration-fast) var(--ease-in) forwards;
-  }
+  ${overlayMotion}
 `;
 
 const Option = styled.div`
@@ -561,6 +522,7 @@ export function TagCombobox({
 
   /** Removes the pill with this visual key, keeping the field where it was relative to the others. */
   function removeKey(key: string) {
+    if (disabled) return;
     const index = visual.findIndex((x) => x.key === key);
     const extra = visual[index]?.extra;
     if (extra) extra.onRemove();
@@ -613,7 +575,7 @@ export function TagCombobox({
   }
 
   function openMenu(key: string, x: number, y: number) {
-    if (!pillActions || pillActions(key).length === 0) return false;
+    if (disabled || !pillActions || pillActions(key).length === 0) return false;
     setOpen(false);
     setMenu({ key, x, y });
     return true;
@@ -764,6 +726,8 @@ export function TagCombobox({
             placeholder={value.length || extraPills.length ? undefined : placeholder}
             disabled={disabled}
             onChange={(event) => {
+              // Typing ends the fast-delete run: the next Backspace selects before it removes again.
+              lastDelete.current = -Infinity;
               changeQuery(event.target.value);
               setActive(0);
               setPending(null);
@@ -873,12 +837,12 @@ export function TagCombobox({
               >
                 {leadingOption.label}
               </Option>
-              {matches.length > 0 && <Separator role="separator" />}
+              {matches.length > 0 && <Separator aria-hidden />}
             </>
           )}
           {mode && matches.length > 0 && <Heading role="presentation">{mode.heading}</Heading>}
           {matches.length === 0 ? (
-            leadingOption ? null : <Empty>{query.trim() ? copy.noMatches(mode ? mode.filter.trim() || query.trim() : query.trim()) : copy.allAdded}</Empty>
+            leadingOption ? null : <Empty role="option" aria-disabled="true" aria-selected="false">{query.trim() ? copy.noMatches(mode ? mode.filter.trim() || query.trim() : query.trim()) : copy.allAdded}</Empty>
           ) : (
             matches.map((o, n) => (
               <Option
@@ -929,8 +893,10 @@ export function TagCombobox({
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
-      <VisuallyHidden aria-live="polite" key={announcement.id}>
+      {/* Always mounted: screen readers skip live regions that appear with their text already in them. */}
+      <VisuallyHidden aria-live="polite">
         {announcement.text}
+        {announcement.id % 2 ? "\u00a0" : ""}
       </VisuallyHidden>
     </PopoverPrimitive.Root>
   );
