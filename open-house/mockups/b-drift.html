@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Potluck keynote, version B: drift</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f3f3ee;
+    --ink: #1a1915;
+    --quiet: #a9a79e;
+    --orange: #ff6b3d;
+    --yellow: #ffd23f;
+    --green: #7bd389;
+    --blue: #6fa8ff;
+    --lilac: #c9b6ff;
+    --slow: cubic-bezier(0.37, 0.31, 0, 1);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); }
+  body { font-family: "Instrument Sans", system-ui, sans-serif; color: var(--ink); }
+  #stage { position: fixed; left: 50%; top: 50%; width: 1920px; height: 1080px; transform-origin: center; }
+  .slide { position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity 0.6s var(--slow); background: var(--bg); }
+  .slide.on { opacity: 1; }
+
+  .word { position: absolute; left: 0; right: 0; text-align: center; font-weight: 400; letter-spacing: -0.045em; line-height: 1; }
+
+  /* outer element travels; inner element drifts */
+  .obj { position: absolute; transition: left 2.2s var(--slow), top 2.2s var(--slow), opacity 1.4s var(--slow), transform 2.2s var(--slow), width 2.2s var(--slow), height 2.2s var(--slow), border-radius 2.2s var(--slow), filter 3s var(--slow); }
+  .obj > i { display: block; width: 100%; height: 100%; border-radius: inherit; background: var(--bg); animation: drift var(--t, 7s) ease-in-out var(--dl, 0s) infinite alternate; }
+  @keyframes drift { from { transform: translate3d(0, -12px, 0); } to { transform: translate3d(0, 12px, 0); } }
+  .glow { position: absolute; left: 510px; top: 90px; width: 900px; height: 900px; border-radius: 50%; background: radial-gradient(circle, rgba(255, 128, 64, 0.55), rgba(255, 128, 64, 0) 66%); transition: opacity 7s var(--slow); }
+  .timer { position: absolute; left: 0; right: 0; top: 830px; text-align: center; font-size: 190px; letter-spacing: -0.05em; font-weight: 400; font-variant-numeric: tabular-nums; }
+  @keyframes rise { from { opacity: 0; transform: translateY(50px); } to { opacity: 1; transform: none; } }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="slide" id="s1"></div>
+  <div class="slide" id="s2"></div>
+  <div class="slide" id="s3"></div>
+  <div class="slide" id="s4"></div>
+</div>
+<script>
+const stage = document.getElementById("stage");
+const slides = [...document.querySelectorAll(".slide")];
+const fit = () => { stage.style.transform = `translate(-50%, -50%) scale(${Math.min(innerWidth / 1920, innerHeight / 1080)})`; };
+addEventListener("resize", fit); fit();
+
+const PAL = ["var(--orange)", "var(--yellow)", "var(--green)", "var(--blue)", "var(--lilac)"];
+const timers = [];
+const later = (fn, ms) => timers.push(setTimeout(fn, ms));
+const every = (fn, ms) => timers.push(setInterval(fn, ms));
+const rnd = (a, b) => a + Math.random() * (b - a);
+function obj(parent, { x, y, w, h = w, bg, r = "50%", z }) {
+  const o = document.createElement("div");
+  o.className = "obj";
+  Object.assign(o.style, { left: x + "px", top: y + "px", width: w + "px", height: h + "px", borderRadius: r });
+  o.style.setProperty("--bg", bg);
+  if (z) o.style.zIndex = z;
+  const i = document.createElement("i");
+  i.style.setProperty("--t", rnd(5, 9) + "s"); i.style.setProperty("--dl", -rnd(0, 6) + "s");
+  o.appendChild(i); parent.appendChild(o);
+  return o;
+}
+const reflow = (el) => el.offsetWidth;
+
+/* 1. A hundred people at a time: small gifts drift in and settle on a line */
+function build1(s) {
+  const line = document.createElement("div");
+  Object.assign(line.style, { position: "absolute", left: "260px", top: "820px", width: "1400px", height: "3px", background: "var(--ink)", transformOrigin: "left", transform: "scaleX(0)", transition: "transform 1.6s var(--slow)" });
+  s.appendChild(line); reflow(line); line.style.transform = "scaleX(1)";
+  const N = 12;
+  for (let i = 0; i < N; i++) {
+    const big = i % 4 === 1;
+    const w = big ? 128 : 84;
+    const o = obj(s, { x: rnd(160, 1700), y: rnd(-60, 520), w, bg: PAL[i % PAL.length] });
+    o.style.opacity = 0; reflow(o); o.style.opacity = 1;
+    const slot = 280 + i * (1360 / (N - 1)) - w / 2;
+    later(() => {
+      o.style.left = slot + "px"; o.style.top = 820 - w / 2 - 2 + "px";
+      o.style.height = w / 2 + "px"; o.style.borderRadius = "999px 999px 0 0"; o.style.top = 820 - w / 2 + "px";
+    }, 1400 + i * 120);
+  }
+}
+
+/* 2. Stephen, warm for a moment, then quiet */
+function build2(s) {
+  const glow = document.createElement("div"); glow.className = "glow"; s.appendChild(glow);
+  const word = document.createElement("div"); word.className = "word"; word.textContent = "Stephen";
+  Object.assign(word.style, { top: "360px", fontSize: "300px", transition: "color 7s var(--slow)", animation: "rise 1.6s var(--slow) both" });
+  s.appendChild(word);
+  const gift = obj(s, { x: 1160, y: -160, w: 130, bg: "var(--yellow)" });
+  gift.firstChild.style.display = "grid"; gift.firstChild.style.placeItems = "center"; gift.firstChild.style.fontSize = "40px"; gift.firstChild.textContent = "$50";
+  later(() => { gift.style.top = "430px"; gift.style.left = "1010px"; }, 500);
+  later(() => { gift.style.opacity = 0; gift.style.transform = "scale(0.3)"; }, 2600);
+  later(() => { glow.style.opacity = 0; word.style.color = "var(--quiet)"; }, 3400);
+}
+
+/* 3. Times a hundred, ten minutes to call someone */
+function build3(s) {
+  const cols = 10, pitch = 74, left = (1920 - cols * pitch) / 2 + 20, top = 90;
+  const dots = [];
+  for (let i = 0; i < 100; i++) {
+    const o = obj(s, { x: left + (i % cols) * pitch + rnd(-8, 8), y: top + Math.floor(i / cols) * pitch + rnd(-8, 8), w: 38, bg: PAL[(i * 3 + Math.floor(i / 10)) % PAL.length] });
+    o.style.opacity = 0; reflow(o);
+    later(() => { o.style.opacity = 1; }, 100 + i * 16);
+    dots.push(o);
+  }
+  const t = document.createElement("div"); t.className = "timer"; t.textContent = "10:00"; s.appendChild(t);
+  let secs = 600;
+  later(() => every(() => { secs--; t.textContent = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`; }, 1000), 1800);
+  const order = dots.map((_, i) => i).sort(() => Math.random() - 0.5);
+  let n = 0;
+  later(() => every(() => { const d = dots[order[n++]]; if (d) { d.style.opacity = 0.12; d.style.filter = "grayscale(1)"; } }, 480), 2400);
+}
+
+/* 4. The name, with the o as a dish */
+function build4(s) {
+  const word = document.createElement("div"); word.className = "word";
+  Object.assign(word.style, { top: "300px", fontSize: "430px", animation: "rise 1.8s var(--slow) both" });
+  word.innerHTML = 'P<span id="dish" style="display:inline-block;width:.6em;height:.6em;margin:0 .05em;border-radius:50%;background:var(--orange);vertical-align:-0.02em;animation:drift 5s ease-in-out infinite alternate"></span>tluck';
+  s.appendChild(word);
+  const spots = [[150, 120, 120], [1560, 160, 90], [300, 760, 70], [1480, 800, 130], [820, 90, 60], [1130, 900, 80], [90, 470, 56], [1740, 520, 70]];
+  spots.forEach(([x, y, w], i) => {
+    const o = obj(s, { x, y, w, h: w / 2, bg: PAL[(i + 2) % PAL.length], r: "999px 999px 0 0" });
+    o.firstChild.style.setProperty("--t", rnd(6, 11) + "s");
+    o.style.opacity = 0; o.style.transform = "translateY(40px)"; reflow(o);
+    later(() => { o.style.opacity = 1; o.style.transform = "none"; }, 600 + i * 160);
+  });
+}
+
+const builders = [build1, build2, build3, build4];
+let cur = -1;
+function go(i) {
+  i = Math.max(0, Math.min(builders.length - 1, i));
+  timers.splice(0).forEach((t) => { clearTimeout(t); clearInterval(t); });
+  slides.forEach((s, j) => s.classList.toggle("on", j === i));
+  slides[i].innerHTML = "";
+  cur = i;
+  builders[i](slides[i]);
+  history.replaceState(null, "", "#" + (i + 1));
+}
+addEventListener("keydown", (e) => { if (["ArrowRight", " ", "PageDown"].includes(e.key)) go(cur + 1); if (["ArrowLeft", "PageUp"].includes(e.key)) go(cur - 1); if (e.key.toLowerCase() === "r") go(cur); });
+addEventListener("click", () => go(cur + 1));
+addEventListener("hashchange", () => { const n = (parseInt(location.hash.slice(1)) || 1) - 1; if (n !== cur) go(n); });
+go((parseInt(location.hash.slice(1)) || 1) - 1);
+</script>
+</body>
+</html>
