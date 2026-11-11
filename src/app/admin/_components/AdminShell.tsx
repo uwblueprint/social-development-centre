@@ -2,7 +2,7 @@
 
 import { OfflineWatcher } from "@/app/_components/OfflineWatcher";
 import type { ReactNode } from "react";
-import { UserCog, UsersRound } from "lucide-react";
+import { Settings, UserCog, UsersRound } from "lucide-react";
 import { AppToastProvider } from "@/components/ui/Toast";
 import { SidebarLayout, type SidebarNavItem } from "@/components/patterns/Sidebar";
 import type { AdminSection } from "../_data/types";
@@ -12,6 +12,7 @@ import { signOut } from "@/features/auth/actions";
 const sections: { key: AdminSection; label: string; description: string; icon: SidebarNavItem["icon"] }[] = [
   { key: "members", label: "Members", description: "People in SDC's community who can sign in to the members' area.", icon: UsersRound },
   { key: "admins", label: "Admins", description: "Who can sign in to the admin portal.", icon: UserCog },
+  { key: "settings", label: "Settings", description: "Your name, and deleting your account.", icon: Settings },
 ];
 
 /** No section shows a count badge yet (owner decision 10); a count needs `count` plus a `countLabel` that explains it. */

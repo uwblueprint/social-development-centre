@@ -3,7 +3,7 @@
 Decisions behind the Admins page (`/admin/admins`). Sign-in decisions are in [../auth.md](../auth.md#decisions).
 
 ## 1. Any admin can remove any admin, including themselves
-- **Decision (Jesse, 8 Oct 2026):** every row except your own has **Remove**; your own row has **Leave**. Both ask first in a small popover ("Remove {name} as an admin?" / "Leave the admin portal?"). Leaving signs you out. Removed admins keep their person record and any membership; only admin access ends, on their next page load, and a sign-in link they were already sent no longer gets them in.
+- **Decision (Jesse, 8 Oct 2026):** every row except your own has **Remove**; your own row has **Leave**. Both ask first in a small popover ("Remove {name} as an admin?" / "Leave the admin portal?"). Leaving signs you out and shows the goodbye screen (see [account.md](account.md) decision 4). Removed admins keep their person record and any membership; only admin access ends, on their next page load, and a sign-in link they were already sent no longer gets them in.
 - **Page:** Admin → Admins → Current admins.
 - **Affects:** who can reach the admin portal.
 - **When encountered:** someone leaves SDC, or was added by mistake.

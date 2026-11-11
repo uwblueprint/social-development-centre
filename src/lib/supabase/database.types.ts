@@ -871,6 +871,10 @@ export type Database = {
         Args: { p_person_ids: string[]; p_tag_id: string }
         Returns: number
       }
+      update_own_name: {
+        Args: { p_first_name: string; p_last_name: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
