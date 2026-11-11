@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import { requireAdmin } from "@/features/auth/session";
-import { MembersPage } from "@/features/members/MembersPage";
-import { listMembers } from "@/features/members/queries";
+import { localDay } from "@/features/members/directory/dates";
+import { MemberDirectory } from "@/features/members/directory/MemberDirectory";
+import { listMembers, listTags } from "@/features/members/queries";
 
 export const metadata: Metadata = { title: "Members" };
 
-// A plain list until the Member Directory (tags, unsubscribes, email history) lands.
-export default async function CommunityRoute() {
+export default async function MembersRoute() {
   await requireAdmin();
-  const members = await listMembers();
-  return <MembersPage members={members} />;
+  const [members, tags] = await Promise.all([listMembers(), listTags()]);
+  // "Today" in Waterloo Region, from the server, so the server and browser agree on dates near midnight.
+  return <MemberDirectory members={members} tags={tags} today={localDay(new Date())} />;
 }
