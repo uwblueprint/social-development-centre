@@ -1,4 +1,4 @@
-import type { FewerEmailChoice, UnsubscribeReason } from "./data";
+import type { EmailType } from "./data";
 
 /*
  * Every user-facing string for the email-preferences (A1–A4) and membership (B1–B5) screens, word for
@@ -11,48 +11,34 @@ import type { FewerEmailChoice, UnsubscribeReason } from "./data";
  */
 
 export const unsubscribeCopy = {
+  /*
+   * A1 is one screen now (design): the doc's A2 question with the email types as checkboxes, and the
+   * doc's A2 and A4 results as confirmations under the buttons. The checkbox labels and the
+   * unsubscribe button are design's, not the doc's: confirm with SDC.
+   */
   a1: {
+    /** Screen readers only: the visible heading is gone (design). */
     heading: "What would you like to change?",
     subtext: (email: string) => `Emails sent to ${email}`,
-    // The two choices are Shallot's (design), replacing the doc's three reasons: confirm with SDC.
-    fewerEmails: "Stay in the loop with fewer emails",
-    unsubscribeAll: "Unsubscribe from all communications",
-  },
-
-  a2: {
-    heading: "Get fewer emails",
-    body: "Choose what you still want to hear about.",
-    choices: {
+    question: "Choose what you still want to hear about.",
+    types: {
       monthly: "A monthly summary of SDC's work",
-      events: "Event and workshop invitations only",
-      notices: "Only membership and voting notices",
-    } satisfies Record<FewerEmailChoice, string>,
+      events: "Event and workshop invitations",
+      campaigns: "Campaigns and calls to action",
+    } satisfies Record<EmailType, string>,
+    requiredNotices:
+      "Because you're a voting member, you'll still get notices SDC is legally required to send, like annual meeting notices and votes.",
     save: "Save my preference",
-    unsubscribeInstead: "Unsubscribe from all instead",
+    unsubscribeAll: "Unsubscribe from all communications",
     savedHeading: "Your preference is saved",
     savedBody: (chosenOption: string) =>
       `You'll get ${chosenOption} from now on. One email already scheduled may still arrive while this takes effect.`,
-  },
-
-  a4: {
-    heading: "You're unsubscribed",
-    body: "You won't get newsletters, event invitations or campaign emails from SDC anymore.",
-    requiredNotices:
-      "Because you're a voting member, you'll still get notices SDC is legally required to send, like annual meeting notices and votes.",
+    unsubscribedHeading: "You're unsubscribed",
+    unsubscribedBody: "You won't get newsletters, event invitations or campaign emails from SDC anymore.",
     membership: (tier: string, date: string, amount: string) =>
       `Your ${tier} membership is still active. It renews on ${date} for ${amount}.`,
-    keepMembership: "Keep my membership",
     cancelMembership: "Cancel membership",
-    undoQuestion: "Unsubscribed by mistake?",
     resubscribe: "Resubscribe",
-    reasonQuestion: "Mind telling us why? (optional)",
-    reasons: {
-      "too-many": "Too many emails",
-      "not-relevant": "Not relevant to me",
-      "didnt-sign-up": "I didn't sign up for these",
-      other: "Other",
-    } satisfies Record<UnsubscribeReason, string>,
-    send: "Send",
   },
 
   b1: {
@@ -117,7 +103,6 @@ export const unsubscribeCopy = {
   notInDoc: {
     pageTitle: "Email preferences and membership",
     back: "Back",
-    reasonThanks: "Thanks for telling us.",
     // From Jesse's unsubscribe page (origin/jesse/email-links).
     resubscribedHeading: "You're subscribed again",
     resubscribedBody: "You'll get emails from SDC again.",

@@ -5,14 +5,19 @@
  */
 
 /**
- * A1, A2, A4: email preferences. B1–B5: membership. Labels match the copy doc. A3 (pick topics) is
- * gone: A1 now offers only "fewer emails" (A2) or "unsubscribe from all" (A4).
+ * A1: email preferences, one screen (footer link 1). B1–B5: membership (footer link 2). A1 replaces
+ * the doc's A1–A4: people tick the email types they want, and saving, unsubscribing and resubscribing
+ * each show a confirmation under the buttons instead of a new screen.
  */
-export type Screen = "A1" | "A2" | "A4" | "B1" | "B2" | "B3" | "B4" | "B5";
-export const SCREENS: Screen[] = ["A1", "A2", "A4", "B1", "B2", "B3", "B4", "B5"];
+export type Screen = "A1" | "B1" | "B2" | "B3" | "B4" | "B5";
+export const SCREENS: Screen[] = ["A1", "B1", "B2", "B3", "B4", "B5"];
 
-/** Screens with a follow-up state that can be opened directly with ?state=done (A4's is "resubscribed"). */
-export const SCREENS_WITH_DONE: Screen[] = ["A2", "A4", "B2", "B3"];
+/** Membership screens with a saved/confirmed state that can be opened directly with ?state=done. */
+export const SCREENS_WITH_DONE: Screen[] = ["B2", "B3"];
+
+/** The confirmation A1 shows under its buttons, if any. Open one directly with ?state=… */
+export type EmailResult = "saved" | "unsubscribed" | "resubscribed";
+export const EMAIL_RESULTS: EmailResult[] = ["saved", "unsubscribed", "resubscribed"];
 
 /**
  * When a cancelled membership's voting rights and benefits end. SDC hasn't decided (doc: Open
@@ -60,19 +65,16 @@ export const DEMO_TODAY = "2026-11-11";
 /** Days before a pause ends that the restart reminder goes out. The board says one week; see the doc's open questions. */
 export const RESTART_REMINDER_DAYS = 7;
 
-/** A2's choices. Placeholders until SDC lists the email types it actually sends (doc: Open questions). */
-export const fewerEmailChoices = [
-  { id: "monthly", membersOnly: false },
-  { id: "events", membersOnly: false },
-  { id: "notices", membersOnly: true },
-] as const;
-export type FewerEmailChoice = (typeof fewerEmailChoices)[number]["id"];
+/**
+ * The email types A1 lets people tick, independent of each other so any mix makes sense. Placeholders
+ * until SDC lists the email types it actually sends (doc: Open questions). Membership and voting
+ * notices aren't here: voting members can't turn the legally required ones off.
+ */
+export const emailTypes = ["monthly", "events", "campaigns"] as const;
+export type EmailType = (typeof emailTypes)[number];
 
 export const pauseMonths = [1, 2, 3] as const;
 export type PauseMonths = (typeof pauseMonths)[number];
-
-export type UnsubscribeReason = "too-many" | "not-relevant" | "didnt-sign-up" | "other";
-export const unsubscribeReasons: UnsubscribeReason[] = ["too-many", "not-relevant", "didnt-sign-up", "other"];
 
 /* ---- Dates and money, written the way the copy reads them ---- */
 
