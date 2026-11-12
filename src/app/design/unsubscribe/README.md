@@ -1,16 +1,15 @@
 # Unsubscribe, pause and cancel membership (design)
 
-Member-facing screens reached from the two footer links in every SDC email: A1 (email preferences, one screen) and B1–B5 (membership). Copy is from [SDC Unsubscribe & Cancel Membership — Step Copy](https://claude.ai/artifact/9oi6VCBrW5R1xkz3uA9DzV) except where noted below. Demo data only. Open at `/design/unsubscribe`; `page.tsx` lists the query parameters for every screen and variant.
+Member-facing screens reached from the two footer links in every SDC email: A1 (email preferences), A4 (the page unsubscribing opens) and B1–B5 (membership). Copy is from [SDC Unsubscribe & Cancel Membership — Step Copy](https://claude.ai/artifact/9oi6VCBrW5R1xkz3uA9DzV) except where noted below. Demo data only. Open at `/design/unsubscribe`; `page.tsx` lists the query parameters for every screen and variant.
 
 ## Built on Jesse's unsubscribe page
 
 The look comes from Jesse's `/unsubscribe/[token]` page (branch `origin/jesse/email-links`): the sign-in screen's centered column with the SDC logo (or an icon well on result screens) and full-width buttons. Design decisions on top of it:
 
 - **No visible headings.** Each screen keeps an h1 for screen readers, and focus moves to it on each new screen. Result screens (B2 switched, B3 paused, B5) start their text with what the heading used to say, so nothing is lost.
-- **A1 is one screen** and replaces the doc's A1–A4. People tick the email types they want (multi-select: the types are independent, so any mix makes sense) and save. "Unsubscribe from all communications" stays as its own button. Saving with nothing ticked unsubscribes too.
-- **Results show under the buttons, not on a new screen**: "Your preference is saved", "You're unsubscribed" (with Resubscribe and, for members, Cancel membership) and "You're subscribed again". The result takes focus; changing a tick clears it.
-- Membership and voting notices aren't a checkbox, because voting members can't turn the legally required ones off. Members see the doc's note about them instead.
-- The doc's reason question ("Mind telling us why?") is gone from the email side.
+- **A1** folds the doc's A1–A3 into one screen. People tick the email types they want (multi-select: the types are independent, so any mix makes sense) and save. After saving, the Save button reads "Your preference is saved" and does nothing until a tick changes. It's `aria-disabled` on the secondary style rather than `disabled`, because the kit fades disabled buttons below 4.5:1 contrast. It has no disabled reason (design: the label explains it).
+- **A4, the unsubscribed page**, opens as soon as someone unsubscribes (or saves with nothing ticked). Top to bottom: the result, the optional reason survey (multi-select, so the reasons must all be able to be true at once), then ways to stay ("Stay in the loop with fewer emails" goes back to A1 with everything ticked; "Resubscribe" goes back with a "You're subscribed again" line), then the membership line and "Cancel membership" for members.
+- Checkbox labels are body size (`ChoiceText`), like the radio options; the kit's Checkbox label is form-label size.
 
 ## Reused
 
@@ -32,9 +31,9 @@ They live in `UnsubscribeFlow.tsx`; promote them if another flow needs them.
 | `NavCard` | `UnsubscribeFlow.tsx` | A full-width choice that moves to another screen (B1, B2). A kit outline `Button` with a chevron. |
 | `Question` | `UnsubscribeFlow.tsx` | An `h2` for a question inside the column (A1, B1, B3, B5). |
 | `HiddenHeading`, `Lead` | `UnsubscribeFlow.tsx` | The screen-reader-only h1, and `AuthHeading`'s description without its title. |
-| `Confirmation` | `UnsubscribeFlow.tsx` | A1's result under the buttons: icon and bold first line (not color alone), detail, follow-up buttons. Takes focus. |
-| `StatusLine` | `UnsubscribeFlow.tsx` | A result line that replaces the button just pressed and takes focus (B3 Restart, B5 Keep getting emails). |
-| `Note` | `UnsubscribeFlow.tsx` | Small print under A1's checkboxes (the required-notices line). |
+| `ChoiceText` | `UnsubscribeFlow.tsx` | Body-size checkbox labels (A1, A4). |
+| `StatusLine` | `UnsubscribeFlow.tsx` | A result line that replaces the button just pressed and takes focus (A4 Send, A1 resubscribed, B3 Restart, B5 Keep getting emails). |
+| `Note` | `UnsubscribeFlow.tsx` | Small print: A4's membership line. |
 
 Layout-only wrappers (no visual style): `Stack` and `Choices`.
 
@@ -42,5 +41,5 @@ Layout-only wrappers (no visual style): `Stack` and `Choices`.
 
 Confirm with SDC:
 
-- A1's checkbox labels ("A monthly summary of SDC's work", "Event and workshop invitations", "Campaigns and calls to action") and "Unsubscribe from all communications". They're design's; SDC still has to list the email types it sends.
-- Placeholders in `copy.ts` under `notInDoc`: "Back", "You're subscribed again" / "You'll get emails from SDC again." (Jesse's), "You'll keep getting emails from SDC.", "Your membership is active again.", and the page title.
+- A1's checkbox labels ("A monthly summary of SDC's work", "Event and workshop invitations", "Campaigns and calls to action"), "Unsubscribe from all communications" and A4's "Stay in the loop with fewer emails". They're design's; SDC still has to list the email types it sends.
+- Placeholders in `copy.ts` under `notInDoc`: "Back", "Thanks for telling us.", "You're subscribed again" / "You'll get emails from SDC again." (Jesse's), "You'll keep getting emails from SDC.", "Your membership is active again.", and the page title.

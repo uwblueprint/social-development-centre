@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { styled } from "next-yak";
-import { ArrowLeft, ChevronRight, CircleCheck, CirclePause, MailCheck, MailX, type LucideIcon } from "lucide-react";
+import { ArrowLeft, Check, ChevronRight, CircleCheck, CirclePause, MailX } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Field } from "@/components/ui/Field";
@@ -28,8 +28,10 @@ import {
   type EmailResult,
   type EmailType,
   type MembershipStatus,
+  type UnsubscribeReason,
   type PauseMonths,
   type Screen,
+  unsubscribeReasons,
 } from "./data";
 
 /*
@@ -41,9 +43,9 @@ import {
  * Design choices on top of Jesse's page:
  * - No visible headings. Each screen keeps an h1 for screen readers (focus moves to it on each new
  *   screen), and result screens start their text with what the heading used to say.
- * - A1 is one screen: tick the email types you want, then save. Saving, unsubscribing and
- *   resubscribing show a confirmation under the buttons, not a new screen. Saving with nothing ticked
- *   is the same as unsubscribing.
+ * - A1: tick the email types you want, then save. Saving turns the Save button into "Your preference
+ *   is saved" until a tick changes. Unsubscribing (or saving with nothing ticked) opens A4.
+ * - A4, the unsubscribed page: the result, then a multi-select survey, then ways to stay.
  *
  * Two rules from the doc hold: "Unsubscribe from all" (A1) and "Cancel membership" (B1–B4) are always
  * visible as real buttons, and the membership reason question is optional.
@@ -106,61 +108,14 @@ function StatusLine({ children }: { children: ReactNode }) {
   );
 }
 
-/**
- * A1's confirmation under its buttons: an icon and a bold first line (never color alone), the detail,
- * then any follow-up actions. Takes focus when it appears; key it by result so a new one does too.
- */
-function Confirmation({
-  icon,
-  title,
-  children,
-  actions,
-}: {
-  icon: LucideIcon;
-  title: string;
-  children?: ReactNode;
-  actions?: ReactNode;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => ref.current?.focus(), []);
-  return (
-    <Stack>
-      <Separator />
-      <ConfirmationText ref={ref} role="status" tabIndex={-1}>
-        <ConfirmationTitle>
-          <Icon icon={icon} size={20} />
-          {title}
-        </ConfirmationTitle>
-        {children}
-      </ConfirmationText>
-      {actions && <AuthActions>{actions}</AuthActions>}
-    </Stack>
-  );
-}
-
-const ConfirmationText = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  color: var(--color-text-muted);
-
-  p {
-    margin: 0;
-  }
-  &:focus {
-    outline: none;
-  }
-`;
-
-const ConfirmationTitle = styled.p`
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-weight: var(--weight-medium);
+/** A checkbox's label at body size, like the radio options: the kit's Checkbox label is form-label size. */
+const ChoiceText = styled.span`
+  font-size: var(--text-md);
+  line-height: var(--leading-ui);
   color: var(--color-text);
 `;
 
-/** Small print under a question, left-aligned with it. */
+/** Small print, left-aligned with the content above it. */
 const Note = styled.p`
   margin: 0;
   font-size: var(--text-sm);
@@ -181,11 +136,9 @@ const Stack = styled.div`
 const Choices = styled.div`
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-3);
 `;
 
-const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
-const listFormat = new Intl.ListFormat("en-CA", { style: "long", type: "conjunction" });
 const paragraphs = (...lines: (string | false)[]) => lines.filter(Boolean).join("\n\n");
 
 export interface FlowStart {
@@ -194,7 +147,7 @@ export interface FlowStart {
   done: boolean;
   /** Open A1 with this confirmation showing. */
   emailResult: EmailResult | null;
-  /** A paying member. False shows the subscriber-only version of A1 (no notices or membership lines). */
+  /** A paying member. False shows the subscriber-only version of A4 (no membership lines). */
   isMember: boolean;
   policy: CutOffPolicy;
   tierId: string;
@@ -209,7 +162,7 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
 
   // The member's record as these screens change it.
   const [emailsWanted, setEmailsWanted] = useState<EmailType[]>(() => {
-    if (start.emailResult === "unsubscribed") return [];
+    if (start.screen === "A4") return [];
     if (start.emailResult === "saved") return ["monthly"];
     return [...emailTypes];
   });
@@ -223,10 +176,12 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
   const [tierId, setTierId] = useState(() =>
     start.screen === "B2" && start.done ? (lowerTier(startTier.id) ?? startTier).id : startTier.id,
   );
-  const subscribed = emailResult !== "unsubscribed";
+  const subscribed = emailsWanted.length > 0;
 
   // Answers.
   const [ticked, setTicked] = useState<EmailType[]>(emailsWanted);
+  const [reasons, setReasons] = useState<UnsubscribeReason[]>([]);
+  const [reasonsSent, setReasonsSent] = useState(false);
   const [pause, setPause] = useState<PauseMonths>(1);
   const [note, setNote] = useState("");
 
@@ -262,21 +217,32 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
     setDone(false);
   }
 
-  /* A1's three results. Each one replaces the confirmation under the buttons. */
+  /* A1's results. Saving with nothing ticked is unsubscribing, which opens A4. */
   function save(types: EmailType[]) {
+    if (types.length === 0) return unsubscribe();
     setEmailsWanted(types);
-    setTicked(types);
-    setEmailResult(types.length === 0 ? "unsubscribed" : "saved");
+    setEmailResult("saved");
   }
-  const unsubscribe = () => save([]);
-  function resubscribe() {
-    setEmailsWanted([...emailTypes]);
+  function unsubscribe() {
+    setEmailsWanted([]);
+    setTicked([]);
+    setEmailResult(null);
+    setReasons([]);
+    setReasonsSent(false);
+    go("A4");
+  }
+  /** Back to A1 from A4: everything ticked again ("Resubscribe"), or ready to untick some ("fewer emails"). */
+  function stay(resubscribed: boolean) {
     setTicked([...emailTypes]);
-    setEmailResult("resubscribed");
+    if (resubscribed) setEmailsWanted([...emailTypes]);
+    setEmailResult(resubscribed ? "resubscribed" : null);
+    setHistory([]);
+    setScreen("A1");
+    setDone(false);
   }
   function tick(type: EmailType, on: boolean) {
     setTicked((ts) => (on ? emailTypes.filter((t) => t === type || ts.includes(t)) : ts.filter((t) => t !== type)));
-    // The confirmation describes what was saved; once the ticks change, it's out of date.
+    // "Saved" describes what was saved; once the ticks change, Save is live again.
     setEmailResult(null);
   }
 
@@ -309,9 +275,9 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
     </Button>
   );
 
-  // Back on in-between screens; end states, confirmations and B4 (whose "Keep my membership" already
+  // Back on in-between screens; end states (A4, B5), confirmations and B4 (whose "Keep my membership" already
   // goes back) don't get one.
-  const canGoBack = history.length > 0 && !done && screen !== "B4" && screen !== "B5";
+  const canGoBack = history.length > 0 && !done && screen !== "A4" && screen !== "B4" && screen !== "B5";
   const backButton = canGoBack && (
     <Button type="button" $variant="ghost" $size="lg" onClick={back}>
       <Icon icon={ArrowLeft} size={16} />
@@ -321,20 +287,17 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
 
   /*
    * Each screen fills `top` (logo or icon), `title` (the hidden h1), `lead` (the centered text),
-   * `body` (left-aligned content), `actions` (full-width buttons, the main action first) and `after`
-   * (A1's confirmation).
+   * `body` (left-aligned content) and `actions` (full-width buttons, the main action first).
    */
   let top: ReactNode = <SdcLogo />;
   let title = "";
   let lead = "";
   let body: ReactNode = null;
   let actions: ReactNode = null;
-  let after: ReactNode = null;
 
   switch (screen) {
     case "A1": {
-      // Membership lines only while the membership is active: after a cancel (B5 → A1) they'd be wrong.
-      const activeMember = membership === "active";
+      const saved = emailResult === "saved";
       title = copy.a1.heading;
       lead = copy.a1.subtext(demoMember.email);
       body = (
@@ -346,60 +309,97 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
                 key={t}
                 name="emails"
                 value={t}
-                label={copy.a1.types[t]}
+                label={<ChoiceText>{copy.a1.types[t]}</ChoiceText>}
                 checked={ticked.includes(t)}
                 onCheckedChange={(on) => tick(t, on === true)}
               />
             ))}
           </Choices>
-          {activeMember && <Note>{copy.a1.requiredNotices}</Note>}
         </Stack>
       );
       actions = (
         <>
-          <Button type="button" $size="lg" onClick={() => save(ticked)}>
-            {copy.a1.save}
-          </Button>
-          {subscribed && (
-            <Button type="button" $variant="danger-outline" $size="lg" onClick={unsubscribe}>
-              {copy.a1.unsubscribeAll}
+          {/*
+            After saving, the button says so and does nothing until a tick changes. aria-disabled on the
+            secondary style, not `disabled`: the kit fades disabled buttons below 4.5:1, and this text
+            needs reading. No disabled reason (design): the label explains it.
+          */}
+          {saved ? (
+            <Button type="button" $variant="secondary" $size="lg" aria-disabled="true">
+              <Icon icon={Check} size={16} />
+              {copy.a1.saved}
             </Button>
+          ) : (
+            <Button type="button" $size="lg" onClick={() => save(ticked)}>
+              {copy.a1.save}
+            </Button>
+          )}
+          <Button type="button" $variant="danger-outline" $size="lg" onClick={unsubscribe}>
+            {copy.a1.unsubscribeAll}
+          </Button>
+          {emailResult === "resubscribed" && (
+            <StatusLine>{`${copy.notInDoc.resubscribedHeading}. ${copy.notInDoc.resubscribedBody}`}</StatusLine>
           )}
         </>
       );
-      if (emailResult === "saved") {
-        const chosen = emailTypes.filter((t) => emailsWanted.includes(t)).map((t) => lowerFirst(copy.a1.types[t]));
-        after = (
-          <Confirmation key="saved" icon={CircleCheck} title={copy.a1.savedHeading}>
-            <p>{copy.a1.savedBody(listFormat.format(chosen))}</p>
-          </Confirmation>
-        );
-      } else if (emailResult === "unsubscribed") {
-        after = (
-          <Confirmation
-            key="unsubscribed"
-            icon={MailX}
-            title={copy.a1.unsubscribedHeading}
-            actions={
+      break;
+    }
+
+    case "A4": {
+      // Membership lines only while the membership is active: after a cancel (B5 → A4) they'd be wrong.
+      const activeMember = membership === "active";
+      top = <IconWell icon={MailX} tone="neutral" />;
+      title = copy.a4.heading;
+      lead = paragraphs(`${title}.`, copy.a4.body);
+      body = (
+        <>
+          <Stack role="group" aria-labelledby="a4-reason">
+            <Question id="a4-reason">{copy.a4.reasonQuestion}</Question>
+            {reasonsSent ? (
+              <StatusLine>{copy.notInDoc.reasonThanks}</StatusLine>
+            ) : (
               <>
-                <Button type="button" $variant="outline" $size="lg" onClick={resubscribe}>
-                  {copy.a1.resubscribe}
+                <Choices>
+                  {unsubscribeReasons.map((r) => (
+                    <Checkbox
+                      key={r}
+                      name="reason"
+                      value={r}
+                      label={<ChoiceText>{copy.a4.reasons[r]}</ChoiceText>}
+                      checked={reasons.includes(r)}
+                      onCheckedChange={(on) =>
+                        setReasons((rs) => (on === true ? [...rs, r] : rs.filter((x) => x !== r)))
+                      }
+                    />
+                  ))}
+                </Choices>
+                <Button type="button" $size="lg" onClick={() => setReasonsSent(true)}>
+                  {copy.a4.send}
                 </Button>
-                {activeMember && cancelButton(copy.a1.cancelMembership)}
               </>
-            }
-          >
-            <p>{copy.a1.unsubscribedBody}</p>
-            {activeMember && (
-              <p>{copy.a1.membership(tier.name, formatDate(nextPayment), formatMoney(tier.monthlyPrice))}</p>
             )}
-          </Confirmation>
-        );
-      } else if (emailResult === "resubscribed") {
-        after = (
-          <Confirmation key="resubscribed" icon={MailCheck} title={copy.notInDoc.resubscribedHeading}>
-            <p>{copy.notInDoc.resubscribedBody}</p>
-          </Confirmation>
+          </Stack>
+          <Separator />
+          <Stack>
+            <Question>{copy.a4.undoQuestion}</Question>
+            <AuthActions>
+              <Button type="button" $variant="outline" $size="lg" onClick={() => stay(false)}>
+                {copy.a4.fewerEmails}
+              </Button>
+              <Button type="button" $variant="outline" $size="lg" onClick={() => stay(true)}>
+                {copy.a4.resubscribe}
+              </Button>
+            </AuthActions>
+          </Stack>
+        </>
+      );
+      if (activeMember) {
+        actions = (
+          <>
+            <Separator />
+            <Note>{copy.a4.membership(tier.name, formatDate(nextPayment), formatMoney(tier.monthlyPrice))}</Note>
+            {cancelButton(copy.a4.cancelMembership)}
+          </>
         );
       }
       break;
@@ -568,15 +568,7 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
             <Button type="button" $size="lg" onClick={() => setEmailsKept(true)}>
               {copy.b5.keepEmails}
             </Button>
-            <Button
-              type="button"
-              $variant="danger-outline"
-              $size="lg"
-              onClick={() => {
-                unsubscribe();
-                go("A1");
-              }}
-            >
+            <Button type="button" $variant="danger-outline" $size="lg" onClick={unsubscribe}>
               {copy.b5.unsubscribeAll}
             </Button>
           </>
@@ -594,7 +586,6 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
         {lead && <Lead>{lead}</Lead>}
         {body}
         {actions && <AuthActions>{actions}</AuthActions>}
-        {after}
       </AuthColumn>
     </AuthScreen>
   );

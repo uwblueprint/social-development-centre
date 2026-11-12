@@ -5,19 +5,21 @@
  */
 
 /**
- * A1: email preferences, one screen (footer link 1). B1–B5: membership (footer link 2). A1 replaces
- * the doc's A1–A4: people tick the email types they want, and saving, unsubscribing and resubscribing
- * each show a confirmation under the buttons instead of a new screen.
+ * A1: email preferences (footer link 1): tick the email types you want and save. A4: the page
+ * unsubscribing opens. B1–B5: membership (footer link 2). The doc's A2 and A3 are folded into A1.
  */
-export type Screen = "A1" | "B1" | "B2" | "B3" | "B4" | "B5";
-export const SCREENS: Screen[] = ["A1", "B1", "B2", "B3", "B4", "B5"];
+export type Screen = "A1" | "A4" | "B1" | "B2" | "B3" | "B4" | "B5";
+export const SCREENS: Screen[] = ["A1", "A4", "B1", "B2", "B3", "B4", "B5"];
 
 /** Membership screens with a saved/confirmed state that can be opened directly with ?state=done. */
 export const SCREENS_WITH_DONE: Screen[] = ["B2", "B3"];
 
-/** The confirmation A1 shows under its buttons, if any. Open one directly with ?state=… */
-export type EmailResult = "saved" | "unsubscribed" | "resubscribed";
-export const EMAIL_RESULTS: EmailResult[] = ["saved", "unsubscribed", "resubscribed"];
+/**
+ * A1's result, if any. Open one directly with ?state=…: "saved" turns Save into "Your preference is
+ * saved" until a tick changes; "resubscribed" shows a line under the buttons.
+ */
+export type EmailResult = "saved" | "resubscribed";
+export const EMAIL_RESULTS: EmailResult[] = ["saved", "resubscribed"];
 
 /**
  * When a cancelled membership's voting rights and benefits end. SDC hasn't decided (doc: Open
@@ -72,6 +74,10 @@ export const RESTART_REMINDER_DAYS = 7;
  */
 export const emailTypes = ["monthly", "events", "campaigns"] as const;
 export type EmailType = (typeof emailTypes)[number];
+
+/** A4's survey: multi-select, so the reasons must all be able to be true at once. */
+export type UnsubscribeReason = "too-many" | "not-relevant" | "didnt-sign-up" | "other";
+export const unsubscribeReasons: UnsubscribeReason[] = ["too-many", "not-relevant", "didnt-sign-up", "other"];
 
 export const pauseMonths = [1, 2, 3] as const;
 export type PauseMonths = (typeof pauseMonths)[number];
