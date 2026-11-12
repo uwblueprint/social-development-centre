@@ -11,8 +11,8 @@ const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v
  * Email preferences and pause/cancel membership, as reached from an SDC email's footer links. Member
  * facing, so no sidebar. Every screen and variant opens directly for review:
  *
- * - `?screen=A1…B5` opens that screen (default A1). A1 is footer link 1, B1 is footer link 2.
- * - `?state=done` opens the saved/confirmed state of A2, A3, B2 or B3.
+ * - `?screen=A1|A2|A4|B1…B5` opens that screen (default A1). A1 is footer link 1, B1 is footer link 2.
+ * - `?state=done` opens the follow-up state: A2, B2 and B3 saved, A4 resubscribed.
  * - `?member=false` shows the version for someone who only subscribes (default true). B screens are
  *   for paying members only, so they always show a member.
  * - `?policy=end-of-period` shows B4's end-of-period cut-off (default: ends today).

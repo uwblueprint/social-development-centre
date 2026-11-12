@@ -1,27 +1,24 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import Image from "next/image";
 import { styled } from "next-yak";
-import { ArrowLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ChevronRight, CircleCheck, CirclePause, MailCheck, MailX } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/Checkbox";
 import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
-import { RadioCard } from "@/components/ui/RadioGroup";
+import { RadioGroup, RadioGroupOption } from "@/components/ui/RadioGroup";
+import { Separator } from "@/components/ui/Separator";
 import { Textarea } from "@/components/ui/Textarea";
-import { OTHER, intakeCopy, topicChoices, wayChoices } from "@/features/intake/copy";
-import { CheckCardGroup } from "@/features/intake/components/CheckCardGroup";
 import {
-  PaperActions,
-  PaperCardText,
-  PaperChoices,
-  PaperHeading,
-  PaperLead,
-  PaperLogos,
-  PaperPage,
-  PaperSheet,
-  PaperStep,
-} from "@/features/intake/components/Paper";
+  AuthActions,
+  AuthColumn,
+  AuthHeading,
+  AuthScreen,
+  Footnote,
+  IconWell,
+  SdcLogo,
+} from "@/features/auth/AuthScreen";
 import { unsubscribeCopy as copy } from "./copy";
 import {
   DEMO_TODAY,
@@ -42,44 +39,39 @@ import {
   type MembershipStatus,
   type PauseMonths,
   type Screen,
+  type UnsubscribeReason,
 } from "./data";
 
 /*
- * Email preferences (A1–A4) and pause/cancel membership (B1–B5), reached from the two footer links in
- * every SDC email. One screen at a time on the intake form's paper sheet. Client state only: saving,
- * pausing and cancelling just move to that screen's confirmation. The real feature does each of those
- * on the server and updates the member's record (see the doc's "System behavior on finish").
+ * Email preferences (A1, A2, A4) and pause/cancel membership (B1–B5), reached from the two footer links
+ * in every SDC email. Built on Jesse's unsubscribe page (origin/jesse/email-links): the sign-in screen's
+ * calm centered column, logo, green heading and full-width buttons, from src/features/auth/AuthScreen.
+ * Client state only: saving, pausing and cancelling just move to that screen's confirmation.
  *
- * Built from the intake form's pieces (Paper.tsx, CheckCardGroup, the kit's RadioCard). The three
- * things the intake form has no equivalent for are defined here and listed in ./README.md.
+ * Changes from Jesse's page: the first screen offers "fewer emails" or "unsubscribe from all" instead of
+ * a single Unsubscribe, and the "why" is a multi-select survey instead of a dropdown.
  *
- * Two rules from the doc hold on every screen: "Unsubscribe from all emails" (A1–A3) and "Cancel
- * membership" (B1–B4) are always visible as real buttons, and reason questions are optional.
+ * Two rules from the doc hold: "Unsubscribe from all" (A1, A2) and "Cancel membership" (B1–B4) are
+ * always visible as real buttons, and reason questions are optional.
  */
 
-const HEADING_ID = "unsubscribe-heading";
+/* ---- New here (see README.md): AuthScreen has no equivalent ---- */
 
-/* ---- New here (see README.md): the intake form has no equivalent ---- */
-
-/** A sub-question under the step's heading, where one screen asks more than one thing (A3, A4, B1, B3, B5). */
+/** A sub-question inside the column: the survey on A4, B1's reasons, B3's length, B5's email question. */
 const Question = styled.h2`
   margin: 0;
   font-size: var(--text-md);
-  font-weight: var(--weight-bold);
+  font-weight: var(--weight-medium);
   line-height: var(--leading-heading);
 `;
 
-/**
- * A choice that moves to another screen (A1, B1, B2): the whole card is the button. The intake form's
- * cards only select; these navigate, so they're kit Buttons shaped like its cards, with a chevron.
- */
+/** A choice that moves to another screen (B1, B2): the whole row is the button, with a chevron. */
 const NavCard = styled(Button)`
   justify-content: space-between;
   gap: var(--space-3);
   width: 100%;
   height: auto;
   padding: var(--space-3);
-  border-radius: var(--radius-lg);
   font-size: var(--text-md);
   line-height: var(--leading-ui);
   text-align: left;
@@ -88,40 +80,40 @@ const NavCard = styled(Button)`
 
 /**
  * A short result line that replaces the button just pressed. Focus moves to it, so keyboard and
- * screen-reader users aren't dropped back at the top of the page when the button disappears.
+ * screen-reader users aren't dropped at the top of the page when the button disappears.
  */
 function StatusLine({ children }: { children: ReactNode }) {
   const ref = useRef<HTMLParagraphElement>(null);
   useEffect(() => ref.current?.focus(), []);
   return (
-    <PaperLead ref={ref} role="status" tabIndex={-1}>
+    <Footnote ref={ref} role="status" tabIndex={-1}>
       {children}
-    </PaperLead>
+    </Footnote>
   );
 }
 
 /* ---- Layout only ---- */
 
+/** Left-aligned content (questions, choices) at the column's full width. */
 const Stack = styled.div`
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  width: 100%;
 `;
 
-/* A line of text with a button after it, e.g. "Unsubscribed by mistake? Resubscribe". */
-const Inline = styled.div`
+const Choices = styled.div`
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  flex-direction: column;
   gap: var(--space-2);
 `;
 
 const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
-const listFormat = new Intl.ListFormat("en-CA", { style: "long", type: "conjunction" });
+const paragraphs = (...lines: (string | false)[]) => lines.filter(Boolean).join("\n\n");
 
 export interface FlowStart {
   screen: Screen;
-  /** Open the screen's saved/confirmed state (A2, A3, B2, B3). */
+  /** Open the screen's follow-up state: saved (A2, B2, B3) or resubscribed (A4). */
   done: boolean;
   /** A paying member. False shows the subscriber-only versions (A2 without notices, A4 without membership lines). */
   isMember: boolean;
@@ -137,7 +129,9 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
   const [history, setHistory] = useState<Screen[]>([]);
 
   // The member's record as these screens change it.
-  const [emails, setEmails] = useState<EmailStatus>(start.screen === "A4" ? "unsubscribed" : "subscribed");
+  const [emails, setEmails] = useState<EmailStatus>(
+    start.screen === "A4" && !start.done ? "unsubscribed" : "subscribed",
+  );
   const [membership, setMembership] = useState<MembershipStatus>(() => {
     if (!start.isMember) return "none";
     if (start.screen === "B5") return "cancelled";
@@ -150,13 +144,9 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
 
   // Answers.
   const [fewer, setFewer] = useState<FewerEmailChoice>("monthly");
-  const [topics, setTopics] = useState(demoMember.topics);
-  const [topicsOther, setTopicsOther] = useState(demoMember.topicsOther);
-  const [ways, setWays] = useState(demoMember.ways);
-  const [waysOther, setWaysOther] = useState(demoMember.waysOther);
   const [pause, setPause] = useState<PauseMonths>(1);
-  const [reason, setReason] = useState("");
-  const [reasonSent, setReasonSent] = useState(false);
+  const [reasons, setReasons] = useState<UnsubscribeReason[]>([]);
+  const [reasonsSent, setReasonsSent] = useState(false);
   const [note, setNote] = useState("");
 
   // Small follow-ups that stay on the same screen.
@@ -164,14 +154,14 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
   const [emailsKept, setEmailsKept] = useState(false);
   const [restarted, setRestarted] = useState(false);
 
-  // Move focus to each screen's heading so screen readers start there, as the intake form does.
+  // A new screen replaces the old one, so move focus to its heading for screen readers (as Jesse's page does).
   const firstRender = useRef(true);
   useEffect(() => {
     if (firstRender.current) {
       firstRender.current = false;
       return;
     }
-    document.getElementById(HEADING_ID)?.focus();
+    document.querySelector<HTMLElement>("main h1")?.focus();
   }, [screen, done]);
 
   const tier = tierById(tierId);
@@ -183,8 +173,8 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
     // The unsubscribe happens on arrival at A4: that screen reports the result, it doesn't ask again.
     if (next === "A4") {
       setEmails("unsubscribed");
-      setReason("");
-      setReasonSent(false);
+      setReasons([]);
+      setReasonsSent(false);
     }
     setHistory((h) => [...h, screen]);
     setScreen(next);
@@ -197,12 +187,6 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
     setHistory((h) => h.slice(0, -1));
     setScreen(previous);
     setDone(false);
-  }
-
-  function pauseMembership() {
-    setMembership("paused");
-    setRestarted(false);
-    setDone(true);
   }
 
   function switchTier() {
@@ -224,15 +208,9 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
   function resubscribe() {
     setEmails("subscribed");
     setHistory([]);
-    setScreen("A1");
-    setDone(false);
+    setScreen("A4");
+    setDone(true);
   }
-
-  const heading = (text: string) => (
-    <PaperHeading id={HEADING_ID} tabIndex={-1}>
-      {text}
-    </PaperHeading>
-  );
 
   const navCard = (label: string, onClick: () => void) => (
     <NavCard type="button" $variant="outline" onClick={onClick}>
@@ -241,7 +219,7 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
     </NavCard>
   );
 
-  const unsubscribeAll = (label: string = copy.a1.unsubscribeAll) => (
+  const unsubscribeAll = (label: string) => (
     <Button type="button" $variant="danger-outline" $size="lg" onClick={() => go("A4")}>
       {label}
     </Button>
@@ -253,259 +231,224 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
     </Button>
   );
 
-  // Back is offered on in-between screens; end states (A4, B5), confirmations and B4 (whose "Keep my
-  // membership" already goes back) don't get one.
+  // Back on in-between screens; end states, confirmations and B4 (whose "Keep my membership" already
+  // goes back) don't get one.
   const canGoBack = history.length > 0 && !done && screen !== "A4" && screen !== "B4" && screen !== "B5";
+  const backButton = canGoBack && (
+    <Button type="button" $variant="ghost" $size="lg" onClick={back}>
+      <Icon icon={ArrowLeft} size={16} />
+      {copy.notInDoc.back}
+    </Button>
+  );
 
   /*
-   * Each screen fills `body` and `actions`. Actions sit in the intake form's sticky bar, in its order:
-   * Back first, the main action last (it stretches to fill the row).
+   * Each screen fills `top` (logo or icon), `heading`, `body` (left-aligned content) and `actions`
+   * (full-width buttons, the main action first).
    */
-  let body: ReactNode;
+  let top: ReactNode = <SdcLogo />;
+  let heading: ReactNode;
+  let body: ReactNode = null;
   let actions: ReactNode = null;
+
   switch (screen) {
     case "A1":
-      body = (
+      heading = <AuthHeading title={copy.a1.heading} description={copy.a1.subtext(demoMember.email)} />;
+      actions = (
         <>
-          {heading(copy.a1.heading)}
-          <PaperLead>{copy.a1.subtext(demoMember.email)}</PaperLead>
-          <Stack>
-            {navCard(copy.a1.tooMany, () => go("A2"))}
-            {navCard(copy.a1.notRelevant, () => go("A3"))}
-            {navCard(copy.a1.noMore, () => go("A4"))}
-          </Stack>
+          <Button type="button" $size="lg" onClick={() => go("A2")}>
+            {copy.a1.fewerEmails}
+          </Button>
+          {unsubscribeAll(copy.a1.unsubscribeAll)}
         </>
       );
-      actions = unsubscribeAll();
       break;
 
     case "A2": {
       if (done) {
-        body = (
-          <>
-            {heading(copy.a2.savedHeading)}
-            <PaperLead>{copy.a2.savedBody(lowerFirst(copy.a2.choices[fewer]))}</PaperLead>
-          </>
+        top = <IconWell icon={MailCheck} tone="brand" />;
+        heading = (
+          <AuthHeading
+            title={copy.a2.savedHeading}
+            description={copy.a2.savedBody(lowerFirst(copy.a2.choices[fewer]))}
+          />
         );
-        actions = unsubscribeAll();
+        actions = unsubscribeAll(copy.a2.unsubscribeInstead);
         break;
       }
       const choices = fewerEmailChoices.filter((c) => isMember || !c.membersOnly);
+      heading = <AuthHeading title={copy.a2.heading} />;
       body = (
-        <>
-          {heading(copy.a2.heading)}
-          <PaperLead id="a2-body">{copy.a2.body}</PaperLead>
-          <PaperChoices
+        <Stack>
+          <Question id="a2-question">{copy.a2.body}</Question>
+          <RadioGroup
             name="fewer"
-            aria-labelledby="a2-body"
+            aria-labelledby="a2-question"
             value={fewer}
             onValueChange={(v) => setFewer(v as FewerEmailChoice)}
           >
             {choices.map((c) => (
-              <RadioCard key={c.id} value={c.id}>
-                <PaperCardText>{copy.a2.choices[c.id]}</PaperCardText>
-              </RadioCard>
+              <RadioGroupOption key={c.id} value={c.id} label={copy.a2.choices[c.id]} />
             ))}
-          </PaperChoices>
-        </>
+          </RadioGroup>
+        </Stack>
       );
       actions = (
         <>
-          {unsubscribeAll(copy.a2.unsubscribeInstead)}
           <Button type="button" $size="lg" onClick={() => setDone(true)}>
             {copy.a2.save}
           </Button>
-        </>
-      );
-      break;
-    }
-
-    case "A3": {
-      if (done) {
-        const picked = topicChoices.filter((c) => topics.includes(c.id)).map((c) => lowerFirst(c.label));
-        if (topics.includes(OTHER) && topicsOther.trim()) picked.push(topicsOther.trim());
-        body = (
-          <>
-            {heading(copy.a3.savedHeading)}
-            {picked.length > 0 && <PaperLead>{copy.a3.savedBody(listFormat.format(picked))}</PaperLead>}
-          </>
-        );
-        actions = unsubscribeAll();
-        break;
-      }
-      body = (
-        <>
-          {heading(copy.a3.heading)}
-          <PaperLead>{copy.a3.body}</PaperLead>
-          <Stack>
-            <Question id="a3-topics">{copy.a3.topicsQuestion}</Question>
-            <CheckCardGroup
-              name="topics"
-              labelledBy="a3-topics"
-              options={topicChoices}
-              value={topics}
-              onChange={setTopics}
-              otherValue={topicsOther}
-              onOtherChange={setTopicsOther}
-              otherLabel={intakeCopy.topics.otherLabel}
-            />
-          </Stack>
-          <Stack>
-            <Question id="a3-ways">{copy.a3.waysQuestion}</Question>
-            <CheckCardGroup
-              name="ways"
-              labelledBy="a3-ways"
-              options={wayChoices}
-              value={ways}
-              onChange={setWays}
-              otherValue={waysOther}
-              onOtherChange={setWaysOther}
-              otherLabel={intakeCopy.ways.otherLabel}
-            />
-          </Stack>
-        </>
-      );
-      actions = (
-        <>
-          {unsubscribeAll(copy.a3.unsubscribeInstead)}
-          <Button type="button" $size="lg" onClick={() => setDone(true)}>
-            {copy.a3.save}
-          </Button>
+          {unsubscribeAll(copy.a2.unsubscribeInstead)}
+          {backButton}
         </>
       );
       break;
     }
 
     case "A4": {
+      if (done) {
+        top = <IconWell icon={MailCheck} tone="brand" />;
+        heading = <AuthHeading title={copy.notInDoc.resubscribedHeading} description={copy.notInDoc.resubscribedBody} />;
+        break;
+      }
       // Membership lines only while the membership is active: after a cancel (B5 → A4) they'd be wrong.
       const activeMember = membership === "active";
+      top = <IconWell icon={MailX} tone="neutral" />;
+      heading = (
+        <AuthHeading title={copy.a4.heading} description={paragraphs(copy.a4.body, activeMember && copy.a4.requiredNotices)} />
+      );
       body = (
-        <>
-          {heading(copy.a4.heading)}
-          <PaperLead>{copy.a4.body}</PaperLead>
-          {activeMember && (
+        <Stack role="group" aria-labelledby="a4-reason">
+          <Question id="a4-reason">{copy.a4.reasonQuestion}</Question>
+          {reasonsSent ? (
+            <StatusLine>{copy.notInDoc.reasonThanks}</StatusLine>
+          ) : (
             <>
-              <PaperLead>{copy.a4.requiredNotices}</PaperLead>
-              <PaperLead id="a4-membership" tabIndex={-1}>
-                {copy.a4.membership(tier.name, formatDate(nextPayment), formatMoney(tier.monthlyPrice))}
-              </PaperLead>
+              <Choices>
+                {unsubscribeReasons.map((r) => (
+                  <Checkbox
+                    key={r}
+                    name="reason"
+                    value={r}
+                    label={copy.a4.reasons[r]}
+                    checked={reasons.includes(r)}
+                    onCheckedChange={(on) =>
+                      setReasons((rs) => (on === true ? [...rs, r] : rs.filter((x) => x !== r)))
+                    }
+                  />
+                ))}
+              </Choices>
+              <Button type="button" $size="lg" onClick={() => setReasonsSent(true)}>
+                {copy.a4.send}
+              </Button>
             </>
           )}
-          <Inline>
-            <PaperLead>{copy.a4.undoQuestion}</PaperLead>
-            <Button type="button" $variant="ghost" onClick={resubscribe}>
-              {copy.a4.resubscribe}
-            </Button>
-          </Inline>
-          <Stack>
-            <Question id="a4-reason">{copy.a4.reasonQuestion}</Question>
-            {reasonSent ? (
-              <StatusLine>{copy.notInDoc.reasonThanks}</StatusLine>
-            ) : (
-              <>
-                <PaperChoices name="reason" aria-labelledby="a4-reason" value={reason} onValueChange={setReason}>
-                  {unsubscribeReasons.map((r) => (
-                    <RadioCard key={r} value={r}>
-                      <PaperCardText>{copy.a4.reasons[r]}</PaperCardText>
-                    </RadioCard>
-                  ))}
-                </PaperChoices>
-                <Inline>
-                  <Button type="button" $variant="secondary" $size="lg" onClick={() => setReasonSent(true)}>
-                    {copy.a4.send}
+        </Stack>
+      );
+      actions = (
+        <>
+          <Button type="button" $variant="outline" $size="lg" onClick={resubscribe}>
+            {copy.a4.resubscribe}
+          </Button>
+          {activeMember && (
+            <>
+              <Separator />
+              <Footnote id="a4-membership" tabIndex={-1}>
+                {copy.a4.membership(tier.name, formatDate(nextPayment), formatMoney(tier.monthlyPrice))}
+              </Footnote>
+              {!membershipKept && (
+                <>
+                  <Button
+                    type="button"
+                    $variant="outline"
+                    $size="lg"
+                    onClick={() => {
+                      setMembershipKept(true);
+                      document.getElementById("a4-membership")?.focus();
+                    }}
+                  >
+                    {copy.a4.keepMembership}
                   </Button>
-                </Inline>
-              </>
-            )}
-          </Stack>
+                  {cancelButton(copy.a4.cancelMembership)}
+                </>
+              )}
+            </>
+          )}
         </>
       );
-      if (activeMember && !membershipKept) {
-        actions = (
-          <>
-            {cancelButton(copy.a4.cancelMembership)}
-            <Button
-              type="button"
-              $variant="outline"
-              $size="lg"
-              onClick={() => {
-                setMembershipKept(true);
-                document.getElementById("a4-membership")?.focus();
-              }}
-            >
-              {copy.a4.keepMembership}
-            </Button>
-          </>
-        );
-      }
       break;
     }
 
     case "B1":
+      heading = (
+        <AuthHeading
+          title={copy.b1.heading}
+          description={copy.b1.summary(tier.name, formatMoney(tier.monthlyPrice), formatDate(nextPayment))}
+        />
+      );
       body = (
-        <>
-          {heading(copy.b1.heading)}
-          <PaperLead>
-            {copy.b1.summary(tier.name, formatMoney(tier.monthlyPrice), formatDate(nextPayment))}
-          </PaperLead>
-          <Stack role="group" aria-labelledby="b1-question">
-            <Question id="b1-question">{copy.b1.question}</Question>
-            {navCard(copy.b1.tooManyEmails, () => go("A2"))}
-            {navCard(copy.b1.costsTooMuch, () => go("B2"))}
-            {navCard(copy.b1.needBreak, () => go("B3"))}
-            {navCard(copy.b1.notInvolved, () => go("B4"))}
-          </Stack>
-        </>
+        <Stack role="group" aria-labelledby="b1-question">
+          <Question id="b1-question">{copy.b1.question}</Question>
+          {navCard(copy.b1.tooManyEmails, () => go("A2"))}
+          {navCard(copy.b1.costsTooMuch, () => go("B2"))}
+          {navCard(copy.b1.needBreak, () => go("B3"))}
+          {navCard(copy.b1.notInvolved, () => go("B4"))}
+        </Stack>
       );
       actions = cancelButton();
       break;
 
     case "B2":
       if (done) {
-        body = (
-          <>
-            {heading(copy.b2.switchedHeading(tier.name))}
-            <PaperLead>{copy.b2.switchedBody(formatDate(nextPayment), formatMoney(tier.monthlyPrice))}</PaperLead>
-          </>
+        top = <IconWell icon={CircleCheck} tone="brand" />;
+        heading = (
+          <AuthHeading
+            title={copy.b2.switchedHeading(tier.name)}
+            description={copy.b2.switchedBody(formatDate(nextPayment), formatMoney(tier.monthlyPrice))}
+          />
         );
         actions = cancelButton();
         break;
       }
+      heading = <AuthHeading title={copy.b2.heading} description={copy.b2.body} />;
       body = (
+        <Stack>
+          {lower && navCard(copy.b2.switchTier(lower.name, formatMoney(lower.monthlyPrice), lower.whatChanges), switchTier)}
+          {navCard(copy.b2.pause, () => go("B3"))}
+        </Stack>
+      );
+      actions = (
         <>
-          {heading(copy.b2.heading)}
-          <PaperLead>{copy.b2.body}</PaperLead>
-          <Stack>
-            {lower &&
-              navCard(copy.b2.switchTier(lower.name, formatMoney(lower.monthlyPrice), lower.whatChanges), switchTier)}
-            {navCard(copy.b2.pause, () => go("B3"))}
-          </Stack>
+          {cancelButton(copy.b2.cancelMembership)}
+          {backButton}
         </>
       );
-      actions = cancelButton(copy.b2.cancelMembership);
       break;
 
     case "B3": {
       if (done) {
         const restart = addMonths(DEMO_TODAY, pause);
-        body = (
+        top = <IconWell icon={CirclePause} tone="neutral" />;
+        heading = (
+          <AuthHeading
+            title={copy.b3.pausedHeading}
+            description={copy.b3.pausedBody(
+              formatDate(restart),
+              formatMoney(tier.monthlyPrice),
+              formatDate(addDays(restart, -RESTART_REMINDER_DAYS)),
+            )}
+          />
+        );
+        actions = (
           <>
-            {heading(copy.b3.pausedHeading)}
-            <PaperLead>
-              {copy.b3.pausedBody(
-                formatDate(restart),
-                formatMoney(tier.monthlyPrice),
-                formatDate(addDays(restart, -RESTART_REMINDER_DAYS)),
-              )}
-            </PaperLead>
             {restarted ? (
               <StatusLine>{copy.notInDoc.restarted}</StatusLine>
             ) : (
-              <Inline>
-                <PaperLead>{copy.b3.restartQuestion}</PaperLead>
+              <>
+                <Footnote>{copy.b3.restartQuestion}</Footnote>
                 <Button
                   type="button"
-                  $variant="ghost"
+                  $variant="outline"
+                  $size="lg"
                   onClick={() => {
                     setMembership("active");
                     setRestarted(true);
@@ -513,72 +456,80 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
                 >
                   {copy.b3.restartNow}
                 </Button>
-              </Inline>
+              </>
             )}
+            {cancelButton()}
           </>
         );
-        actions = cancelButton();
         break;
       }
+      heading = <AuthHeading title={copy.b3.heading} description={copy.b3.whatHappens} />;
       body = (
-        <>
-          {heading(copy.b3.heading)}
-          <Stack>
-            <Question id="b3-question">{copy.b3.question}</Question>
-            <PaperChoices
-              name="pause"
-              aria-labelledby="b3-question"
-              value={String(pause)}
-              onValueChange={(v) => setPause(Number(v) as PauseMonths)}
-            >
-              {pauseMonths.map((n) => (
-                <RadioCard key={n} value={String(n)}>
-                  <PaperCardText>{copy.b3.months(n)}</PaperCardText>
-                </RadioCard>
-              ))}
-            </PaperChoices>
-          </Stack>
-          <PaperLead>{copy.b3.whatHappens}</PaperLead>
-        </>
+        <Stack>
+          <Question id="b3-question">{copy.b3.question}</Question>
+          <RadioGroup
+            name="pause"
+            aria-labelledby="b3-question"
+            value={String(pause)}
+            onValueChange={(v) => setPause(Number(v) as PauseMonths)}
+          >
+            {pauseMonths.map((n) => (
+              <RadioGroupOption key={n} value={String(n)} label={copy.b3.months(n)} />
+            ))}
+          </RadioGroup>
+        </Stack>
       );
       actions = (
         <>
-          {cancelButton(copy.b3.cancelInstead)}
-          <Button type="button" $size="lg" onClick={pauseMembership}>
+          <Button
+            type="button"
+            $size="lg"
+            onClick={() => {
+              setMembership("paused");
+              setRestarted(false);
+              setDone(true);
+            }}
+          >
             {copy.b3.pause}
           </Button>
+          {cancelButton(copy.b3.cancelInstead)}
+          {backButton}
         </>
       );
       break;
     }
 
     case "B4":
-      body = (
-        <>
-          {heading(copy.b4.heading)}
-          <PaperLead>{copy.b4.noMoreCharges}</PaperLead>
-          <PaperLead>
-            {start.policy === "end-of-period"
+      heading = (
+        <AuthHeading
+          title={copy.b4.heading}
+          description={paragraphs(
+            copy.b4.noMoreCharges,
+            start.policy === "end-of-period"
               ? copy.b4.endsAtPeriodEnd(formatDate(addDays(nextPayment, -1)))
-              : copy.b4.endsToday}
-          </PaperLead>
-          <PaperLead>{copy.b4.notRefundable(formatDate(addMonths(nextPayment, -1)))}</PaperLead>
-          <PaperLead>{copy.b4.rejoin}</PaperLead>
+              : copy.b4.endsToday,
+            copy.b4.notRefundable(formatDate(addMonths(nextPayment, -1))),
+            copy.b4.rejoin,
+          )}
+        />
+      );
+      body = (
+        <Stack>
           <Field label={copy.b4.noteLabel}>
             {(props) => (
               <Textarea {...props} name="note" rows={3} maxLength={600} value={note} onChange={(e) => setNote(e.target.value)} />
             )}
           </Field>
-        </>
+        </Stack>
       );
-      // "Cancel membership" is this screen's main action (last, so it fills the row), danger-outline like every cancel.
+      // Cancelling is this screen's point, so it comes first; danger-outline like every cancel.
       actions = (
         <>
-          <Button type="button" $variant="outline" $size="lg" onClick={history.length > 0 ? back : () => go("B1")}>
-            {copy.b4.keepMembership}
-          </Button>
           <Button type="button" $variant="danger-outline" $size="lg" onClick={cancelMembership}>
             {copy.b4.cancelMembership}
+          </Button>
+          <Button type="button" $variant="outline" $size="lg" onClick={history.length > 0 ? back : () => go("B1")}>
+            {copy.b4.keepMembership}
           </Button>
         </>
       );
@@ -586,21 +537,21 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
 
     case "B5": {
       const askAboutEmails = emails === "subscribed" && !emailsKept;
-      body = (
-        <>
-          {heading(copy.b5.heading)}
-          <PaperLead>{copy.b5.body(demoMember.email)}</PaperLead>
-          {emailsKept && <StatusLine>{copy.notInDoc.emailsKept}</StatusLine>}
-          {askAboutEmails && <Question>{copy.b5.emailQuestion}</Question>}
-        </>
-      );
+      top = <IconWell icon={CircleCheck} tone="neutral" />;
+      heading = <AuthHeading title={copy.b5.heading} description={copy.b5.body(demoMember.email)} />;
+      if (emailsKept) actions = <StatusLine>{copy.notInDoc.emailsKept}</StatusLine>;
       if (askAboutEmails) {
+        body = (
+          <Stack>
+            <Question>{copy.b5.emailQuestion}</Question>
+          </Stack>
+        );
         actions = (
           <>
-            {unsubscribeAll(copy.b5.unsubscribeAll)}
             <Button type="button" $size="lg" onClick={() => setEmailsKept(true)}>
               {copy.b5.keepEmails}
             </Button>
+            {unsubscribeAll(copy.b5.unsubscribeAll)}
           </>
         );
       }
@@ -609,24 +560,13 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
   }
 
   return (
-    <PaperPage>
-      <PaperSheet>
-        <PaperLogos>
-          <Image src="/brand/sdc-logo-transparent.png" alt={intakeCopy.logos.sdc} width={800} height={628} loading="eager" />
-        </PaperLogos>
-        <PaperStep key={`${screen}-${done}`}>{body}</PaperStep>
-        {(canGoBack || actions) && (
-          <PaperActions>
-            {canGoBack && (
-              <Button type="button" $variant="outline" $size="lg" onClick={back}>
-                <Icon icon={ArrowLeft} size={16} />
-                {copy.notInDoc.back}
-              </Button>
-            )}
-            {actions}
-          </PaperActions>
-        )}
-      </PaperSheet>
-    </PaperPage>
+    <AuthScreen>
+      <AuthColumn $wide key={`${screen}-${done}`}>
+        {top}
+        {heading}
+        {body}
+        {actions && <AuthActions>{actions}</AuthActions>}
+      </AuthColumn>
+    </AuthScreen>
   );
 }

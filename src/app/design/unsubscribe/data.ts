@@ -4,12 +4,15 @@
  * link); every value below is made up.
  */
 
-/** A1–A4: email preferences. B1–B5: membership. Labels match the copy doc. */
-export type Screen = "A1" | "A2" | "A3" | "A4" | "B1" | "B2" | "B3" | "B4" | "B5";
-export const SCREENS: Screen[] = ["A1", "A2", "A3", "A4", "B1", "B2", "B3", "B4", "B5"];
+/**
+ * A1, A2, A4: email preferences. B1–B5: membership. Labels match the copy doc. A3 (pick topics) is
+ * gone: A1 now offers only "fewer emails" (A2) or "unsubscribe from all" (A4).
+ */
+export type Screen = "A1" | "A2" | "A4" | "B1" | "B2" | "B3" | "B4" | "B5";
+export const SCREENS: Screen[] = ["A1", "A2", "A4", "B1", "B2", "B3", "B4", "B5"];
 
-/** Screens with a saved/confirmed state that can be opened directly with ?state=done. */
-export const SCREENS_WITH_DONE: Screen[] = ["A2", "A3", "B2", "B3"];
+/** Screens with a follow-up state that can be opened directly with ?state=done (A4's is "resubscribed"). */
+export const SCREENS_WITH_DONE: Screen[] = ["A2", "A4", "B2", "B3"];
 
 /**
  * When a cancelled membership's voting rights and benefits end. SDC hasn't decided (doc: Open
@@ -42,10 +45,6 @@ export interface DemoMember {
   tierId: string;
   /** ISO dates (YYYY-MM-DD). */
   nextPaymentDate: string;
-  topics: string[];
-  topicsOther: string;
-  ways: string[];
-  waysOther: string;
 }
 
 export const demoMember: DemoMember = {
@@ -53,11 +52,6 @@ export const demoMember: DemoMember = {
   email: "priya.shah@example.com",
   tierId: "supporter",
   nextPaymentDate: "2026-12-01",
-  // Ids from topicChoices / wayChoices in src/features/intake/copy.ts: the fields the intake form saves.
-  topics: ["tenant-rights", "community"],
-  topicsOther: "",
-  ways: ["learn"],
-  waysOther: "",
 };
 
 /** Fixed so screenshots and reviews show the same dates every day. */

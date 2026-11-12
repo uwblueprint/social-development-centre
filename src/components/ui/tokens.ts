@@ -113,6 +113,10 @@ globalStyle`
     /* Ink is taupe-900 so drawn lines match body text (16.9:1 on the paper). */
     --intake-ink: var(--taupe-900);
     --intake-envelope-inside: #f4e7c6;
+    /* SDC brand green (sign-in and public pages, from the brand mark): headings 9.7:1 on white, and the
+       tint behind brand icons. Same values as main's, brought over for the member-facing design screens. */
+    --color-brand-heading: #064d45;
+    --color-brand-tint: #e3f1ee;
     /* A hand-drawn sheet: uneven corners and an offset ink shadow instead of a soft one. */
     --radius-intake-sheet: 22px 8px 26px 10px / 10px 24px 8px 26px;
     --shadow-intake-sheet: 5px 6px 0 var(--intake-ink);
@@ -309,6 +313,8 @@ globalStyle`
     --intake-paper-tint: #2e2724;
     --intake-ink: var(--taupe-100);
     --intake-envelope-inside: #3a312a;
+    --color-brand-heading: #5fbfae; /* 8.5:1 on --color-bg */
+    --color-brand-tint: #12302b;
     --color-eventbrite-subtle: #2c1712;
     --color-eventbrite-border: #7a2b18;
       --color-overlay: rgb(0 0 0 / 0.6);
@@ -390,6 +396,8 @@ globalStyle`
     --intake-paper-tint: #2e2724;
     --intake-ink: var(--taupe-100);
     --intake-envelope-inside: #3a312a;
+    --color-brand-heading: #5fbfae; /* 8.5:1 on --color-bg */
+    --color-brand-tint: #12302b;
     --color-eventbrite-subtle: #2c1712;
     --color-eventbrite-border: #7a2b18;
     --color-overlay: rgb(0 0 0 / 0.6);

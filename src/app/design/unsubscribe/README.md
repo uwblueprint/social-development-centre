@@ -1,30 +1,41 @@
 # Unsubscribe, pause and cancel membership (design)
 
-Member-facing screens reached from the two footer links in every SDC email: A1–A4 (email preferences) and B1–B5 (membership). Copy is word for word from [SDC Unsubscribe & Cancel Membership — Step Copy](https://claude.ai/artifact/9oi6VCBrW5R1xkz3uA9DzV). Demo data only. Open at `/design/unsubscribe`; `page.tsx` lists the query parameters for every screen and variant.
+Member-facing screens reached from the two footer links in every SDC email: A1, A2, A4 (email preferences) and B1–B5 (membership). Copy is from [SDC Unsubscribe & Cancel Membership — Step Copy](https://claude.ai/artifact/9oi6VCBrW5R1xkz3uA9DzV) except where noted below. Demo data only. Open at `/design/unsubscribe`; `page.tsx` lists the query parameters for every screen and variant.
 
-## Reused from the intake form and the kit
+## Built on Jesse's unsubscribe page
+
+The look and structure come from Jesse's `/unsubscribe/[token]` page (branch `origin/jesse/email-links`): the sign-in screen's centered column with the SDC logo (or an icon well on result screens), a green heading, a short description and full-width buttons. Changes from Jesse's page:
+
+- **A1** offers two choices instead of a single Unsubscribe: "Stay in the loop with fewer emails" (goes to A2) and "Unsubscribe from all communications" (goes to A4).
+- **A4** asks why with a **multi-select survey** (checkboxes) instead of a dropdown, then "Send".
+- A3 (pick topics) is gone: A1 no longer leads to it.
+
+## Reused
 
 | Piece | From | Used for |
 | --- | --- | --- |
-| `PaperPage`, `PaperSheet`, `PaperLogos`, `PaperStep`, `PaperHeading`, `PaperLead` | `src/features/intake/components/Paper.tsx` (moved out of `IntakeForm.tsx`) | The paper sheet, logo, step fade-in, heading and body text on every screen |
-| `PaperChoices` + `PaperCardText` + kit `RadioCard` | `Paper.tsx` (moved out of `IntakeForm.tsx`) | Single-choice cards: A2 email types, A4 reasons, B3 pause length |
-| `PaperActions` | `Paper.tsx` (moved out of `IntakeForm.tsx`; now wraps) | The sticky button bar: Back first, main action last |
-| `CheckCardGroup` | `src/features/intake/components/CheckCardGroup.tsx` | A3 topics and ways, with `topicChoices` / `wayChoices` imported from `src/features/intake/copy.ts` |
-| `Button`, `Field`, `Textarea`, `Icon` | `src/components/ui/` | Everything else |
+| `AuthScreen`, `AuthColumn`, `AuthHeading`, `AuthActions`, `Footnote`, `IconWell`, `SdcLogo` | `src/features/auth/AuthScreen.tsx` | Every screen's shell, heading, buttons column, small text and result icons |
+| `--color-brand-heading`, `--color-brand-tint`, `public/brand/sdc-logo.png` | `src/components/ui/tokens.ts`, `public/brand/` | The green heading, icon tint and logo |
+| `Button`, `Checkbox`, `RadioGroup` + `RadioGroupOption`, `Field`, `Textarea`, `Separator`, `Icon` | `src/components/ui/` | Everything else |
+
+`AuthScreen.tsx`, the logo and the two brand tokens are on main but not yet on this branch, so they are copied over exactly as main has them (no edits). When this branch takes main, they merge without changes.
 
 ## New components
 
-Nothing in the intake form or the kit covers these. They live in `UnsubscribeFlow.tsx`; promote them if another flow needs them.
+They live in `UnsubscribeFlow.tsx`; promote them if another flow needs them.
 
 | Component | Where | Why it's new |
 | --- | --- | --- |
-| `danger-outline` Button variant | `src/components/ui/Button.tsx` (kit; demo on `/components`, documented in `docs/components/Button.md`) | "Cancel membership" and "Unsubscribe from all emails" must always be visible as real buttons without competing with the main action. Needs design-system owner sign-off. |
-| `NavCard` | `UnsubscribeFlow.tsx` | A card that moves to another screen (A1, B1, B2). The intake form's cards only select. Built as a kit `Button` (outline) shaped like the intake cards, with a chevron. |
-| `Question` | `UnsubscribeFlow.tsx` | An `h2` for a sub-question when one screen asks more than one thing (A3, A4, B1, B3, B5). The intake form has one question per step. |
+| `danger-outline` Button variant | `src/components/ui/Button.tsx` (main has the same variant now) | "Cancel membership" and "Unsubscribe from all" must always be visible as real buttons without competing with the main action. |
+| `NavCard` | `UnsubscribeFlow.tsx` | A full-width choice that moves to another screen (B1, B2). A kit outline `Button` with a chevron. |
+| `Question` | `UnsubscribeFlow.tsx` | An `h2` for a question inside the column (A2, A4 survey, B1, B3, B5). |
 | `StatusLine` | `UnsubscribeFlow.tsx` | A result line that replaces the button just pressed and takes focus (A4 Send, B3 Restart, B5 Keep getting emails). |
 
-Layout-only wrappers (no visual style): `Stack` (column with a gap) and `Inline` (text + button on one line).
+Layout-only wrappers (no visual style): `Stack` and `Choices`.
 
 ## Copy not in the doc
 
-Placeholders in `copy.ts` under `notInDoc`. Confirm with SDC: "Back", "Thanks for telling us.", "You'll keep getting emails from SDC.", "Your membership is active again.", and the page title.
+Confirm with SDC:
+
+- A1's choices, "Stay in the loop with fewer emails" and "Unsubscribe from all communications" (design's, replacing the doc's three reasons).
+- Placeholders in `copy.ts` under `notInDoc`: "Back", "Thanks for telling us.", "You're subscribed again" / "You'll get emails from SDC again." (Jesse's), "You'll keep getting emails from SDC.", "Your membership is active again.", and the page title.

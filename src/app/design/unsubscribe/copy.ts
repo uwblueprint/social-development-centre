@@ -14,10 +14,9 @@ export const unsubscribeCopy = {
   a1: {
     heading: "What would you like to change?",
     subtext: (email: string) => `Emails sent to ${email}`,
-    tooMany: "I get too many emails",
-    notRelevant: "The emails aren't relevant to me",
-    noMore: "I don't want to hear from SDC anymore",
-    unsubscribeAll: "Unsubscribe from all emails",
+    // The two choices are Shallot's (design), replacing the doc's three reasons: confirm with SDC.
+    fewerEmails: "Stay in the loop with fewer emails",
+    unsubscribeAll: "Unsubscribe from all communications",
   },
 
   a2: {
@@ -33,17 +32,6 @@ export const unsubscribeCopy = {
     savedHeading: "Your preference is saved",
     savedBody: (chosenOption: string) =>
       `You'll get ${chosenOption} from now on. One email already scheduled may still arrive while this takes effect.`,
-  },
-
-  a3: {
-    heading: "Tell us what you care about",
-    body: "We'll only email you about the topics you pick. You can change this anytime from the link in any SDC email.",
-    topicsQuestion: "Which topics interest you?",
-    waysQuestion: "How would you like to be involved?",
-    save: "Save my interests",
-    unsubscribeInstead: "Unsubscribe from all instead",
-    savedHeading: "Your interests are updated",
-    savedBody: (topics: string) => `You'll only get emails about ${topics}.`,
   },
 
   a4: {
@@ -130,6 +118,9 @@ export const unsubscribeCopy = {
     pageTitle: "Email preferences and membership",
     back: "Back",
     reasonThanks: "Thanks for telling us.",
+    // From Jesse's unsubscribe page (origin/jesse/email-links).
+    resubscribedHeading: "You're subscribed again",
+    resubscribedBody: "You'll get emails from SDC again.",
     emailsKept: "You'll keep getting emails from SDC.",
     restarted: "Your membership is active again.",
   },
