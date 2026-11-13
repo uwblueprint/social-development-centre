@@ -37,8 +37,7 @@ export const unsubscribeCopy = {
   a4: {
     /** Screen readers only; the text starts with it too. */
     heading: "You're unsubscribed",
-    body: "You won't get newsletters, event invitations or campaign emails from SDC anymore.",
-    reasonQuestion: "Mind telling us why? (optional)",
+    reasonQuestion: "Mind telling us why?",
     reasons: {
       "too-many": "Too many emails",
       "not-relevant": "Not relevant to me",

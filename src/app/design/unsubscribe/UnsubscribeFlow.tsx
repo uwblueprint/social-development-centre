@@ -350,7 +350,7 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
       const activeMember = membership === "active";
       top = <IconWell icon={MailX} tone="neutral" />;
       title = copy.a4.heading;
-      lead = paragraphs(`${title}.`, copy.a4.body);
+      lead = `${title}.`;
       body = (
         <>
           <Stack role="group" aria-labelledby="a4-reason">
