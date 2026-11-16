@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 import { styled } from "next-yak";
+import { StateLabProvider } from "./_state-lab/StateLabProvider";
 
 /*
  * Designers' screens sit next to a blank block where the sidebar will go, at the sidebar's width, so
@@ -34,9 +35,11 @@ const Screen = styled.main`
 export default function DesignLayout({ children }: { children: ReactNode }) {
   if (process.env.NODE_ENV === "production") notFound();
   return (
-    <Frame>
-      <NavPlaceholder aria-hidden="true" />
-      <Screen>{children}</Screen>
-    </Frame>
+    <StateLabProvider>
+      <Frame>
+        <NavPlaceholder aria-hidden="true" />
+        <Screen>{children}</Screen>
+      </Frame>
+    </StateLabProvider>
   );
 }
