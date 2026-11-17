@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { styled } from "next-yak";
-import { ArrowLeft, Check, ChevronRight, CircleCheck, CirclePause, MailX } from "lucide-react";
+import { ArrowLeft, Check, ChevronRight, CircleCheck, CircleMinus, CirclePause, MailX } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { Card, CardContent, CardDescription } from "@/components/ui/Card";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
@@ -45,7 +46,9 @@ import {
  *   screen), and result screens start their text with what the heading used to say.
  * - A1: tick the email types you want, then save. Saving turns the Save button into "Your preference
  *   is saved" until a tick changes. Unsubscribing (or saving with nothing ticked) opens A4.
- * - A4, the unsubscribed page: the result, then a multi-select survey, then ways to stay.
+ * - A4, the unsubscribe page, laid out after Luma's: the reasons (multi-select) in a card, then
+ *   Unsubscribe. Opening it never unsubscribes. The result replaces the button, with an undo under it,
+ *   then the way to stay ("fewer emails").
  *
  * Two rules from the doc hold: "Unsubscribe from all" (A1) and "Cancel membership" (B1–B4) are always
  * visible as real buttons, and the membership reason question is optional.
@@ -115,6 +118,50 @@ const ChoiceText = styled.span`
   color: var(--color-text);
 `;
 
+/** The organization's name in A4's card, under "Unsubscribe from". */
+const CardName = styled.p`
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-ui);
+`;
+
+/**
+ * A4's result, in place of the Unsubscribe button: a success tint, a check icon and the words (never
+ * color alone). Takes focus when it appears.
+ */
+function SuccessMessage({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLParagraphElement>(null);
+  useEffect(() => ref.current?.focus(), []);
+  return (
+    <SuccessBox ref={ref} role="status" tabIndex={-1}>
+      <SuccessIcon icon={CircleCheck} size={20} />
+      {children}
+    </SuccessBox>
+  );
+}
+
+const SuccessBox = styled.p`
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--color-success-border);
+  border-radius: var(--radius-md);
+  background: var(--color-success-subtle);
+  color: var(--color-text);
+
+  &:focus {
+    outline: none;
+  }
+`;
+
+const SuccessIcon = styled(Icon)`
+  flex-shrink: 0;
+  color: var(--color-success);
+`;
+
 /** Small print, left-aligned with the content above it. */
 const Note = styled.p`
   margin: 0;
@@ -131,6 +178,14 @@ const Stack = styled.div`
   flex-direction: column;
   gap: var(--space-3);
   width: 100%;
+`;
+
+/** Text with a button after it on one line: "Unsubscribed by mistake? Resubscribe". */
+const Inline = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
 `;
 
 const Choices = styled.div`
@@ -162,7 +217,7 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
 
   // The member's record as these screens change it.
   const [emailsWanted, setEmailsWanted] = useState<EmailType[]>(() => {
-    if (start.screen === "A4") return [];
+    if (start.screen === "A4" && start.done) return [];
     if (start.emailResult === "saved") return ["monthly"];
     return [...emailTypes];
   });
@@ -181,7 +236,6 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
   // Answers.
   const [ticked, setTicked] = useState<EmailType[]>(emailsWanted);
   const [reasons, setReasons] = useState<UnsubscribeReason[]>([]);
-  const [reasonsSent, setReasonsSent] = useState(false);
   const [pause, setPause] = useState<PauseMonths>(1);
   const [note, setNote] = useState("");
 
@@ -223,19 +277,27 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
     setEmailsWanted(types);
     setEmailResult("saved");
   }
+  /** Opens A4. Nothing is unsubscribed until its button is pressed. */
   function unsubscribe() {
+    setEmailResult(null);
+    go("A4");
+  }
+  /** A4's button. The reasons go with it. */
+  function confirmUnsubscribe() {
     setEmailsWanted([]);
     setTicked([]);
     setEmailResult(null);
-    setReasons([]);
-    setReasonsSent(false);
-    go("A4");
   }
-  /** Back to A1 from A4: everything ticked again ("Resubscribe"), or ready to untick some ("fewer emails"). */
-  function stay(resubscribed: boolean) {
+  /** A4's undo: back to everything, on the same page. */
+  function resubscribe() {
+    setEmailsWanted([...emailTypes]);
     setTicked([...emailTypes]);
-    if (resubscribed) setEmailsWanted([...emailTypes]);
-    setEmailResult(resubscribed ? "resubscribed" : null);
+    setEmailResult("resubscribed");
+  }
+  /** A4 → A1 to pick fewer emails. If they'd unsubscribed, start from everything ticked. */
+  function pickFewer() {
+    if (!subscribed) setTicked([...emailTypes]);
+    setEmailResult(null);
     setHistory([]);
     setScreen("A1");
     setDone(false);
@@ -350,15 +412,18 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
       const activeMember = membership === "active";
       top = <IconWell icon={MailX} tone="neutral" />;
       title = copy.a4.heading;
-      lead = `${title}.`;
+      lead = copy.a1.subtext(demoMember.email);
       body = (
-        <>
-          <Stack role="group" aria-labelledby="a4-reason">
-            <Question id="a4-reason">{copy.a4.reasonQuestion}</Question>
-            {reasonsSent ? (
-              <StatusLine>{copy.notInDoc.reasonThanks}</StatusLine>
-            ) : (
-              <>
+        <Stack>
+          <Card>
+            <CardContent>
+              <CardDescription>{subscribed ? copy.a4.cardLabel : copy.a4.cardLabelDone}</CardDescription>
+              <CardName>{copy.a4.org}</CardName>
+            </CardContent>
+            <Separator />
+            <CardContent>
+              <Stack role="group" aria-labelledby="a4-reason">
+                <Question id="a4-reason">{copy.a4.reasonQuestion}</Question>
                 <Choices>
                   {unsubscribeReasons.map((r) => (
                     <Checkbox
@@ -373,30 +438,38 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
                     />
                   ))}
                 </Choices>
-                <Button type="button" $size="lg" onClick={() => setReasonsSent(true)}>
-                  {copy.a4.send}
+              </Stack>
+            </CardContent>
+          </Card>
+          {subscribed ? (
+            <>
+              <Button type="button" $size="lg" onClick={confirmUnsubscribe}>
+                <Icon icon={CircleMinus} size={16} />
+                {copy.a4.confirm}
+              </Button>
+              <Note>{copy.a4.confirmNote(activeMember)}</Note>
+              {emailResult === "resubscribed" && (
+                <StatusLine>{`${copy.notInDoc.resubscribedHeading}. ${copy.notInDoc.resubscribedBody}`}</StatusLine>
+              )}
+            </>
+          ) : (
+            <>
+              <SuccessMessage>{copy.a4.done}</SuccessMessage>
+              <Inline>
+                <Note>{copy.a4.undoQuestion}</Note>
+                <Button type="button" $variant="ghost" onClick={resubscribe}>
+                  {copy.a4.resubscribe}
                 </Button>
-              </>
-            )}
-          </Stack>
+              </Inline>
+            </>
+          )}
           <Separator />
-          <Stack>
-            <Question>{copy.a4.undoQuestion}</Question>
-            <AuthActions>
-              <Button type="button" $variant="outline" $size="lg" onClick={() => stay(false)}>
-                {copy.a4.fewerEmails}
-              </Button>
-              <Button type="button" $variant="outline" $size="lg" onClick={() => stay(true)}>
-                {copy.a4.resubscribe}
-              </Button>
-            </AuthActions>
-          </Stack>
-        </>
+          {navCard(copy.a4.fewerEmails, pickFewer)}
+        </Stack>
       );
       if (activeMember) {
         actions = (
           <>
-            <Separator />
             <Note>{copy.a4.membership(tier.name, formatDate(nextPayment), formatMoney(tier.monthlyPrice))}</Note>
             {cancelButton(copy.a4.cancelMembership)}
           </>

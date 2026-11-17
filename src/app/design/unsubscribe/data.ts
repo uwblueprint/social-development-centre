@@ -5,14 +5,14 @@
  */
 
 /**
- * A1: email preferences (footer link 1): tick the email types you want and save. A4: the page
- * unsubscribing opens. B1–B5: membership (footer link 2). The doc's A2 and A3 are folded into A1.
+ * A1: email preferences (footer link 1): tick the email types you want and save. A4: the unsubscribe
+ * page (Luma-style: reasons, then confirm, then the result in place). B1–B5: membership (footer link 2). The doc's A2 and A3 are folded into A1.
  */
 export type Screen = "A1" | "A4" | "B1" | "B2" | "B3" | "B4" | "B5";
 export const SCREENS: Screen[] = ["A1", "A4", "B1", "B2", "B3", "B4", "B5"];
 
-/** Membership screens with a saved/confirmed state that can be opened directly with ?state=done. */
-export const SCREENS_WITH_DONE: Screen[] = ["B2", "B3"];
+/** Screens with a confirmed state that can be opened directly with ?state=done (A4: unsubscribed). */
+export const SCREENS_WITH_DONE: Screen[] = ["A4", "B2", "B3"];
 
 /**
  * A1's result, if any. Open one directly with ?state=…: "saved" turns Save into "Your preference is

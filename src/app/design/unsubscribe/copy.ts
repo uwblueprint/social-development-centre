@@ -33,10 +33,17 @@ export const unsubscribeCopy = {
     unsubscribeAll: "Unsubscribe from all communications",
   },
 
-  /* The page unsubscribing opens: the result, then the survey, then ways to stay (design's order). */
+  /*
+   * The unsubscribe page, laid out after Luma's (design): the reasons in a card, then the Unsubscribe
+   * button, which the result replaces. Opening the page never unsubscribes; the button does.
+   */
   a4: {
-    /** Screen readers only; the text starts with it too. */
-    heading: "You're unsubscribed",
+    /** Screen readers only. Jesse's heading, without the question mark. */
+    heading: "Unsubscribe from SDC emails",
+    /** Design. */
+    cardLabel: "Unsubscribe from",
+    cardLabelDone: "Unsubscribed from",
+    org: "Social Development Centre",
     reasonQuestion: "Mind telling us why?",
     reasons: {
       "too-many": "Too many emails",
@@ -44,11 +51,15 @@ export const unsubscribeCopy = {
       "didnt-sign-up": "I didn't sign up for these",
       other: "Other",
     } satisfies Record<UnsubscribeReason, string>,
-    send: "Send",
+    /** Jesse's button and description. */
+    confirm: "Unsubscribe",
+    confirmNote: (isMember: boolean) =>
+      isMember ? "You'll stop getting emails from SDC. You'll still be a member." : "You'll stop getting emails from SDC.",
+    done: "You're unsubscribed.",
     undoQuestion: "Unsubscribed by mistake?",
-    /** Design. */
-    fewerEmails: "Stay in the loop with fewer emails",
     resubscribe: "Resubscribe",
+    /** Design: the way to stay, like Luma's "All notification preferences". */
+    fewerEmails: "Stay in the loop with fewer emails",
     membership: (tier: string, date: string, amount: string) =>
       `Your ${tier} membership is still active. It renews on ${date} for ${amount}.`,
     cancelMembership: "Cancel membership",
