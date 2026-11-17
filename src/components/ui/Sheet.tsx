@@ -9,7 +9,7 @@ import type { ReactNode } from "react";
 import { Icon } from "./Icon";
 import { keepEscapeForTagSelection } from "./TagInput";
 
-// Owner decision 9: subtle enter and exit. A short slide plus fade, not the full panel width.
+// Calm: the sheet slides from its edge (shows where it lives); exit is faster. See docs/design/motion.md.
 // Radix keeps the element mounted until the exit animation ends.
 const overlayShow = keyframes`
   from { opacity: 0; }
@@ -22,13 +22,13 @@ const overlayHide = keyframes`
 `;
 
 const slideIn = keyframes`
-  from { opacity: 0; transform: translateX(var(--space-6)); }
-  to { opacity: 1; transform: translateX(0); }
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
 `;
 
 const slideOut = keyframes`
-  from { opacity: 1; transform: translateX(0); }
-  to { opacity: 0; transform: translateX(var(--space-6)); }
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
 `;
 
 const Overlay = styled(DialogPrimitive.Overlay)`
@@ -36,10 +36,10 @@ const Overlay = styled(DialogPrimitive.Overlay)`
   inset: 0;
   background: var(--color-overlay);
   z-index: var(--z-modal);
-  animation: ${overlayShow} var(--duration-slow) var(--ease);
+  animation: ${overlayShow} var(--duration-slow) var(--ease-out);
 
   &[data-state="closed"] {
-    animation: ${overlayHide} var(--duration-slow) var(--ease) forwards;
+    animation: ${overlayHide} var(--duration) var(--ease-in) forwards;
   }
 `;
 
@@ -57,10 +57,10 @@ const Content = styled(DialogPrimitive.Content)<{ $size?: SheetSize }>`
   max-width: 100vw;
   background: var(--color-surface-raised);
   box-shadow: var(--shadow-lg);
-  animation: ${slideIn} var(--duration-slow) var(--ease);
+  animation: ${slideIn} var(--duration-slow) var(--ease-out);
 
   &[data-state="closed"] {
-    animation: ${slideOut} var(--duration-slow) var(--ease) forwards;
+    animation: ${slideOut} var(--duration) var(--ease-in) forwards;
   }
 
   &:focus {
@@ -163,7 +163,7 @@ const InlineCloseButton = styled(DialogPrimitive.Close)`
   border-radius: var(--radius-md);
   color: var(--color-text);
   cursor: pointer;
-  transition: background-color var(--duration) var(--ease);
+  transition: background-color var(--duration-fast) var(--ease-out);
 
   &:hover {
     background: var(--color-bg-hover);

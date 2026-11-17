@@ -1,6 +1,7 @@
 "use client";
 
-import { css, keyframes, styled } from "next-yak";
+import { css, styled } from "next-yak";
+import { overlayMotion } from "./overlayMotion";
 import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui";
 import { Check } from "lucide-react";
 import type { ReactNode } from "react";
@@ -16,11 +17,6 @@ export function DropdownMenu(props: DropdownMenuPrimitive.DropdownMenuProps) {
   return <DropdownMenuPrimitive.Root modal={false} {...props} />;
 }
 
-const contentShow = keyframes`
-  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-`;
-
 const Content = styled(DropdownMenuPrimitive.Content)`
   z-index: var(--z-popover);
   min-width: 220px;
@@ -29,8 +25,9 @@ const Content = styled(DropdownMenuPrimitive.Content)`
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-md);
   padding: var(--space-1);
-  animation: ${contentShow} var(--duration) var(--ease);
-  transform-origin: var(--radix-dropdown-menu-content-transform-origin);
+  /* Scrolls past 7.5 rows (32px each) so the half row signals more below. */
+  max-height: min(calc(32px * 7.5 + var(--space-1) * 2 + 2px), var(--radix-dropdown-menu-content-available-height));
+  overflow-y: auto;
 
   /* The indicator column only exists when something in the menu can be checked. */
   &:not(:has([role="menuitemcheckbox"], [role="menuitemradio"])) > * {
@@ -40,6 +37,8 @@ const Content = styled(DropdownMenuPrimitive.Content)`
   &:focus {
     outline: none;
   }
+
+  ${overlayMotion}
 `;
 
 /*

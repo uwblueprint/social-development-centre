@@ -1,15 +1,11 @@
 "use client";
 
-import { keyframes, styled } from "next-yak";
+import { styled } from "next-yak";
+import { overlayMotion } from "./overlayMotion";
 import { Popover as PopoverPrimitive } from "radix-ui";
 import { X } from "lucide-react";
 import type { ReactNode } from "react";
 import { Icon } from "./Icon";
-
-const contentShow = keyframes`
-  from { opacity: 0; transform: translateY(4px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-`;
 
 const Content = styled(PopoverPrimitive.Content)`
   z-index: var(--z-popover);
@@ -19,12 +15,12 @@ const Content = styled(PopoverPrimitive.Content)`
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-md);
   padding: 12px;
-  animation: ${contentShow} var(--duration) var(--ease);
-  transform-origin: var(--radix-popover-content-transform-origin);
 
   &:focus {
     outline: none;
   }
+
+  ${overlayMotion}
 `;
 
 const Arrow = styled(PopoverPrimitive.Arrow)`

@@ -3,11 +3,13 @@
  * replaces `demoMembers` with queries (see docs/backend/member-directory.md).
  */
 
+import type { TagColor as KitTagColor } from "@/components/ui/Tag";
+
 export type MembershipKind = "paid" | "complimentary" | "gifted" | "sponsored";
 export type MemberStatus = "member" | "waiting" | "ended";
 export type PaymentMethod = "etransfer" | "cash" | "online";
-/** Badge categories from the kit (blue, violet, fuchsia, pink, lime); `undefined` is the neutral badge. */
-export type TagColor = 1 | 2 | 3 | 4 | 5 | undefined;
+/** The kit's tag colours; `undefined` is the neutral grey tag. */
+export type TagColor = KitTagColor | undefined;
 
 /** The one running note on a member: staff edit it in place. */
 export interface Note {
@@ -51,6 +53,8 @@ export interface Member {
   endsAt: string;
   subscribed: boolean;
   tags: string[];
+  /** When each tag was added (ISO date), by tag name. Optional: without it, the tag activity and then array order decide. */
+  tagAddedAt?: Record<string, string>;
   note?: Note;
   payments: Payment[];
   activity: ActivityItem[];
@@ -145,6 +149,22 @@ export function endHeadline(endsAt: string): string {
   return `Ends in ${plural(n, "day")}`;
 }
 
+/**
+ * A member's tags, newest first. A tag's added date is the latest of its `tagAddedAt` entry and its "Tagged X" activity;
+ * tags with no date (or the same date) fall back to array order, where the last item is the newest.
+ */
+export function tagsByRecency(m: Pick<Member, "tags" | "tagAddedAt" | "activity">): string[] {
+  const dateOf = (t: string) => {
+    const dates = m.activity.filter((a) => a.kind === "tag" && !a.title.startsWith("Removed") && a.title.endsWith(t)).map((a) => a.at);
+    if (m.tagAddedAt?.[t]) dates.push(m.tagAddedAt[t]);
+    return dates.sort().pop() ?? "";
+  };
+  return m.tags
+    .map((t, i) => ({ t, i, at: dateOf(t) }))
+    .sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : b.i - a.i))
+    .map((x) => x.t);
+}
+
 export const totalPaid = (m: Member) => m.payments.reduce((sum, p) => sum + p.amount, 0);
 
 /** The "Joined" activity title, from how they joined: "Joined via Website", "Joined with a gift from Helen Brooks". */
@@ -189,6 +209,7 @@ function member(
     endsAt,
     subscribed: o.subscribed ?? true,
     tags: o.tags ?? [],
+    tagAddedAt: o.tagAddedAt,
     note: o.note,
     payments: o.payments ?? [],
     activity: [
@@ -227,10 +248,10 @@ const monthlies = (months: number): ActivityItem[] =>
   });
 
 export const demoTags: { name: string; color: TagColor }[] = [
-  { name: "Board", color: 1 },
-  { name: "Volunteer", color: 5 },
-  { name: "Leadership donor", color: 2 },
-  { name: "Ride for Refuge", color: 4 },
+  { name: "Board", color: "sky" },
+  { name: "Volunteer", color: "emerald" },
+  { name: "Leadership donor", color: "stone" },
+  { name: "Ride for Refuge", color: "amber" },
   { name: "Do not contact", color: undefined },
 ];
 
@@ -266,7 +287,7 @@ export const demoMembers: Member[] = [
     payments: [pay(15, 465, "cash")],
     activity: [{ id: id("a"), kind: "ended", title: "Membership ended", at: ago(100) }],
   }),
-  member("Farid", "Nasser", { joinedDaysAgo: 340, endsAt: addDays(TODAY, 12), amount: 25, payments: [pay(25, 340)], tags: ["Volunteer"] }),
+  member("Farid", "Nasser", { joinedDaysAgo: 340, endsAt: addDays(TODAY, 12), amount: 25, payments: [pay(25, 340)], tags: ["Volunteer", "Do not contact", "Board"], tagAddedAt: { Volunteer: ago(90), "Do not contact": ago(30), Board: ago(60) } }),
   member("Grace", "Lindqvist", {
     joinedDaysAgo: 720,
     endsAt: addDays(TODAY, 25),
@@ -304,7 +325,8 @@ export const demoMembers: Member[] = [
     joinedDaysAgo: 400,
     amount: 1200,
     endsAt: addMonths(ago(7), 12),
-    tags: ["Leadership donor", "Board"],
+    tags: ["Leadership donor", "Board", "Volunteer"],
+    tagAddedAt: { "Leadership donor": ago(400), Board: ago(200), Volunteer: ago(20) },
     payments: [pay(1200, 7), pay(1200, 400)],
     note: { text: "Birthday is March 3. Prefers email over events.", updatedAt: ago(30), by: "Rithika" },
     activity: monthlies(13),

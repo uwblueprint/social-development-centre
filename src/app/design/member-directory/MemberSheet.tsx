@@ -6,6 +6,7 @@ import {
   Banknote,
   CalendarCheck,
   ChevronDown,
+  ChevronUp,
   CircleCheck,
   Clock,
   Copy,
@@ -17,10 +18,11 @@ import {
   Trash2,
   User,
   UserPlus,
-  X,
   type LucideIcon,
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
+import { Tag } from "@/components/ui/Tag";
+import { TagPicker } from "./TagPicker";
 import { Button } from "@/components/ui/Button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/Collapsible";
 import {
@@ -31,7 +33,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/DropdownMenu";
 import { Icon } from "@/components/ui/Icon";
-import { CreatableCombobox } from "@/components/ui/CreatableCombobox";
 import { Sheet, SheetBody, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/Sheet";
 import { SearchField } from "@/components/ui/SearchField";
 import { ToggleGroupItem } from "@/components/ui/ToggleGroup";
@@ -51,12 +52,25 @@ import {
   type TagColor,
 } from "./data";
 import { PillToggle } from "./PillToggle";
+import { inOwnWidget, isTyping, plain } from "./listKeys";
+import { useLabLoad, useStateLab, SAVING_FOR, type StateLab } from "../_state-lab/useStateLab";
+import { ConnectionBanner, InlineAlert, SectionFailed, SectionSkeleton, Skeleton } from "./SheetStates";
 
 /* ---------- layout ---------- */
 
 const Panel = styled(SheetContent)`
   /* Section cards' fill; overlays, milestone dots and activity dot rings read it too so they match. */
   --section-bg: var(--color-surface);
+
+  /* Wider than the kit's 480px so long names, tags and emails have room: 576px, full width on phones. */
+  &&& {
+    width: min(calc(var(--space-8) * 9), 100vw);
+  }
+  @media (max-width: 640px) {
+    &&& {
+      width: 100vw;
+    }
+  }
 `;
 
 /*
@@ -83,15 +97,6 @@ const QuietButton = styled(Button)`
     content: "";
     position: absolute;
     inset: calc(var(--space-1) * -1);
-  }
-`;
-
-/* The × inside a tag while editing: takes the tag's own colour, so a tag looks the same in both modes. */
-const RemoveTag = styled(QuietButton)`
-  &&&,
-  &&&:hover:not(:disabled) {
-    color: inherit;
-    line-height: 1;
   }
 `;
 
@@ -150,6 +155,29 @@ const Chips = styled.div`
   margin-top: var(--space-1);
 `;
 
+/* Long tag names wrap inside the pill instead of pushing the row wider than the panel. */
+const WrappingTag = styled(Tag)`
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+`;
+
+/* A message that takes its own full line in the wrapping chips row. */
+const FullRow = styled.div`
+  flex: 1 1 100%;
+  min-width: 0;
+`;
+
+/* A long name wraps instead of running under the buttons. */
+const Name = styled(SheetTitle)`
+  overflow-wrap: anywhere;
+
+  /* Focus lands here on open so a screen reader starts at the name; it isn't a control, so no ring. */
+  &:focus {
+    outline: none;
+  }
+`;
+
 /* The tag picker and Done wrap together, so Done never sits alone on a line. */
 const TagEntry = styled.span`
   display: inline-flex;
@@ -159,7 +187,7 @@ const TagEntry = styled.span`
 `;
 
 const TagField = styled.span`
-  width: calc(var(--space-8) * 3);
+  width: calc(var(--space-8) * 5);
   max-width: 100%;
 `;
 
@@ -560,6 +588,8 @@ export function MemberSheet({
   allTags,
   actions,
   onStep,
+  hasPrev,
+  hasNext,
 }: {
   member: Member | null;
   open: boolean;
@@ -567,46 +597,147 @@ export function MemberSheet({
   tagColors: Record<string, TagColor>;
   allTags: string[];
   actions: MemberSheetActions;
-  /** Arrow keys step through the list while the panel is open. */
+  /** j and k, and the Previous and Next buttons, step through the list while the panel is open. */
   onStep: (direction: 1 | -1) => void;
+  /** Whether the list has a member before or after this one, in its current sort and filter order. */
+  hasPrev: boolean;
+  hasNext: boolean;
 }) {
+  const lab = useStateLab({
+    data: [
+      { id: "activity-failed", label: "Couldn't load activity", description: "Activity can't load; the rest of the panel works." },
+      { id: "notes-failed", label: "Couldn't load the note", description: "The note can't load; the rest of the panel works." },
+      { id: "intake-failed", label: "Couldn't load intake answers", description: "The intake answers can't load; the rest works." },
+    ],
+    notApplicable: ["readOnly", "rateLimited", "undoExpired"],
+  });
+  const load = useLabLoad(lab);
+  const waiting = load.loading || lab.loadFailed;
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <Panel
         aria-describedby={undefined}
+        data-member-sheet=""
+        onOpenAutoFocus={(event) => {
+          // Focus goes to the member's name, not the first control.
+          event.preventDefault();
+          (event.currentTarget as HTMLElement).querySelector<HTMLElement>("[data-member-title]")?.focus();
+        }}
         onKeyDown={(event) => {
-          const target = event.target as HTMLElement;
-          if (target.closest("input, textarea, [role=combobox], [role=menu], [role=listbox]")) return;
-          if (event.key === "ArrowDown") {
+          if (event.defaultPrevented || !plain(event) || isTyping(event.target) || inOwnWidget(event.target)) return;
+          if (event.key === "j") {
             event.preventDefault();
             onStep(1);
-          } else if (event.key === "ArrowUp") {
+          } else if (event.key === "k") {
             event.preventDefault();
             onStep(-1);
+          } else if ((event.key === "Delete" || event.key === "Backspace") && !event.shiftKey && !waiting) {
+            event.preventDefault();
+            actions.onDelete();
           }
         }}
       >
-        {member && <MemberPanel key={member.id} member={member} tagColors={tagColors} allTags={allTags} actions={actions} />}
+        {member && <MemberPanel key={member.id} member={member} hasPrev={hasPrev} hasNext={hasNext} onStep={onStep} tagColors={tagColors} allTags={allTags} actions={actions} lab={lab} load={load} />}
       </Panel>
     </Sheet>
   );
 }
 
+type SheetLab = StateLab<"activity-failed" | "notes-failed" | "intake-failed">;
+type Load = ReturnType<typeof useLabLoad>;
+
+const LONG_WORD = "Wolfeschlegelsteinhausenbergerdorff";
+
+/** The member as the State lab wants to show it: long text, or some fields missing. Untouched when neither is on. */
+function labMember(m: Member, longText: boolean, partial: boolean, sectionEmpty: boolean): Member {
+  let v = m;
+  if (longText) {
+    const long = `${LONG_WORD} ${LONG_WORD} ${LONG_WORD}`;
+    v = {
+      ...v,
+      firstName: LONG_WORD,
+      lastName: `${LONG_WORD}-${LONG_WORD}`,
+      email: `${LONG_WORD.toLowerCase()}.${LONG_WORD.toLowerCase()}@a-very-long-organisation-name-for-community-development.example.org`,
+      tags: [...v.tags, `${LONG_WORD}-${LONG_WORD}-${LONG_WORD}`],
+      note: { text: `${long}. `.repeat(8), updatedAt: v.note?.updatedAt ?? v.activity[0]?.at ?? "", by: LONG_WORD },
+      intake: {
+        ...v.intake,
+        answeredAt: v.intake?.answeredAt ?? v.activity[0]?.at ?? "",
+        hopes: `${long} `.repeat(6),
+        location: long,
+        interests: [long, ...(v.intake?.interests ?? [])],
+      },
+      activity: v.activity.map((a, i) => (i === 0 ? { ...a, title: `${long} ${long}`, detail: long } : a)),
+    };
+  }
+  if (partial) {
+    v = {
+      ...v,
+      firstName: "",
+      lastName: "",
+      email: "",
+      note: v.note ? { ...v.note, by: "" } : v.note,
+      intake: v.intake ? { answeredAt: v.intake.answeredAt, location: v.intake.location ?? "Waterloo" } : v.intake,
+    };
+  }
+  if (sectionEmpty) v = { ...v, note: undefined, intake: undefined };
+  return v;
+}
+
 function MemberPanel({
-  member: m,
+  member,
+  hasPrev,
+  hasNext,
+  onStep,
   tagColors,
   allTags,
   actions,
+  lab,
+  load,
 }: {
   member: Member;
+  hasPrev: boolean;
+  hasNext: boolean;
+  onStep: (direction: 1 | -1) => void;
   tagColors: Record<string, TagColor>;
   allTags: string[];
   actions: MemberSheetActions;
+  lab: SheetLab;
+  load: Load;
 }) {
+  const m = labMember(member, lab.longText, lab.partialData, lab.sectionEmpty);
+  const loading = load.loading;
+  const failed = lab.loadFailed && !loading;
+  const noteFailed = lab.is("notes-failed");
+  const activityFailed = lab.sectionFailed || lab.is("activity-failed");
+  const intakeFailed = lab.is("intake-failed");
+  const name = fullName(m) || "Unnamed member";
+  const waiting = loading || failed;
+
+  // A new member (j, k or the step buttons) replaces this panel, so focus follows to the new name.
+  const title = React.useRef<HTMLHeadingElement>(null);
+  React.useEffect(() => {
+    const panel = title.current?.closest("[data-member-sheet]");
+    const active = document.activeElement;
+    if (panel && (!active || active === document.body || panel.contains(active))) title.current?.focus();
+  }, []);
+
   return (
     <>
       <SheetHeader
+        aria-busy={loading || undefined}
         actions={
+          <>
+          {hasPrev && (
+            <Button type="button" $variant="ghost" $size="sm" aria-label="Previous member" onClick={() => onStep(-1)}>
+              <Icon icon={ChevronUp} size={16} />
+            </Button>
+          )}
+          {hasNext && (
+            <Button type="button" $variant="ghost" $size="sm" aria-label="Next member" onClick={() => onStep(1)}>
+              <Icon icon={ChevronDown} size={16} />
+            </Button>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button type="button" $variant="ghost" $size="sm" aria-label="More actions">
@@ -614,155 +745,299 @@ function MemberPanel({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={actions.onEditDetails}>
+              <DropdownMenuItem onSelect={actions.onEditDetails} disabled={waiting}>
                 <Icon icon={Pencil} size={16} />
                 Edit member
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem $variant="danger" onSelect={actions.onDelete}>
+              <DropdownMenuItem $variant="danger" onSelect={actions.onDelete} disabled={waiting}>
                 <Icon icon={Trash2} size={16} />
                 Delete member
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          </>
         }
       >
-        <SheetTitle>{fullName(m)}</SheetTitle>
-        <Email data-reveal="">
-          {m.email}
-          <Reveal>
-            <IconAction label="Copy email" icon={Copy} onClick={() => actions.onCopy(m.email, "Email copied")} />
-          </Reveal>
-        </Email>
-        <TagsRow member={m} tagColors={tagColors} allTags={allTags} onSetTags={actions.onSetTags} />
+        {loading ? (
+          <Name ref={title} tabIndex={-1} data-member-title="" aria-label="Loading member">
+            <Skeleton aria-hidden="true" $width="60%" $height="var(--space-5)" />
+          </Name>
+        ) : failed ? (
+          <Name ref={title} tabIndex={-1} data-member-title="">Member</Name>
+        ) : (
+          <Name ref={title} tabIndex={-1} data-member-title="">{name}</Name>
+        )}
+        {loading ? (
+          <Stack aria-hidden="true">
+            <Skeleton $width="75%" />
+            <Skeleton $width="50%" $height="var(--space-5)" />
+          </Stack>
+        ) : failed ? null : (
+          <>
+            <Email data-reveal="">
+              {m.email || <Muted>No email on file</Muted>}
+              {m.email && (
+                <Reveal>
+                  <IconAction label="Copy email" icon={Copy} onClick={() => actions.onCopy(m.email, "Email copied")} />
+                </Reveal>
+              )}
+            </Email>
+            <TagsRow member={m} tagColors={tagColors} allTags={allTags} onSetTags={actions.onSetTags} lab={lab} />
+          </>
+        )}
       </SheetHeader>
       <Body>
-        <Section aria-label="Note">
-          <SectionHeader title="Note">
-            <SectionAction icon={m.note ? Pencil : Plus} onClick={actions.onEditNote}>
-              {m.note ? "Edit" : "Add"}
-            </SectionAction>
-          </SectionHeader>
-          {m.note && (
-            <div>
-              <NoteText>{m.note.text}</NoteText>
-              <Meta>
-                Last updated: {formatDate(m.note.updatedAt)} · {m.note.by}
-              </Meta>
-            </div>
-          )}
-        </Section>
-        <MembershipSection member={m} onChange={actions.onChangeMembership} />
-        <Section aria-label="Payments">
-          <SectionHeader title="Payments">
-            <SectionAction icon={Plus} onClick={actions.onRecordPayment}>
-              Record
-            </SectionAction>
-          </SectionHeader>
-          <Big>
-            <BigNumber>{formatMoney(totalPaid(m))}</BigNumber>
-            <BigLabel>Total payment</BigLabel>
-          </Big>
-        </Section>
-        <ActivitySection member={m} onEditPayment={actions.onEditPayment} />
-        <Section aria-label="Intake form">
-          <SectionHeader title="Intake form" />
-          {m.intake ? (
-            <Stack>
-              <Muted>Answered {formatDate(m.intake.answeredAt)}</Muted>
-              <Details>
-                {!!m.intake.interests?.length && (<><dt>Interests</dt><dd><Answers items={m.intake.interests} /></dd></>)}
-                {!!m.intake.ways?.length && (<><dt>Involvement</dt><dd><Answers items={m.intake.ways} /></dd></>)}
-                {m.intake.location && (<><dt>Location</dt><dd>{m.intake.location}</dd></>)}
-                {m.intake.time && (<><dt>Availability</dt><dd>{m.intake.time}</dd></>)}
-                {m.intake.hopes && (<><dt>What they hope for</dt><dd>{m.intake.hopes}</dd></>)}
-              </Details>
-            </Stack>
-          ) : (
-            <Muted>Not answered yet.</Muted>
-          )}
-        </Section>
+        <ConnectionBanner offline={lab.offline} reconnecting={lab.reconnecting} sessionExpired={lab.sessionExpired} />
+        {failed ? (
+          <SectionFailed title="Couldn't load this member.">Something went wrong on our side. Try again in a moment.</SectionFailed>
+        ) : loading ? (
+          <>
+            {["Note", "Membership", "Payments", "Activity", "Intake form"].map((title) => (
+              <Section key={title} aria-label={title}>
+                <SectionHeader title={title} />
+                <SectionSkeleton lines={title === "Activity" ? 4 : 2} takingLonger={load.takingLonger && title === "Note"} />
+              </Section>
+            ))}
+          </>
+        ) : (
+          <>
+            <Section aria-label="Note">
+              <SectionHeader title="Note">
+                {!noteFailed && (
+                  <SectionAction icon={m.note ? Pencil : Plus} onClick={actions.onEditNote}>
+                    {m.note ? "Edit" : "Add"}
+                  </SectionAction>
+                )}
+              </SectionHeader>
+              {noteFailed ? (
+                <SectionFailed title="Couldn't load the note.">Try again to see it.</SectionFailed>
+              ) : (
+                m.note && (
+                  <div>
+                    <NoteText>{m.note.text}</NoteText>
+                    <Meta>
+                      Last updated: {formatDate(m.note.updatedAt)}
+                      {m.note.by && ` · ${m.note.by}`}
+                    </Meta>
+                  </div>
+                )
+              )}
+            </Section>
+            <MembershipSection member={m} onChange={actions.onChangeMembership} />
+            <Section aria-label="Payments">
+              <SectionHeader title="Payments">
+                <SectionAction icon={Plus} onClick={actions.onRecordPayment}>
+                  Record
+                </SectionAction>
+              </SectionHeader>
+              <Big>
+                <BigNumber>{formatMoney(totalPaid(m))}</BigNumber>
+                <BigLabel>Total payment</BigLabel>
+              </Big>
+            </Section>
+            <ActivitySection
+              member={m}
+              onEditPayment={actions.onEditPayment}
+              failed={activityFailed}
+              empty={lab.sectionEmpty}
+              many={lab.manyItems}
+              single={lab.singleItem}
+            />
+            <Section aria-label="Intake form">
+              <SectionHeader title="Intake form" />
+              {intakeFailed ? (
+                <SectionFailed title="Couldn't load the intake answers.">Try again to see them.</SectionFailed>
+              ) : m.intake ? (
+                <Stack>
+                  <Muted>Answered {formatDate(m.intake.answeredAt)}</Muted>
+                  <Details>
+                    {!!m.intake.interests?.length && (<><dt>Interests</dt><dd><Answers items={m.intake.interests} /></dd></>)}
+                    {!!m.intake.ways?.length && (<><dt>Involvement</dt><dd><Answers items={m.intake.ways} /></dd></>)}
+                    {m.intake.location && (<><dt>Location</dt><dd>{m.intake.location}</dd></>)}
+                    {m.intake.time && (<><dt>Availability</dt><dd>{m.intake.time}</dd></>)}
+                    {m.intake.hopes && (<><dt>What they hope for</dt><dd>{m.intake.hopes}</dd></>)}
+                  </Details>
+                </Stack>
+              ) : (
+                <Muted>Not answered yet.</Muted>
+              )}
+            </Section>
+          </>
+        )}
       </Body>
     </>
   );
 }
 
+/** Why a tag change didn't go through. */
+type TagIssue = "failed" | "conflict" | "validation" | "offline" | "session";
+
 /*
  * Status, subscription and tags in one row. Edit adds a × to each tag (same size and colour as before) and the
  * tag picker, open as a field: type to filter existing tags or create one. A typed name matching an existing tag
  * (any case) reuses it.
+ *
+ * State lab: a change is applied at once, unless an action state is on. Then it is held as a draft: Saving keeps
+ * it in flight for a few seconds (no double submit); the failures keep the draft and say what to do.
  */
-/** A tag at its real size, with a × to remove it. */
-export function RemovableBadge({ name, color, onRemove }: { name: string; color?: TagColor; onRemove: () => void }) {
-  return (
-    <Badge $category={color}>
-      {name}
-      <RemoveTag type="button" $variant="ghost" aria-label={`Remove ${name}`} onClick={onRemove}>
-        <Icon icon={X} size={12} />
-      </RemoveTag>
-    </Badge>
-  );
-}
-
 function TagsRow({
   member: m,
   tagColors,
   allTags,
   onSetTags,
+  lab,
 }: {
   member: Member;
   tagColors: Record<string, TagColor>;
   allTags: string[];
   onSetTags: (tags: string[]) => void;
+  lab: SheetLab;
 }) {
   const [editing, setEditing] = React.useState(false);
-  const options = allTags.filter((t) => !m.tags.includes(t)).map((t) => ({ value: t, label: t }));
+  const [draft, setDraft] = React.useState<string[] | null>(null);
+  const [issue, setIssue] = React.useState<TagIssue | null>(null);
+  const [pending, setPending] = React.useState(false);
+  const timer = React.useRef<number | undefined>(undefined);
+  React.useEffect(() => () => window.clearTimeout(timer.current), []);
 
-  function add(name: string) {
-    const existing = allTags.find((t) => t.toLowerCase() === name.toLowerCase()) ?? name;
-    if (!m.tags.some((t) => t.toLowerCase() === existing.toLowerCase())) onSetTags([...m.tags, existing]);
-  }
+  const apply = (tags: string[]) => {
+    window.clearTimeout(timer.current);
+    onSetTags(tags);
+    setDraft(null);
+    setIssue(null);
+    setPending(false);
+  };
+
+  const attempt = (tags: string[]) => {
+    window.clearTimeout(timer.current);
+    const next: TagIssue | null = lab.sessionExpired
+      ? "session"
+      : lab.offline
+        ? "offline"
+        : lab.validationError
+          ? "validation"
+          : lab.saveFailed
+            ? "failed"
+            : lab.conflict
+              ? "conflict"
+              : null;
+    if (next) {
+      setDraft(tags);
+      setIssue(next);
+      setPending(false);
+    } else if (lab.saving) {
+      setDraft(tags);
+      setIssue(null);
+      setPending(true);
+      timer.current = window.setTimeout(() => apply(tags), SAVING_FOR);
+    } else {
+      apply(tags);
+    }
+  };
+
+  const shown = draft ?? m.tags;
+  const visible = lab.singleItem ? shown.slice(0, 1) : shown;
+  const added = (draft ?? []).find((t) => !m.tags.includes(t)) ?? draft?.[0] ?? "";
+  const discard = () => {
+    setDraft(null);
+    setIssue(null);
+  };
 
   return (
     <Chips data-reveal="">
       <Badge $variant={m.status === "ended" ? "danger" : m.status === "waiting" ? "warning" : "success"}>{statusLabel[m.status]}</Badge>
       <Badge $variant={m.subscribed ? "success" : "danger"}>{m.subscribed ? "Subscribed" : "Unsubscribed"}</Badge>
-      {m.tags.map((t) =>
-        editing ? (
-          <RemovableBadge key={t} name={t} color={tagColors[t]} onRemove={() => onSetTags(m.tags.filter((x) => x !== t))} />
-        ) : (
-          <Badge key={t} $category={tagColors[t]}>
-            {t}
-          </Badge>
-        ),
-      )}
       {editing ? (
         <TagEntry>
           <TagField>
-            <CreatableCombobox
-              inline
+            <TagPicker
               autoFocus
               aria-label="Add a tag"
-              options={options}
-              existingFieldName="tag"
-              createFieldName="newTag"
+              value={shown}
+              options={allTags}
+              colors={tagColors}
+              onValueChange={(tags) => {
+                if (!pending) attempt(tags);
+              }}
               placeholder="Select or create a tag"
               createLabel={(q) => `Create “${q}”`}
-              onValueChange={(value) => value && add(value.kind === "existing" ? value.value : value.label.trim())}
             />
           </TagField>
           <QuietButton
             type="button"
             $variant="ghost"
-            onClick={() => setEditing(false)}
+            aria-disabled={pending || undefined}
+            onClick={() => {
+              if (!pending) setEditing(false);
+            }}
           >
-            Done
+            {pending ? "Saving…" : "Done"}
           </QuietButton>
         </TagEntry>
       ) : (
-        <Reveal>
-          <IconAction label="Edit tags" icon={Pencil} onClick={() => setEditing(true)} />
-        </Reveal>
+        <>
+          {visible.map((t) => (
+            <WrappingTag key={t} color={tagColors[t]}>
+              {t}
+            </WrappingTag>
+          ))}
+          {pending ? (
+            <Muted role="status">Saving tags…</Muted>
+          ) : (
+            <Reveal>
+              <IconAction label="Edit tags" icon={Pencil} onClick={() => setEditing(true)} />
+            </Reveal>
+          )}
+        </>
+      )}
+      {draft && issue && (
+        <FullRow>
+          {issue === "failed" && (
+            <InlineAlert
+              title="Couldn't save the tags."
+              actions={[
+                { label: "Try again", onClick: () => attempt(draft) },
+                { label: "Discard changes", onClick: discard },
+              ]}
+            >
+              Your changes are still here. Try again in a moment.
+            </InlineAlert>
+          )}
+          {issue === "conflict" && (
+            <InlineAlert
+              tone="warning"
+              title="Someone else changed these tags."
+              actions={[
+                { label: "Keep my tags", onClick: () => apply(draft) },
+                { label: "Use their tags", onClick: discard },
+              ]}
+            >
+              They updated this member while you were editing. Keep yours to replace theirs, or use theirs.
+            </InlineAlert>
+          )}
+          {issue === "validation" && (
+            <InlineAlert
+              title="That tag name is too long."
+              actions={[
+                { label: "Edit tags", onClick: () => setEditing(true) },
+                { label: "Discard changes", onClick: discard },
+              ]}
+            >
+              Tag names can have up to 30 characters. Shorten “{added}” and try again.
+            </InlineAlert>
+          )}
+          {issue === "offline" && (
+            <InlineAlert tone="info" title="You're offline." actions={[{ label: "Try again", onClick: () => attempt(draft) }]}>
+              Your changes are kept here. Reconnect, then try again.
+            </InlineAlert>
+          )}
+          {issue === "session" && (
+            <InlineAlert tone="warning" title="You've been signed out." actions={[{ label: "Try again", onClick: () => attempt(draft) }]}>
+              Your changes are kept here. Sign in again, then try again.
+            </InlineAlert>
+          )}
+        </FullRow>
       )}
     </Chips>
   );
@@ -806,12 +1081,34 @@ function activityRows(m: Member): Row[] {
   return [...m.activity, ...payments].sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : joined(a) - joined(b)));
 }
 
-function ActivitySection({ member: m, onEditPayment }: { member: Member; onEditPayment: (payment: Payment) => void }) {
+function ActivitySection({
+  member: m,
+  onEditPayment,
+  failed,
+  empty,
+  many,
+  single,
+}: {
+  member: Member;
+  onEditPayment: (payment: Payment) => void;
+  failed: boolean;
+  empty: boolean;
+  many: boolean;
+  single: boolean;
+}) {
   const [view, setView] = React.useState<ActivityView>("all");
   const [q, setQ] = React.useState("");
   const [shown, setShown] = React.useState(PAGE);
   const needle = q.trim().toLowerCase();
-  const everything = activityRows(m);
+  const base = activityRows(m);
+  /* State lab: a very long timeline, exactly one entry, or none. */
+  const everything: Row[] = empty
+    ? []
+    : many
+      ? Array.from({ length: 150 }, (_, i) => ({ ...base[i % Math.max(base.length, 1)], id: `lab-${i}` })).filter((r) => r.title)
+      : single
+        ? base.slice(0, 1)
+        : base;
   const all = everything
     .filter((a) => (view === "email" ? a.kind === "email" : view === "member" ? a.kind !== "email" : true))
     .filter((a) => !needle || [a.title, a.detail, a.body].some((t) => t?.toLowerCase().includes(needle)));
@@ -835,6 +1132,10 @@ function ActivitySection({ member: m, onEditPayment }: { member: Member; onEditP
           <ToggleGroupItem value="member">Member activity</ToggleGroupItem>
         </PillToggle>
       </SectionHeader>
+      {failed ? (
+        <SectionFailed title="Couldn't load activity.">Try again to see emails, payments and changes.</SectionFailed>
+      ) : (
+        <>
       {everything.length > PAGE && (
         <SearchField
           aria-label="Search activity"
@@ -862,6 +1163,8 @@ function ActivitySection({ member: m, onEditPayment }: { member: Member; onEditP
             Show {more} more
           </SectionAction>
         </div>
+      )}
+        </>
       )}
     </Section>
   );

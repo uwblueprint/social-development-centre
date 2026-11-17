@@ -5,10 +5,9 @@ import { styled } from "next-yak";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { DatePicker } from "@/components/ui/DatePicker";
-import { Dialog, DialogActions, DialogClose, DialogContent, DialogTitle } from "@/components/ui/Dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/Dialog";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogActions,
   AlertDialogCancel,
   AlertDialogContent,
@@ -25,6 +24,21 @@ import { ToggleGroupItem } from "@/components/ui/ToggleGroup";
 import { TODAY, addMonths, fullName, methodLabel, type Member, type MembershipKind, type PaymentMethod, type TagColor } from "./data";
 import { OptionToggle, PillToggle } from "./PillToggle";
 import { TagPicker } from "./TagPicker";
+import { useStateLab } from "../_state-lab/useStateLab";
+import {
+  BusyButton,
+  DIALOG_NOT_APPLICABLE,
+  LONG_EMAIL,
+  LONG_NAME,
+  LONG_NOTE,
+  Lock,
+  NO_CONFLICT,
+  NO_ITEMS,
+  SubmitActions,
+  SubmitNote,
+  useSubmit,
+  useWhenOn,
+} from "./DialogStates";
 
 /* ---------- shared layout ---------- */
 
@@ -57,29 +71,9 @@ const Reserve = styled.div<{ $shown: boolean }>`
   visibility: ${({ $shown }) => ($shown ? "visible" : "hidden")};
 `;
 
-/* Destructive action on the left, Cancel and Save on the right. */
-const SplitActions = styled(DialogActions)`
-  & > :first-child {
-    margin-right: auto;
-  }
-`;
-
 const methodOptions = (Object.keys(methodLabel) as PaymentMethod[]).map((k) => ({ value: k, label: methodLabel[k] }));
 
 const validEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s.trim());
-
-function Actions({ submit }: { submit: string }) {
-  return (
-    <DialogActions>
-      <DialogClose asChild>
-        <Button type="button" $variant="secondary">
-          Cancel
-        </Button>
-      </DialogClose>
-      <Button type="submit">{submit}</Button>
-    </DialogActions>
-  );
-}
 
 interface DialogBase {
   open: boolean;
@@ -91,6 +85,13 @@ interface DialogBase {
 /** One running note per member, edited in place. Saving it empty clears it. */
 export function NoteDialog({ open, onOpenChange, initial, onSave }: DialogBase & { initial?: string; onSave: (text: string) => void }) {
   const [text, setText] = React.useState(initial ?? "");
+  const [serverError, setServerError] = React.useState<string>();
+  const lab = useStateLab({ notApplicable: [...DIALOG_NOT_APPLICABLE, ...NO_ITEMS] });
+  const sub = useSubmit(lab, {
+    message: "Someone else edited this note while you were typing. Their version is “Called on 12 March and confirmed the new address.”",
+    useTheirs: () => setText("Called on 12 March and confirmed the new address."),
+  });
+  useWhenOn(lab.longText, () => setText(LONG_NOTE));
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -98,20 +99,26 @@ export function NoteDialog({ open, onOpenChange, initial, onSave }: DialogBase &
         <Form
           onSubmit={(e) => {
             e.preventDefault();
-            onSave(text.trim());
+            if (sub.busy) return;
+            if (lab.validationError) return setServerError("We couldn't accept this note. Shorten it and try again.");
+            setServerError(undefined);
+            sub.run(() => onSave(text.trim()));
           }}
         >
-          <Field label="Note">
-            {(props) => (
-              <Textarea
-                {...props}
-                rows={10}
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-              />
-            )}
-          </Field>
-          <Actions submit={initial ? "Save note" : "Add note"} />
+          <Lock disabled={sub.busy}>
+            <Field label="Note" error={serverError}>
+              {(props) => (
+                <Textarea
+                  {...props}
+                  rows={10}
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                />
+              )}
+            </Field>
+          </Lock>
+          <SubmitNote submit={sub} />
+          <SubmitActions submit={initial ? "Save note" : "Add note"} state={sub} />
         </Form>
       </DialogContent>
     </Dialog>
@@ -137,6 +144,14 @@ export function ChangeMembershipDialog({
   const [method, setMethod] = React.useState<PaymentMethod>("etransfer");
   const [endsAt, setEndsAt] = React.useState(member.endsAt);
   const [error, setError] = React.useState<string>();
+  const lab = useStateLab({ notApplicable: [...DIALOG_NOT_APPLICABLE, ...NO_ITEMS] });
+  const sub = useSubmit(lab, {
+    message: "Another admin switched this membership to complimentary while you were editing.",
+    useTheirs: () => {
+      setKind("complimentary");
+      setError(undefined);
+    },
+  });
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -144,10 +159,14 @@ export function ChangeMembershipDialog({
         <Form
           onSubmit={(e) => {
             e.preventDefault();
+            if (sub.busy) return;
             if (kind === "paid" && !(Number(amount) > 0)) return setError("Enter the yearly amount, for example 25.");
-            onSave({ kind, amount: kind === "paid" ? Number(amount) : undefined, endsAt });
+            if (kind === "paid" && lab.validationError) return setError("We couldn't accept this amount. Check it and try again.");
+            setError(undefined);
+            sub.run(() => onSave({ kind, amount: kind === "paid" ? Number(amount) : undefined, endsAt }));
           }}
         >
+          <Lock disabled={sub.busy}>
           <PillToggle type="single" value={kind} onValueChange={(v) => v && setKind(v as MembershipKind)} aria-label="Membership type">
             {kindToggle.map(([value, label]) => (
               <ToggleGroupItem key={value} value={value}>
@@ -166,7 +185,9 @@ export function ChangeMembershipDialog({
               </Field>
             </Row>
           )}
-          <Actions submit="Save changes" />
+          </Lock>
+          <SubmitNote submit={sub} />
+          <SubmitActions submit="Save changes" state={sub} />
         </Form>
       </DialogContent>
     </Dialog>
@@ -206,6 +227,20 @@ export function PaymentDialog({
   const [forWhom, setForWhom] = React.useState<"own" | "other">("own");
   const [forId, setForId] = React.useState("");
   const [errors, setErrors] = React.useState<{ amount?: string; date?: string; forId?: string }>({});
+  const lab = useStateLab({ notApplicable: [...DIALOG_NOT_APPLICABLE, ...NO_ITEMS, ...(editing ? [] : NO_CONFLICT)] });
+  const sub = useSubmit(
+    lab,
+    editing
+      ? {
+          message: "Another admin changed this payment's amount to 30 while you were editing.",
+          useTheirs: () => {
+            setAmount("30");
+            setErrors({});
+          },
+        }
+      : undefined,
+  );
+  useWhenOn(lab.longText, () => setNote(LONG_NOTE));
   const others = people.filter((p) => p.id !== member.id).map((p) => ({ value: p.id, label: fullName(p) }));
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -214,15 +249,18 @@ export function PaymentDialog({
         <Form
           onSubmit={(e) => {
             e.preventDefault();
+            if (sub.busy) return;
             const next: typeof errors = {};
             if (!(Number(amount) > 0)) next.amount = "Enter an amount, for example 25.";
             if (!date || date > TODAY) next.date = "Choose today or an earlier date.";
             if (!editing && forWhom === "other" && !forId) next.forId = "Choose who this payment is for.";
+            if (!Object.keys(next).length && lab.validationError) next.amount = "We couldn't accept this amount. Check it and try again.";
             setErrors(next);
             if (Object.keys(next).length) return;
-            onSave({ amount: Number(amount), date, method, note: note.trim(), forId: forWhom === "other" ? forId : undefined });
+            sub.run(() => onSave({ amount: Number(amount), date, method, note: note.trim(), forId: forWhom === "other" ? forId : undefined }));
           }}
         >
+          <Lock disabled={sub.busy}>
           <Row>
             <Field label="Amount" error={errors.amount}>
               {(props) => <Input {...props} inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />}
@@ -256,20 +294,20 @@ export function PaymentDialog({
             </Field>
           )}
           <Field label="Note">{(props) => <Input {...props} value={note} onChange={(e) => setNote(e.target.value)} />}</Field>
+          </Lock>
+          <SubmitNote submit={sub} />
           {editing ? (
-            <SplitActions>
-              <Button type="button" $variant="ghost" onClick={onDelete}>
-                Delete payment
-              </Button>
-              <DialogClose asChild>
-                <Button type="button" $variant="secondary">
-                  Cancel
+            <SubmitActions
+              submit="Save changes"
+              state={sub}
+              leading={
+                <Button type="button" $variant="ghost" onClick={sub.busy ? undefined : onDelete}>
+                  Delete payment
                 </Button>
-              </DialogClose>
-              <Button type="submit">Save changes</Button>
-            </SplitActions>
+              }
+            />
           ) : (
-            <Actions submit="Record payment" />
+            <SubmitActions submit="Record payment" state={sub} />
           )}
         </Form>
       </DialogContent>
@@ -295,6 +333,18 @@ export function EditDetailsDialog({
   const [d, setD] = React.useState<PersonDraft>({ firstName: member.firstName, lastName: member.lastName, email: member.email });
   const [errors, setErrors] = React.useState<{ firstName?: string; email?: string }>({});
   const set = (k: keyof PersonDraft) => (e: React.ChangeEvent<HTMLInputElement>) => setD({ ...d, [k]: e.target.value });
+  const lab = useStateLab({
+    notApplicable: [...DIALOG_NOT_APPLICABLE, ...NO_ITEMS],
+    actions: [{ id: "duplicate-email", label: "Email already in use", description: "The server says someone else has this email." }],
+  });
+  const sub = useSubmit(lab, {
+    message: "Another admin changed this person's email to updated.contact@example.org while you were editing.",
+    useTheirs: () => {
+      setD((cur) => ({ ...cur, email: "updated.contact@example.org" }));
+      setErrors({});
+    },
+  });
+  useWhenOn(lab.longText, () => setD({ firstName: LONG_NAME, lastName: LONG_NAME, email: LONG_EMAIL }));
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -302,20 +352,26 @@ export function EditDetailsDialog({
         <Form
           onSubmit={(e) => {
             e.preventDefault();
+            if (sub.busy) return;
             const next: typeof errors = {};
             if (!d.firstName.trim()) next.firstName = "Enter a first name.";
             if (!validEmail(d.email)) next.email = "Enter an email like name@example.com.";
-            else if (emailTaken(d.email)) next.email = "Someone else in the directory uses this email.";
+            else if (emailTaken(d.email) || lab.is("duplicate-email")) next.email = "Someone else in the directory uses this email.";
+            else if (lab.validationError) next.email = "We couldn't accept this email. Check it and try again.";
             setErrors(next);
-            if (!Object.keys(next).length) onSave({ ...d, firstName: d.firstName.trim(), lastName: d.lastName.trim(), email: d.email.trim() });
+            if (!Object.keys(next).length)
+              sub.run(() => onSave({ ...d, firstName: d.firstName.trim(), lastName: d.lastName.trim(), email: d.email.trim() }));
           }}
         >
-          <Row>
-            <Field label="First name" error={errors.firstName}>{(props) => <Input {...props} value={d.firstName} onChange={set("firstName")} />}</Field>
-            <Field label="Last name">{(props) => <Input {...props} value={d.lastName} onChange={set("lastName")} />}</Field>
-          </Row>
-          <Field label="Email" error={errors.email}>{(props) => <Input {...props} type="email" value={d.email} onChange={set("email")} />}</Field>
-          <Actions submit="Save changes" />
+          <Lock disabled={sub.busy}>
+            <Row>
+              <Field label="First name" error={errors.firstName}>{(props) => <Input {...props} value={d.firstName} onChange={set("firstName")} />}</Field>
+              <Field label="Last name">{(props) => <Input {...props} value={d.lastName} onChange={set("lastName")} />}</Field>
+            </Row>
+            <Field label="Email" error={errors.email}>{(props) => <Input {...props} type="email" value={d.email} onChange={set("email")} />}</Field>
+          </Lock>
+          <SubmitNote submit={sub} />
+          <SubmitActions submit="Save changes" state={sub} />
         </Form>
       </DialogContent>
     </Dialog>
@@ -347,6 +403,12 @@ export function AddMemberDialog({
   const [errors, setErrors] = React.useState<{ firstName?: string; email?: string; amount?: string }>({});
   const set = (k: keyof typeof d) => (e: React.ChangeEvent<HTMLInputElement>) => setD({ ...d, [k]: e.target.value });
   const paid = gift || kind === "paid";
+  const lab = useStateLab({
+    notApplicable: [...DIALOG_NOT_APPLICABLE, ...NO_ITEMS, ...NO_CONFLICT],
+    actions: [{ id: "duplicate-email", label: "Email already in use", description: "The server says this person is already in the directory." }],
+  });
+  const sub = useSubmit(lab);
+  useWhenOn(lab.longText, () => setD((cur) => ({ ...cur, firstName: LONG_NAME, lastName: LONG_NAME, email: LONG_EMAIL })));
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -354,14 +416,17 @@ export function AddMemberDialog({
         <Form
           onSubmit={(e) => {
             e.preventDefault();
+            if (sub.busy) return;
             const next: typeof errors = {};
             if (!d.firstName.trim()) next.firstName = "Enter a first name.";
             if (!validEmail(d.email)) next.email = "Enter an email like name@example.com.";
-            else if (emailTaken(d.email)) next.email = "This person is already in the directory.";
+            else if (emailTaken(d.email) || lab.is("duplicate-email")) next.email = "This person is already in the directory.";
+            else if (lab.validationError) next.email = "We couldn't accept this email. Check it and try again.";
             if (paid && !(Number(d.amount) > 0)) next.amount = "Enter an amount, for example 25.";
             setErrors(next);
             if (Object.keys(next).length) return;
-            onSave({
+            sub.run(() =>
+              onSave({
               firstName: d.firstName.trim(),
               lastName: d.lastName.trim(),
               email: d.email.trim(),
@@ -370,9 +435,11 @@ export function AddMemberDialog({
               method,
               joinedAt,
               joinEmails,
-            });
+              }),
+            );
           }}
         >
+          <Lock disabled={sub.busy}>
           <Row>
             <Field label="First name" error={errors.firstName}>{(props) => <Input {...props} value={d.firstName} onChange={set("firstName")} />}</Field>
             <Field label="Last name">{(props) => <Input {...props} value={d.lastName} onChange={set("lastName")} />}</Field>
@@ -403,7 +470,9 @@ export function AddMemberDialog({
             </Field>
           )}
           <Checkbox label="Send join emails" checked={joinEmails} onCheckedChange={(v) => setJoinEmails(v === true)} />
-          <Actions submit={submit} />
+          </Lock>
+          <SubmitNote submit={sub} />
+          <SubmitActions submit={submit} state={sub} />
         </Form>
       </DialogContent>
     </Dialog>
@@ -437,20 +506,27 @@ export function TagPeopleDialog({
   const [emails, setEmails] = React.useState<string[]>([]);
   const [errors, setErrors] = React.useState<{ tag?: string; emails?: string }>({});
   const found = emails.map(findByEmail).filter((m): m is Member => Boolean(m));
+  const lab = useStateLab({ notApplicable: [...DIALOG_NOT_APPLICABLE, ...NO_CONFLICT, "partialData"] });
+  const sub = useSubmit(lab);
+  useWhenOn(lab.longText && Boolean(pasteEmails), () => setEmails([LONG_EMAIL]));
+  const shownCount = lab.manyItems ? 500 : lab.singleItem ? 1 : count;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
-        <DialogTitle>{pasteEmails ? "Tag people by email" : `Tag ${count === 1 ? "1 person" : `${count} people`}`}</DialogTitle>
+        <DialogTitle>{pasteEmails ? "Tag people by email" : `Tag ${shownCount === 1 ? "1 person" : `${shownCount} people`}`}</DialogTitle>
         <Form
           onSubmit={(e) => {
             e.preventDefault();
+            if (sub.busy) return;
             const next: typeof errors = {};
             if (!tags.length) next.tag = "Choose a tag or type a new one.";
+            else if (lab.validationError) next.tag = "We couldn't add this tag. Choose a different one.";
             if (pasteEmails && !found.length) next.emails = "None of these emails are in the directory. Check them and try again.";
             setErrors(next);
-            if (!Object.keys(next).length) onSave(tags, pasteEmails ? found : undefined);
+            if (!Object.keys(next).length) sub.run(() => onSave(tags, pasteEmails ? found : undefined));
           }}
         >
+          <Lock disabled={sub.busy}>
           {pasteEmails && (
             <Field
               label="Emails"
@@ -471,7 +547,8 @@ export function TagPeopleDialog({
           <Field label="Tags" error={errors.tag}>
             {(props) => (
               <TagPicker
-                label="Tags"
+                aria-label="Tags"
+                id={props.id}
                 value={tags}
                 options={allTags}
                 colors={tagColors}
@@ -486,7 +563,71 @@ export function TagPeopleDialog({
               />
             )}
           </Field>
-          <Actions submit={tags.length > 1 ? "Add tags" : "Add tag"} />
+          </Lock>
+          <SubmitNote submit={sub} />
+          <SubmitActions submit={tags.length > 1 ? "Add tags" : "Add tag"} state={sub} />
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** Removes tags from a set of people. Only tags that at least one of them has are offered. */
+export function RemoveTagDialog({
+  open,
+  onOpenChange,
+  people,
+  tagColors,
+  onSave,
+}: DialogBase & { people: Member[]; tagColors: Record<string, TagColor>; onSave: (tags: string[]) => void }) {
+  const [tags, setTags] = React.useState<string[]>([]);
+  const [error, setError] = React.useState<string>();
+  const lab = useStateLab({ notApplicable: [...DIALOG_NOT_APPLICABLE, ...NO_CONFLICT, "partialData"] });
+  const sub = useSubmit(lab);
+  const options = Array.from(new Set(people.flatMap((p) => p.tags)));
+  const affected = people.filter((p) => p.tags.some((t) => tags.includes(t))).length;
+  const count = lab.manyItems ? 500 : lab.singleItem ? 1 : people.length;
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogTitle>{`Remove tag from ${count === 1 ? "1 person" : `${count} people`}`}</DialogTitle>
+        <Form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (sub.busy) return;
+            if (!options.length) return setError("None of these people have tags.");
+            if (!tags.length) return setError("Choose a tag to remove.");
+            if (lab.validationError) return setError("We couldn't remove this tag. Choose a different one.");
+            setError(undefined);
+            sub.run(() => onSave(tags));
+          }}
+        >
+          <Lock disabled={sub.busy}>
+            <Field
+              label="Tags"
+              error={error}
+              hint={tags.length ? `${tags.join(", ")} will be removed from ${affected === 1 ? "1 person" : `${affected} people`}.` : undefined}
+            >
+              {(props) => (
+                <TagPicker
+                  aria-label="Tags"
+                  id={props.id}
+                  value={tags}
+                  options={options}
+                  colors={tagColors}
+                  onValueChange={(next) => {
+                    setTags(next);
+                    if (next.length) setError(undefined);
+                  }}
+                  placeholder="Select a tag"
+                  aria-describedby={props["aria-describedby"]}
+                  aria-invalid={props["aria-invalid"]}
+                />
+              )}
+            </Field>
+          </Lock>
+          <SubmitNote submit={sub} />
+          <SubmitActions submit={tags.length > 1 ? "Remove tags" : "Remove tag"} state={sub} />
         </Form>
       </DialogContent>
     </Dialog>
@@ -494,6 +635,18 @@ export function TagPeopleDialog({
 }
 
 /* ---------- confirmations ---------- */
+
+const WrapTitle = styled(AlertDialogTitle)`
+  overflow-wrap: anywhere;
+`;
+
+const WrapDescription = styled(AlertDialogDescription)`
+  overflow-wrap: anywhere;
+`;
+
+const Gap = styled.div`
+  margin-top: var(--space-4);
+`;
 
 export function ConfirmDialog({
   open,
@@ -503,22 +656,33 @@ export function ConfirmDialog({
   confirm,
   onConfirm,
 }: DialogBase & { title: string; description: string; confirm: string; onConfirm: () => void }) {
+  const lab = useStateLab({ notApplicable: [...DIALOG_NOT_APPLICABLE, ...NO_ITEMS, ...NO_CONFLICT, "validationError"] });
+  const sub = useSubmit(lab);
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogTitle>{title}</AlertDialogTitle>
-        <AlertDialogDescription>{description}</AlertDialogDescription>
+      <AlertDialogContent
+        onOpenAutoFocus={(event) => {
+          // A delete confirmation opens on Cancel, so Enter can never delete by accident.
+          event.preventDefault();
+          (event.currentTarget as HTMLElement).querySelector<HTMLElement>("[data-confirm-cancel]")?.focus();
+        }}
+      >
+        <WrapTitle>{title}</WrapTitle>
+        <WrapDescription>{lab.longText ? `${description} (${LONG_EMAIL})` : description}</WrapDescription>
+        {sub.phase === "error" && (
+          <Gap>
+            <SubmitNote submit={sub} />
+          </Gap>
+        )}
         <AlertDialogActions>
           <AlertDialogCancel asChild>
-            <Button type="button" $variant="secondary">
+            <Button type="button" $variant="secondary" data-confirm-cancel="">
               Cancel
             </Button>
           </AlertDialogCancel>
-          <AlertDialogAction asChild>
-            <Button type="button" $variant="danger" onClick={onConfirm}>
-              {confirm}
-            </Button>
-          </AlertDialogAction>
+          <BusyButton type="button" $variant="danger" busy={sub.busy} onClick={() => sub.run(onConfirm)}>
+            {confirm}
+          </BusyButton>
         </AlertDialogActions>
       </AlertDialogContent>
     </AlertDialog>

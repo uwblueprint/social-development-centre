@@ -16,17 +16,13 @@ const StyledTextarea = styled.textarea<{ $invalid?: boolean }>`
   min-height: 96px;
   padding: var(--space-3);
   border-radius: var(--radius-md);
-  /* Subtle border at rest; the focus colour replaces it while typing. */
-  border: 1px solid var(--color-text-subtle);
+  border: 1px solid var(--color-border-strong);
   background: var(--color-bg);
   color: var(--color-text);
   font-family: inherit;
   font-size: var(--text-sm);
   line-height: 1.5;
   resize: vertical;
-  transition:
-    border-color var(--duration) var(--ease),
-    box-shadow var(--duration) var(--ease);
 
   &::placeholder {
     color: var(--color-text-muted);
@@ -40,7 +36,7 @@ const StyledTextarea = styled.textarea<{ $invalid?: boolean }>`
   &:focus {
     outline: none;
     border-color: var(--color-focus);
-    box-shadow: var(--focus-ring-field);
+    box-shadow: var(--focus-field);
   }
 
   ${({ $invalid }) =>
@@ -54,7 +50,7 @@ const StyledTextarea = styled.textarea<{ $invalid?: boolean }>`
 
       &:focus-visible,
       &:focus {
-        box-shadow: var(--focus-ring-field-invalid);
+        box-shadow: var(--focus-field-invalid);
       }
     `}
 

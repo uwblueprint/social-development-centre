@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { keyframes, styled } from "next-yak";
+import { styled } from "next-yak";
 import { ArrowRight, FunnelX, SearchX, X, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -34,22 +34,8 @@ export const listEmptyCopy = {
   noResults: "No results",
 } as const;
 
-/* Content arriving after a load (owner): fades in and rises slightly. Reduced motion is handled globally. */
-export const contentIn = keyframes`
-  from {
-    opacity: 0;
-    translate: 0 var(--space-2);
-  }
-  to {
-    opacity: 1;
-    translate: 0 0;
-  }
-`;
-
 /**
  * Page body for a list page: fills the available width (no max-width), so tables use wide monitors.
- * Everything under the header animates in when the page mounts (i.e. when data replaces the loading
- * state); the header stays put so the title doesn't move. The loading state itself (aria-busy) doesn't.
  */
 export const ListPage = styled.div`
   display: flex;
@@ -58,10 +44,6 @@ export const ListPage = styled.div`
   gap: var(--space-4);
   min-width: 0;
   padding: var(--space-5) var(--space-6);
-
-  &:not([aria-busy]) > :not(:first-child) {
-    animation: ${contentIn} var(--duration-slow) var(--ease) backwards;
-  }
 
   @media (max-width: 767px) {
     gap: var(--space-4);

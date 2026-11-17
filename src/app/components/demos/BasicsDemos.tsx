@@ -26,6 +26,7 @@ export function ButtonDemos() {
         <Button $variant="outline">Outline</Button>
         <Button $variant="ghost">Ghost</Button>
         <Button $variant="danger">Delete</Button>
+        <Button $variant="danger-outline">Move to trash</Button>
       </Row>
       <Row>
         <Button $size="sm">Small</Button>

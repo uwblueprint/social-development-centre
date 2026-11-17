@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { css, styled } from "next-yak";
+import { overlayMotion } from "./overlayMotion";
 import { Popover as PopoverPrimitive } from "radix-ui";
 import { DayPicker, type Matcher } from "react-day-picker";
 import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
@@ -16,7 +17,7 @@ import { ErrorIcon } from "./Field";
 
 const ISO_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 
-function parseISODate(value: string | undefined): Date | undefined {
+export function parseISODate(value: string | undefined): Date | undefined {
   if (!value) return undefined;
   const match = ISO_PATTERN.exec(value.trim());
   if (!match) return undefined;
@@ -29,7 +30,7 @@ function parseISODate(value: string | undefined): Date | undefined {
   return valid ? date : undefined;
 }
 
-function formatISODate(date: Date): string {
+export function formatISODate(date: Date): string {
   const y = String(date.getFullYear()).padStart(4, "0");
   const m = String(date.getMonth() + 1).padStart(2, "0");
   const d = String(date.getDate()).padStart(2, "0");
@@ -99,18 +100,15 @@ const Wrapper = styled.div`
 const TextField = styled.input<{ $invalid?: boolean }>`
   display: block;
   width: 100%;
-  height: var(--control-height);
+  height: 40px;
   padding: 0 76px 0 var(--space-3);
   border-radius: var(--radius-md);
-  border: 1px solid var(--color-border-field);
+  border: 1px solid var(--color-border-strong);
   background: var(--color-bg);
   color: var(--color-text);
   font-family: inherit;
   font-size: var(--text-sm);
   line-height: var(--leading-ui);
-  transition:
-    border-color var(--duration) var(--ease),
-    box-shadow var(--duration) var(--ease);
 
   &::placeholder {
     color: var(--color-text-muted);
@@ -124,7 +122,7 @@ const TextField = styled.input<{ $invalid?: boolean }>`
   &:focus {
     outline: none;
     border-color: var(--color-focus);
-    box-shadow: var(--focus-ring-field);
+    box-shadow: var(--focus-field);
   }
 
   &[aria-invalid="true"] {
@@ -133,7 +131,7 @@ const TextField = styled.input<{ $invalid?: boolean }>`
 
     &:focus-visible,
     &:focus {
-      box-shadow: var(--focus-ring-field-invalid);
+      box-shadow: var(--focus-field-invalid);
     }
   }
 
@@ -154,7 +152,7 @@ const IconGroup = styled.span`
   position: absolute;
   top: 0;
   right: 0;
-  height: var(--control-height);
+  height: 40px;
   display: inline-flex;
   align-items: center;
   gap: 2px;
@@ -177,11 +175,13 @@ const TriggerButton = styled(PopoverPrimitive.Trigger)`
   border-radius: var(--radius-sm);
   color: var(--color-text-muted);
   cursor: pointer;
-  transition: color var(--duration) var(--ease);
+  transition:
+    color var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out);
 
-  /* Icon colour only: a fill would fill the field's full height and hide its border. */
   &:hover:not(:disabled) {
     color: var(--color-text);
+    background: var(--color-secondary);
   }
 
   &:focus-visible {
@@ -213,6 +213,8 @@ const CalendarContent = styled(PopoverPrimitive.Content)`
   &:focus {
     outline: none;
   }
+
+  ${overlayMotion}
 `;
 
 const CalendarBody = styled.div`
