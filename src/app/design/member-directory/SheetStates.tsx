@@ -56,6 +56,7 @@ export function SectionSkeleton({ lines = 2, takingLonger = false }: { lines?: n
 const Note = styled.p`
   margin: 0;
   font-size: var(--text-xs);
+  line-height: var(--leading-ui);
   color: var(--color-text-muted);
 `;
 

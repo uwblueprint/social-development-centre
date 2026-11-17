@@ -42,6 +42,10 @@ globalStyle`
     --color-primary: var(--color-brand-heading);
     --color-primary-hover: #043a34;
     --color-on-primary: #ffffff;
+    /* Dark overlay surface for toasts and the floating selection bar (owner, Nov 2026): the deepest brand green step, darker than --color-primary. */
+    --color-primary-deep: var(--sdc-950);
+    /* Text and icons on --color-primary-deep: white, 14.8:1. */
+    --color-on-primary-deep: #ffffff;
     --color-secondary: var(--taupe-100);
     --color-secondary-hover: var(--taupe-200);
     --color-disabled-bg: var(--taupe-100);
@@ -326,6 +330,10 @@ globalStyle`
       --color-selection: var(--sdc-800);
       --color-primary-hover: #b5e3d8;
       --color-on-primary: #052e29;
+      /* Dark overlay surface for toasts and the selection bar: a deep green that still reads as green on the dark page, one step lighter than light mode so it separates from the background. */
+      --color-primary-deep: var(--sdc-900);
+      /* Text and icons on --color-primary-deep: --sdc-50, 9.3:1. */
+      --color-on-primary-deep: var(--sdc-50);
       --color-secondary: #3a3230;
       --color-secondary-hover: #4a403d;
       --color-disabled-bg: #2b2422;
@@ -433,6 +441,10 @@ globalStyle`
     --color-selection: var(--sdc-800);
     --color-primary-hover: #b5e3d8;
     --color-on-primary: #052e29;
+    /* Dark overlay surface for toasts and the selection bar: a deep green that still reads as green on the dark page, one step lighter than light mode so it separates from the background. */
+    --color-primary-deep: var(--sdc-900);
+    /* Text and icons on --color-primary-deep: --sdc-50, 9.3:1. */
+    --color-on-primary-deep: var(--sdc-50);
     --color-secondary: #3a3230;
     --color-secondary-hover: #4a403d;
     --color-disabled-bg: #2b2422;

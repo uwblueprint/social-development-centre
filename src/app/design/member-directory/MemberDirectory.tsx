@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { styled } from "next-yak";
-import { Columns3, Copy, Download, Ellipsis, ListFilter, Mail, Plus, Tag as TagIcon, Trash2, UsersRound, X } from "lucide-react";
+import { keyframes, styled } from "next-yak";
+import { Columns3, Copy, Download, ListChecks, ListFilter, Plus, Tag as TagIcon, Trash2, UsersRound, X } from "lucide-react";
 import { ListEmptyState, ListPage, ListPageHeader } from "@/components/patterns/ListPage";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -12,15 +12,17 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/DropdownMenu";
 import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
-import { Input } from "@/components/ui/Input";
-import { Label } from "@/components/ui/Label";
 import { SearchField } from "@/components/ui/SearchField";
+import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
+import { RadioGroup, RadioGroupOption } from "@/components/ui/RadioGroup";
 import { Select } from "@/components/ui/Select";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { Table, type TableColumn, type TableSort } from "@/components/ui/Table";
 import { MarqueeOverlay } from "./MarqueeOverlay";
 import { inOwnWidget, isTyping, overlayOpen, plain } from "./listKeys";
@@ -28,6 +30,8 @@ import { touches, useMarquee } from "./useMarquee";
 import { AppToastProvider, useToast } from "@/components/ui/Toast";
 import {
   TODAY,
+  addDays,
+  addMonths,
   demoMembers,
   demoTags,
   endNotice,
@@ -42,10 +46,12 @@ import {
   type Payment,
   type TagColor,
 } from "./data";
+import { snapshotOf, useUndoableUpdate } from "./undo";
 import { MemberSheet } from "./MemberSheet";
 import { TagPicker } from "./TagPicker";
+import { BulkTagsPopover } from "./BulkTagsPopover";
 import { Tag } from "@/components/ui/Tag";
-import { useLabLoad, useStateLab } from "../_state-lab/useStateLab";
+import { SEARCH_FOR, SLOW_SEARCH_FOR, useLabDeferred, useLabLoad, useStateLab } from "../_state-lab/useStateLab";
 import { AccessState, ListFailed, ListLoading, StatusBanner, TagsFailed } from "./ListStates";
 import {
   AddMemberDialog,
@@ -54,39 +60,71 @@ import {
   EditDetailsDialog,
   NoteDialog,
   PaymentDialog,
-  RemoveTagDialog,
-  TagPeopleDialog,
   defaultEnd,
 } from "./dialogs";
 
 /* ---------- layout ---------- */
 
-const FilterPanel = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(calc(var(--space-8) * 3), 1fr));
-  gap: var(--space-3) var(--space-4);
+/* One compact row of filter chips under the header; wraps on small screens. */
+const FilterRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
 `;
 
-/* One added filter: its labelled control, with a × level with the label. */
-const FilterSlot = styled.div`
-  position: relative;
+/* A chip: its summary opens the editor, the × beside it removes the filter. One pill, so the two read as one thing. */
+const Chip = styled.span`
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+`;
+
+const ChipLabel = styled.span`
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: calc(var(--space-8) * 4);
+`;
+
+const ChipRemove = styled(Button)`
+  &&& {
+    width: var(--space-6);
+    padding: 0;
+  }
+`;
+
+/* The editor inside a chip's popover: only that filter's control. */
+const FilterEditor = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
   min-width: 0;
 `;
 
-/* Add filter sits in the next grid cell, level with the fields rather than their labels. */
-const AddFilterCell = styled.div`
-  align-self: end;
+const OptionList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-height: calc(var(--space-8) * 4);
+  overflow-y: auto;
 `;
 
-const RemoveFilter = styled(Button)`
-  &&& {
-    position: absolute;
-    top: calc(var(--space-1) * -0.5);
-    right: 0;
-    width: var(--space-5);
-    height: var(--space-5);
-    padding: 0;
-  }
+const OptionRow = styled.div`
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+`;
+
+const OptionCount = styled.span`
+  flex: none;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
 `;
 
 /* A name with the tags that matched the search, so a tag search shows why each row is there. */
@@ -96,29 +134,91 @@ const NameCell = styled.span`
   gap: var(--space-2);
 `;
 
-/* The count or bulk actions on the left, Clear all on the right. */
-const Results = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
+/* Floats at the bottom centre where the toasts show, so selecting people never moves the page. */
+const rise = keyframes`
+  from { opacity: 0; transform: translate(-50%, var(--space-2)); }
 `;
-
-const Bar = styled.div`
+const sink = keyframes`
+  to { opacity: 0; transform: translate(-50%, var(--space-2)); }
+`;
+const SelectionBar = styled.div`
+  position: fixed;
+  left: 50%;
+  bottom: var(--space-5);
+  transform: translate(-50%, 0);
+  /* Above the page and its sticky headers, below sheets and dialogs. */
+  z-index: calc(var(--z-nav) - 1);
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-1);
-  min-height: var(--space-6);
+  max-width: calc(100vw - var(--space-4) * 2);
+  padding: var(--space-1) var(--space-2);
+  /* A deep brand green for overlay surfaces, with its own text colour, so the bar and the toasts above it are one family. */
+  border: 1px solid var(--color-primary-deep);
+  border-radius: var(--radius-lg);
+  background: var(--color-primary-deep);
+  color: var(--color-on-primary-deep);
+  box-shadow: var(--shadow-lg);
   font-size: var(--text-sm);
 
-  & > strong {
-    margin-right: var(--space-2);
-    font-weight: var(--weight-medium);
+  &[data-state="open"] {
+    animation: ${rise} var(--duration) var(--ease);
   }
-  & > span {
-    color: var(--color-text-muted);
+  &[data-state="closed"] {
+    animation: ${sink} var(--duration) var(--ease) forwards;
+    pointer-events: none;
   }
+`;
+
+const BarCount = styled.span`
+  padding: 0 var(--space-2);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+`;
+
+const BarDivider = styled.span`
+  align-self: stretch;
+  width: 1px;
+  margin: var(--space-1);
+  background: var(--color-on-primary-deep);
+  opacity: 0.3;
+`;
+
+/* Ghost buttons on the dark surface: inverse text, a visible hover fill, and a focus ring in the inverse colour (the usual one is the primary colour, invisible here). */
+const BarButton = styled(Button)`
+  &&& {
+    color: var(--color-on-primary-deep);
+    &:hover:not(:disabled):not([aria-disabled="true"]) {
+      background: color-mix(in srgb, var(--color-on-primary-deep) 18%, transparent);
+    }
+    &:focus-visible {
+      box-shadow: 0 0 0 2px var(--color-primary-deep), 0 0 0 4px var(--color-on-primary-deep);
+    }
+  }
+`;
+
+/* Square, icon-only. */
+const BarIconButton = styled(BarButton)`
+  &&& {
+    width: var(--space-6);
+    padding: 0;
+  }
+`;
+
+/* The bar's one Tags button. It is the popover's trigger, so it takes the trigger's props and ref. */
+const BarTagsButton = React.forwardRef<HTMLButtonElement, React.ComponentProps<typeof BarIconButton>>(function BarTagsButton(props, ref) {
+  return (
+    <Tooltip content="Tags">
+      <BarIconButton ref={ref} type="button" $variant="ghost" aria-label="Tags" {...props}>
+        <Icon icon={TagIcon} size={16} />
+      </BarIconButton>
+    </Tooltip>
+  );
+});
+
+/* Room under the last row so it can scroll above the floating bar. */
+const BarSpace = styled.div`
+  height: var(--space-8);
 `;
 
 /* Long names and emails wrap inside their column instead of widening the table. */
@@ -128,13 +228,6 @@ const Wrap = styled.span`
 
 const Ends = styled.span`
   font-variant-numeric: tabular-nums;
-`;
-
-/* The tag filter: label, then the picker. 6px gap, like Field. */
-const TagFilter = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: calc(var(--space-1) * 1.5);
 `;
 
 /*
@@ -179,33 +272,6 @@ const More = styled.span`
   font-size: var(--text-sm);
 `;
 
-/* The tag filter's match mode beside its picker; stacked on narrow screens. */
-const TagFilterRow = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-
-  @media (min-width: 640px) {
-    flex-direction: row;
-
-    & > :first-child {
-      flex: none;
-      width: calc(var(--space-8) * 2);
-    }
-    & > :last-child {
-      flex: 1;
-      min-width: 0;
-    }
-  }
-`;
-
-/* The tag filter needs room for the mode and the picker side by side. */
-const WideSlot = styled(FilterSlot)`
-  @media (min-width: 640px) {
-    grid-column: span 2;
-  }
-`;
-
 /* The Flags column: membership ending soon or ended. */
 const Flags = styled.div`
   display: flex;
@@ -218,56 +284,74 @@ const Flags = styled.div`
 
 type TagMode = "any" | "all" | "none";
 
+type JoinedPreset = "" | "30d" | "3m" | "year" | "before" | "custom";
+
 interface Filters {
-  /** Membership ends on or before this date. */
-  ends: string;
-  /** Joined on or after this date. */
-  joined: string;
-  first: string;
-  last: string;
-  email: string;
+  joined: { preset: JoinedPreset; from: string; to: string };
   tags: string[];
   tagMode: TagMode;
-  status: "" | MemberStatus;
+  status: MemberStatus[];
   emails: "" | "on" | "off";
-  interests: string;
-  ways: string;
-  location: string;
-  time: string;
+  /** The intake-form filters match anyone who has any of the chosen values. */
+  interests: string[];
+  ways: string[];
+  location: string[];
+  time: string[];
+}
+
+const joinedPresets: { value: Exclude<JoinedPreset, "">; label: string }[] = [
+  { value: "30d", label: "Last 30 days" },
+  { value: "3m", label: "Last 3 months" },
+  { value: "year", label: "This year" },
+  { value: "before", label: "Before this year" },
+  { value: "custom", label: "Custom range" },
+];
+
+/** True when a join date falls inside the joined filter. Presets are relative to today. */
+function joinedMatches(j: Filters["joined"], joinedAt: string) {
+  const yearStart = `${TODAY.slice(0, 4)}-01-01`;
+  switch (j.preset) {
+    case "30d":
+      return joinedAt >= addDays(TODAY, -30);
+    case "3m":
+      return joinedAt >= addMonths(TODAY, -3);
+    case "year":
+      return joinedAt >= yearStart;
+    case "before":
+      return joinedAt < yearStart;
+    case "custom":
+      return (!j.from || joinedAt >= j.from) && (!j.to || joinedAt <= j.to);
+    default:
+      return true;
+  }
 }
 
 type FilterKey = Exclude<keyof Filters, "tagMode">;
 
-/** What the Filter menu offers, in menu order. */
+/** What the Filter menu offers, in menu order. The intake-form filters come last, under their own heading. */
 const filterLabels: Record<FilterKey, string> = {
-  first: "First name",
-  last: "Last name",
-  email: "Email",
-  status: "Status",
-  ends: "Membership ends",
-  joined: "Joined date",
   tags: "Tags",
+  status: "Status",
   emails: "Emails",
+  joined: "Joined date",
   interests: "Interests",
   ways: "Ways to help",
   location: "Location",
   time: "Availability",
 };
 
+const intakeFilters: FilterKey[] = ["interests", "ways", "location", "time"];
+
 const noFilters: Filters = {
-  ends: "",
-  joined: "",
-  first: "",
-  last: "",
-  email: "",
+  joined: { preset: "", from: "", to: "" },
   tags: [],
   tagMode: "all",
-  status: "",
+  status: [],
   emails: "",
-  interests: "",
-  ways: "",
-  location: "",
-  time: "",
+  interests: [],
+  ways: [],
+  location: [],
+  time: [],
 };
 
 const tagModeOptions: { value: TagMode; label: string }[] = [
@@ -280,29 +364,25 @@ const has = (value: string, query: string) => value.toLowerCase().includes(query
 
 function matches(m: Member, f: Filters, q: string) {
   if (q.trim() && !has(`${fullName(m)} ${m.email} ${m.tags.join(" ")}`, q)) return false;
-  if (f.first && !has(m.firstName, f.first)) return false;
-  if (f.last && !has(m.lastName, f.last)) return false;
-  if (f.email && !has(m.email, f.email)) return false;
-  if (f.status && m.status !== f.status) return false;
+  if (f.status.length && !f.status.includes(m.status)) return false;
   if (f.tags.length) {
     const hasTag = (t: string) => m.tags.some((x) => x.toLowerCase() === t.toLowerCase());
     if (f.tagMode === "all" && !f.tags.every(hasTag)) return false;
     if (f.tagMode === "any" && !f.tags.some(hasTag)) return false;
     if (f.tagMode === "none" && f.tags.some(hasTag)) return false;
   }
-  if (f.ends && m.endsAt > f.ends) return false;
-  if (f.joined && m.joinedAt < f.joined) return false;
+  if (!joinedMatches(f.joined, m.joinedAt)) return false;
   if (f.emails === "on" && !m.subscribed) return false;
   if (f.emails === "off" && m.subscribed) return false;
-  if (f.interests && !m.intake?.interests?.includes(f.interests)) return false;
-  if (f.ways && !m.intake?.ways?.includes(f.ways)) return false;
-  if (f.location && m.intake?.location !== f.location) return false;
-  if (f.time && m.intake?.time !== f.time) return false;
+  if (f.interests.length && !f.interests.some((v) => m.intake?.interests?.includes(v))) return false;
+  if (f.ways.length && !f.ways.some((v) => m.intake?.ways?.includes(v))) return false;
+  if (f.location.length && !(m.intake?.location && f.location.includes(m.intake.location))) return false;
+  if (f.time.length && !(m.intake?.time && f.time.includes(m.intake.time))) return false;
   return true;
 }
 
 const filterCount = (f: Filters) =>
-  [f.ends, f.joined, f.first, f.last, f.email, f.status, f.emails, f.interests, f.ways, f.location, f.time].filter(Boolean).length + f.tags.length;
+  [f.joined.preset, f.emails].filter(Boolean).length + [f.status, f.interests, f.ways, f.location, f.time].filter((v) => v.length).length + (f.tags.length ? 1 : 0);
 
 /** The sorted, distinct non-empty values, for a filter's options. */
 const distinct = (values: (string | undefined)[]) =>
@@ -421,9 +501,6 @@ type DialogState =
   | { kind: "payment"; payment?: Payment }
   | { kind: "deletePayment"; payment: Payment }
   | { kind: "deletePerson" }
-  | { kind: "tag"; people: Member[] }
-  | { kind: "tagPaste" }
-  | { kind: "untag"; people: Member[] }
   | { kind: "deleteMany"; people: Member[] }
   | null;
 
@@ -452,18 +529,41 @@ function Directory() {
   });
   const load = useLabLoad(lab);
   const [members, setMembers] = React.useState<Member[]>(demoMembers);
+  const undoable = useUndoableUpdate(setMembers, lab.undoExpired);
   const [tagColors, setTagColors] = React.useState<Record<string, TagColor>>(() => Object.fromEntries(demoTags.map((t) => [t.name, t.color])));
   const [q, setQ] = React.useState("");
+  /* The list follows the typed text after a short search and keeps the previous results meanwhile; typing stays instant. */
+  const search = useLabDeferred(q, lab.slowLoading ? SLOW_SEARCH_FOR : SEARCH_FOR);
+  const sq = search.value;
   const [filters, setFilters] = React.useState<Filters>(noFilters);
   /** The filters on screen, in the order they were added. One can be here with nothing entered yet. */
   const [added, setAdded] = React.useState<FilterKey[]>([]);
   const filterButton = React.useRef<HTMLButtonElement>(null);
   const addFilterButton = React.useRef<HTMLButtonElement>(null);
-  const filterPanel = React.useRef<HTMLDivElement>(null);
+  const [openFilter, setOpenFilter] = React.useState<FilterKey | null>(null);
   const justAdded = React.useRef<FilterKey | null>(null);
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
   const [sort, setSort] = React.useState<TableSort>({ key: "ends", direction: "asc" });
   const [openId, setOpenId] = React.useState<string | null>(null);
+  const membersRef = React.useRef(members);
+  React.useEffect(() => {
+    membersRef.current = members;
+  });
+  /* Tag edits in the sheet: one Undo per editing session (until Done, or the sheet moves to someone else), not per tag. */
+  const tagSession = React.useRef<{ id: string; before: Member } | null>(null);
+  const flushTagSession = () => {
+    const session = tagSession.current;
+    tagSession.current = null;
+    if (!session) return;
+    const now = membersRef.current.find((m) => m.id === session.id);
+    if (!now || now.tags.join("\n") === session.before.tags.join("\n")) return;
+    undoable("Tags updated", { before: [{ member: session.before, index: membersRef.current.indexOf(now) }] }, "Change undone");
+  };
+  const flushTags = React.useRef(flushTagSession);
+  React.useEffect(() => {
+    flushTags.current = flushTagSession;
+  });
+  React.useEffect(() => () => flushTags.current(), [openId]);
   const [dialog, setDialog] = React.useState<DialogState>(null);
   /** The optional columns on show. Kept for the session. */
   const [shown, setShown] = React.useState<Set<OptionalColumn>>(new Set());
@@ -509,10 +609,9 @@ function Directory() {
 
   const allTags = lab.longText ? Array.from(new Set([...Object.keys(tagColors), ...pool.flatMap((m) => m.tags)])) : Object.keys(tagColors);
   const open = pool.find((m) => m.id === openId) ?? null;
-  const filtered = !noPeople && (Boolean(q.trim()) || filterCount(filters) > 0);
 
   const rows = React.useMemo(() => {
-    const list = pool.filter((m) => matches(m, filters, q));
+    const list = pool.filter((m) => matches(m, filters, sq));
     const dir = sort.direction === "asc" ? 1 : -1;
     return list.sort((a, b) => {
       const ka = sortValue(a, sort.key);
@@ -520,7 +619,7 @@ function Directory() {
       if ((ka === "") !== (kb === "")) return ka === "" ? 1 : -1;
       return ka < kb ? -dir : ka > kb ? dir : 0;
     });
-  }, [pool, filters, q, sort]);
+  }, [pool, filters, sq, sort]);
 
   const chosen = pool.filter((m) => selected.has(m.id));
   const target = chosen.length ? chosen : rows;
@@ -546,14 +645,14 @@ function Directory() {
 
   /** Adds every tag in one go per person, so each person's tags are only set once. */
   function tagPeople(tags: string[], people: Member[]) {
-    let changed = 0;
+    const ids: string[] = [];
     people.forEach((p) => {
       const missing = tags.filter((t) => !p.tags.includes(t));
       if (!missing.length) return;
-      changed++;
+      ids.push(p.id);
       setTags(p.id, [...p.tags, ...missing]);
     });
-    toast({ title: `Tagged ${plural(changed, "person", "people")} ${tags.join(", ")}` });
+    undoable(`Added ${tags.join(", ")} to ${plural(ids.length, "person", "people")}`, snapshotOf(members, ids), `Restored ${plural(ids.length, "person", "people")}`);
   }
 
   function copy(text: string, message: string) {
@@ -611,9 +710,19 @@ function Directory() {
   }
 
   /** Keys on a focused row. Checkboxes and other controls inside the list keep their own keys. */
+  const barRef = React.useRef<HTMLDivElement>(null);
   const onListKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
     if (e.defaultPrevented || e.altKey || isTyping(target) || inOwnWidget(target)) return;
+    /* With people selected, Tab from a row (or its checkbox) goes straight to the selection bar. */
+    if (e.key === "Tab" && !e.shiftKey && !e.ctrlKey && !e.metaKey && chosen.length && target.closest("tbody")) {
+      const first = barRef.current?.querySelector<HTMLElement>("button");
+      if (first) {
+        e.preventDefault();
+        first.focus();
+        return;
+      }
+    }
     const mod = e.ctrlKey || e.metaKey;
     if (mod && (e.key === "a" || e.key === "A")) {
       e.preventDefault();
@@ -790,6 +899,7 @@ function Directory() {
   function removeFilter(key: FilterKey) {
     const left = added.filter((k) => k !== key);
     setAdded(left);
+    setOpenFilter(null);
     setFilter(key, noFilters[key]);
     if (key === "tags") setFilter("tagMode", "all");
     /* Add filter goes away with the last filter, so focus falls back to Filter. */
@@ -798,6 +908,7 @@ function Directory() {
 
   function clearFilters() {
     setAdded([]);
+    setOpenFilter(null);
     setFilters(noFilters);
     setSelected(new Set());
     filterButton.current?.focus();
@@ -809,81 +920,129 @@ function Directory() {
       align="start"
       onCloseAutoFocus={(e) => {
         if (!justAdded.current) return;
+        /* The new chip's popover opens at once and takes the focus. */
         e.preventDefault();
-        const control = filterPanel.current?.querySelector<HTMLElement>(`[data-filter="${justAdded.current}"] :is(input:not([type="hidden"]), [role="combobox"])`);
-        control?.focus();
+        setOpenFilter(justAdded.current);
         justAdded.current = null;
       }}
     >
       {(Object.keys(filterLabels) as FilterKey[]).map((key) => (
-        <DropdownMenuCheckboxItem key={key} checked={added.includes(key)} onCheckedChange={(on) => (on ? addFilter(key) : removeFilter(key))}>
-          {filterLabels[key]}
-        </DropdownMenuCheckboxItem>
+        <React.Fragment key={key}>
+          {key === intakeFilters[0] && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>From the intake form</DropdownMenuLabel>
+            </>
+          )}
+          <DropdownMenuCheckboxItem checked={added.includes(key)} onCheckedChange={(on) => (on ? addFilter(key) : removeFilter(key))}>
+            {filterLabels[key]}
+          </DropdownMenuCheckboxItem>
+        </React.Fragment>
       ))}
     </DropdownMenuContent>
   );
 
-  const choice = (key: "emails" | "interests" | "ways" | "location" | "time", label: string, options: { value: string; label: string }[]) => (
-    <Field label={label}>
-      {(props) => (
-        <Select
-          {...props}
-          options={[{ value: "any", label: "Any" }, ...options]}
-          value={filters[key] || "any"}
-          onValueChange={(v) => setFilter(key, (v === "any" ? "" : v) as never)}
-        />
-      )}
-    </Field>
-  );
+  /** How many people in the list have each value, for the checkbox lists. */
+  const countOf = (key: "status" | "interests" | "ways" | "location" | "time", value: string) =>
+    pool.filter((m) => {
+      if (key === "status") return m.status === value;
+      if (key === "interests" || key === "ways") return m.intake?.[key]?.includes(value);
+      return m.intake?.[key] === value;
+    }).length;
+
+  /** A checkbox list: changes apply at once. */
+  const checkList = (key: "status" | "interests" | "ways" | "location" | "time", label: string, options: { value: string; label: string }[]) => {
+    const chosenValues = filters[key] as string[];
+    return (
+      <FilterEditor role="group" aria-label={label}>
+        <OptionList>
+          {options.map((o) => (
+            <OptionRow key={o.value}>
+              <Checkbox
+                label={o.label}
+                checked={chosenValues.includes(o.value)}
+                onCheckedChange={(on) => setFilter(key, (on === true ? [...chosenValues, o.value] : chosenValues.filter((v) => v !== o.value)) as never)}
+              />
+              <OptionCount>{countOf(key, o.value)}</OptionCount>
+            </OptionRow>
+          ))}
+          {!options.length && <OptionCount>No values yet</OptionCount>}
+        </OptionList>
+      </FilterEditor>
+    );
+  };
   const fromData = (values: string[]) => values.map((v) => ({ value: v, label: v }));
 
-  const filterControl: Record<FilterKey, React.ReactNode> = {
-    first: <Field label="First name">{(props) => <Input {...props} value={filters.first} onChange={(e) => setFilter("first", e.target.value)} />}</Field>,
-    last: <Field label="Last name">{(props) => <Input {...props} value={filters.last} onChange={(e) => setFilter("last", e.target.value)} />}</Field>,
-    email: <Field label="Email">{(props) => <Input {...props} value={filters.email} onChange={(e) => setFilter("email", e.target.value)} />}</Field>,
-    status: (
-      <Field label="Status">
-        {(props) => (
-          <Select
-            {...props}
-            options={[{ value: "any", label: "Any" }, ...(Object.keys(statusLabel) as MemberStatus[]).map((s) => ({ value: s, label: statusLabel[s] }))]}
-            value={filters.status || "any"}
-            onValueChange={(v) => setFilter("status", v === "any" ? "" : (v as MemberStatus))}
-          />
-        )}
-      </Field>
-    ),
-    ends: (
-      <Field label="Membership ends" hint="On or before">
-        {(props) => <DatePicker {...props} value={filters.ends} onValueChange={(v) => setFilter("ends", v)} />}
-      </Field>
-    ),
-    joined: (
-      <Field label="Joined date" hint="On or after">
-        {(props) => <DatePicker {...props} value={filters.joined} onValueChange={(v) => setFilter("joined", v)} />}
-      </Field>
-    ),
+  const filterEditor: Record<FilterKey, React.ReactNode> = {
     tags: (
-      <TagFilter>
-        <Label id="filter-tags">Tags</Label>
+      <FilterEditor>
         {tagsFailed ? (
           <TagsFailed onRetry={() => setRetried((r) => ({ ...r, tags: true }))} />
         ) : (
-          <TagFilterRow>
+          <>
             <Select aria-label="Tag match" options={tagModeOptions} value={filters.tagMode} onValueChange={(v) => setFilter("tagMode", v as TagMode)} />
             <TagPicker aria-label="Tags" value={filters.tags} options={allTags} colors={tagColors} onValueChange={(tags) => setFilter("tags", tags)} />
-          </TagFilterRow>
+          </>
         )}
-      </TagFilter>
+      </FilterEditor>
     ),
-    emails: choice("emails", "Emails", [
-      { value: "on", label: "On" },
-      { value: "off", label: "Off" },
-    ]),
-    interests: choice("interests", "Interests", fromData(intakeOptions.interests)),
-    ways: choice("ways", "Ways to help", fromData(intakeOptions.ways)),
-    location: choice("location", "Location", fromData(intakeOptions.location)),
-    time: choice("time", "Availability", fromData(intakeOptions.time)),
+    status: checkList("status", "Status", (Object.keys(statusLabel) as MemberStatus[]).map((v) => ({ value: v, label: statusLabel[v] }))),
+    emails: (
+      <FilterEditor>
+        <RadioGroup aria-label="Emails" value={filters.emails} onValueChange={(v) => setFilter("emails", v as Filters["emails"])}>
+          <RadioGroupOption value="on" label="On" />
+          <RadioGroupOption value="off" label="Off" />
+        </RadioGroup>
+      </FilterEditor>
+    ),
+    joined: (
+      <FilterEditor>
+        <RadioGroup
+          aria-label="Joined"
+          value={filters.joined.preset || "any"}
+          onValueChange={(v) => setFilter("joined", { ...filters.joined, preset: (v === "any" ? "" : v) as JoinedPreset })}
+        >
+          <RadioGroupOption value="any" label="Any time" />
+          {joinedPresets.map((o) => (
+            <RadioGroupOption key={o.value} value={o.value} label={o.label} />
+          ))}
+        </RadioGroup>
+        {filters.joined.preset === "custom" && (
+          <>
+            <Field label="From">
+              {(props) => <DatePicker {...props} value={filters.joined.from} onValueChange={(v) => setFilter("joined", { ...filters.joined, from: v })} />}
+            </Field>
+            <Field label="To">
+              {(props) => <DatePicker {...props} value={filters.joined.to} onValueChange={(v) => setFilter("joined", { ...filters.joined, to: v })} />}
+            </Field>
+          </>
+        )}
+      </FilterEditor>
+    ),
+    interests: checkList("interests", "Interests", fromData(intakeOptions.interests)),
+    ways: checkList("ways", "Ways to help", fromData(intakeOptions.ways)),
+    location: checkList("location", "Location", fromData(intakeOptions.location)),
+    time: checkList("time", "Availability", fromData(intakeOptions.time)),
+  };
+
+  /** What a chip says after its name: the choice in a few words, "Housing +2" when there are more than two. */
+  const list = (values: string[]) => (values.length <= 2 ? values.join(", ") : `${values[0]} +${values.length - 1}`);
+  const filterSummary = (key: FilterKey): string => {
+    switch (key) {
+      case "tags":
+        return filters.tags.length ? `${filters.tagMode === "none" ? "not " : ""}${list(filters.tags)}` : "";
+      case "status":
+        return list(filters.status.map((v) => statusLabel[v]));
+      case "emails":
+        return filters.emails === "on" ? "On" : filters.emails === "off" ? "Off" : "";
+      case "joined": {
+        const j = filters.joined;
+        if (j.preset === "custom") return j.from || j.to ? `${j.from || "…"} to ${j.to || "…"}` : "Custom range";
+        return joinedPresets.find((o) => o.value === j.preset)?.label ?? "";
+      }
+      default:
+        return list(filters[key]);
+    }
   };
 
   const columns: TableColumn<Member>[] = [
@@ -916,7 +1075,7 @@ function Directory() {
       header: "Name",
       sortKey: "name",
       render: (m) => {
-        const needle = q.trim().toLowerCase();
+        const needle = sq.trim().toLowerCase();
         const hits = needle ? m.tags.filter((t) => t.toLowerCase().includes(needle)) : [];
         return (
           <NameCell>
@@ -983,6 +1142,35 @@ function Directory() {
             return { key, header: label, sortKey: key, render: (m) => (m.subscribed ? "On" : "Off") };
         }
       }),
+    {
+      key: "columnsMenu",
+      width: "var(--space-7)",
+      align: "right",
+      header: (
+        <DropdownMenu>
+          <Tooltip content="Show columns">
+            <DropdownMenuTrigger asChild>
+              <Button type="button" $variant="ghost" aria-label="Show columns">
+                <Icon icon={Columns3} size={16} />
+              </Button>
+            </DropdownMenuTrigger>
+          </Tooltip>
+          <DropdownMenuContent align="end">
+            {optionalColumns.map(([key, label]) => (
+              <DropdownMenuCheckboxItem
+                key={key}
+                checked={shown.has(key)}
+                onSelect={(e) => e.preventDefault()}
+                onCheckedChange={(on) => toggleColumn(key, on === true)}
+              >
+                {label}
+              </DropdownMenuCheckboxItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+      render: () => null,
+    },
   ];
 
   function exportCsv(people: Member[]) {
@@ -999,22 +1187,23 @@ function Directory() {
 
   /** Removes the tags from everyone who has any of them. */
   function removeTags(tags: string[], people: Member[]) {
-    let changed = 0;
+    const ids: string[] = [];
     people.forEach((p) => {
       if (!p.tags.some((t) => tags.includes(t))) return;
-      changed++;
+      ids.push(p.id);
       setTags(p.id, p.tags.filter((t) => !tags.includes(t)));
     });
-    toast({ title: `Removed ${tags.join(", ")} from ${plural(changed, "person", "people")}` });
+    undoable(`Removed ${tags.join(", ")} from ${plural(ids.length, "person", "people")}`, snapshotOf(members, ids), `Restored ${plural(ids.length, "person", "people")}`);
   }
 
   /** Permanent: the people leave the directory, the selection and, if open, the sheet. */
   function deletePeople(people: Member[]) {
     const ids = new Set(people.map((p) => p.id));
+    const snap = snapshotOf(members, ids);
     setMembers((list) => list.filter((m) => !ids.has(m.id)));
     setSelected((s) => new Set([...s].filter((id) => !ids.has(id))));
     if (openId && ids.has(openId)) setOpenId(null);
-    toast({ title: `Deleted ${plural(people.length, "person", "people")}` });
+    undoable(`Deleted ${plural(people.length, "person", "people")}`, snap, `Restored ${plural(people.length, "person", "people")}`);
   }
 
   function toggleColumn(key: OptionalColumn, on: boolean) {
@@ -1027,38 +1216,27 @@ function Directory() {
     if (!on && sort.key === key) setSort({ key: "ends", direction: "asc" });
   }
 
-  const bulk = (label: string, all: boolean) => (
-    <>
-      <strong>{label}</strong>
-      <Button type="button" $variant="ghost" $size="sm" onClick={() => setDialog({ kind: "tag", people: target })}>
-        {all ? "Tag all" : "Tag"}
-        <Icon icon={TagIcon} size={16} />
-      </Button>
-      {!all && (
-        <Button type="button" $variant="ghost" $size="sm" onClick={() => setDialog({ kind: "untag", people: target })}>
-          Remove tag
-        </Button>
-      )}
-      <Button type="button" $variant="ghost" $size="sm" onClick={() => toast({ title: `Opens a new email to ${plural(target.length, "person", "people")}` })}>
-        {all ? "Email all" : "Email"}
-        <Icon icon={Mail} size={16} />
-      </Button>
-      <Button type="button" $variant="ghost" $size="sm" onClick={() => copyEmails(target)}>
-        Copy emails
-        <Icon icon={Copy} size={16} />
-      </Button>
-      <Button type="button" $variant="ghost" $size="sm" onClick={() => exportCsv(target)}>
-        Export CSV
-        <Icon icon={Download} size={16} />
-      </Button>
-      {!all && (
-        <Button type="button" $variant="ghost" $size="sm" onClick={() => setDialog({ kind: "deleteMany", people: target })}>
-          Delete
-          <Icon icon={Trash2} size={16} />
-        </Button>
-      )}
-    </>
-  );
+  /* The floating bar stays mounted for the length of its exit animation. */
+  const [barMounted, setBarMounted] = React.useState(false);
+  const lastCount = React.useRef(0);
+  if (chosen.length) lastCount.current = chosen.length;
+  if (chosen.length && !barMounted) setBarMounted(true);
+  React.useEffect(() => {
+    if (chosen.length) return;
+    const timer = window.setTimeout(() => setBarMounted(false), 200);
+    return () => window.clearTimeout(timer);
+  }, [chosen.length]);
+
+  /* While the bar is up, lift the toasts above it (the kit's viewport is fixed at the bottom edge). */
+  React.useEffect(() => {
+    if (!barMounted) return;
+    const viewport = document.querySelector<HTMLElement>('[role="region"] > ol');
+    if (!viewport) return;
+    viewport.style.bottom = "calc(var(--space-5) + var(--space-7) + var(--space-3))";
+    return () => {
+      viewport.style.bottom = "";
+    };
+  }, [barMounted]);
 
   /* Drag a box over the list to tick every row it touches, like the Outbox. A plain drag replaces the
      selection; Shift, Ctrl or Cmd adds to it. It never starts on buttons, links, column headings or checkboxes. */
@@ -1103,6 +1281,7 @@ function Directory() {
             aria-label="Search by name, email or tag"
             placeholder="Search name, email or tag"
             value={q}
+            pending={search.pending}
             onChange={(e) => {
               setQ(e.target.value);
               setSelected(new Set());
@@ -1110,7 +1289,7 @@ function Directory() {
             onSearch={setQ}
           />
         }
-        results={{ query: q, count: rows.length, pending: loading }}
+        results={{ query: sq, count: rows.length, pending: loading || search.pending }}
         actions={
           <>
 <DropdownMenu>
@@ -1123,49 +1302,17 @@ function Directory() {
                 </DropdownMenuTrigger>
                 {filterMenu}
               </DropdownMenu>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button type="button" $variant="secondary">
-                  <Icon icon={Columns3} size={16} />
-                  Columns
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {optionalColumns.map(([key, label]) => (
-                  <DropdownMenuCheckboxItem
-                    key={key}
-                    checked={shown.has(key)}
-                    onSelect={(e) => e.preventDefault()}
-                    onCheckedChange={(on) => toggleColumn(key, on === true)}
-                  >
-                    {label}
-                  </DropdownMenuCheckboxItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
             {showList && (
-              <Button type="button" $variant="secondary" onClick={() => exportCsv(chosen.length ? chosen : rows)}>
-                <Icon icon={Download} size={16} />
-                Export CSV
-              </Button>
+              <Tooltip content="Export CSV">
+                <Button type="button" $variant="secondary" aria-label="Export CSV" onClick={() => exportCsv(chosen.length ? chosen : rows)}>
+                  <Icon icon={Download} size={16} />
+                </Button>
+              </Tooltip>
             )}
             <Button type="button" onClick={() => setDialog({ kind: "add" })}>
               <Icon icon={Plus} size={16} />
               Add member
             </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button type="button" $variant="ghost" aria-label="More people actions">
-                  <Icon icon={Ellipsis} size={16} />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={() => setDialog({ kind: "tagPaste" })}>
-                  <Icon icon={TagIcon} size={16} />
-                  Tag people by email
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
           </>
         }
       />
@@ -1174,53 +1321,46 @@ function Directory() {
       {!loading && (pageFailed || listFailed) && <ListFailed onRetry={() => setRetried((r) => ({ ...r, list: true }))} />}
 
       {showFilters && added.length > 0 && (
-        <FilterPanel ref={filterPanel} role="group" aria-label="Filters">
-          {added.map((key) => {
-            const Slot = key === "tags" ? WideSlot : FilterSlot;
-            return (
-            <Slot key={key} data-filter={key}>
-              {filterControl[key]}
-              <RemoveFilter type="button" $variant="ghost" aria-label={`Remove ${filterLabels[key]} filter`} onClick={() => removeFilter(key)}>
-                <Icon icon={X} size={14} />
-              </RemoveFilter>
-            </Slot>
-            );
-          })}
-          <AddFilterCell>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button ref={addFilterButton} type="button" $variant="secondary">
-                  <Icon icon={Plus} size={16} />
-                  Add filter
-                </Button>
-              </DropdownMenuTrigger>
-              {filterMenu}
-            </DropdownMenu>
-          </AddFilterCell>
-        </FilterPanel>
-      )}
-
-      {showList && (chosen.length > 0 || (filtered && rows.length > 0) || added.length > 0) && (
-      <Results>
-        <Bar aria-live="polite">
-          {chosen.length ? (
-            <>
-              {bulk(`${chosen.length} selected`, false)}
-              <Button type="button" $variant="ghost" $size="sm" onClick={() => setSelected(new Set())}>
-                Clear selection
+        <FilterRow role="group" aria-label="Filters">
+          {(Object.keys(filterLabels) as FilterKey[])
+            .filter((key) => added.includes(key))
+            .map((key) => {
+              const summary = filterSummary(key);
+              return (
+                <Popover key={key} open={openFilter === key} onOpenChange={(o) => setOpenFilter(o ? key : null)}>
+                  <PopoverAnchor asChild>
+                    <Chip data-filter={key}>
+                      <PopoverTrigger asChild>
+                        <Button type="button" $variant="ghost" $size="sm">
+                          <ChipLabel>{summary ? `${filterLabels[key]}: ${summary}` : filterLabels[key]}</ChipLabel>
+                        </Button>
+                      </PopoverTrigger>
+                      <ChipRemove type="button" $variant="ghost" $size="sm" aria-label={`Remove ${filterLabels[key]} filter`} onClick={() => removeFilter(key)}>
+                        <Icon icon={X} size={14} />
+                      </ChipRemove>
+                    </Chip>
+                  </PopoverAnchor>
+                  <PopoverContent align="start" showClose={false} aria-label={filterLabels[key]}>
+                    {filterEditor[key]}
+                  </PopoverContent>
+                </Popover>
+              );
+            })}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button ref={addFilterButton} type="button" $variant="ghost" $size="sm">
+                <Icon icon={Plus} size={14} />
+                Add filter
               </Button>
-            </>
-          ) : filtered && rows.length ? (
-            bulk(plural(rows.length, "person", "people"), true)
-          ) : null}
-        </Bar>
-        {added.length > 0 && (
-          <Button type="button" $variant="ghost" $size="sm" onClick={clearFilters}>
-            <Icon icon={X} size={16} />
-            Clear all
-          </Button>
-        )}
-      </Results>
+            </DropdownMenuTrigger>
+            {filterMenu}
+          </DropdownMenu>
+          {added.length > 1 && (
+            <Button type="button" $variant="ghost" $size="sm" onClick={clearFilters}>
+              Clear all
+            </Button>
+          )}
+        </FilterRow>
       )}
 
       {showList && (
@@ -1236,7 +1376,7 @@ function Directory() {
         empty={
           <ListEmptyState
             items="people"
-            query={noPeople ? "" : q}
+            query={noPeople ? "" : sq}
             searchedFields="names, emails and tags"
             filtered={filterCount(filters) && !noPeople ? "people with these filters" : undefined}
             onClearSearch={() => setQ("")}
@@ -1259,7 +1399,67 @@ function Directory() {
           />
         }
       />
+      {barMounted && <BarSpace aria-hidden="true" />}
       </div>
+      )}
+
+      {showList && barMounted && (
+        <SelectionBar
+          data-no-marquee=""
+          data-state={chosen.length ? "open" : "closed"}
+          role="group"
+          aria-label="Selected people"
+          ref={barRef}
+          onKeyDown={(e) => {
+            /* Shift+Tab from the first button goes back to the row you were on, or the first selected row. */
+            if (e.key === "Tab" && e.shiftKey && e.target === e.currentTarget.querySelector("button")) {
+              const row = rowEl(rowsRef.current[lastIndex.current]?.id ?? "") ?? rowEl(chosen[0]?.id ?? "");
+              if (row) {
+                e.preventDefault();
+                row.focus();
+              }
+            }
+            // Menus and dialogs render in a portal, so only keys pressed on the bar's own controls count.
+            if (e.key === "Escape" && e.currentTarget.contains(e.target as Node)) setSelected(new Set());
+          }}
+        >
+          <BarCount role="status" aria-live="polite">
+            {lastCount.current} selected
+          </BarCount>
+          <BarDivider aria-hidden="true" />
+          {chosen.length < rows.length && (
+            <Tooltip content={`Select all ${rows.length}`}>
+              <BarIconButton type="button" $variant="ghost" aria-label={`Select all ${rows.length}`} onClick={() => setSelected(new Set(rows.map((m) => m.id)))}>
+                <Icon icon={ListChecks} size={16} />
+              </BarIconButton>
+            </Tooltip>
+          )}
+          <BulkTagsPopover
+            people={target}
+            allTags={allTags}
+            tagColors={tagColors}
+            lab={lab}
+            onToggle={({ tag, action }) => (action === "add" ? tagPeople([tag], target) : removeTags([tag], target))}
+          >
+            <BarTagsButton />
+          </BulkTagsPopover>
+          <Tooltip content="Copy emails">
+            <BarIconButton type="button" $variant="ghost" aria-label="Copy emails" onClick={() => copyEmails(target)}>
+              <Icon icon={Copy} size={16} />
+            </BarIconButton>
+          </Tooltip>
+          <Tooltip content="Delete">
+            <BarIconButton type="button" $variant="ghost" aria-label="Delete" onClick={() => setDialog({ kind: "deleteMany", people: target })}>
+              <Icon icon={Trash2} size={16} />
+            </BarIconButton>
+          </Tooltip>
+          <BarDivider aria-hidden="true" />
+          <Tooltip content="Clear selection">
+            <BarIconButton type="button" $variant="ghost" aria-label="Clear selection" onClick={() => setSelected(new Set())}>
+              <Icon icon={X} size={16} />
+            </BarIconButton>
+          </Tooltip>
+        </SelectionBar>
       )}
 
       <MemberSheet
@@ -1278,7 +1478,13 @@ function Directory() {
           onRecordPayment: () => setDialog({ kind: "payment" }),
           onEditPayment: (payment) => setDialog({ kind: "payment", payment }),
           onDelete: () => setDialog({ kind: "deletePerson" }),
-          onSetTags: (tags) => open && setTags(open.id, tags),
+          onSetTags: (tags) => {
+            if (!open) return;
+            if (tagSession.current && tagSession.current.id !== open.id) flushTagSession();
+            tagSession.current ??= { id: open.id, before: open };
+            setTags(open.id, tags);
+          },
+          onTagsDone: flushTagSession,
           onCopy: copy,
         }}
       />
@@ -1309,7 +1515,7 @@ function Directory() {
             setMembers((list) => [m, ...list]);
             close();
             setOpenId(m.id);
-            toast({ title: `Added ${d.firstName}` });
+            undoable(`Added ${d.firstName}`, { before: [], created: [m.id] }, "Change undone", () => setOpenId((id) => (id === m.id ? null : id)));
           }}
         />
       )}
@@ -1320,9 +1526,10 @@ function Directory() {
           onOpenChange={close}
           initial={open.note?.text}
           onSave={(text) => {
+            const snap = snapshotOf(members, [open.id]);
             update(open.id, (m) => ({ ...m, note: text ? { text, updatedAt: TODAY, by: "Suhanya" } : undefined }));
             close();
-            toast({ title: text ? "Note saved" : "Note cleared" });
+            undoable(text ? "Note saved" : "Note cleared", snap, "Change undone");
           }}
         />
       )}
@@ -1334,9 +1541,10 @@ function Directory() {
           member={open}
           emailTaken={(e) => emailTaken(e, open.id)}
           onSave={(d) => {
+            const snap = snapshotOf(members, [open.id]);
             update(open.id, (m) => ({ ...m, ...d }));
             close();
-            toast({ title: "Details saved" });
+            undoable("Details saved", snap, "Change undone");
           }}
         />
       )}
@@ -1347,9 +1555,10 @@ function Directory() {
           onOpenChange={close}
           member={open}
           onSave={(d) => {
+            const snap = snapshotOf(members, [open.id]);
             update(open.id, (m) => ({ ...m, kind: d.kind, amount: d.amount, endsAt: d.endsAt, status: d.endsAt < TODAY ? "ended" : m.status === "ended" ? "member" : m.status }));
             close();
-            toast({ title: "Membership saved" });
+            undoable("Membership changed", snap, "Change undone");
           }}
         />
       )}
@@ -1364,14 +1573,15 @@ function Directory() {
           onDelete={() => dialog.payment && setDialog({ kind: "deletePayment", payment: dialog.payment })}
           onSave={(d) => {
             const editing = dialog.payment;
+            const snap = snapshotOf(members, [open.id]);
             if (editing) {
               update(open.id, (m) => ({ ...m, payments: m.payments.map((p) => (p.id === editing.id ? { ...p, amount: d.amount, date: d.date, method: d.method, note: d.note || undefined } : p)) }));
-              toast({ title: "Payment saved" });
+              undoable("Payment updated", snap, "Change undone");
             } else {
               const forName = d.forId ? fullName(members.find((x) => x.id === d.forId) ?? open) : undefined;
               const payment: Payment = { id: newId("p"), amount: d.amount, date: d.date, method: d.method, note: d.note || undefined, giftFor: forName };
               update(open.id, (m) => ({ ...m, payments: [payment, ...m.payments], status: forName ? m.status : "member" }));
-              toast({ title: `Recorded ${new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" }).format(d.amount)}` });
+              undoable(`Recorded ${new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" }).format(d.amount)}`, snap, "Change undone");
             }
             close();
           }}
@@ -1386,9 +1596,10 @@ function Directory() {
           description={`It's removed from ${fullName(open)}'s payments and their total. This can't be undone.`}
           confirm="Delete payment"
           onConfirm={() => {
+            const snap = snapshotOf(members, [open.id]);
             update(open.id, (m) => ({ ...m, payments: m.payments.filter((p) => p.id !== dialog.payment.id) }));
             close();
-            toast({ title: "Payment deleted" });
+            undoable("Payment deleted", snap, "Change undone");
           }}
         />
       )}
@@ -1401,38 +1612,11 @@ function Directory() {
           description="This removes them and their history from the directory. It can't be undone."
           confirm="Delete person"
           onConfirm={() => {
+            const snap = snapshotOf(members, [open.id]);
             setMembers((list) => list.filter((m) => m.id !== open.id));
             setOpenId(null);
             close();
-            toast({ title: "Person deleted" });
-          }}
-        />
-      )}
-
-      {(dialog?.kind === "tag" || dialog?.kind === "tagPaste") && (
-        <TagPeopleDialog
-          open
-          onOpenChange={close}
-          count={dialog.kind === "tag" ? dialog.people.length : undefined}
-          pasteEmails={dialog.kind === "tagPaste"}
-          allTags={allTags}
-          tagColors={tagColors}
-          findByEmail={(e) => members.find((m) => m.email.toLowerCase() === e.trim().toLowerCase())}
-          onSave={(tags, people) => {
-            tagPeople(tags, people ?? (dialog.kind === "tag" ? dialog.people : []));
-            close();
-          }}
-        />
-      )}
-      {dialog?.kind === "untag" && (
-        <RemoveTagDialog
-          open
-          onOpenChange={close}
-          people={dialog.people}
-          tagColors={tagColors}
-          onSave={(tags) => {
-            removeTags(tags, dialog.people);
-            close();
+            undoable(`Deleted ${fullName(open)}`, snap, "Restored 1 person");
           }}
         />
       )}

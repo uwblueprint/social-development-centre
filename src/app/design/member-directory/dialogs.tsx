@@ -18,12 +18,10 @@ import { Field } from "@/components/ui/Field";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Select } from "@/components/ui/Select";
-import { TagInput } from "@/components/ui/TagInput";
 import { Textarea } from "@/components/ui/Textarea";
 import { ToggleGroupItem } from "@/components/ui/ToggleGroup";
-import { TODAY, addMonths, fullName, methodLabel, type Member, type MembershipKind, type PaymentMethod, type TagColor } from "./data";
+import { TODAY, addMonths, fullName, methodLabel, type Member, type MembershipKind, type PaymentMethod } from "./data";
 import { OptionToggle, PillToggle } from "./PillToggle";
-import { TagPicker } from "./TagPicker";
 import { useStateLab } from "../_state-lab/useStateLab";
 import {
   BusyButton,
@@ -481,158 +479,6 @@ export function AddMemberDialog({
 
 /** Ends 12 months after the join date. */
 export const defaultEnd = (joinedAt: string) => addMonths(joinedAt, 12);
-
-/* ---------- tags ---------- */
-
-/** Tags a set of people. With `pasteEmails`, the admin pastes the emails instead (e.g. 15 event sign-ups). */
-export function TagPeopleDialog({
-  open,
-  onOpenChange,
-  count,
-  pasteEmails,
-  allTags,
-  tagColors,
-  findByEmail,
-  onSave,
-}: DialogBase & {
-  count?: number;
-  pasteEmails?: boolean;
-  allTags: string[];
-  tagColors: Record<string, TagColor>;
-  findByEmail: (email: string) => Member | undefined;
-  onSave: (tags: string[], people?: Member[]) => void;
-}) {
-  const [tags, setTags] = React.useState<string[]>([]);
-  const [emails, setEmails] = React.useState<string[]>([]);
-  const [errors, setErrors] = React.useState<{ tag?: string; emails?: string }>({});
-  const found = emails.map(findByEmail).filter((m): m is Member => Boolean(m));
-  const lab = useStateLab({ notApplicable: [...DIALOG_NOT_APPLICABLE, ...NO_CONFLICT, "partialData"] });
-  const sub = useSubmit(lab);
-  useWhenOn(lab.longText && Boolean(pasteEmails), () => setEmails([LONG_EMAIL]));
-  const shownCount = lab.manyItems ? 500 : lab.singleItem ? 1 : count;
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogTitle>{pasteEmails ? "Tag people by email" : `Tag ${shownCount === 1 ? "1 person" : `${shownCount} people`}`}</DialogTitle>
-        <Form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (sub.busy) return;
-            const next: typeof errors = {};
-            if (!tags.length) next.tag = "Choose a tag or type a new one.";
-            else if (lab.validationError) next.tag = "We couldn't add this tag. Choose a different one.";
-            if (pasteEmails && !found.length) next.emails = "None of these emails are in the directory. Check them and try again.";
-            setErrors(next);
-            if (!Object.keys(next).length) sub.run(() => onSave(tags, pasteEmails ? found : undefined));
-          }}
-        >
-          <Lock disabled={sub.busy}>
-          {pasteEmails && (
-            <Field
-              label="Emails"
-              hint={emails.length ? `${found.length} of ${emails.length} found in the directory` : undefined}
-              error={errors.emails}
-            >
-              {(props) => (
-                <TagInput
-                  {...props}
-                  value={emails}
-                  onValueChange={setEmails}
-                  validate={(e) => (!validEmail(e) ? "Not an email address" : findByEmail(e) ? undefined : "Not in the directory")}
-                  copy={{ tagsLabel: "Emails entered" }}
-                />
-              )}
-            </Field>
-          )}
-          <Field label="Tags" error={errors.tag}>
-            {(props) => (
-              <TagPicker
-                aria-label="Tags"
-                id={props.id}
-                value={tags}
-                options={allTags}
-                colors={tagColors}
-                onValueChange={(next) => {
-                  setTags(next);
-                  if (next.length) setErrors((e) => ({ ...e, tag: undefined }));
-                }}
-                placeholder="Select or create a tag"
-                createLabel={(q) => `Create “${q}”`}
-                aria-describedby={props["aria-describedby"]}
-                aria-invalid={props["aria-invalid"]}
-              />
-            )}
-          </Field>
-          </Lock>
-          <SubmitNote submit={sub} />
-          <SubmitActions submit={tags.length > 1 ? "Add tags" : "Add tag"} state={sub} />
-        </Form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-/** Removes tags from a set of people. Only tags that at least one of them has are offered. */
-export function RemoveTagDialog({
-  open,
-  onOpenChange,
-  people,
-  tagColors,
-  onSave,
-}: DialogBase & { people: Member[]; tagColors: Record<string, TagColor>; onSave: (tags: string[]) => void }) {
-  const [tags, setTags] = React.useState<string[]>([]);
-  const [error, setError] = React.useState<string>();
-  const lab = useStateLab({ notApplicable: [...DIALOG_NOT_APPLICABLE, ...NO_CONFLICT, "partialData"] });
-  const sub = useSubmit(lab);
-  const options = Array.from(new Set(people.flatMap((p) => p.tags)));
-  const affected = people.filter((p) => p.tags.some((t) => tags.includes(t))).length;
-  const count = lab.manyItems ? 500 : lab.singleItem ? 1 : people.length;
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogTitle>{`Remove tag from ${count === 1 ? "1 person" : `${count} people`}`}</DialogTitle>
-        <Form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (sub.busy) return;
-            if (!options.length) return setError("None of these people have tags.");
-            if (!tags.length) return setError("Choose a tag to remove.");
-            if (lab.validationError) return setError("We couldn't remove this tag. Choose a different one.");
-            setError(undefined);
-            sub.run(() => onSave(tags));
-          }}
-        >
-          <Lock disabled={sub.busy}>
-            <Field
-              label="Tags"
-              error={error}
-              hint={tags.length ? `${tags.join(", ")} will be removed from ${affected === 1 ? "1 person" : `${affected} people`}.` : undefined}
-            >
-              {(props) => (
-                <TagPicker
-                  aria-label="Tags"
-                  id={props.id}
-                  value={tags}
-                  options={options}
-                  colors={tagColors}
-                  onValueChange={(next) => {
-                    setTags(next);
-                    if (next.length) setError(undefined);
-                  }}
-                  placeholder="Select a tag"
-                  aria-describedby={props["aria-describedby"]}
-                  aria-invalid={props["aria-invalid"]}
-                />
-              )}
-            </Field>
-          </Lock>
-          <SubmitNote submit={sub} />
-          <SubmitActions submit={tags.length > 1 ? "Remove tags" : "Remove tag"} state={sub} />
-        </Form>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 /* ---------- confirmations ---------- */
 

@@ -47,10 +47,10 @@ const Viewport = styled(ToastPrimitive.Viewport)`
 const Root = styled(ToastPrimitive.Root)`
   position: relative;
   overflow: hidden;
-  /* The brand primary, so a toast stands out from the page: dark green in the light theme, light mint in the dark one (owner, Nov 2026). */
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-  border: 1px solid var(--color-primary);
+  /* A deep brand green, so a toast stands out from the page in both themes (owner, Nov 2026). */
+  background: var(--color-primary-deep);
+  color: var(--color-on-primary-deep);
+  border: 1px solid var(--color-primary-deep);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   /* One line (owner, Nov 2026): message, then the action, then close. Long text wraps in its own column. */
@@ -79,7 +79,7 @@ const TimeBar = styled.span`
   right: 0;
   bottom: 0;
   height: 2px;
-  background: color-mix(in oklch, var(--color-on-primary) 45%, transparent);
+  background: color-mix(in oklch, var(--color-on-primary-deep) 45%, transparent);
   transform-origin: left;
   animation: ${countdown} var(--toast-duration) linear forwards;
   pointer-events: none;
@@ -97,14 +97,14 @@ const Title = styled(ToastPrimitive.Title)`
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
   line-height: var(--leading-ui);
-  color: var(--color-on-primary);
+  color: var(--color-on-primary-deep);
   margin: 0;
 `;
 
 const Description = styled(ToastPrimitive.Description)`
   font-size: var(--text-xs);
   line-height: var(--leading-ui);
-  color: var(--color-on-primary);
+  color: var(--color-on-primary-deep);
   opacity: 0.8;
   margin: var(--space-1) 0 0;
 `;
@@ -138,15 +138,15 @@ const Close = styled(ToastPrimitive.Close)`
   width: 24px;
   height: 24px;
   border-radius: var(--radius-full);
-  color: var(--color-on-primary);
+  color: var(--color-on-primary-deep);
   cursor: pointer;
 
   &:hover {
-    background: color-mix(in oklch, var(--color-on-primary) 18%, transparent);
+    background: color-mix(in oklch, var(--color-on-primary-deep) 18%, transparent);
   }
-  /* The usual ring is the brand green, which would vanish on the green toast. */
+  /* The usual ring is the brand green, which would vanish on the deep green toast. */
   &:focus-visible {
-    box-shadow: 0 0 0 2px var(--color-on-primary);
+    box-shadow: 0 0 0 2px var(--color-on-primary-deep);
   }
 `;
 

@@ -59,10 +59,10 @@ import { ConnectionBanner, InlineAlert, SectionFailed, SectionSkeleton, Skeleton
 /* ---------- layout ---------- */
 
 const Panel = styled(SheetContent)`
-  /* Section cards' fill; overlays, milestone dots and activity dot rings read it too so they match. */
-  --section-bg: var(--color-surface);
+  /* The sheet's own fill: reveal overlays and activity dot rings read it so they blend in. */
+  --section-bg: var(--color-surface-raised);
 
-  /* Wider than the kit's 480px so long names, tags and emails have room: 576px, full width on phones. */
+  /* A little wider than the kit's 480px (PM request) so long names, tags and emails have room: 576px, full width on phones. */
   &&& {
     width: min(calc(var(--space-8) * 9), 100vw);
   }
@@ -87,7 +87,7 @@ const QuietButton = styled(Button)`
     background: transparent;
     color: var(--color-text-muted);
     font-size: var(--text-sm);
-    line-height: var(--leading-body);
+    line-height: var(--leading-ui);
   }
   &&:hover:not(:disabled) {
     background: transparent;
@@ -136,23 +136,21 @@ const RevealOverlay = styled(Reveal)`
   background: var(--reveal-bg);
 `;
 
-/* The name row is 32px (it holds the ⋯ and close buttons); the header's 8px gap makes about 12px under the name. */
 const Email = styled.div`
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
   font-size: var(--text-sm);
+  line-height: var(--leading-body);
   color: var(--color-text-muted);
   overflow-wrap: anywhere;
 `;
 
-/* The header's own gap is 8px; 4px more makes the 12px between email, tags and the ended line. */
 const Chips = styled.div`
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
-  margin-top: var(--space-1);
 `;
 
 /* Long tag names wrap inside the pill instead of pushing the row wider than the panel. */
@@ -182,30 +180,42 @@ const Name = styled(SheetTitle)`
 const TagEntry = styled.span`
   display: inline-flex;
   align-items: center;
-  gap: var(--space-3);
-  max-width: 100%;
+  gap: var(--space-2);
+  width: 100%;
 `;
 
 const TagField = styled.span`
-  width: calc(var(--space-8) * 5);
-  max-width: 100%;
+  flex: 1 1 auto;
+  min-width: 0;
 `;
 
-/* 20px between sections. */
+/* The kit's body inset is kept; sections stack flat, separated by hairlines. */
 const Body = styled(SheetBody)`
   display: flex;
   flex-direction: column;
-  gap: calc(var(--space-4) + var(--space-1));
+
+  /* A banner or error above the sections sits --space-4 clear of them. */
+  & > :not(section):not(:last-child) {
+    margin-bottom: var(--space-4);
+  }
 `;
 
+/* Flat section: a 1px --color-border divider with --space-5 above and below, no card inside the sheet. */
 const Section = styled.section`
   --reveal-bg: var(--section-bg);
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  padding: var(--space-4);
-  border-radius: var(--radius-lg);
-  background: var(--section-bg);
+  padding: var(--space-5) 0;
+  border-top: 1px solid var(--color-border);
+
+  &:first-of-type {
+    padding-top: 0;
+    border-top: 0;
+  }
+  &:last-of-type {
+    padding-bottom: 0;
+  }
 `;
 
 const SectionHead = styled.div`
@@ -213,12 +223,6 @@ const SectionHead = styled.div`
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  margin-bottom: var(--space-1);
-
-  /* A section with nothing under its header (an empty note) keeps 16px top and bottom. */
-  &:last-child {
-    margin-bottom: 0;
-  }
 `;
 
 const SectionTitle = styled.h3`
@@ -226,8 +230,9 @@ const SectionTitle = styled.h3`
   align-items: center;
   gap: var(--space-2);
   margin: 0;
-  font-size: var(--text-sm);
+  font-size: var(--text-md);
   font-weight: var(--weight-medium);
+  line-height: var(--leading-heading);
   color: var(--color-text);
 `;
 
@@ -240,16 +245,20 @@ const SectionActions = styled.div`
 const Muted = styled.p`
   margin: 0;
   font-size: var(--text-sm);
+  line-height: var(--leading-body);
   color: var(--color-text-muted);
 `;
 
 const Meta = styled.div`
-  margin-top: var(--space-1);
+  margin-top: var(--space-2);
   font-size: var(--text-xs);
+  line-height: var(--leading-ui);
   color: var(--color-text-muted);
 `;
 
 const NoteText = styled.div`
+  font-size: var(--text-sm);
+  line-height: var(--leading-body);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 `;
@@ -261,19 +270,18 @@ const Big = styled.div`
   gap: var(--space-2);
 `;
 
-/* The same size as the member's name in the panel title. */
+/* A key figure is body-sized text, not a display size: --text-md regular, with a muted --text-xs label. */
 const BigNumber = styled.span`
-  font-size: var(--text-lg);
-  font-weight: var(--weight-medium);
-  line-height: var(--leading-heading);
+  font-size: var(--text-md);
+  font-weight: var(--weight-regular);
+  line-height: var(--leading-body);
   font-variant-numeric: tabular-nums;
 `;
 
 const BigLabel = styled.span`
   font-size: var(--text-xs);
+  line-height: var(--leading-ui);
   color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-prose);
 `;
 
 /* How long is left on a membership, with its end date small underneath. */
@@ -285,6 +293,7 @@ const Countdown = styled.div`
 
 const CountdownDate = styled.time`
   font-size: var(--text-xs);
+  line-height: var(--leading-ui);
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
 `;
@@ -297,14 +306,13 @@ const Timeline = styled.ol`
 `;
 
 /*
- * Each entry's dot is centred on the whole entry (title and the line under it). An opened email keeps its dot
- * at the top. The connector runs through every row behind the dots; each dot's ring (section colour) cuts the
- * 4px gaps, so the line meets every dot wherever it sits. 8px above and below each row makes the 16px gap.
+ * Each entry has a dot beside its title. The connector runs through every row behind the dots; each dot's
+ * ring (the sheet colour) cuts the gaps, so the line meets every dot. --space-2 above and below each row.
  */
 const TimelineItem = styled.li`
   position: relative;
   display: grid;
-  grid-template-columns: var(--space-6) minmax(0, 1fr) auto;
+  grid-template-columns: var(--space-5) minmax(0, 1fr) auto;
   column-gap: var(--space-3);
   padding: var(--space-2) 0;
 
@@ -314,27 +322,24 @@ const TimelineItem = styled.li`
   &:last-child {
     padding-bottom: 0;
   }
-  &:has([data-state="open"]) > :first-child {
-    align-self: start;
-  }
 
   &::before {
     content: "";
     position: absolute;
-    left: calc(var(--space-6) / 2);
+    left: var(--space-3);
     top: 0;
     bottom: 0;
     width: 1px;
     transform: translateX(-50%);
     background: var(--color-border);
   }
-  /* First row: start inside its dot. Last row: stop inside its dot (24px = 8px padding + half a dot). */
+  /* First row: start inside its dot. Last row: stop inside its dot (row padding plus half a dot). */
   &:first-child::before {
-    top: var(--space-4);
+    top: var(--space-3);
   }
   &:last-child::before {
     bottom: auto;
-    height: calc(var(--space-2) + var(--space-4));
+    height: calc(var(--space-2) + var(--space-3));
   }
   &:only-child::before {
     display: none;
@@ -355,29 +360,24 @@ const TONE_COLOR: Record<Tone, string> = {
 const TimelineDot = styled.span<{ $tone?: Tone }>`
   position: relative;
   z-index: var(--z-raised);
-  align-self: center;
+  align-self: start;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   box-shadow: 0 0 0 var(--space-1) var(--section-bg);
-  width: var(--space-6);
-  height: var(--space-6);
+  width: var(--space-5);
+  height: var(--space-5);
   border-radius: var(--radius-full);
   border: 1px solid ${({ $tone }) => ($tone ? `var(--color-${TONE_COLOR[$tone]}-border)` : "var(--color-border)")};
   background: ${({ $tone }) => ($tone ? `var(--color-${TONE_COLOR[$tone]}-subtle)` : "var(--color-surface-raised)")};
   color: ${({ $tone }) => ($tone ? `var(--color-${TONE_COLOR[$tone]})` : "var(--color-text-muted)")};
 `;
 
-/*
- * 14px medium, like the section titles, so the cards' headings aren't smaller than the rows inside them.
- * 24px lines with 4px on top: the first line's centre sits on the 32px dot's centre (16px), and a long
- * title wraps at normal spacing. An email's chevron follows the last word.
- */
+/* A row title: --text-sm medium at body line height. An email's chevron follows the last word. */
 const TimelineTitle = styled.div`
-  padding-top: var(--space-1);
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
-  line-height: var(--space-5);
+  line-height: var(--leading-body);
   overflow-wrap: anywhere;
 
   & > svg {
@@ -388,12 +388,14 @@ const TimelineTitle = styled.div`
 
 const TimelineSub = styled.div`
   font-size: var(--text-xs);
+  line-height: var(--leading-ui);
   color: var(--color-text-muted);
 `;
 
 const TimelineDate = styled.time`
+  align-self: start;
   font-size: var(--text-xs);
-  line-height: var(--space-6);
+  line-height: var(--leading-body);
   color: var(--color-text-muted);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
@@ -442,7 +444,7 @@ const EmailPreview = styled.div`
   border-radius: var(--radius-md);
   background: var(--color-surface-raised);
   font-size: var(--text-xs);
-  line-height: var(--leading-body);
+  line-height: var(--leading-ui);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 `;
@@ -481,6 +483,7 @@ const Details = styled.dl`
   gap: var(--space-2) var(--space-4);
   margin: 0;
   font-size: var(--text-sm);
+  line-height: var(--leading-body);
 
   & > dt {
     color: var(--color-text-muted);
@@ -577,6 +580,8 @@ export interface MemberSheetActions {
   onEditPayment: (payment: Payment) => void;
   onDelete: () => void;
   onSetTags: (tags: string[]) => void;
+  /** The admin finished editing tags (pressed Done): the point where one Undo toast is shown. */
+  onTagsDone?: () => void;
   onCopy: (text: string, message: string) => void;
 }
 
@@ -609,7 +614,7 @@ export function MemberSheet({
       { id: "notes-failed", label: "Couldn't load the note", description: "The note can't load; the rest of the panel works." },
       { id: "intake-failed", label: "Couldn't load intake answers", description: "The intake answers can't load; the rest works." },
     ],
-    notApplicable: ["readOnly", "rateLimited", "undoExpired"],
+    notApplicable: ["readOnly", "rateLimited"],
   });
   const load = useLabLoad(lab);
   const waiting = load.loading || lab.loadFailed;
@@ -783,7 +788,7 @@ function MemberPanel({
                 </Reveal>
               )}
             </Email>
-            <TagsRow member={m} tagColors={tagColors} allTags={allTags} onSetTags={actions.onSetTags} lab={lab} />
+            <TagsRow member={m} tagColors={tagColors} allTags={allTags} onSetTags={actions.onSetTags} onDone={actions.onTagsDone} lab={lab} />
           </>
         )}
       </SheetHeader>
@@ -886,12 +891,14 @@ function TagsRow({
   tagColors,
   allTags,
   onSetTags,
+  onDone,
   lab,
 }: {
   member: Member;
   tagColors: Record<string, TagColor>;
   allTags: string[];
   onSetTags: (tags: string[]) => void;
+  onDone?: () => void;
   lab: SheetLab;
 }) {
   const [editing, setEditing] = React.useState(false);
@@ -969,7 +976,10 @@ function TagsRow({
             $variant="ghost"
             aria-disabled={pending || undefined}
             onClick={() => {
-              if (!pending) setEditing(false);
+              if (!pending) {
+                setEditing(false);
+                onDone?.();
+              }
             }}
           >
             {pending ? "Saving…" : "Done"}
@@ -1063,7 +1073,7 @@ type ActivityView = "all" | "email" | "member";
 
 const PAGE = 12;
 
-/* Activity's icons (dots, chevrons) are a step up from the 14px used in other sections. */
+/* Icon size for the activity dots and chevrons. */
 const ACTIVITY_ICON = 16;
 
 /** Payments join the stored activity as their own rows. */
