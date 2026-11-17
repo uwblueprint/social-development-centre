@@ -156,6 +156,7 @@ export function BulkTagsPopover({
   }
 
   function create() {
+    if (sub.busy) return;
     apply(name, "add");
     setQuery("");
     searchRef.current?.focus();
@@ -189,13 +190,13 @@ export function BulkTagsPopover({
           onChange={(e) => setQuery(e.target.value)}
           onSearch={(v) => setQuery(v)}
           onKeyDown={(e) => {
-            if (e.key !== "Enter" || loadingTags) return;
+            if (e.key !== "Enter" || loadingTags || sub.busy) return;
             e.preventDefault();
             if (shown.length === 1 && !canCreate) apply(shown[0], stateOf(shown[0]) === true ? "remove" : "add");
             else if (!shown.length && canCreate) create();
           }}
         />
-        <List ref={listRef} role="group" aria-label="Tags" aria-busy={sub.busy || loadingTags || undefined}>
+        <List ref={listRef} role="group" aria-label="Tags" aria-busy={sub.busy || loadingTags || undefined} aria-disabled={sub.busy || undefined}>
           {loadingTags && (
             <>
               <VisuallyHidden role="status">Loading tags</VisuallyHidden>
@@ -211,7 +212,10 @@ export function BulkTagsPopover({
           )}
           {!loadingTags && shown.map((tag, i) => {
             const state = stateOf(tag);
-            const toggle = () => apply(tag, state === true ? "remove" : "add");
+            const toggle = () => {
+              if (sub.busy) return;
+              apply(tag, state === true ? "remove" : "add");
+            };
             const labelId = `${uid}-${i}`;
             return (
               <Row key={tag} onClick={toggle}>
@@ -222,7 +226,7 @@ export function BulkTagsPopover({
                   aria-labelledby={labelId}
                   onCheckedChange={() => {}}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") {
+                    if (e.key === "Enter" && !sub.busy) {
                       e.preventDefault();
                       toggle();
                     }

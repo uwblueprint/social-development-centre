@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { keyframes, styled } from "next-yak";
-import { Columns3, Copy, Download, ListChecks, ListFilter, Plus, Tag as TagIcon, Trash2, UsersRound, X } from "lucide-react";
+import { ChevronDown, Columns3, Copy, Download, ListChecks, Plus, Tag as TagIcon, Trash2, UsersRound, X } from "lucide-react";
 import { ListEmptyState, ListPage, ListPageHeader } from "@/components/patterns/ListPage";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -12,15 +12,14 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
+  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/DropdownMenu";
 import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
 import { SearchField } from "@/components/ui/SearchField";
 import { Pagination } from "@/components/ui/Pagination";
-import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
 import { RadioGroup, RadioGroupOption } from "@/components/ui/RadioGroup";
 import { Select } from "@/components/ui/Select";
 import { Tooltip } from "@/components/ui/Tooltip";
@@ -53,7 +52,8 @@ import { TagPicker } from "./TagPicker";
 import { BulkTagsPopover } from "./BulkTagsPopover";
 import { Tag } from "@/components/ui/Tag";
 import { SEARCH_FOR, SLOW_SEARCH_FOR, useLabDeferred, useLabLoad, useStateLab } from "../_state-lab/useStateLab";
-import { AccessState, ListFailed, ListLoading, StatusBanner, TagsFailed } from "./ListStates";
+import { VisuallyHidden } from "./SheetStates";
+import { AccessState, FilterOptionsLoader, ListFailed, ListLoading, StatusBanner, TagsFailed } from "./ListStates";
 import {
   AddMemberDialog,
   ChangeMembershipDialog,
@@ -66,33 +66,34 @@ import {
 
 /* ---------- layout ---------- */
 
-/* One compact row of filter chips under the header; wraps on small screens. */
-/* The kit label is uppercase and tracked; this menu's group heading reads in sentence case, flush with the checkbox indicators. */
-const GroupLabel = styled(DropdownMenuLabel)`
-  padding: var(--space-2);
-  text-align: left;
-  text-transform: none;
-  letter-spacing: normal;
-  font-size: var(--text-xs);
-  font-weight: var(--weight-medium);
-  color: var(--color-text-muted);
-`;
-
+/* The quick-filter row under the header. On narrow screens it scrolls sideways inside itself, so the page never does.
+   The small padding (cancelled by the margin) gives focus rings room inside the scroll box. */
 const FilterRow = styled.div`
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: var(--space-2);
+  margin: calc(var(--space-1) * -1);
+  padding: var(--space-1);
+  overflow-x: auto;
+  scrollbar-width: thin;
+
+  & > * {
+    flex: none;
+  }
 `;
 
-/* A chip: its summary opens the editor, the × beside it removes the filter. One pill, so the two read as one thing. */
-const Chip = styled.span`
+/* One filter: its button, plus a × beside it once it has a value. An active filter gets a fill and an outline as well as its value text. */
+const FilterGroup = styled.span`
   display: inline-flex;
   align-items: center;
-  max-width: 100%;
-  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  background: var(--color-bg);
+
+  &[data-active] {
+    background: var(--color-secondary);
+    outline: 1px solid var(--color-border-strong);
+    outline-offset: -1px;
+  }
 `;
 
 const ChipLabel = styled.span`
@@ -109,7 +110,7 @@ const ChipRemove = styled(Button)`
   }
 `;
 
-/* The editor inside a chip's popover: only that filter's control. */
+/* The editor inside a filter's popover: only that filter's control. */
 const FilterEditor = styled.div`
   display: flex;
   flex-direction: column;
@@ -175,6 +176,35 @@ const NameCell = styled.span`
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
+`;
+
+const NameStack = styled.span`
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+`;
+
+/* Below 640px the Email and Status columns are hidden (see ListWrap); their content shows in the Name cell instead. */
+const MobileBadge = styled.span`
+  display: none;
+
+  @media (max-width: 639px) {
+    display: inline-flex;
+  }
+`;
+
+const MobileEmail = styled.span`
+  display: none;
+
+  @media (max-width: 639px) {
+    display: block;
+    /* The viewport minus the select and columns-menu columns and the page gutters, so a long email is cut with an ellipsis instead of widening the table. */
+    max-width: calc(100vw - var(--space-7) * 2 - var(--space-6));
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+  }
 `;
 
 /* Floats at the bottom centre where the toasts show, so selecting people never moves the page. */
@@ -274,6 +304,17 @@ const ListWrap = styled.div`
   }
   &&& tbody tr:has([data-member-id] [data-state="checked"]) + tr:has([data-member-id] [data-state="checked"]) > td::before {
     background: transparent;
+  }
+
+  /* Phones: the kit Table has no column visibility, so Email, Status, Ends and Tags (columns 3 to 6) are hidden here and the
+     table drops its minimum width, so it fits the screen instead of scrolling. The select column stays. */
+  @media (max-width: 639px) {
+    &&& table {
+      min-width: 0;
+    }
+    &&& :is(th, td):nth-child(n + 3):nth-child(-n + 6) {
+      display: none;
+    }
   }
 `;
 
@@ -389,18 +430,19 @@ function joinedMatches(j: Filters["joined"], joinedAt: string) {
 
 type FilterKey = Exclude<keyof Filters, "tagMode">;
 
-/** What the Filter menu offers, in menu order. The intake-form filters come last, under their own heading. */
+/** The filter buttons, in row order. The intake-form filters come last, behind More. */
 const filterLabels: Record<FilterKey, string> = {
   tags: "Tags",
   status: "Status",
   emails: "Emails",
-  joined: "Joined date",
+  joined: "Joined",
   interests: "Interests",
   ways: "Ways to help",
   location: "Location",
   time: "Availability",
 };
 
+const quickFilters: FilterKey[] = ["tags", "status", "emails", "joined"];
 const intakeFilters: FilterKey[] = ["interests", "ways", "location", "time"];
 
 const noFilters: Filters = {
@@ -557,8 +599,10 @@ function partialMembers(base: Member[]): Member[] {
 /* Everyone's light row data arrives once, so search, filters, sort, Select all and Export cover the whole list; the page only limits
    how many rows render. If the list grows past a few thousand people, server-side paging takes over. */
 const PAGE_SIZE = 50;
-/** How long a page "loads" while Slow loading is on (ms). */
-const PAGE_LOAD_FOR = 1000;
+/** How long a page "loads" while Slow loading is on (ms): one full pass of the Table's progress line (5 x --duration-slow), so it never reads as cut short. */
+const PAGE_LOAD_FOR = 1200;
+/** Slow loading: how long applying a filter "updates" the list (ms), the same one pass of the progress line. */
+const FILTER_APPLY_FOR = 1200;
 
 type DialogState =
   | { kind: "add" }
@@ -603,12 +647,16 @@ function Directory() {
   const search = useLabDeferred(q, lab.slowLoading ? SLOW_SEARCH_FOR : SEARCH_FOR);
   const sq = search.value;
   const [filters, setFilters] = React.useState<Filters>(noFilters);
-  /** The filters on screen, in the order they were added. One can be here with nothing entered yet. */
-  const [added, setAdded] = React.useState<FilterKey[]>([]);
-  const filterButton = React.useRef<HTMLButtonElement>(null);
-  const addFilterButton = React.useRef<HTMLButtonElement>(null);
+  /* The list follows the filters after a short "update" while Slow loading is on, keeping the previous rows meanwhile. */
+  const applied = useLabDeferred(filters, lab.slowLoading ? FILTER_APPLY_FOR : 0);
+  const appliedFilters = lab.slowLoading ? applied.value : filters;
+  const filterPending = lab.slowLoading && applied.pending;
+  /** Intake filters chosen from More that have no value yet: they already show as a button, so their editor has somewhere to open. */
+  const [pinned, setPinned] = React.useState<FilterKey[]>([]);
+  const triggers = React.useRef<Partial<Record<FilterKey, HTMLButtonElement | null>>>({});
+  const moreButton = React.useRef<HTMLButtonElement>(null);
   const [openFilter, setOpenFilter] = React.useState<FilterKey | null>(null);
-  const justAdded = React.useRef<FilterKey | null>(null);
+  const justPicked = React.useRef<FilterKey | null>(null);
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
   const [sort, setSort] = React.useState<TableSort>({ key: "ends", direction: "asc" });
   const [openId, setOpenId] = React.useState<string | null>(null);
@@ -678,7 +726,7 @@ function Directory() {
   const open = pool.find((m) => m.id === openId) ?? null;
 
   const rows = React.useMemo(() => {
-    const list = pool.filter((m) => matches(m, filters, sq));
+    const list = pool.filter((m) => matches(m, appliedFilters, sq));
     const dir = sort.direction === "asc" ? 1 : -1;
     return list.sort((a, b) => {
       const ka = sortValue(a, sort.key);
@@ -686,7 +734,7 @@ function Directory() {
       if ((ka === "") !== (kb === "")) return ka === "" ? 1 : -1;
       return ka < kb ? -dir : ka > kb ? dir : 0;
     });
-  }, [pool, filters, sq, sort]);
+  }, [pool, appliedFilters, sq, sort]);
 
   /* Paging. `pageState` is the page asked for; `shownPage` is the one on screen, which trails it while a page "loads" (Slow loading). */
   const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
@@ -695,7 +743,7 @@ function Directory() {
   const [shownPage, setShownPage] = React.useState(1);
   const [openSynced, setOpenSynced] = React.useState<string | null>(null);
   const [prevResetKey, setPrevResetKey] = React.useState("");
-  const resetKey = `${sq}\u0000${JSON.stringify(filters)}\u0000${sort.key}${sort.direction}`;
+  const resetKey = `${sq}\u0000${JSON.stringify(appliedFilters)}\u0000${sort.key}${sort.direction}`;
   if (prevResetKey !== resetKey) {
     /* New search, filters or sort: back to the first page. */
     setPrevResetKey(resetKey);
@@ -1017,56 +1065,39 @@ function Directory() {
     setSelected(new Set());
   };
 
-  function addFilter(key: FilterKey) {
-    justAdded.current = key;
-    setAdded((list) => [...list, key]);
+  /** After a filter button goes away or the filters clear, focus goes to the nearest button that is left, unless focus has already moved on. */
+  function refocus(key: FilterKey | null) {
+    window.setTimeout(() => {
+      if (document.activeElement && document.activeElement !== document.body) return;
+      const fallback = key && !intakeFilters.includes(key) ? triggers.current[key] : moreButton.current;
+      (fallback ?? triggers.current.tags)?.focus();
+    }, 0);
   }
 
   function removeFilter(key: FilterKey) {
-    const left = added.filter((k) => k !== key);
-    setAdded(left);
+    setPinned((list) => list.filter((k) => k !== key));
     setOpenFilter(null);
     setFilter(key, noFilters[key]);
     if (key === "tags") setFilter("tagMode", "all");
-    /* Add filter goes away with the last filter, so focus falls back to Filter. */
-    (left.length ? addFilterButton : filterButton).current?.focus();
+    refocus(key);
   }
 
   function clearFilters() {
-    setAdded([]);
+    setPinned([]);
     setOpenFilter(null);
     setFilters(noFilters);
     setSelected(new Set());
-    filterButton.current?.focus();
+    refocus(null);
   }
 
-  /** The list of filters, shared by Filter and Add filter. Picking one moves focus into its control. */
-  const filterMenu = (
-    <DropdownMenuContent
-      align="start"
-      onCloseAutoFocus={(e) => {
-        if (!justAdded.current) return;
-        /* The new chip's popover opens at once and takes the focus. */
-        e.preventDefault();
-        setOpenFilter(justAdded.current);
-        justAdded.current = null;
-      }}
-    >
-      {(Object.keys(filterLabels) as FilterKey[]).map((key) => (
-        <React.Fragment key={key}>
-          {key === intakeFilters[0] && (
-            <>
-              <DropdownMenuSeparator />
-              <GroupLabel>From the intake form</GroupLabel>
-            </>
-          )}
-          <DropdownMenuCheckboxItem checked={added.includes(key)} onCheckedChange={(on) => (on ? addFilter(key) : removeFilter(key))}>
-            {filterLabels[key]}
-          </DropdownMenuCheckboxItem>
-        </React.Fragment>
-      ))}
-    </DropdownMenuContent>
-  );
+  /** A popover opens or closes. An intake filter closed with nothing chosen drops back behind More. */
+  function changeOpen(key: FilterKey, open: boolean) {
+    setOpenFilter((cur) => (open ? key : cur === key ? null : cur));
+    if (!open && intakeFilters.includes(key) && !filters[key as "interests"].length) {
+      setPinned((list) => list.filter((k) => k !== key));
+      refocus(key);
+    }
+  }
 
   /** How many people in the list have each value, for the checkbox lists. */
   const countOf = (key: "status" | "interests" | "ways" | "location" | "time", value: string) =>
@@ -1216,15 +1247,24 @@ function Directory() {
       render: (m) => {
         const needle = sq.trim().toLowerCase();
         const hits = needle ? m.tags.filter((t) => t.toLowerCase().includes(needle)) : [];
+        const notice = endNotice(m.endsAt);
         return (
-          <NameCell>
-            <Wrap>{fullName(m) || "No name"}</Wrap>
-            {hits.map((t) => (
-              <Tag key={t} color={tagColors[t]}>
-                {t}
-              </Tag>
-            ))}
-          </NameCell>
+          <NameStack>
+            <NameCell>
+              <Wrap>{fullName(m) || "No name"}</Wrap>
+              {hits.map((t) => (
+                <Tag key={t} color={tagColors[t]}>
+                  {t}
+                </Tag>
+              ))}
+              {notice && (
+                <MobileBadge>
+                  <Badge $variant={notice.tone}>{notice.text}</Badge>
+                </MobileBadge>
+              )}
+            </NameCell>
+            <MobileEmail>{m.email || "No email"}</MobileEmail>
+          </NameStack>
         );
       },
     },
@@ -1287,7 +1327,8 @@ function Directory() {
       align: "right",
       header: (
         <DropdownMenu>
-          <Tooltip content="Show columns">
+          {/* No pinning on click: a pinned tooltip would stay open over the menu this button opens. */}
+          <Tooltip content="Show columns" pinOnClick={false}>
             <DropdownMenuTrigger asChild>
               <Button type="button" $variant="ghost" aria-label="Show columns">
                 <Icon icon={Columns3} size={16} />
@@ -1401,8 +1442,9 @@ function Directory() {
 
   const loading = load.loading;
   const pageFailed = lab.loadFailed && !retried.list;
-  const showFilters = !loading && !pageFailed;
+
   const showList = !loading && !pageFailed && !listFailed;
+
 
   return (
     <>
@@ -1431,16 +1473,6 @@ function Directory() {
         results={{ query: sq, count: rows.length, pending: loading || search.pending }}
         actions={
           <>
-<DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button ref={filterButton} type="button" $variant={filterCount(filters) ? "outline" : "secondary"}>
-                    <Icon icon={ListFilter} size={16} />
-                    Filter
-                    {filterCount(filters) > 0 && <Badge $variant="outline">{filterCount(filters)}</Badge>}
-                  </Button>
-                </DropdownMenuTrigger>
-                {filterMenu}
-              </DropdownMenu>
             {showList && (
               <Tooltip content="Export CSV">
                 <Button type="button" $variant="secondary" aria-label="Export CSV" onClick={() => exportCsv(chosen.length ? chosen : rows)}>
@@ -1459,42 +1491,74 @@ function Directory() {
       {loading && <ListLoading takingLonger={load.takingLonger} />}
       {!loading && (pageFailed || listFailed) && <ListFailed onRetry={() => setRetried((r) => ({ ...r, list: true }))} />}
 
-      {showFilters && added.length > 0 && (
+      {showList && (
         <FilterRow role="group" aria-label="Filters">
-          {(Object.keys(filterLabels) as FilterKey[])
-            .filter((key) => added.includes(key))
-            .map((key) => {
-              const summary = filterSummary(key);
-              return (
-                <Popover key={key} open={openFilter === key} onOpenChange={(o) => setOpenFilter(o ? key : null)}>
-                  <PopoverAnchor asChild>
-                    <Chip data-filter={key}>
-                      <PopoverTrigger asChild>
-                        <Button type="button" $variant="ghost" $size="sm">
-                          <ChipLabel>{summary ? `${filterLabels[key]}: ${summary}` : filterLabels[key]}</ChipLabel>
-                        </Button>
-                      </PopoverTrigger>
-                      <ChipRemove type="button" $variant="ghost" $size="sm" aria-label={`Remove ${filterLabels[key]} filter`} onClick={() => removeFilter(key)}>
-                        <Icon icon={X} size={14} />
-                      </ChipRemove>
-                    </Chip>
-                  </PopoverAnchor>
-                  <PopoverContent align="start" showClose={false} aria-label={filterLabels[key]}>
-                    {filterEditor[key]}
-                  </PopoverContent>
-                </Popover>
-              );
-            })}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button ref={addFilterButton} type="button" $variant="ghost" $size="sm">
-                <Icon icon={Plus} size={14} />
-                Add filter
-              </Button>
-            </DropdownMenuTrigger>
-            {filterMenu}
-          </DropdownMenu>
-          {added.length > 1 && (
+          {[...quickFilters, ...intakeFilters.filter((key) => filterSummary(key) || pinned.includes(key))].map((key) => {
+            const summary = filterSummary(key);
+            const active = summary !== "";
+            return (
+              <Popover key={key} open={openFilter === key} onOpenChange={(o) => changeOpen(key, o)}>
+                <FilterGroup data-filter={key} data-active={active ? "" : undefined}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      ref={(el) => {
+                        triggers.current[key] = el;
+                      }}
+                      type="button"
+                      $variant="ghost"
+                      $size="sm"
+                    >
+                      <ChipLabel>{active ? `${filterLabels[key]}: ${summary}` : filterLabels[key]}</ChipLabel>
+                      <Icon icon={ChevronDown} size={14} />
+                    </Button>
+                  </PopoverTrigger>
+                  {active && (
+                    <ChipRemove type="button" $variant="ghost" $size="sm" aria-label={`Remove ${filterLabels[key]} filter`} onClick={() => removeFilter(key)}>
+                      <Icon icon={X} size={14} />
+                    </ChipRemove>
+                  )}
+                </FilterGroup>
+                <PopoverContent align="start" showClose={false} aria-label={filterLabels[key]}>
+                  <FilterOptionsLoader slow={lab.slowLoading}>{filterEditor[key]}</FilterOptionsLoader>
+                </PopoverContent>
+              </Popover>
+            );
+          })}
+          {intakeFilters.some((key) => !filterSummary(key) && !pinned.includes(key)) && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button ref={moreButton} type="button" $variant="ghost" $size="sm">
+                  More
+                  <Icon icon={ChevronDown} size={14} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="start"
+                onCloseAutoFocus={(e) => {
+                  if (!justPicked.current) return;
+                  /* The chosen filter's button is already in the row; its editor opens there and takes the focus. */
+                  e.preventDefault();
+                  setOpenFilter(justPicked.current);
+                  justPicked.current = null;
+                }}
+              >
+                {intakeFilters
+                  .filter((key) => !filterSummary(key) && !pinned.includes(key))
+                  .map((key) => (
+                    <DropdownMenuItem
+                      key={key}
+                      onSelect={() => {
+                        justPicked.current = key;
+                        setPinned((list) => [...list, key]);
+                      }}
+                    >
+                      {filterLabels[key]}
+                    </DropdownMenuItem>
+                  ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          {filterCount(filters) > 1 && (
             <Button type="button" $variant="ghost" $size="sm" onClick={clearFilters}>
               Clear all
             </Button>
@@ -1504,11 +1568,12 @@ function Directory() {
 
       {showList && (
       <ListWrap ref={listRef} role="presentation" onKeyDown={onListKeyDown} onClickCapture={onListClickCapture} onFocus={onListFocus}>
+      <VisuallyHidden role="status">{pageLoading || filterPending ? "Updating results" : ""}</VisuallyHidden>
       <Table
         aria-label="People"
         columns={columns}
         rows={pageRows}
-        busy={pageLoading}
+        busy={pageLoading || filterPending}
         getRowId={(m) => m.id}
         onRowClick={(m) => setOpenId(m.id)}
         sort={sort}
@@ -1518,7 +1583,7 @@ function Directory() {
             items="people"
             query={noPeople ? "" : sq}
             searchedFields="names, emails and tags"
-            filtered={filterCount(filters) && !noPeople ? "people with these filters" : undefined}
+            filtered={filterCount(appliedFilters) && !noPeople ? "people with these filters" : undefined}
             onClearSearch={() => setQ("")}
             onClearFilters={clearFilters}
             onClearSearchAndFilters={() => {
@@ -1739,7 +1804,7 @@ function Directory() {
           open
           onOpenChange={close}
           title="Delete this payment?"
-          description={`It's removed from ${fullName(open)}'s payments and their total. This can't be undone.`}
+          description={`It's removed from ${fullName(open)}'s payments and their total.`}
           confirm="Delete payment"
           onConfirm={() => {
             const snap = snapshotOf(members, [open.id]);
@@ -1755,7 +1820,7 @@ function Directory() {
           open
           onOpenChange={close}
           title={`Delete ${fullName(open)}?`}
-          description="This removes them and their history from the directory. It can't be undone."
+          description="They will be deleted from the directory, along with their history."
           confirm="Delete person"
           onConfirm={() => {
             const snap = snapshotOf(members, [open.id]);
@@ -1772,7 +1837,7 @@ function Directory() {
           open
           onOpenChange={close}
           title={dialog.people.length === 1 ? `Delete ${fullName(dialog.people[0])}?` : `Delete ${dialog.people.length} people?`}
-          description={`${nameList(dialog.people)} will be permanently deleted from the directory, along with their history. This can't be undone.`}
+          description={`${nameList(dialog.people)} will be deleted from the directory, along with their history.`}
           confirm={dialog.people.length === 1 ? "Delete person" : `Delete ${dialog.people.length} people`}
           onConfirm={() => {
             deletePeople(dialog.people);

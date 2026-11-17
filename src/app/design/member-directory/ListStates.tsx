@@ -1,10 +1,13 @@
 "use client";
 
+import * as React from "react";
 import { styled } from "next-yak";
 import { CircleAlert, FileQuestion, Lock, RefreshCw, RotateCw, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Icon } from "@/components/ui/Icon";
+import { useLabDelay } from "../_state-lab/useStateLab";
+import { Skeleton } from "./SheetStates";
 
 /* ---------- page-wide banner: offline, reconnecting, signed out ---------- */
 
@@ -154,7 +157,7 @@ export function ListFailed({ onRetry }: { onRetry: () => void }) {
       <EmptyState
         icon={CircleAlert}
         title="Couldn't load people"
-        description="This is a loading problem. No one's details were changed. Try again, and if it keeps happening, tell an SDC admin."
+        description="No changes were made. Try again, and if it keeps happening, tell an SDC admin."
         action={
           <Button type="button" $variant="secondary" onClick={onRetry}>
             <Icon icon={RotateCw} size={16} />
@@ -214,5 +217,50 @@ export function TagsFailed({ onRetry }: { onRetry: () => void }) {
         Try again
       </Button>
     </TagFailed>
+  );
+}
+
+/* ---------- a filter's options loading ---------- */
+
+/** How long a filter's options "load" when its popover opens, while Slow loading is on (ms). */
+const OPTIONS_LOAD_FOR = 800;
+
+const OptionSkeletons = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+`;
+
+const OptionSkeleton = styled.div`
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--menu-row-height);
+  padding: 0 var(--space-2);
+`;
+
+/**
+ * A filter popover's editor. With Slow loading on, the options and counts come "from the server": 4 placeholder rows
+ * for a moment, a polite "Loading options" for assistive tech, and aria-busy on the region. Otherwise it shows the editor at once.
+ * It mounts with the popover's content, so every open loads again.
+ */
+export function FilterOptionsLoader({ slow, children }: { slow: boolean; children: React.ReactNode }) {
+  const loading = useLabDelay(OPTIONS_LOAD_FOR, slow);
+  return (
+    <div aria-busy={loading || undefined}>
+      <VisuallyHidden role="status">{loading ? "Loading options" : ""}</VisuallyHidden>
+      {loading ? (
+        <OptionSkeletons aria-hidden="true">
+          {["55%", "40%", "65%", "35%"].map((width) => (
+            <OptionSkeleton key={width}>
+              <Skeleton $width="var(--space-4)" $height="var(--space-4)" />
+              <Skeleton $width={width} $height="var(--space-4)" />
+            </OptionSkeleton>
+          ))}
+        </OptionSkeletons>
+      ) : (
+        children
+      )}
+    </div>
   );
 }
