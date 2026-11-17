@@ -96,6 +96,16 @@ const FilterGroup = styled.span`
   }
 `;
 
+/* "12 people match these filters" with its clear button. The wrapper is the one polite announcer for settled results, so it stays mounted (and empty) when nothing is active. */
+const ResultsLine = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+`;
+
 const ChipLabel = styled.span`
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1456,7 +1466,7 @@ function Directory() {
     />
     <ListPage>
       <ListPageHeader
-        title={loading || pageFailed || listFailed ? "People" : `People (${rows.length})`}
+        title={loading || pageFailed || listFailed ? "People" : `People (${pool.length})`}
         search={
           <SearchField
             aria-label="Search by name, email or tag"
@@ -1470,7 +1480,6 @@ function Directory() {
             onSearch={setQ}
           />
         }
-        results={{ query: sq, count: rows.length, pending: loading || search.pending }}
         actions={
           <>
             {showList && (
@@ -1505,7 +1514,7 @@ function Directory() {
                         triggers.current[key] = el;
                       }}
                       type="button"
-                      $variant="ghost"
+                      $variant={active ? "ghost" : "outline"}
                       $size="sm"
                     >
                       <ChipLabel>{active ? `${filterLabels[key]}: ${summary}` : filterLabels[key]}</ChipLabel>
@@ -1527,7 +1536,7 @@ function Directory() {
           {intakeFilters.some((key) => !filterSummary(key) && !pinned.includes(key)) && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button ref={moreButton} type="button" $variant="ghost" $size="sm">
+                <Button ref={moreButton} type="button" $variant="outline" $size="sm">
                   More
                   <Icon icon={ChevronDown} size={14} />
                 </Button>
@@ -1558,12 +1567,39 @@ function Directory() {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
-          {filterCount(filters) > 1 && (
-            <Button type="button" $variant="ghost" $size="sm" onClick={clearFilters}>
-              Clear all
-            </Button>
-          )}
         </FilterRow>
+      )}
+
+      {showList && (
+        <ResultsLine role="status" aria-live="polite" aria-atomic="true">
+          {(() => {
+            const term = sq.trim();
+            const nFilters = filterCount(appliedFilters);
+            if (!term && !nFilters) return null;
+            const n = rows.length;
+            const noun = n === 1 ? "person" : "people";
+            const verb = n === 1 ? "matches" : "match";
+            const what = term && nFilters ? `“${term}” and these filters` : term ? `“${term}”` : "these filters";
+            const clear = term && nFilters ? "Clear all" : term ? "Clear search" : "Clear filters";
+            return (
+              <>
+                <span>{`${n} ${noun} ${verb} ${what}`}</span>
+                <Button
+                  type="button"
+                  $variant="ghost"
+                  $size="sm"
+                  onClick={() => {
+                    if (term) setQ("");
+                    if (nFilters) clearFilters();
+                    else setSelected(new Set());
+                  }}
+                >
+                  {clear}
+                </Button>
+              </>
+            );
+          })()}
+        </ResultsLine>
       )}
 
       {showList && (
