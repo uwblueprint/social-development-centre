@@ -5,8 +5,9 @@
  */
 
 /**
- * A1: email preferences (footer link 1): tick the email types you want and save. A4: the unsubscribe
- * page (Luma-style: reasons, then confirm, then the result in place). B1–B5: membership (footer link 2). The doc's A2 and A3 are folded into A1.
+ * A4: the unsubscribe page, footer link 1 (Luma-style: reasons, then confirm, then the result in
+ * place). A1: email preferences, from A4's "fewer emails": tick the email types you want and save.
+ * B1–B5: membership (footer link 2). The doc's A2 and A3 are folded into A1.
  */
 export type Screen = "A1" | "A4" | "B1" | "B2" | "B3" | "B4" | "B5";
 export const SCREENS: Screen[] = ["A1", "A4", "B1", "B2", "B3", "B4", "B5"];

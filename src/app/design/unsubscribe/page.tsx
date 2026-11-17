@@ -11,8 +11,9 @@ const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v
  * Email preferences and pause/cancel membership, as reached from an SDC email's footer links. Member
  * facing, so no sidebar. Every screen and variant opens directly for review:
  *
- * - `?screen=A1|A4|B1…B5` opens that screen (default A1). A1 is footer link 1, B1 is footer link 2;
- *   A4 is the page unsubscribing opens.
+ * - `?screen=A1|A4|B1…B5` opens that screen (default A4). A4, the unsubscribe page, is footer link 1,
+ *   as on Luma: one click from the email. B1 is footer link 2. A1 (email preferences) is reached from
+ *   A4's "Stay in the loop with fewer emails".
  * - `?state=saved` opens A1 just after saving; `?state=resubscribed` just after resubscribing.
  * - `?state=done` opens the confirmed state of B2 or B3.
  * - `?member=false` shows the version for someone who only subscribes (default true). B screens are
@@ -24,7 +25,7 @@ const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v
 export default async function UnsubscribeDesign({ searchParams }: PageProps<"/design/unsubscribe">) {
   const params = await searchParams;
   const screenParam = first(params.screen)?.toUpperCase();
-  const screen: Screen = SCREENS.includes(screenParam as Screen) ? (screenParam as Screen) : "A1";
+  const screen: Screen = SCREENS.includes(screenParam as Screen) ? (screenParam as Screen) : "A4";
   const tierParam = first(params.tier);
   const tierId = tiers.some((t) => t.id === tierParam) ? tierParam! : demoMember.tierId;
   // B2's confirmation is a switch to a lower tier, which the lowest tier doesn't have.

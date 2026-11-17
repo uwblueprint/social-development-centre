@@ -36,10 +36,11 @@ import {
 } from "./data";
 
 /*
- * Email preferences (A1) and pause/cancel membership (B1–B5), reached from the two footer links in
- * every SDC email. Built on Jesse's unsubscribe page (origin/jesse/email-links): the sign-in screen's
- * calm centered column, logo and full-width buttons, from src/features/auth/AuthScreen. Client state
- * only: saving, pausing and cancelling just show their confirmation.
+ * Unsubscribe (A4), email preferences (A1) and pause/cancel membership (B1–B5), reached from the
+ * two footer links in every SDC email. Built on Jesse's unsubscribe page (origin/jesse/email-links):
+ * the sign-in screen's calm centered column, logo and full-width buttons, from
+ * src/features/auth/AuthScreen. Client state only: saving, pausing and cancelling just show their
+ * confirmation.
  *
  * Design choices on top of Jesse's page:
  * - No visible headings. Each screen keeps an h1 for screen readers (focus moves to it on each new
