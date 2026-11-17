@@ -45,7 +45,12 @@ export const cancelCopy = {
     ),
     restartQuestion: "Want to come back sooner?",
     restartNow: "Restart my membership now",
-    restarted: "Your membership is active again", // Not in doc. The heading after "Restart my membership now".
+  },
+
+  /* "Your membership is active again": after "Keep my membership", and after restarting a pause. */
+  active: {
+    heading: "Your membership is active again", // Not in doc.
+    thanks: "Thank you for your support.", // Shallot: "a thank you note for your support".
   },
 
   /* Before you go: the survey, for people who chose to cancel. */
@@ -91,14 +96,13 @@ export const cancelCopy = {
   /* End screen after "Unsubscribe from emails instead": the heading after Resubscribe. */
   resubscribed: "You're subscribed again", // Not in doc.
 
-  /* Confirm: the biggest consequences first, "rejoin" last and quieter. */
+  /* Confirm: what ends, then how to ask for a refund in small grey text. */
   confirm: {
     heading: "Cancel your membership?",
-    endsToday: "Your voting rights and member benefits end today.",
-    endsAtPeriodEnd: (periodEndDate: string) => `Your voting rights and member benefits continue until ${periodEndDate}.`,
-    noMoreCharges: "You won't be charged again.",
-    notRefundable: (lastBillingDate: string) => `Your payment on ${lastBillingDate} isn't refundable.`,
-    rejoin: "You can rejoin anytime.",
+    whatEnds: "Your voting rights and member benefits end at the end of the month, and you won't be charged again.", // Shallot.
+    refund: (lastBillingDate: string, email: string) =>
+      `If you'd like a refund for your payment on ${lastBillingDate}, please email ${email}.`, // Shallot.
+    refundEmail: "admin@sdc.com", // Shallot. Confirm the real address with SDC.
     keepMembership: "Keep my membership",
   },
 

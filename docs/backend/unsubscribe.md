@@ -40,8 +40,8 @@ Items marked **new** aren't on Jesse's branch.
   before").
 - **Restart now (new):** `restart_membership(token)`.
 - **Cancel (new):** `cancel_membership(token, reason?)`. (The design dropped the copy doc's free-text note; add
-  `note?` back if SDC keeps it.) No more charges, no refund, voting rights end today
-  (or at the end of the period; SDC hasn't decided). Sends a confirmation email.
+  `note?` back if SDC keeps it.) No more charges. Voting rights and benefits end at the end of
+  the month. No automatic refund: the confirm step tells them to email admin@sdc.com (SDC to confirm the address). Sends a confirmation email.
 - After cancelling, "Keep getting emails" changes nothing; "Unsubscribe" is the same `unsubscribe(token)`.
 
 ## When the flow ends (FigJam: "End")

@@ -14,12 +14,6 @@ export type EmailReason = (typeof emailReasons)[number];
 export const membershipReasons = ["emails", "budget", "break", "done"] as const;
 export type MembershipReason = (typeof membershipReasons)[number];
 
-/**
- * When a cancelled membership's voting rights and benefits end. SDC hasn't decided (doc: Open
- * questions); "ends-today" is the current policy and the default.
- */
-export type CutOffPolicy = "ends-today" | "end-of-period";
-
 export type MembershipStatus = "active" | "paused" | "cancelled" | "none";
 
 export interface Tier {

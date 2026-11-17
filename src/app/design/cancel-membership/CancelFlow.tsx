@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { unsubscribeCopy as shared } from "../unsubscribe/copy";
 import {
-  addDays,
   addMonths,
   demoMember,
   DEMO_TODAY,
@@ -16,7 +15,6 @@ import {
   pauseLengths,
   tierById,
   tiers,
-  type CutOffPolicy,
   type MembershipReason,
   type PauseLength,
 } from "../unsubscribe/data";
@@ -34,20 +32,20 @@ import { cancelCopy as copy } from "./copy";
  *     ├─ too many emails → Unsubscribed, membership kept (end)
  *     ├─ too expensive   → Switched to a lower tier (end)
  *     └─ Continue to cancel ─► Cancel your membership? ─► We're sorry to see you go (end)
+ *                                        └─ Keep my membership ─► Your membership is active again (end)
  *
  * Every step is in the URL (`?step=`), so the phone's back button goes back a step, not out of the
  * flow. Saying yes to an alternative ends on its own screen, like the email flow's "You can close this
  * tab now". Built from the email flow's parts (../unsubscribe/parts.tsx). Client state only.
  */
 
-export const CANCEL_STEPS = ["choose", "pause", "paused", "reasons", "switched", "unsubscribed", "confirm", "cancelled"] as const;
+export const CANCEL_STEPS = ["choose", "pause", "paused", "reasons", "switched", "unsubscribed", "confirm", "kept", "cancelled"] as const;
 export type CancelStep = (typeof CANCEL_STEPS)[number];
 
 export interface CancelFlowStart {
   reason: MembershipReason | null;
   /** Still subscribed to emails. False skips the email question after cancelling. */
   subscribed: boolean;
-  policy: CutOffPolicy;
   tierId: string;
 }
 
@@ -147,8 +145,8 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
       return (
         <Template
           screenKey={step}
-          heading={undone ? copy.paused.restarted : copy.paused.heading}
-          line={shared.emails.closeTab}
+          heading={undone ? copy.active.heading : copy.paused.heading}
+          line={undone ? copy.active.thanks : undefined}
           actions={
             !undone && (
               <UndoLine>
@@ -272,7 +270,6 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
         <Template
           screenKey={step}
           heading={undone ? copy.resubscribed : shared.unsubscribed}
-          line={shared.emails.closeTab}
           actions={
             !undone && (
               <UndoLine>
@@ -317,27 +314,22 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
               >
                 {shared.cancelMembership}
               </Button>
-              <Button type="button" $variant="outline" $size="lg" onClick={() => back("reasons")}>
+              <Button type="button" $variant="outline" $size="lg" onClick={() => go("kept")}>
                 {copy.confirm.keepMembership}
               </Button>
             </>
           }
         >
-          {/* The biggest consequences first; "you can rejoin" last and quieter. */}
           <Stack>
-            <Lead>
-              <strong>
-                {start.policy === "end-of-period"
-                  ? copy.confirm.endsAtPeriodEnd(formatDate(addDays(nextPayment, -1)))
-                  : copy.confirm.endsToday}
-              </strong>
-            </Lead>
-            <Lead>{copy.confirm.noMoreCharges}</Lead>
-            <Lead>{copy.confirm.notRefundable(formatDate(addMonths(nextPayment, -1)))}</Lead>
-            <Note>{copy.confirm.rejoin}</Note>
+            <Lead>{copy.confirm.whatEnds}</Lead>
+            <Note>{copy.confirm.refund(formatDate(addMonths(nextPayment, -1)), copy.confirm.refundEmail)}</Note>
           </Stack>
         </Template>
       );
+
+    case "kept":
+      // "Keep my membership": nothing changed, so a short thank-you and no actions.
+      return <Template screenKey={step} heading={copy.active.heading} line={copy.active.thanks} />;
 
     case "cancelled":
       return (
