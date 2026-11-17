@@ -66,9 +66,12 @@ export const RESTART_REMINDER_DAYS = 7;
 export const emailTypes = ["monthly", "events", "campaigns"] as const;
 export type EmailType = (typeof emailTypes)[number];
 
-/** How long a pause lasts: a whole number and a unit (FigJam: "[number] [weeks, months, years]"). */
-export const pauseUnits = ["weeks", "months", "years"] as const;
-export type PauseUnit = (typeof pauseUnits)[number];
+/**
+ * How long a pause lasts, in months: presets rather than free entry, since most people want one to
+ * three months. The copy doc's maximum is 3 months (the FigJam board leaves it open): SDC to confirm.
+ */
+export const pauseLengths = ["1", "2", "3"] as const;
+export type PauseLength = (typeof pauseLengths)[number];
 
 /* ---- Dates and money, written the way the copy reads them ---- */
 
@@ -88,12 +91,6 @@ export function addDays(iso: string, days: number): string {
   const date = parse(iso);
   date.setUTCDate(date.getUTCDate() + days);
   return toIso(date);
-}
-
-/** The date a pause of `count` `unit`s starting `from` ends and the membership restarts. */
-export function addPause(from: string, count: number, unit: PauseUnit): string {
-  if (unit === "weeks") return addDays(from, count * 7);
-  return addMonths(from, unit === "years" ? count * 12 : count);
 }
 
 const dateFormat = new Intl.DateTimeFormat("en-CA", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" });

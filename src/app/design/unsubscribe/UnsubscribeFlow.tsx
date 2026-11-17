@@ -117,8 +117,8 @@ export function UnsubscribeFlow({ start }: { start: EmailFlowStart }) {
                 <Button type="button" $size="lg" onClick={() => setScreen("closed")}>
                   {copy.emails.soundsGood}
                 </Button>
-                {/* Cancelling is its own flow, starting with "Before you go". */}
-                <Button type="button" $variant="danger-outline" $size="lg" onClick={() => router.push("/design/cancel-membership")}>
+                {/* They chose to cancel, so the cancel flow opens at "Before you go". */}
+                <Button type="button" $variant="danger-outline" $size="lg" onClick={() => router.push("/design/cancel-membership?step=reasons")}>
                   {copy.cancelMembership}
                 </Button>
                 <Separator />

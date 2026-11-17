@@ -220,18 +220,6 @@ export const FadingNote = styled(Note)`
   animation: ${fadeIn} var(--duration) var(--ease);
 `;
 
-/** The pause length: a number and a unit side by side, wrapping on a narrow phone. */
-export const PauseFields = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-
-  > * {
-    flex: 1 1 8rem;
-  }
-`;
-
-
 /** Pattern 1: the template every screen fills. Keyed by `screenKey` so each screen fades in. */
 export function Template({
   screenKey,
@@ -271,6 +259,3 @@ export function useFocusHeadingOn(key: unknown) {
     document.querySelector<HTMLElement>("main h1")?.focus();
   }, [key]);
 }
-
-/** Whole numbers from 1 up: the pause length. */
-export const isWholeNumber = (s: string) => /^[1-9]\d*$/.test(s.trim());

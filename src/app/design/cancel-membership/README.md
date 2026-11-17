@@ -1,25 +1,40 @@
 # Cancel membership (design)
 
-Its own flow, reached from footer link 2 in every SDC email ("Pause or cancel membership") and from "Cancel membership" on the unsubscribed page (`/design/unsubscribe`). Open at `/design/cancel-membership`; `page.tsx` lists the query parameters for every state. Built from the email flow's parts (`../unsubscribe/parts.tsx`), so it follows the same three patterns; see [the unsubscribe README](../unsubscribe/README.md). Demo data is shared too (`../unsubscribe/data.ts`). What the backend needs is in `docs/backend/unsubscribe.md`.
+Its own flow. Footer link 2 in every SDC email ("Pause or cancel membership") opens the first step; "Cancel membership" on the unsubscribed page (`/design/unsubscribe`) opens "Before you go", because that person already chose to cancel. Open at `/design/cancel-membership`; `page.tsx` lists the query parameters for every state. Built from the email flow's parts (`../unsubscribe/parts.tsx`), so it follows the same three patterns; see [the unsubscribe README](../unsubscribe/README.md). Demo data is shared (`../unsubscribe/data.ts`). What the backend needs is in `docs/backend/unsubscribe.md`.
 
-Follows the [Unsub flow FigJam board](https://www.figma.com/board/jvbGjJ6Wb3CZIOjTB6x81Z/Unsub-flow), with a survey before cancelling and a lower-tier offer (references: Uber's and Hinge's cancel surveys, Spotify's cheaper-plan cards, Disney+'s pause with a live resume date), in our design system.
+Follows the [Unsub flow FigJam board](https://www.figma.com/board/jvbGjJ6Wb3CZIOjTB6x81Z/Unsub-flow), with a survey before cancelling and a lower-tier offer (references: Uber's and Hinge's cancel surveys, Spotify's cheaper plans, Disney+'s pause with a live resume date), in our design system.
 
 ## Steps
 
-1. **Before you go** (`?step=reasons`, default). "You've supported SDC since [month year]…", then "What's the main reason you're cancelling?" (optional, one answer). Each answer slides open one alternative:
-   - Too many emails → "Unsubscribe from emails instead" (keeps the membership).
-   - It's too expensive right now → the tiers below theirs (name, **price** / month, what it includes, "Switch to [tier]"; the switch takes effect on the next payment, with an undo), then "Or take a break: Pause instead". A Friend has no lower tier, so it opens straight to the pause.
-   - I need a break → pause for a number of weeks, months or years. The restart date updates as they type; after pausing, a reminder date and "Restart my membership now".
-   - I don't want to be involved with SDC anymore → a thank-you.
+```
+Pause or cancel ─► Pause ─► Paused (end)
+      │              ▲
+      ▼              │
+Before you go ──────┤ (need a break, or too expensive → Pause instead)
+  ├─ too many emails → Unsubscribed, membership kept (end)
+  ├─ too expensive   → Switched to a lower tier (end)
+  └─ Continue to cancel ─► Cancel your membership? ─► We're sorry to see you go (end)
+```
 
-   "Continue to cancel" is always visible: the question never stands between someone and cancelling.
-2. **Cancel your membership?** (`?step=confirm`). What cancelling means, as body-size lines; an optional note; "Cancel membership" or "Keep my membership" (back to step 1).
-3. **We're sorry to see you go** (`?step=cancelled`). Thanks, the confirmation email, and, if they still get emails, "Want to keep hearing about SDC's work?" with Keep getting emails / Unsubscribe.
+- **Pause or cancel your membership** (`?step=choose`, default). What the email link promised: the membership in one line (tier · price · next payment), then Pause membership or Cancel membership.
+- **Pause your membership** (`?step=pause`). 1, 2 or 3 months as one list (the copy doc's maximum), the restart date in bold, updating as they choose (after Disney+), what pausing means, then Pause membership or Back.
+- **Before you go** (`?step=reasons`). "What's the main reason you're cancelling?" (optional, one answer). Each answer opens one line and its buttons, never a nested form:
+  - Too many emails → Unsubscribe from emails instead.
+  - It's too expensive right now → "Switch to [tier] · $[price] a month" for each lower tier (starts on the next payment), and Pause instead. A Friend has no lower tier, so only Pause instead.
+  - I need a break → Pause instead.
+  - I don't want to be involved with SDC anymore → nothing: Continue to cancel is right there.
+
+  "Continue to cancel" is always visible: the question never stands between someone and cancelling.
+- **End screens for each alternative** (`?step=paused|switched|unsubscribed`). Saying yes to an alternative ends the flow on its own screen, like the email flow's: the outcome as the heading, "Awesome! You can close this tab now.", the details with dates and amounts in bold, and a muted undo line. Undoing changes the heading ("Your membership is active again", "You'll stay a Supporter member", "You're subscribed again") and moves focus to it.
+- **Cancel your membership?** (`?step=confirm`). Voting rights and benefits first (in bold), then charges and the refund, then "You can rejoin anytime" in muted text. Cancel membership or Keep my membership (back to Before you go).
+- **We're sorry to see you go** (`?step=cancelled`). Thanks (the "supporter since" line lives only here), the confirmation email and "You can rejoin anytime", and, if they still get emails, Keep getting emails / Unsubscribe.
+
+Every step is in the URL, so the phone's back button goes back a step instead of leaving the flow. The flow reads the step from the URL; `page.tsx` keys the flow by everything but the step, so moving between steps keeps what they chose.
 
 ## Open with SDC
 
-- What each tier includes: the lines in `copy.tsx` are placeholders.
-- "[events / workshops / resources]" in the "Before you go" line: say what's true.
 - Strings marked "Not in doc" in `copy.tsx`.
-- A maximum pause length: the copy doc said 3 months, the FigJam board leaves it open.
+- The maximum pause: built as 1, 2 or 3 months (copy doc: up to 3 months; the FigJam board asks for weeks, months or years).
+- The confirm step no longer has the doc's "Anything you'd like us to know?" note: the survey already asks why. Put it back if SDC wants free-text feedback.
+- What each tier includes (not shown until SDC says; the switch buttons show name and price only).
 - When voting rights end after cancelling: today or at the end of the period (`?policy=end-of-period`).

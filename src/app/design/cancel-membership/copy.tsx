@@ -1,22 +1,56 @@
 import type { ReactNode } from "react";
-import type { MembershipReason, PauseUnit } from "../unsubscribe/data";
+import type { MembershipReason, PauseLength } from "../unsubscribe/data";
 
 /*
  * Every user-facing string for the cancel-membership flow (/design/cancel-membership). Strings shared
- * with the email flow (Unsubscribe, Resubscribe, Cancel membership) are in ../unsubscribe/copy.tsx.
- * Copy is from "SDC Unsubscribe & Cancel Membership — Step Copy"
+ * with the email flow (Unsubscribe, Resubscribe, Cancel membership, "You can close this tab now") are
+ * in ../unsubscribe/copy.tsx. Copy is from "SDC Unsubscribe & Cancel Membership — Step Copy"
  * (https://claude.ai/artifact/9oi6VCBrW5R1xkz3uA9DzV) or from Shallot where marked; strings marked
  * "Not in doc" are placeholders: confirm them with SDC before build.
  */
 
 export const cancelCopy = {
-  pageTitle: "Cancel your membership", // Not in doc.
+  pageTitle: "Pause or cancel your membership", // Not in doc.
+  back: "Back", // Not in doc.
 
+  /* The first step: what footer link 2 promises. */
+  choose: {
+    heading: "Pause or cancel your membership", // The doc's B1 heading.
+    summary: (tier: string, amount: string, date: string) => `${tier} · ${amount} a month · next payment ${date}`,
+  },
+
+  /* Pause: presets and a live restart date (after Disney+). */
+  pause: {
+    heading: "Pause your membership", // Not in doc.
+    question: "How long?",
+    lengths: { "1": "1 month", "2": "2 months", "3": "3 months" } satisfies Record<PauseLength, string>, // Not in doc (copy doc: up to 3 months).
+    restartsOn: (date: ReactNode) => (
+      <>
+        Your membership restarts on <strong>{date}</strong>.
+      </>
+    ), // Not in doc.
+    whatHappens:
+      "You won't be charged while paused. Your voting rights and member benefits are on hold until your membership restarts.",
+    pause: "Pause membership",
+  },
+
+  /* End screen after pausing. */
+  paused: {
+    heading: "Your membership is paused", // The doc's B3 confirmation.
+    body: (restartDate: ReactNode, amount: ReactNode) => (
+      <>
+        It restarts on <strong>{restartDate}</strong>, and you{"'"}ll be charged <strong>{amount}</strong> that day.
+        We{"'"}ll email you a week before.
+      </>
+    ),
+    restartQuestion: "Want to come back sooner?",
+    restartNow: "Restart my membership now",
+    restarted: "Your membership is active again", // Not in doc. The heading after "Restart my membership now".
+  },
+
+  /* Before you go: the survey, for people who chose to cancel. */
   reasons: {
     heading: "Before you go", // Shallot.
-    /** Under the heading. `[events / workshops / resources]` is for SDC to fill with what's true. */
-    line: (since: string) =>
-      `You've supported SDC since ${since}. Member contributions are what keep SDC running, including events, workshops and resources.`, // Shallot; the list is a placeholder.
     question: "What's the main reason you're cancelling?", // Shallot.
     options: {
       emails: "I get too many emails",
@@ -29,72 +63,50 @@ export const cancelCopy = {
     emailsBody: "You can stop getting emails and keep your membership.", // Not in doc.
     emailsAction: "Unsubscribe from emails instead", // Not in doc.
 
-    // Too expensive → a lower tier, or pause (FigJam: "Pause / discontinue completely").
-    lowerTierBody: (tier: string, amount: string, date: string) =>
-      `You're a ${tier} member at ${amount} a month. Pay less instead: a change starts on your next payment, ${date}.`, // Not in doc.
-    /** What each tier includes. Placeholders until SDC says what the tiers include. */
-    tierIncludes: {
-      friend: "Voting rights and member updates", // Placeholder.
-      supporter: "Everything in Friend, plus early event invitations", // Placeholder.
-      sustainer: "Everything in Supporter, plus a yearly impact report", // Placeholder.
-    } as Record<string, string>,
-    perMonth: "/ month", // Not in doc.
-    switchTo: (tier: string) => `Switch to ${tier}`, // The doc's "Switch to [lower tier]".
-    switched: (tier: string) => `You'll switch to ${tier}`, // Not in doc.
-    switchedBody: (date: ReactNode, amount: ReactNode) => (
-      <>
-        From <strong>{date}</strong>, you{"'"}ll pay <strong>{amount}</strong> a month.
-      </>
-    ), // Not in doc.
-    switchBackQuestion: "Changed your mind?", // Not in doc.
-    switchBack: (tier: string) => `Stay a ${tier}`, // Not in doc.
-    stayed: (tier: string) => `You'll stay a ${tier} member.`, // Not in doc.
-    pauseInsteadQuestion: "Or take a break:", // Not in doc.
-    pauseInstead: "Pause instead", // Not in doc.
+    // Too expensive → a lower tier, or a pause (FigJam: "Pause / discontinue completely").
+    lowerTierBody: (date: string) => `Pay less from your next payment on ${date}, or take a break.`, // Not in doc.
+    noLowerTierBody: "You can take a break instead. You won't be charged while paused.", // Not in doc.
+    switchTo: (tier: string, amount: string) => `Switch to ${tier} · ${amount} a month`, // The doc's "Switch to [lower tier]", with the price.
 
     // Need a break → pause.
-    pauseLength: "How long?",
-    pauseUnit: "Weeks, months or years", // Not in doc.
-    pauseUnits: { weeks: "Weeks", months: "Months", years: "Years" } satisfies Record<PauseUnit, string>,
-    pauseLengthError: "Enter a whole number, like 2.", // Not in doc.
-    /** Updates as they type, before they press Pause (after Disney+). */
-    restartsOn: (date: ReactNode) => (
-      <>
-        Your membership restarts on <strong>{date}</strong>.
-      </>
-    ), // Not in doc.
-    whatHappens:
-      "You won't be charged while paused. Your voting rights and member benefits are on hold until your membership restarts.",
-    pause: "Pause membership",
-    paused: "Your membership is paused", // The doc's B3 confirmation, as a button.
-    pausedBody: (restartDate: string, amount: string, reminderDate: string) =>
-      `It restarts on ${restartDate}, and you'll be charged ${amount} that day. We'll email you on ${reminderDate} before that happens.`,
-    restartQuestion: "Want to come back sooner?",
-    restartNow: "Restart my membership now",
-    restarted: "Your membership is active again.", // Not in doc.
-
-    // No longer want to be involved → thank them (FigJam), then the cancel button.
-    thanks: "Thank you for being part of SDC. You can rejoin anytime.", // Not in doc.
+    breakBody: "Pause for up to 3 months instead. You won't be charged while paused.", // Not in doc.
+    pauseInstead: "Pause instead", // Not in doc.
 
     continueToCancel: "Continue to cancel", // Not in doc.
   },
 
+  /* End screen after switching tier. */
+  switched: {
+    heading: (tier: string) => `You'll switch to ${tier}`, // Not in doc.
+    body: (date: ReactNode, amount: ReactNode) => (
+      <>
+        From <strong>{date}</strong>, you{"'"}ll pay <strong>{amount}</strong> a month.
+      </>
+    ), // Not in doc.
+    undoQuestion: "Changed your mind?", // Not in doc.
+    undo: (tier: string) => `Stay a ${tier}`, // Not in doc.
+    stayed: (tier: string) => `You'll stay a ${tier} member`, // Not in doc. The heading after the undo.
+  },
+
+  /* End screen after "Unsubscribe from emails instead": the heading after Resubscribe. */
+  resubscribed: "You're subscribed again", // Not in doc.
+
+  /* Confirm: the biggest consequences first, "rejoin" last and quieter. */
   confirm: {
     heading: "Cancel your membership?",
-    noMoreCharges: "You won't be charged again.",
     endsToday: "Your voting rights and member benefits end today.",
     endsAtPeriodEnd: (periodEndDate: string) => `Your voting rights and member benefits continue until ${periodEndDate}.`,
+    noMoreCharges: "You won't be charged again.",
     notRefundable: (lastBillingDate: string) => `Your payment on ${lastBillingDate} isn't refundable.`,
     rejoin: "You can rejoin anytime.",
     keepMembership: "Keep my membership",
-    noteLabel: "Anything you'd like us to know? (optional)",
   },
 
   cancelled: {
     heading: "We're sorry to see you go", // Shallot.
     line: (since: string) =>
       `You've been an SDC supporter since ${since}. SDC runs on the generosity of members like you, so thank you for being part of it.`, // Shallot.
-    confirmationSent: (email: string) => `We've sent a confirmation to ${email}.`,
+    confirmationSent: (email: string) => `We've sent a confirmation to ${email}. You can rejoin anytime.`,
     emailQuestion: "Want to keep hearing about SDC's work?",
     keepEmails: "Keep getting emails",
     emailsKept: "You'll keep getting emails", // Not in doc.

@@ -34,12 +34,13 @@ Items marked **new** aren't on Jesse's branch.
 - Too many emails: unsubscribes from emails only (same as the email page's Unsubscribe).
 - **Switch to a lower tier (new):** `change_tier(token, tierId)`. Takes effect on the next payment; the
   current period stays at the current tier. Undoable until then (`change_tier` back to the current tier).
-- **Pause (new):** `pause_membership(token, count, unit)`, unit weeks / months / years, whole number ≥ 1.
-  No charges while paused; voting rights and benefits on hold. Returns the restart date. Sends a reminder
-  email 7 days before the restart (FigJam: "you'll get an email a week before"). SDC to confirm a maximum
-  (the copy doc said 3 months; the FigJam board leaves it open).
+- **Pause (new):** `pause_membership(token, months)`, months 1, 2 or 3 (SDC to confirm the maximum; the FigJam
+  board asks for weeks, months or years). No charges while paused; voting rights and benefits on hold. Returns
+  the restart date. Sends a reminder email 7 days before the restart (FigJam: "you'll get an email a week
+  before").
 - **Restart now (new):** `restart_membership(token)`.
-- **Cancel (new):** `cancel_membership(token, note?)`. No more charges, no refund, voting rights end today
+- **Cancel (new):** `cancel_membership(token, reason?)`. (The design dropped the copy doc's free-text note; add
+  `note?` back if SDC keeps it.) No more charges, no refund, voting rights end today
   (or at the end of the period; SDC hasn't decided). Sends a confirmation email.
 - After cancelling, "Keep getting emails" changes nothing; "Unsubscribe" is the same `unsubscribe(token)`.
 

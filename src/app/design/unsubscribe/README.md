@@ -7,7 +7,7 @@ The flow follows the [Unsub flow FigJam board](https://www.figma.com/board/jvbGj
 ## Screens
 
 - **The email page.** "What's going on?": too many emails → tick the email types you want → Save. Not relevant → link to the intake form to update interests. Don't want to hear from SDC → the Unsubscribe button below.
-- **After Unsubscribe** the page becomes the result: the question slides closed, the heading changes to "You're unsubscribed" and takes focus. Members see that their membership is still active (body size, date and price in bold), with "Sounds good" and "Cancel membership" (opens the cancel-membership flow). "Unsubscribed by mistake? Resubscribe" is the last line; resubscribing slides the question open again and shows "You're subscribed again" in place of the note under Unsubscribe.
+- **After Unsubscribe** the page becomes the result: the question slides closed, the heading changes to "You're unsubscribed" and takes focus. Members see that their membership is still active (body size, date and price in bold), with "Sounds good" and "Cancel membership" (opens the cancel-membership flow at "Before you go"). "Unsubscribed by mistake? Resubscribe" is the last line; resubscribing slides the question open again and shows "You're subscribed again" in place of the note under Unsubscribe.
 - **"Sounds good"** opens a closing screen: "You're unsubscribed / Awesome! You can close this tab now." (`?screen=closed`)
 
 ## Three patterns, shared with the cancel-membership flow
@@ -42,7 +42,7 @@ Promote them to the kit if a third flow needs them.
 | `done()`, `UndoLine`, `StatusLine` | Pattern 3, the undo line, and a result line that replaces a button that's gone (takes focus). |
 | `ChoiceText`, `Lead` | Body-size answer labels and messages; the kit's labels are form-label size. |
 
-Layout-only: `Stack`, `Choices`, `PauseFields`, `Question`, `Note`, `Body`.
+Layout-only: `Stack`, `Choices`, `Question`, `Note`, `Body`.
 
 ## Open with SDC
 
