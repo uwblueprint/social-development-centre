@@ -5,7 +5,7 @@ Member-facing pages reached from the two footer links in every SDC email:
 - **A4, the email page** (footer link 1, opens by default), and **A5**, the closing screen after "Sounds good" ("You can close this tab now.").
 - **B1, the membership page** (footer link 2, "Pause or cancel membership"), then **B4** (confirm cancelling) and **B5** (cancelled).
 
-The flow follows the [Unsub flow FigJam board](https://www.figma.com/board/jvbGjJ6Wb3CZIOjTB6x81Z/Unsub-flow). Copy is from [SDC Unsubscribe & Cancel Membership — Step Copy](https://claude.ai/artifact/9oi6VCBrW5R1xkz3uA9DzV) where it has the string; `copy.ts` marks everything else "Not in doc". Demo data only. Open at `/design/unsubscribe`; `page.tsx` lists the query parameters for every state. What the backend needs is in `docs/backend/unsubscribe.md`.
+The flow follows the [Unsub flow FigJam board](https://www.figma.com/board/jvbGjJ6Wb3CZIOjTB6x81Z/Unsub-flow). Copy is from [SDC Unsubscribe & Cancel Membership — Step Copy](https://claude.ai/artifact/9oi6VCBrW5R1xkz3uA9DzV) where it has the string; `copy.tsx` marks everything else "Not in doc". Demo data only. Open at `/design/unsubscribe`; `page.tsx` lists the query parameters for every state. What the backend needs is in `docs/backend/unsubscribe.md`.
 
 ## Three patterns, on every page
 
