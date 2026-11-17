@@ -1,22 +1,16 @@
 /*
- * Demo data for the email and membership pages, all in memory. The types are the contract the real
+ * Demo data for the email flow (/design/unsubscribe) and the cancel-membership flow
+ * (/design/cancel-membership), all in memory. The types are the contract the real
  * feature fills from the member's record (via the per-recipient token in the email link); every value
  * below is made up. The flow follows the "Unsub flow" FigJam board:
  * https://www.figma.com/board/jvbGjJ6Wb3CZIOjTB6x81Z/Unsub-flow
  */
 
-/**
- * A4: the email page (footer link 1). B1: the membership page (footer link 2, "Pause or cancel
- * membership"). B4: confirm cancelling. B5: cancelled. Labels match the copy doc's screens.
- */
-export type Screen = "A4" | "A5" | "B1" | "B4" | "B5";
-export const SCREENS: Screen[] = ["A4", "A5", "B1", "B4", "B5"];
-
 /** The email page's "What's going on?" answers. Each opens its own follow-up (FigJam). */
 export const emailReasons = ["too-many", "not-relevant", "no-more"] as const;
 export type EmailReason = (typeof emailReasons)[number];
 
-/** The membership page's "What's going on?" answers. Each opens its own follow-up (FigJam). */
+/** "What's the main reason you're cancelling?" answers. Each opens its own follow-up (FigJam). */
 export const membershipReasons = ["emails", "budget", "break", "done"] as const;
 export type MembershipReason = (typeof membershipReasons)[number];
 
@@ -47,6 +41,7 @@ export interface DemoMember {
   tierId: string;
   /** ISO dates (YYYY-MM-DD). */
   nextPaymentDate: string;
+  memberSince: string;
 }
 
 export const demoMember: DemoMember = {
@@ -54,6 +49,7 @@ export const demoMember: DemoMember = {
   email: "priya.shah@example.com",
   tierId: "supporter",
   nextPaymentDate: "2026-12-01",
+  memberSince: "2023-04-15",
 };
 
 /** Fixed so screenshots and reviews show the same dates every day. */
@@ -102,6 +98,10 @@ export function addPause(from: string, count: number, unit: PauseUnit): string {
 
 const dateFormat = new Intl.DateTimeFormat("en-CA", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" });
 export const formatDate = (iso: string) => dateFormat.format(parse(iso));
+
+const monthYearFormat = new Intl.DateTimeFormat("en-CA", { month: "long", year: "numeric", timeZone: "UTC" });
+/** "April 2023": how long someone has been a member. */
+export const formatMonthYear = (iso: string) => monthYearFormat.format(parse(iso));
 
 const moneyFormat = new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 2, minimumFractionDigits: 0 });
 export const formatMoney = (dollars: number) => moneyFormat.format(dollars);

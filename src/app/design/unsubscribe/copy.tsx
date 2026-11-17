@@ -1,18 +1,18 @@
 import type { ReactNode } from "react";
-import type { EmailReason, EmailType, MembershipReason, PauseUnit } from "./data";
+import type { EmailReason, EmailType } from "./data";
 
 /*
- * Every user-facing string for the email page (A4) and the membership pages (B1, B4, B5). Copy is from
- * "SDC Unsubscribe & Cancel Membership — Step Copy" (https://claude.ai/artifact/9oi6VCBrW5R1xkz3uA9DzV)
- * where it has the string; bracketed values in the doc are function arguments here.
+ * Every user-facing string for the email flow (/design/unsubscribe), plus the strings the
+ * cancel-membership flow shares with it. Copy is from "SDC Unsubscribe & Cancel Membership — Step Copy"
+ * (https://claude.ai/artifact/9oi6VCBrW5R1xkz3uA9DzV) where it has the string; bracketed values in
+ * the doc are function arguments here.
  *
  * Strings marked "Not in doc" come from the FigJam flow, Jesse's unsubscribe page or design, and are
  * placeholders: confirm them with SDC before build.
  */
 
 export const unsubscribeCopy = {
-  pageTitle: "Email preferences and membership", // Not in doc.
-  back: "Back", // Not in doc.
+  pageTitle: "Email preferences", // Not in doc.
 
   /* Shared: the button a person pressed changes its text to the result and stops doing anything. */
   undoUnsubscribe: "Unsubscribed by mistake?",
@@ -56,63 +56,7 @@ export const unsubscribeCopy = {
       </>
     ),
     soundsGood: "Sounds good", // Not in doc (FigJam).
-    // "Sounds good" → the closing screen (A5): heading `unsubscribed`, then this line.
+    // "Sounds good" → the closing screen: heading `unsubscribed`, then this line.
     closeTab: "Awesome! You can close this tab now.", // Not in doc (Shallot).
-  },
-
-  membership: {
-    heading: "Pause or cancel your membership",
-    summary: (tier: string, amount: string, date: string) => `${tier} membership · ${amount} a month · next payment ${date}`,
-    question: "What's going on?",
-    reasons: {
-      emails: "I get too many emails",
-      budget: "It costs too much right now",
-      break: "I need a break",
-      done: "I don't want to be involved with SDC anymore",
-    } satisfies Record<MembershipReason, string>,
-
-    // Too many emails → unsubscribe from emails instead (FigJam).
-    emailsBody: "You can stop getting emails and keep your membership.", // Not in doc.
-    emailsAction: "Unsubscribe from emails instead", // Not in doc.
-
-    // Budget → pause, or cancel completely (the cancel button below). Need a break → pause.
-    budgetBody: "You can pause instead.", // Not in doc. "Discontinue completely" is the cancel button below.
-    pauseLength: "How long?",
-    pauseUnit: "Weeks, months or years", // Not in doc.
-    pauseUnits: { weeks: "Weeks", months: "Months", years: "Years" } satisfies Record<PauseUnit, string>,
-    pauseLengthError: "Enter a whole number, like 2.", // Not in doc.
-    whatHappens:
-      "You won't be charged while paused. Your voting rights and member benefits are on hold until your membership restarts.",
-    pause: "Pause membership",
-    paused: "Your membership is paused", // The doc's B3 confirmation, as a button.
-    pausedBody: (restartDate: string, amount: string, reminderDate: string) =>
-      `It restarts on ${restartDate}, and you'll be charged ${amount} that day. We'll email you on ${reminderDate} before that happens.`,
-    restartQuestion: "Want to come back sooner?",
-    restartNow: "Restart my membership now",
-    restarted: "Your membership is active again.", // Not in doc.
-
-    // No longer want to be involved → thank them (FigJam), then the cancel button.
-    thanks: "Thank you for being part of SDC. You can cancel below, and you can rejoin anytime.", // Not in doc.
-  },
-
-  cancel: {
-    heading: "Cancel your membership?",
-    noMoreCharges: "You won't be charged again.",
-    endsToday: "Your voting rights and member benefits end today.",
-    endsAtPeriodEnd: (periodEndDate: string) =>
-      `Your voting rights and member benefits continue until ${periodEndDate}.`,
-    notRefundable: (lastBillingDate: string) => `Your payment on ${lastBillingDate} isn't refundable.`,
-    rejoin: "You can rejoin anytime.",
-    keepMembership: "Keep my membership",
-    noteLabel: "Anything you'd like us to know? (optional)",
-  },
-
-  cancelled: {
-    heading: "Your membership is cancelled",
-    thanks: "Thank you for everything you've contributed to SDC.", // Not in doc.
-    confirmationSent: (email: string) => `We've sent a confirmation to ${email}.`,
-    emailQuestion: "Want to keep hearing about SDC's work?",
-    keepEmails: "Keep getting emails",
-    emailsKept: "You'll keep getting emails", // Not in doc.
   },
 };
