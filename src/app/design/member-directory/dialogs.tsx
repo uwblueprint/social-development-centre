@@ -17,11 +17,10 @@ import {
 import { Field } from "@/components/ui/Field";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
+import { RadioGroup, RadioGroupOption } from "@/components/ui/RadioGroup";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
-import { ToggleGroupItem } from "@/components/ui/ToggleGroup";
 import { TODAY, addMonths, fullName, methodLabel, type Member, type MembershipKind, type PaymentMethod } from "./data";
-import { OptionToggle, PillToggle } from "./PillToggle";
 import { useStateLab } from "../_state-lab/useStateLab";
 import {
   BusyButton,
@@ -131,6 +130,21 @@ const kindToggle: [Exclude<MembershipKind, "gifted">, string][] = [
   ["sponsored", "Sponsored"],
 ];
 
+/** Membership type: one visible choice among a few, so radios under a visible label. */
+function KindChoice({ value, onChange }: { value: MembershipKind; onChange: (kind: MembershipKind) => void }) {
+  const labelId = React.useId();
+  return (
+    <Stack>
+      <Label id={labelId}>Membership type</Label>
+      <RadioGroup value={value} onValueChange={(v) => onChange(v as MembershipKind)} aria-labelledby={labelId}>
+        {kindToggle.map(([kind, label]) => (
+          <RadioGroupOption key={kind} value={kind} label={label} />
+        ))}
+      </RadioGroup>
+    </Stack>
+  );
+}
+
 export function ChangeMembershipDialog({
   open,
   onOpenChange,
@@ -165,13 +179,7 @@ export function ChangeMembershipDialog({
           }}
         >
           <Lock disabled={sub.busy}>
-          <PillToggle type="single" value={kind} onValueChange={(v) => v && setKind(v as MembershipKind)} aria-label="Membership type">
-            {kindToggle.map(([value, label]) => (
-              <ToggleGroupItem key={value} value={value}>
-                {label}
-              </ToggleGroupItem>
-            ))}
-          </PillToggle>
+          <KindChoice value={kind} onChange={setKind} />
           <Field label="Ends">{(props) => <DatePicker {...props} value={endsAt} onValueChange={setEndsAt} />}</Field>
           {kind === "paid" && (
             <Row>
@@ -269,21 +277,19 @@ export function PaymentDialog({
           </Row>
           <Stack>
             <Label id="payment-method">Method</Label>
-            <OptionToggle type="single" value={method} onValueChange={(v) => v && setMethod(v as PaymentMethod)} aria-labelledby="payment-method">
+            <RadioGroup value={method} onValueChange={(v) => setMethod(v as PaymentMethod)} aria-labelledby="payment-method">
               {methodOptions.map((o) => (
-                <ToggleGroupItem key={o.value} value={o.value}>
-                  {o.label}
-                </ToggleGroupItem>
+                <RadioGroupOption key={o.value} value={o.value} label={o.label} />
               ))}
-            </OptionToggle>
+            </RadioGroup>
           </Stack>
           {!editing && (
             <Stack>
               <Label id="pays-for">This pays for</Label>
-              <OptionToggle type="single" value={forWhom} onValueChange={(v) => v && setForWhom(v as "own" | "other")} aria-labelledby="pays-for">
-                <ToggleGroupItem value="own">Their own membership</ToggleGroupItem>
-                <ToggleGroupItem value="other">Someone else&apos;s</ToggleGroupItem>
-              </OptionToggle>
+              <RadioGroup value={forWhom} onValueChange={(v) => setForWhom(v as "own" | "other")} aria-labelledby="pays-for">
+                <RadioGroupOption value="own" label="Their own membership" />
+                <RadioGroupOption value="other" label="Someone else's" />
+              </RadioGroup>
             </Stack>
           )}
           {!editing && forWhom === "other" && (
@@ -444,13 +450,7 @@ export function AddMemberDialog({
           </Row>
           <Field label="Email" error={errors.email}>{(props) => <Input {...props} type="email" value={d.email} onChange={set("email")} />}</Field>
           {!gift && (
-            <PillToggle type="single" value={kind} onValueChange={(v) => v && setKind(v as MembershipKind)} aria-label="Membership type">
-              {kindToggle.map(([value, label]) => (
-                <ToggleGroupItem key={value} value={value}>
-                  {label}
-                </ToggleGroupItem>
-              ))}
-            </PillToggle>
+            <KindChoice value={kind} onChange={setKind} />
           )}
           <Reserve $shown={paid} inert={!paid}>
             <Row>

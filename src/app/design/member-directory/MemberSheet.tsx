@@ -35,7 +35,7 @@ import {
 import { Icon } from "@/components/ui/Icon";
 import { Sheet, SheetBody, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/Sheet";
 import { SearchField } from "@/components/ui/SearchField";
-import { ToggleGroupItem } from "@/components/ui/ToggleGroup";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { Tooltip } from "@/components/ui/Tooltip";
 import {
   formatDate,
@@ -51,7 +51,6 @@ import {
   type Payment,
   type TagColor,
 } from "./data";
-import { PillToggle } from "./PillToggle";
 import { inOwnWidget, isTyping, plain } from "./listKeys";
 import {
   SLOW_SEARCH_FOR,
@@ -1135,6 +1134,14 @@ function activityRows(m: Member): Row[] {
   return [...m.activity, ...payments].sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : joined(a) - joined(b)));
 }
 
+/* The activity panel: no top padding (the section's gap spaces it) and the same column rhythm as the section. */
+const ActivityPanel = styled(TabsContent)`
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: 0;
+`;
+
 function ActivitySection({
   member: m,
   onEditPayment,
@@ -1204,23 +1211,23 @@ function ActivitySection({
   const rows = all.slice(0, shown);
   const more = Math.min(PAGE, all.length - rows.length);
   return (
+    <Tabs
+      asChild
+      value={view}
+      activationMode={lab.slowLoading ? "manual" : "automatic"}
+      onValueChange={(v) => {
+        setView(v as ActivityView);
+        resetPaging();
+      }}
+    >
     <Section aria-label="Activity">
-      <SectionHeader title="Activity">
-        <PillToggle
-          type="single"
-          value={view}
-          onValueChange={(v) => {
-            if (!v) return;
-            setView(v as ActivityView);
-            resetPaging();
-          }}
-          aria-label="Show"
-        >
-          <ToggleGroupItem value="all">All</ToggleGroupItem>
-          <ToggleGroupItem value="email">Emails</ToggleGroupItem>
-          <ToggleGroupItem value="member">Member activity</ToggleGroupItem>
-        </PillToggle>
-      </SectionHeader>
+      <SectionHeader title="Activity" />
+      <TabsList aria-label="Show" loading={refreshing}>
+        <TabsTrigger value="all">All</TabsTrigger>
+        <TabsTrigger value="email">Emails</TabsTrigger>
+        <TabsTrigger value="member">Member activity</TabsTrigger>
+      </TabsList>
+      <ActivityPanel value={view}>
       {failed ? (
         <SectionFailed title="Couldn't load activity.">Try again to see emails, payments and changes.</SectionFailed>
       ) : (
@@ -1271,7 +1278,9 @@ function ActivitySection({
       )}
         </>
       )}
+      </ActivityPanel>
     </Section>
+    </Tabs>
   );
 }
 
