@@ -70,6 +70,20 @@ const Column = styled(AuthColumn)`
   animation: ${fadeIn} var(--duration) var(--ease);
 `;
 
+/**
+ * The green heading, sized to the width it has: full size in the 440px column, smaller as the
+ * screen narrows (about 23px on a 360px phone). A container query, so every screen gets it from
+ * the template. For devs: this belongs in AuthHeading itself (src/features/auth/AuthScreen.tsx).
+ */
+const Heading = styled.div`
+  container-type: inline-size;
+  width: 100%;
+
+  & h1 {
+    font-size: clamp(var(--text-lg), 7cqi, var(--text-xl));
+  }
+`;
+
 /** Content under the heading: left-aligned, full width. */
 const Stack = styled.div`
   display: flex;
@@ -243,16 +257,6 @@ function StatusLine({ children }: { children: ReactNode }) {
 
 const FadingNote = styled(Note)`
   animation: ${fadeIn} var(--duration) var(--ease);
-`;
-
-/** The cancellation facts on B4, as a short list rather than separate paragraphs. */
-const Facts = styled.ul`
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  margin: 0;
-  padding-left: var(--space-5);
-  color: var(--color-text-muted);
 `;
 
 /** The pause length: a number and a unit side by side, wrapping on a narrow phone. */
@@ -549,7 +553,6 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
               <Lead>
                 {copy.emails.membership(tier.name, formatDate(nextPayment), formatMoney(tier.monthlyPrice))}
               </Lead>
-              <Lead>{copy.emails.cancelAnytime}</Lead>
               <Button type="button" $size="lg" onClick={() => go("A5")}>
                 {copy.emails.soundsGood}
               </Button>
@@ -617,16 +620,14 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
       heading = copy.cancel.heading;
       content = (
         <Stack>
-          <Facts>
-            <li>{copy.cancel.noMoreCharges}</li>
-            <li>
-              {start.policy === "end-of-period"
-                ? copy.cancel.endsAtPeriodEnd(formatDate(addDays(nextPayment, -1)))
-                : copy.cancel.endsToday}
-            </li>
-            <li>{copy.cancel.notRefundable(formatDate(addMonths(nextPayment, -1)))}</li>
-            <li>{copy.cancel.rejoin}</li>
-          </Facts>
+          <Lead>{copy.cancel.noMoreCharges}</Lead>
+          <Lead>
+            {start.policy === "end-of-period"
+              ? copy.cancel.endsAtPeriodEnd(formatDate(addDays(nextPayment, -1)))
+              : copy.cancel.endsToday}
+          </Lead>
+          <Lead>{copy.cancel.notRefundable(formatDate(addMonths(nextPayment, -1)))}</Lead>
+          <Lead>{copy.cancel.rejoin}</Lead>
           <Field label={copy.cancel.noteLabel}>
             {(props) => (
               <Textarea {...props} name="note" rows={3} maxLength={600} value={note} onChange={(e) => setNote(e.target.value)} />
@@ -691,7 +692,9 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
     <AuthScreen>
       <Column $wide key={screen}>
         <SdcLogo />
-        <AuthHeading title={heading} description={line} />
+        <Heading>
+          <AuthHeading title={heading} description={line} />
+        </Heading>
         {content}
         {actions && <AuthActions>{actions}</AuthActions>}
       </Column>

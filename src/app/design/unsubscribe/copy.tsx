@@ -55,10 +55,9 @@ export const unsubscribeCopy = {
         Your {tier} membership is still active. It renews on <strong>{date}</strong> for <strong>{amount}</strong>.
       </>
     ),
-    cancelAnytime: "You can cancel your membership anytime from the SDC emails.", // Not in doc (Shallot).
     soundsGood: "Sounds good", // Not in doc (FigJam).
     // "Sounds good" → the closing screen (A5): heading `unsubscribed`, then this line.
-    closeTab: "You can close this tab now.", // Not in doc (Shallot).
+    closeTab: "Awesome! You can close this tab now.", // Not in doc (Shallot).
   },
 
   membership: {
