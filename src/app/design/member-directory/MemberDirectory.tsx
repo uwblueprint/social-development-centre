@@ -19,6 +19,7 @@ import {
 import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
 import { SearchField } from "@/components/ui/SearchField";
+import { Pagination } from "@/components/ui/Pagination";
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
 import { RadioGroup, RadioGroupOption } from "@/components/ui/RadioGroup";
 import { Select } from "@/components/ui/Select";
@@ -66,6 +67,17 @@ import {
 /* ---------- layout ---------- */
 
 /* One compact row of filter chips under the header; wraps on small screens. */
+/* The kit label is uppercase and tracked; this menu's group heading reads in sentence case, aligned with the item text. */
+const GroupLabel = styled(DropdownMenuLabel)`
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-7);
+  text-align: left;
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-muted);
+`;
+
 const FilterRow = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -215,6 +227,10 @@ const BarTagsButton = React.forwardRef<HTMLButtonElement, React.ComponentProps<t
     </Tooltip>
   );
 });
+
+const PageBar = styled.div`
+  padding-block: var(--space-3);
+`;
 
 /* Room under the last row so it can scroll above the floating bar. */
 const BarSpace = styled.div`
@@ -493,6 +509,12 @@ function partialMembers(base: Member[]): Member[] {
 
 /* ---------- page ---------- */
 
+/* Everyone's light row data arrives once, so search, filters, sort, Select all and Export cover the whole list; the page only limits
+   how many rows render. If the list grows past a few thousand people, server-side paging takes over. */
+const PAGE_SIZE = 50;
+/** How long a page "loads" while Slow loading is on (ms). */
+const PAGE_LOAD_FOR = 1000;
+
 type DialogState =
   | { kind: "add" }
   | { kind: "note" }
@@ -621,6 +643,42 @@ function Directory() {
     });
   }, [pool, filters, sq, sort]);
 
+  /* Paging. `pageState` is the page asked for; `shownPage` is the one on screen, which trails it while a page "loads" (Slow loading). */
+  const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const [pageState, setPageState] = React.useState(1);
+  const page = Math.min(pageState, pageCount);
+  const [shownPage, setShownPage] = React.useState(1);
+  const [openSynced, setOpenSynced] = React.useState<string | null>(null);
+  const [prevResetKey, setPrevResetKey] = React.useState("");
+  const resetKey = `${sq}\u0000${JSON.stringify(filters)}\u0000${sort.key}${sort.direction}`;
+  if (prevResetKey !== resetKey) {
+    /* New search, filters or sort: back to the first page. */
+    setPrevResetKey(resetKey);
+    setPageState(1);
+  }
+  if (openSynced !== openId) {
+    /* The sheet moved to someone (stepping, or a new member): show the page they're on. */
+    setOpenSynced(openId);
+    const at = openId ? rows.findIndex((m) => m.id === openId) : -1;
+    if (at >= 0) setPageState(Math.floor(at / PAGE_SIZE) + 1);
+  }
+  /* A page change is a request: with Slow loading on, the previous rows stay until it lands. The open sheet skips the wait. */
+  if (shownPage !== page && (!lab.slowLoading || openId)) setShownPage(page);
+  React.useEffect(() => {
+    if (!lab.slowLoading || openId || shownPage === page) return;
+    const timer = window.setTimeout(() => setShownPage(page), PAGE_LOAD_FOR);
+    return () => window.clearTimeout(timer);
+  }, [lab.slowLoading, openId, shownPage, page]);
+  const visiblePage = Math.min(shownPage, pageCount);
+  const pageRows = React.useMemo(() => rows.slice((visiblePage - 1) * PAGE_SIZE, visiblePage * PAGE_SIZE), [rows, visiblePage]);
+  const pageLoading = shownPage !== page;
+  const scrollOnLand = React.useRef(false);
+  const pendingFocus = React.useRef<string | null>(null);
+  const changePage = (next: number) => {
+    scrollOnLand.current = true;
+    setPageState(next);
+  };
+
   const chosen = pool.filter((m) => selected.has(m.id));
   const target = chosen.length ? chosen : rows;
 
@@ -676,7 +734,7 @@ function Directory() {
 
   const listRef = React.useRef<HTMLDivElement>(null);
   /** The rows as the list shows them now (sort and filter applied), and the ids a render ago. */
-  const rowsRef = React.useRef(rows);
+  const rowsRef = React.useRef(pageRows);
   const prevIds = React.useRef<string[]>([]);
   /** Where a Shift range starts: the last row ticked or unticked by hand. */
   const anchor = React.useRef<string | null>(null);
@@ -727,7 +785,9 @@ function Directory() {
     if (mod && (e.key === "a" || e.key === "A")) {
       e.preventDefault();
       extendBase.current = null;
-      setSelected(new Set(rowsRef.current.map((m) => m.id)));
+      /* The page first; once the whole page is selected, everyone in the list. */
+      const onPage = rowsRef.current.map((m) => m.id);
+      setSelected(new Set((onPage.every((x) => selected.has(x)) ? rows : rowsRef.current).map((m) => m.id)));
       return;
     }
     const id = target.tagName === "TR" ? rowIdOf(target) : null;
@@ -737,6 +797,15 @@ function Directory() {
     const step = e.key === "ArrowDown" || (!e.shiftKey && e.key === "j") ? 1 : e.key === "ArrowUp" || (!e.shiftKey && e.key === "k") ? -1 : 0;
     if (step) {
       e.preventDefault();
+      if (!e.shiftKey && (at + step < 0 || at + step >= list.length)) {
+        /* Past the first or last row of the page: on to the neighbouring page, landing on its nearest row. */
+        const nextPage = visiblePage + step;
+        if (nextPage < 1 || nextPage > pageCount) return;
+        extendBase.current = null;
+        pendingFocus.current = rows[step > 0 ? (nextPage - 1) * PAGE_SIZE : nextPage * PAGE_SIZE - 1]?.id ?? null;
+        changePage(nextPage);
+        return;
+      }
       const next = Math.max(0, Math.min(list.length - 1, at + step));
       if (e.shiftKey) {
         if (!extendBase.current) {
@@ -842,9 +911,21 @@ function Directory() {
   }, [dialog, selected.size]);
 
   React.useEffect(() => {
-    rowsRef.current = rows;
-    prevIds.current = rows.map((m) => m.id);
+    rowsRef.current = pageRows;
+    prevIds.current = pageRows.map((m) => m.id);
     applyTabStops();
+    if (pageLoading) return;
+    if (pendingFocus.current) {
+      const el = rowEl(pendingFocus.current);
+      if (el) {
+        pendingFocus.current = null;
+        el.focus();
+      }
+    }
+    if (scrollOnLand.current) {
+      scrollOnLand.current = false;
+      listRef.current?.scrollIntoView({ block: "start" });
+    }
   });
 
   // Shortcuts that work from anywhere on the page, unless typing, or a dialog, menu or list of options has the keyboard.
@@ -931,7 +1012,7 @@ function Directory() {
           {key === intakeFilters[0] && (
             <>
               <DropdownMenuSeparator />
-              <DropdownMenuLabel>From the intake form</DropdownMenuLabel>
+              <GroupLabel>From the intake form</GroupLabel>
             </>
           )}
           <DropdownMenuCheckboxItem checked={added.includes(key)} onCheckedChange={(on) => (on ? addFilter(key) : removeFilter(key))}>
@@ -1053,8 +1134,17 @@ function Directory() {
         <SelectBox>
           <Checkbox
             aria-label="Select all"
-            checked={rows.length > 0 && rows.every((m) => selected.has(m.id)) ? true : rows.some((m) => selected.has(m.id)) ? "indeterminate" : false}
-            onCheckedChange={(v) => setSelected(v === true ? new Set(rows.map((m) => m.id)) : new Set())}
+            checked={pageRows.length > 0 && pageRows.every((m) => selected.has(m.id)) ? true : pageRows.some((m) => selected.has(m.id)) ? "indeterminate" : false}
+            onCheckedChange={(v) =>
+              setSelected((cur) => {
+                const next = new Set(cur);
+                for (const m of pageRows) {
+                  if (v === true) next.add(m.id);
+                  else next.delete(m.id);
+                }
+                return next;
+              })
+            }
           />
         </SelectBox>
       ),
@@ -1368,7 +1458,8 @@ function Directory() {
       <Table
         aria-label="People"
         columns={columns}
-        rows={rows}
+        rows={pageRows}
+        busy={pageLoading}
         getRowId={(m) => m.id}
         onRowClick={(m) => setOpenId(m.id)}
         sort={sort}
@@ -1399,9 +1490,15 @@ function Directory() {
           />
         }
       />
-      {barMounted && <BarSpace aria-hidden="true" />}
       </div>
       )}
+
+      {showList && (
+        <PageBar>
+          <Pagination page={page} pageCount={pageCount} pageSize={PAGE_SIZE} total={rows.length} onPageChange={changePage} />
+        </PageBar>
+      )}
+      {showList && barMounted && <BarSpace aria-hidden="true" />}
 
       {showList && barMounted && (
         <SelectionBar
