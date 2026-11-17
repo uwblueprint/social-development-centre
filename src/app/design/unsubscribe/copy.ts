@@ -34,8 +34,8 @@ export const unsubscribeCopy = {
   },
 
   /*
-   * The unsubscribe page, laid out after Luma's (design): the reasons in a card, then the Unsubscribe
-   * button, which the result replaces. Opening the page never unsubscribes; the button does.
+   * The unsubscribe page, laid out after Luma's (design): "fewer emails" first, then the reasons in a
+   * card and the unsubscribe button, whose text becomes the result. Opening the page never unsubscribes.
    */
   a4: {
     /** Screen readers only. Jesse's heading, without the question mark. */
@@ -49,13 +49,12 @@ export const unsubscribeCopy = {
       "too-many": "Too many emails",
       "not-relevant": "Not relevant to me",
       "didnt-sign-up": "I didn't sign up for these",
-      other: "Other",
     } satisfies Record<UnsubscribeReason, string>,
-    /** Jesse's button and description. */
-    confirm: "Unsubscribe",
+    /** Jesse's description, under the unsubscribe button (A1's "Unsubscribe from all communications"). */
     confirmNote: (isMember: boolean) =>
       isMember ? "You'll stop getting emails from SDC. You'll still be a member." : "You'll stop getting emails from SDC.",
-    done: "You're unsubscribed.",
+    /** Replaces the unsubscribe button's text once pressed, like A1's "Your preference is saved". */
+    done: "You're unsubscribed",
     undoQuestion: "Unsubscribed by mistake?",
     resubscribe: "Resubscribe",
     /** Design: the way to stay, like Luma's "All notification preferences". */

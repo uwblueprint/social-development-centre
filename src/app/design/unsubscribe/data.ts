@@ -77,8 +77,8 @@ export const emailTypes = ["monthly", "events", "campaigns"] as const;
 export type EmailType = (typeof emailTypes)[number];
 
 /** A4's survey: multi-select, so the reasons must all be able to be true at once. */
-export type UnsubscribeReason = "too-many" | "not-relevant" | "didnt-sign-up" | "other";
-export const unsubscribeReasons: UnsubscribeReason[] = ["too-many", "not-relevant", "didnt-sign-up", "other"];
+export type UnsubscribeReason = "too-many" | "not-relevant" | "didnt-sign-up";
+export const unsubscribeReasons: UnsubscribeReason[] = ["too-many", "not-relevant", "didnt-sign-up"];
 
 export const pauseMonths = [1, 2, 3] as const;
 export type PauseMonths = (typeof pauseMonths)[number];
