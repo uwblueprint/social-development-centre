@@ -33,6 +33,16 @@ export const Skeleton = styled.span<{ $width?: string; $height?: string }>`
   }
 `;
 
+/** Text for assistive tech only: a polite status like "Loading email". Needs a positioned ancestor to clip against; it is clipped to nothing either way. */
+export const VisuallyHidden = styled.span`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+`;
+
 const Lines = styled.div`
   display: flex;
   flex-direction: column;

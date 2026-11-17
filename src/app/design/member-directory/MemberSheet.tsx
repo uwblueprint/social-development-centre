@@ -53,8 +53,21 @@ import {
 } from "./data";
 import { PillToggle } from "./PillToggle";
 import { inOwnWidget, isTyping, plain } from "./listKeys";
-import { useLabLoad, useStateLab, SAVING_FOR, type StateLab } from "../_state-lab/useStateLab";
-import { ConnectionBanner, InlineAlert, SectionFailed, SectionSkeleton, Skeleton } from "./SheetStates";
+import {
+  SLOW_SEARCH_FOR,
+  SAVING_FOR,
+  useLabDeferred,
+  useLabDelay,
+  useLabLoad,
+  useStateLab,
+  type StateLab,
+} from "../_state-lab/useStateLab";
+import { ConnectionBanner, InlineAlert, SectionFailed, SectionSkeleton, Skeleton, VisuallyHidden } from "./SheetStates";
+
+/* Slow loading: how long each fetch in the panel takes (ms). A member's sections, an email's body, and the next page of history. */
+const MEMBER_LOAD_FOR = 1000;
+const EMAIL_BODY_LOAD_FOR = 1500;
+const MORE_LOAD_FOR = 1000;
 
 /* ---------- layout ---------- */
 
@@ -449,6 +462,27 @@ const EmailPreview = styled.div`
   overflow-wrap: anywhere;
 `;
 
+/* Previous rows stay on screen, dimmed, while the next ones load. */
+const Refreshing = styled.div<{ $pending: boolean }>`
+  opacity: ${({ $pending }) => ($pending ? 0.6 : 1)};
+  transition: opacity var(--duration) var(--ease);
+`;
+
+/* A dot-sized circle that keeps the timeline's connector behind it, like a real dot. */
+const SkeletonDot = styled(Skeleton)`
+  position: relative;
+  z-index: var(--z-raised);
+  align-self: start;
+  border-radius: var(--radius-full);
+  box-shadow: 0 0 0 var(--space-1) var(--section-bg);
+`;
+
+const SkeletonText = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+`;
+
 /* "Answered <date>" over the intake answers, 8px apart like the answer rows. */
 const Stack = styled.div`
   display: flex;
@@ -546,14 +580,17 @@ function SectionAction({
   iconSize = 14,
   children,
   onClick,
+  busy = false,
 }: {
   icon?: LucideIcon;
   iconSize?: number;
   children: React.ReactNode;
   onClick: () => void;
+  /** A request is in flight: say so, and ignore further presses. */
+  busy?: boolean;
 }) {
   return (
-    <QuietButton type="button" $variant="ghost" onClick={onClick}>
+    <QuietButton type="button" $variant="ghost" aria-disabled={busy || undefined} onClick={busy ? undefined : onClick}>
       {children}
       {icon && <Icon icon={icon} size={iconSize} />}
     </QuietButton>
@@ -613,6 +650,7 @@ export function MemberSheet({
       { id: "activity-failed", label: "Couldn't load activity", description: "Activity can't load; the rest of the panel works." },
       { id: "notes-failed", label: "Couldn't load the note", description: "The note can't load; the rest of the panel works." },
       { id: "intake-failed", label: "Couldn't load intake answers", description: "The intake answers can't load; the rest works." },
+      { id: "email-body-failed", label: "Couldn't load an email", description: "Opening an email in the timeline fails; offer Try again in place" },
     ],
     notApplicable: ["readOnly", "rateLimited"],
   });
@@ -648,7 +686,7 @@ export function MemberSheet({
   );
 }
 
-type SheetLab = StateLab<"activity-failed" | "notes-failed" | "intake-failed">;
+type SheetLab = StateLab<"activity-failed" | "notes-failed" | "intake-failed" | "email-body-failed">;
 type Load = ReturnType<typeof useLabLoad>;
 
 const LONG_WORD = "Wolfeschlegelsteinhausenbergerdorff";
@@ -717,7 +755,11 @@ function MemberPanel({
   const activityFailed = lab.sectionFailed || lab.is("activity-failed");
   const intakeFailed = lab.is("intake-failed");
   const name = fullName(m) || "Unnamed member";
-  const waiting = loading || failed;
+  // Slow loading: the header comes from list data, so it is instant. The sections are fetched, on first open
+  // and again for each member stepped to (this panel is keyed by member, so the delay starts afresh).
+  const fetching = useLabDelay(MEMBER_LOAD_FOR, lab.slowLoading);
+  const sectionsLoading = loading || fetching;
+  const waiting = sectionsLoading || failed;
 
   // A new member (j, k or the step buttons) replaces this panel, so focus follows to the new name.
   const title = React.useRef<HTMLHeadingElement>(null);
@@ -792,12 +834,13 @@ function MemberPanel({
           </>
         )}
       </SheetHeader>
-      <Body>
+      <Body aria-busy={sectionsLoading || undefined}>
         <ConnectionBanner offline={lab.offline} reconnecting={lab.reconnecting} sessionExpired={lab.sessionExpired} />
         {failed ? (
           <SectionFailed title="Couldn't load this member.">Something went wrong on our side. Try again in a moment.</SectionFailed>
-        ) : loading ? (
+        ) : sectionsLoading ? (
           <>
+            <VisuallyHidden role="status">Loading member details</VisuallyHidden>
             {["Note", "Membership", "Payments", "Activity", "Intake form"].map((title) => (
               <Section key={title} aria-label={title}>
                 <SectionHeader title={title} />
@@ -845,6 +888,7 @@ function MemberPanel({
               member={m}
               onEditPayment={actions.onEditPayment}
               failed={activityFailed}
+              lab={lab}
               empty={lab.sectionEmpty}
               many={lab.manyItems}
               single={lab.singleItem}
@@ -1095,6 +1139,7 @@ function ActivitySection({
   member: m,
   onEditPayment,
   failed,
+  lab,
   empty,
   many,
   single,
@@ -1102,6 +1147,7 @@ function ActivitySection({
   member: Member;
   onEditPayment: (payment: Payment) => void;
   failed: boolean;
+  lab: SheetLab;
   empty: boolean;
   many: boolean;
   single: boolean;
@@ -1110,6 +1156,39 @@ function ActivitySection({
   const [q, setQ] = React.useState("");
   const [shown, setShown] = React.useState(PAGE);
   const needle = q.trim().toLowerCase();
+  const [loadedEmails, setLoadedEmails] = React.useState<ReadonlySet<string>>(() => new Set());
+  const markLoaded = React.useCallback((id: string) => setLoadedEmails((s) => (s.has(id) ? s : new Set(s).add(id))), []);
+
+  // Slow loading: a new view or search term takes a while to come back. The previous rows stay, dimmed.
+  const liveKey = `${view}|${needle}`;
+  const lagged = useLabDeferred(liveKey, SLOW_SEARCH_FOR);
+  const appliedKey = lab.slowLoading ? lagged.value : liveKey;
+  const refreshing = lab.slowLoading && lagged.pending;
+  const cut = appliedKey.indexOf("|");
+  const appliedView = appliedKey.slice(0, cut) as ActivityView;
+  const appliedNeedle = appliedKey.slice(cut + 1);
+
+  // Slow loading: "Show more" fetches the next page of history.
+  const [loadingMore, setLoadingMore] = React.useState(false);
+  const moreTimer = React.useRef<number | undefined>(undefined);
+  React.useEffect(() => () => window.clearTimeout(moreTimer.current), []);
+  const resetPaging = () => {
+    window.clearTimeout(moreTimer.current);
+    setLoadingMore(false);
+    setShown(PAGE);
+  };
+  const showMore = () => {
+    if (loadingMore) return;
+    if (!lab.slowLoading) {
+      setShown((n) => n + PAGE);
+      return;
+    }
+    setLoadingMore(true);
+    moreTimer.current = window.setTimeout(() => {
+      setShown((n) => n + PAGE);
+      setLoadingMore(false);
+    }, MORE_LOAD_FOR);
+  };
   const base = activityRows(m);
   /* State lab: a very long timeline, exactly one entry, or none. */
   const everything: Row[] = empty
@@ -1120,8 +1199,8 @@ function ActivitySection({
         ? base.slice(0, 1)
         : base;
   const all = everything
-    .filter((a) => (view === "email" ? a.kind === "email" : view === "member" ? a.kind !== "email" : true))
-    .filter((a) => !needle || [a.title, a.detail, a.body].some((t) => t?.toLowerCase().includes(needle)));
+    .filter((a) => (appliedView === "email" ? a.kind === "email" : appliedView === "member" ? a.kind !== "email" : true))
+    .filter((a) => !appliedNeedle || [a.title, a.detail, a.body].some((t) => t?.toLowerCase().includes(appliedNeedle)));
   const rows = all.slice(0, shown);
   const more = Math.min(PAGE, all.length - rows.length);
   return (
@@ -1133,7 +1212,7 @@ function ActivitySection({
           onValueChange={(v) => {
             if (!v) return;
             setView(v as ActivityView);
-            setShown(PAGE);
+            resetPaging();
           }}
           aria-label="Show"
         >
@@ -1154,23 +1233,39 @@ function ActivitySection({
           onChange={(e) => setQ(e.target.value)}
           onSearch={(v) => {
             setQ(v);
-            setShown(PAGE);
+            resetPaging();
           }}
+          pending={refreshing}
         />
       )}
-      {rows.length ? (
-        <Timeline>
-          {rows.map((a) => (
-            <ActivityRow key={a.id} item={a} onEditPayment={onEditPayment} />
-          ))}
-        </Timeline>
-      ) : (
-        <Muted>{needle ? `No activity matches “${q.trim()}”.` : "Nothing yet."}</Muted>
-      )}
+      <Refreshing $pending={refreshing} aria-busy={refreshing || loadingMore || undefined}>
+        {refreshing && <VisuallyHidden role="status">Updating activity</VisuallyHidden>}
+        {loadingMore && <VisuallyHidden role="status">Loading more activity</VisuallyHidden>}
+        {rows.length ? (
+          <Timeline>
+            {rows.map((a) => (
+              <ActivityRow key={a.id} item={a} onEditPayment={onEditPayment} lab={lab} loadedEmails={loadedEmails} onEmailLoaded={markLoaded} />
+            ))}
+            {loadingMore &&
+              [0, 1, 2].map((i) => (
+                <TimelineItem key={`more-${i}`} aria-hidden="true">
+                  <SkeletonDot $width="var(--space-5)" $height="var(--space-5)" />
+                  <SkeletonText>
+                    <Skeleton $width={i === 1 ? "55%" : "75%"} />
+                    <Skeleton $width="35%" $height="var(--space-2)" />
+                  </SkeletonText>
+                  <Skeleton $width="var(--space-8)" />
+                </TimelineItem>
+              ))}
+          </Timeline>
+        ) : (
+          <Muted>{appliedNeedle ? `No activity matches “${q.trim()}”.` : "Nothing yet."}</Muted>
+        )}
+      </Refreshing>
       {more > 0 && (
         <div>
-          <SectionAction icon={ChevronDown} iconSize={ACTIVITY_ICON} onClick={() => setShown((n) => n + PAGE)}>
-            Show {more} more
+          <SectionAction icon={loadingMore ? undefined : ChevronDown} iconSize={ACTIVITY_ICON} busy={loadingMore} onClick={showMore}>
+            {loadingMore ? "Loading…" : `Show ${more} more`}
           </SectionAction>
         </div>
       )}
@@ -1180,7 +1275,50 @@ function ActivitySection({
   );
 }
 
-function ActivityRow({ item: a, onEditPayment }: { item: Row; onEditPayment: (payment: Payment) => void }) {
+/** An opened email's body. Slow loading: the first open fetches it (skeleton, or a failure with Try again); later opens are instant. */
+function EmailBody({
+  item: a,
+  lab,
+  loaded,
+  onLoaded,
+}: {
+  item: Row;
+  lab: SheetLab;
+  loaded: boolean;
+  onLoaded: (id: string) => void;
+}) {
+  const fetching = useLabDelay(EMAIL_BODY_LOAD_FOR, lab.slowLoading && !loaded);
+  const failed = lab.sectionFailed || lab.is("email-body-failed");
+  const ok = !fetching && !(failed && !loaded);
+  React.useEffect(() => {
+    if (ok && !loaded) onLoaded(a.id);
+  }, [ok, loaded, onLoaded, a.id]);
+
+  if (fetching) {
+    return (
+      <EmailPreview aria-busy="true">
+        <VisuallyHidden role="status">Loading email</VisuallyHidden>
+        <SectionSkeleton lines={3} />
+      </EmailPreview>
+    );
+  }
+  if (!ok) return <SectionFailed title="Couldn't load this email.">Try again to see it.</SectionFailed>;
+  return <EmailPreview>{a.body}</EmailPreview>;
+}
+
+function ActivityRow({
+  item: a,
+  onEditPayment,
+  lab,
+  loadedEmails,
+  onEmailLoaded,
+}: {
+  item: Row;
+  onEditPayment: (payment: Payment) => void;
+  lab: SheetLab;
+  loadedEmails: ReadonlySet<string>;
+  onEmailLoaded: (id: string) => void;
+}) {
   const date = <TimelineDate dateTime={a.at}>{formatDate(a.at)}</TimelineDate>;
   return (
     <TimelineItem data-reveal={a.payment ? "" : undefined}>
@@ -1197,7 +1335,7 @@ function ActivityRow({ item: a, onEditPayment }: { item: Row; onEditPayment: (pa
             {a.detail && <TimelineSub>{a.detail}</TimelineSub>}
           </EmailTrigger>
           <CollapsibleContent>
-            <EmailPreview>{a.body}</EmailPreview>
+            <EmailBody item={a} lab={lab} loaded={loadedEmails.has(a.id)} onLoaded={onEmailLoaded} />
           </CollapsibleContent>
         </EmailCollapsible>
       ) : (

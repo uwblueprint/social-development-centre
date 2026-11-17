@@ -11,6 +11,11 @@ import { SearchField } from "@/components/ui/SearchField";
 import { Tag } from "@/components/ui/Tag";
 import type { Member, TagColor } from "./data";
 import { SubmitNote, useSubmit } from "./DialogStates";
+import { Skeleton, VisuallyHidden } from "./SheetStates";
+import { useLabDelay, type StateLab } from "../_state-lab/useStateLab";
+
+/** How long the tag list "loads" when the popover opens, while Slow loading is on (ms). */
+const TAGS_LOAD_FOR = 800;
 
 /* Fits a 360px screen: never wider than the viewport minus a gutter on each side. */
 const Content = styled(PopoverContent)`
@@ -68,6 +73,15 @@ const Note = styled.p`
   line-height: var(--leading-body);
 `;
 
+/* A placeholder row the height and spacing of a real tag row: a checkbox square, then a pill. */
+const SkeletonRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--space-6);
+  padding: var(--space-1) var(--space-2);
+`;
+
 const Gap = styled.div`
   margin-top: var(--space-2);
 `;
@@ -90,7 +104,7 @@ export function BulkTagsPopover({
   people: Member[];
   allTags: string[];
   tagColors: Record<string, TagColor | undefined>;
-  lab: Parameters<typeof useSubmit>[0];
+  lab: Parameters<typeof useSubmit>[0] & Pick<StateLab<never>, "slowLoading">;
   onToggle: (change: TagToggle) => void;
   /** The bar's button. It becomes the popover's trigger. */
   children: React.ReactNode;
@@ -98,6 +112,8 @@ export function BulkTagsPopover({
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
   const sub = useSubmit(lab);
+  // Slow loading: the tag list is fetched each time the popover opens.
+  const loadingTags = useLabDelay(TAGS_LOAD_FOR, open && lab.slowLoading);
   const uid = React.useId();
   const searchRef = React.useRef<HTMLInputElement>(null);
   const listRef = React.useRef<HTMLDivElement>(null);
@@ -173,14 +189,27 @@ export function BulkTagsPopover({
           onChange={(e) => setQuery(e.target.value)}
           onSearch={(v) => setQuery(v)}
           onKeyDown={(e) => {
-            if (e.key !== "Enter") return;
+            if (e.key !== "Enter" || loadingTags) return;
             e.preventDefault();
             if (shown.length === 1 && !canCreate) apply(shown[0], stateOf(shown[0]) === true ? "remove" : "add");
             else if (!shown.length && canCreate) create();
           }}
         />
-        <List ref={listRef} role="group" aria-label="Tags" aria-busy={sub.busy || undefined}>
-          {shown.map((tag, i) => {
+        <List ref={listRef} role="group" aria-label="Tags" aria-busy={sub.busy || loadingTags || undefined}>
+          {loadingTags && (
+            <>
+              <VisuallyHidden role="status">Loading tags</VisuallyHidden>
+              <div aria-hidden="true">
+                {["40%", "55%", "30%", "45%"].map((width) => (
+                  <SkeletonRow key={width}>
+                    <Skeleton $width="var(--space-4)" $height="var(--space-4)" />
+                    <Skeleton $width={width} $height="var(--space-4)" />
+                  </SkeletonRow>
+                ))}
+              </div>
+            </>
+          )}
+          {!loadingTags && shown.map((tag, i) => {
             const state = stateOf(tag);
             const toggle = () => apply(tag, state === true ? "remove" : "add");
             const labelId = `${uid}-${i}`;
@@ -205,8 +234,8 @@ export function BulkTagsPopover({
               </Row>
             );
           })}
-          {!shown.length && !canCreate && <Note>{allTags.length ? "No tags match." : "No tags yet. Type a name to create one."}</Note>}
-          {canCreate && (
+          {!loadingTags && !shown.length && !canCreate && <Note>{allTags.length ? "No tags match." : "No tags yet. Type a name to create one."}</Note>}
+          {!loadingTags && canCreate && (
             <CreateRow data-tag-row="" tabIndex={-1} type="button" $variant="ghost" onClick={create}>
               <Icon icon={Plus} size={14} /> {`Create “${name}”`}
             </CreateRow>

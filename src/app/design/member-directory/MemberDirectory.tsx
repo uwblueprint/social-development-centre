@@ -67,9 +67,9 @@ import {
 /* ---------- layout ---------- */
 
 /* One compact row of filter chips under the header; wraps on small screens. */
-/* The kit label is uppercase and tracked; this menu's group heading reads in sentence case, aligned with the item text. */
+/* The kit label is uppercase and tracked; this menu's group heading reads in sentence case, flush with the checkbox indicators. */
 const GroupLabel = styled(DropdownMenuLabel)`
-  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-7);
+  padding: var(--space-2);
   text-align: left;
   text-transform: none;
   letter-spacing: normal;
@@ -117,19 +117,30 @@ const FilterEditor = styled.div`
   min-width: 0;
 `;
 
-const OptionList = styled.div`
+/* Lists in a filter popover sit like a kit menu: the popover's own inset is cancelled so rows get the menu's var(--space-1) inner padding. */
+const MenuList = styled.div`
+  margin: calc(var(--space-1) - var(--space-3));
+`;
+
+const OptionList = styled(MenuList)`
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  max-height: calc(var(--space-8) * 4);
+  max-height: calc(var(--menu-row-height) * 7.5);
   overflow-y: auto;
 `;
 
 const OptionRow = styled.div`
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
+  gap: var(--space-2);
+  min-height: var(--menu-row-height);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+
+  &:hover {
+    background: var(--color-bg-hover);
+  }
 `;
 
 const OptionCount = styled.span`
@@ -137,6 +148,26 @@ const OptionCount = styled.span`
   font-size: var(--text-xs);
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
+`;
+
+/* Radio lists: same rows as the checkbox lists. */
+const RadioList = styled(MenuList)`
+  & [role="radio"] ~ label,
+  & label {
+    cursor: pointer;
+  }
+  & > * {
+    gap: 0;
+  }
+  & > * > * {
+    min-height: var(--menu-row-height);
+    padding: 0 var(--space-2);
+    border-radius: var(--radius-sm);
+    align-items: center;
+  }
+  & > * > *:hover {
+    background: var(--color-bg-hover);
+  }
 `;
 
 /* A name with the tags that matched the search, so a tag search shows why each row is there. */
@@ -230,6 +261,20 @@ const BarTagsButton = React.forwardRef<HTMLButtonElement, React.ComponentProps<t
 
 const PageBar = styled.div`
   padding-block: var(--space-3);
+`;
+
+/*
+ * Selected rows: the same fill as the kit's hover (one step stronger, so a hovered selected row never looks lighter),
+ * as one band: the divider between two selected rows is hidden.
+ * Done from here because the kit Table has no selected-row prop; a row counts as selected when its checkbox is checked.
+ */
+const ListWrap = styled.div`
+  &&& tbody tr:has([data-member-id] [data-state="checked"]) > td {
+    background: var(--color-bg-selected);
+  }
+  &&& tbody tr:has([data-member-id] [data-state="checked"]) + tr:has([data-member-id] [data-state="checked"]) > td::before {
+    background: transparent;
+  }
 `;
 
 /* Room under the last row so it can scroll above the floating bar. */
@@ -1070,14 +1115,17 @@ function Directory() {
     status: checkList("status", "Status", (Object.keys(statusLabel) as MemberStatus[]).map((v) => ({ value: v, label: statusLabel[v] }))),
     emails: (
       <FilterEditor>
-        <RadioGroup aria-label="Emails" value={filters.emails} onValueChange={(v) => setFilter("emails", v as Filters["emails"])}>
-          <RadioGroupOption value="on" label="On" />
-          <RadioGroupOption value="off" label="Off" />
-        </RadioGroup>
+        <RadioList>
+          <RadioGroup aria-label="Emails" value={filters.emails} onValueChange={(v) => setFilter("emails", v as Filters["emails"])}>
+            <RadioGroupOption value="on" label="On" />
+            <RadioGroupOption value="off" label="Off" />
+          </RadioGroup>
+        </RadioList>
       </FilterEditor>
     ),
     joined: (
       <FilterEditor>
+        <RadioList>
         <RadioGroup
           aria-label="Joined"
           value={filters.joined.preset || "any"}
@@ -1088,6 +1136,7 @@ function Directory() {
             <RadioGroupOption key={o.value} value={o.value} label={o.label} />
           ))}
         </RadioGroup>
+        </RadioList>
         {filters.joined.preset === "custom" && (
           <>
             <Field label="From">
@@ -1454,7 +1503,7 @@ function Directory() {
       )}
 
       {showList && (
-      <div ref={listRef} role="presentation" onKeyDown={onListKeyDown} onClickCapture={onListClickCapture} onFocus={onListFocus}>
+      <ListWrap ref={listRef} role="presentation" onKeyDown={onListKeyDown} onClickCapture={onListClickCapture} onFocus={onListFocus}>
       <Table
         aria-label="People"
         columns={columns}
@@ -1490,7 +1539,7 @@ function Directory() {
           />
         }
       />
-      </div>
+      </ListWrap>
       )}
 
       {showList && (
