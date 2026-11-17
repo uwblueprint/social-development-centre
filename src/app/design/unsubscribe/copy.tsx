@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { EmailReason, EmailType, MembershipReason, PauseUnit } from "./data";
 
 /*
@@ -49,9 +50,15 @@ export const unsubscribeCopy = {
       isMember ? "You'll stop getting emails from SDC. You'll still be a member." : "You'll stop getting emails from SDC.",
 
     // After unsubscribing, for members (FigJam: "Membership is still active and will be automatically renewed").
-    membership: (tier: string, date: string, amount: string) =>
-      `Your ${tier} membership is still active. It renews on ${date} for ${amount}.`,
+    membership: (tier: string, date: ReactNode, amount: ReactNode) => (
+      <>
+        Your {tier} membership is still active. It renews on <strong>{date}</strong> for <strong>{amount}</strong>.
+      </>
+    ),
+    cancelAnytime: "You can cancel your membership anytime from the SDC emails.", // Not in doc (Shallot).
     soundsGood: "Sounds good", // Not in doc (FigJam).
+    // "Sounds good" → the closing screen (A5): heading `unsubscribed`, then this line.
+    closeTab: "You can close this tab now.", // Not in doc (Shallot).
   },
 
   membership: {
@@ -103,7 +110,8 @@ export const unsubscribeCopy = {
 
   cancelled: {
     heading: "Your membership is cancelled",
-    body: (email: string) => `You won't be charged again. We've sent a confirmation to ${email}.`,
+    thanks: "Thank you for everything you've contributed to SDC.", // Not in doc.
+    confirmationSent: (email: string) => `We've sent a confirmation to ${email}.`,
     emailQuestion: "Want to keep hearing about SDC's work?",
     keepEmails: "Keep getting emails",
     emailsKept: "You'll keep getting emails", // Not in doc.

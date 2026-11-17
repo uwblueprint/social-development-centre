@@ -65,16 +65,6 @@ const fadeIn = keyframes`
   }
 `;
 
-/** AuthScreen, top-aligned instead of centered: a change in the column never moves what's above it. */
-const Page = styled(AuthScreen)`
-  place-items: start center;
-  padding-top: var(--space-8);
-
-  @media (max-width: 40rem) {
-    padding-top: var(--space-6);
-  }
-`;
-
 /** Each new screen fades in (reduced motion is handled globally). Key it by screen. */
 const Column = styled(AuthColumn)`
   animation: ${fadeIn} var(--duration) var(--ease);
@@ -316,7 +306,6 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
   const [ticked, setTicked] = useState<EmailType[]>(st === "saved" ? ["monthly"] : [...emailTypes]);
   const [saved, setSaved] = useState(st === "saved");
   const [resubscribed, setResubscribed] = useState(st === "resubscribed");
-  const [membershipAcknowledged, setMembershipAcknowledged] = useState(false);
 
   // Membership page.
   const [membershipReason, setMembershipReason] = useState<MembershipReason | null>(
@@ -370,7 +359,6 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
     setSubscribed(false);
     setResubscribed(false);
     setSaved(false);
-    setMembershipAcknowledged(false);
   }
   function resubscribe() {
     setSubscribed(true);
@@ -498,7 +486,7 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
       // resubscribing slides it open again.
       heading = subscribed ? copy.emails.heading : copy.unsubscribed;
       content = (
-        <Collapsible open={subscribed}>
+        <Collapsible open={subscribed} style={{ width: "100%" }}>
           <FollowUp>
             <Options
               id="emails-question"
@@ -558,24 +546,14 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
           {/* FigJam: after unsubscribing, members hear their membership is still active. */}
           {activeMember && (
             <>
-              <Lead id="membership-line" tabIndex={-1}>
+              <Lead>
                 {copy.emails.membership(tier.name, formatDate(nextPayment), formatMoney(tier.monthlyPrice))}
               </Lead>
-              {!membershipAcknowledged && (
-                <>
-                  <Button
-                    type="button"
-                    $size="lg"
-                    onClick={() => {
-                      setMembershipAcknowledged(true);
-                      document.getElementById("membership-line")?.focus();
-                    }}
-                  >
-                    {copy.emails.soundsGood}
-                  </Button>
-                  {cancelButton}
-                </>
-              )}
+              <Lead>{copy.emails.cancelAnytime}</Lead>
+              <Button type="button" $size="lg" onClick={() => go("A5")}>
+                {copy.emails.soundsGood}
+              </Button>
+              {cancelButton}
               <Separator />
             </>
           )}
@@ -585,6 +563,12 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
       );
       break;
     }
+
+    // "Sounds good": nothing left to do.
+    case "A5":
+      heading = copy.unsubscribed;
+      line = copy.emails.closeTab;
+      break;
 
     case "B1": {
       heading = copy.membership.heading;
@@ -664,7 +648,7 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
 
     case "B5":
       heading = copy.cancelled.heading;
-      line = copy.cancelled.body(demoMember.email);
+      line = `${copy.cancelled.thanks} ${copy.cancelled.confirmationSent(demoMember.email)}`;
       // Only ask about emails if they were still subscribed when they cancelled.
       if (askedAboutEmails) {
         content = (
@@ -704,13 +688,13 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
   }
 
   return (
-    <Page>
+    <AuthScreen>
       <Column $wide key={screen}>
         <SdcLogo />
         <AuthHeading title={heading} description={line} />
         {content}
         {actions && <AuthActions>{actions}</AuthActions>}
       </Column>
-    </Page>
+    </AuthScreen>
   );
 }

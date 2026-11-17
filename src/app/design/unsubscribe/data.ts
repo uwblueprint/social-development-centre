@@ -9,8 +9,8 @@
  * A4: the email page (footer link 1). B1: the membership page (footer link 2, "Pause or cancel
  * membership"). B4: confirm cancelling. B5: cancelled. Labels match the copy doc's screens.
  */
-export type Screen = "A4" | "B1" | "B4" | "B5";
-export const SCREENS: Screen[] = ["A4", "B1", "B4", "B5"];
+export type Screen = "A4" | "A5" | "B1" | "B4" | "B5";
+export const SCREENS: Screen[] = ["A4", "A5", "B1", "B4", "B5"];
 
 /** The email page's "What's going on?" answers. Each opens its own follow-up (FigJam). */
 export const emailReasons = ["too-many", "not-relevant", "no-more"] as const;

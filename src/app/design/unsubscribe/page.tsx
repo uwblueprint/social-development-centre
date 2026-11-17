@@ -13,7 +13,7 @@ const oneOf = <T extends string>(list: readonly T[], v: string | undefined): T |
  * The email page and the pause/cancel membership pages, as reached from an SDC email's two footer
  * links. Member facing, so no sidebar. Every state opens directly for review:
  *
- * - `?screen=A4|B1|B4|B5` (default A4). A4, the email page, is footer link 1; B1 ("Pause or cancel
+ * - `?screen=A4|A5|B1|B4|B5` (default A4). A4, the email page, is footer link 1; A5 is its closing screen ("Sounds good"); B1 ("Pause or cancel
  *   membership") is footer link 2; B4 confirms cancelling; B5 is cancelled.
  * - `?reason=…` opens with that "What's going on?" answer chosen. A4: too-many, not-relevant,
  *   no-more. B1: emails, budget, break, done.
