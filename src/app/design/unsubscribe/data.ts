@@ -1,26 +1,24 @@
 /*
- * Demo data for the email-preferences and membership screens, all in memory. The types are the
- * contract the real feature fills from the member's record (via the per-recipient token in the email
- * link); every value below is made up.
+ * Demo data for the email and membership pages, all in memory. The types are the contract the real
+ * feature fills from the member's record (via the per-recipient token in the email link); every value
+ * below is made up. The flow follows the "Unsub flow" FigJam board:
+ * https://www.figma.com/board/jvbGjJ6Wb3CZIOjTB6x81Z/Unsub-flow
  */
 
 /**
- * A4: the email page, footer link 1 (laid out after Luma's unsubscribe page). "Stay in the loop with
- * fewer emails" opens the email types in place (the doc's A1–A3); the reasons and the unsubscribe
- * button sit under it. B1–B5: membership (footer link 2).
+ * A4: the email page (footer link 1). B1: the membership page (footer link 2, "Pause or cancel
+ * membership"). B4: confirm cancelling. B5: cancelled. Labels match the copy doc's screens.
  */
-export type Screen = "A4" | "B1" | "B2" | "B3" | "B4" | "B5";
-export const SCREENS: Screen[] = ["A4", "B1", "B2", "B3", "B4", "B5"];
+export type Screen = "A4" | "B1" | "B4" | "B5";
+export const SCREENS: Screen[] = ["A4", "B1", "B4", "B5"];
 
-/** Screens with a confirmed state that can be opened directly with ?state=done (A4: unsubscribed). */
-export const SCREENS_WITH_DONE: Screen[] = ["A4", "B2", "B3"];
+/** The email page's "What's going on?" answers. Each opens its own follow-up (FigJam). */
+export const emailReasons = ["too-many", "not-relevant", "no-more"] as const;
+export type EmailReason = (typeof emailReasons)[number];
 
-/**
- * A4's email result, if any. Open one directly with ?state=…: "saved" (fewer emails open) turns Save
- * into "Your preference is saved" until a tick changes; "resubscribed" shows a line under Unsubscribe.
- */
-export type EmailResult = "saved" | "resubscribed";
-export const EMAIL_RESULTS: EmailResult[] = ["saved", "resubscribed"];
+/** The membership page's "What's going on?" answers. Each opens its own follow-up (FigJam). */
+export const membershipReasons = ["emails", "budget", "break", "done"] as const;
+export type MembershipReason = (typeof membershipReasons)[number];
 
 /**
  * When a cancelled membership's voting rights and benefits end. SDC hasn't decided (doc: Open
@@ -28,7 +26,6 @@ export const EMAIL_RESULTS: EmailResult[] = ["saved", "resubscribed"];
  */
 export type CutOffPolicy = "ends-today" | "end-of-period";
 
-export type EmailStatus = "subscribed" | "unsubscribed";
 export type MembershipStatus = "active" | "paused" | "cancelled" | "none";
 
 export interface Tier {
@@ -36,15 +33,12 @@ export interface Tier {
   name: string;
   /** Dollars a month. */
   monthlyPrice: number;
-  /** What changes when someone moves down to this tier: B2's "[What changes]". */
-  whatChanges: string;
 }
 
-/** Cheapest first. B2 offers the next tier down, and hides that offer on the lowest tier. */
 export const tiers: Tier[] = [
-  { id: "friend", name: "Friend", monthlyPrice: 5, whatChanges: "You keep your vote and member event invitations." },
-  { id: "supporter", name: "Supporter", monthlyPrice: 15, whatChanges: "You keep your vote, event invitations and the members' newsletter." },
-  { id: "sustainer", name: "Sustainer", monthlyPrice: 30, whatChanges: "" },
+  { id: "friend", name: "Friend", monthlyPrice: 5 },
+  { id: "supporter", name: "Supporter", monthlyPrice: 15 },
+  { id: "sustainer", name: "Sustainer", monthlyPrice: 30 },
 ];
 
 export interface DemoMember {
@@ -65,23 +59,20 @@ export const demoMember: DemoMember = {
 /** Fixed so screenshots and reviews show the same dates every day. */
 export const DEMO_TODAY = "2026-11-11";
 
-/** Days before a pause ends that the restart reminder goes out. The board says one week; see the doc's open questions. */
+/** Days before a pause ends that the restart reminder goes out (FigJam: "an email a week before"). */
 export const RESTART_REMINDER_DAYS = 7;
 
 /**
- * The email types A4's "fewer emails" lets people tick, independent of each other so any mix makes sense. Placeholders
- * until SDC lists the email types it actually sends (doc: Open questions). Membership and voting
- * notices aren't here: voting members can't turn the legally required ones off.
+ * The email types "too many emails" lets people tick, independent of each other so any mix makes
+ * sense. Placeholders until SDC lists the email types it actually sends (doc: Open questions).
+ * Membership and voting notices aren't here: voting members can't turn the legally required ones off.
  */
 export const emailTypes = ["monthly", "events", "campaigns"] as const;
 export type EmailType = (typeof emailTypes)[number];
 
-/** A4's survey: multi-select, so the reasons must all be able to be true at once. */
-export type UnsubscribeReason = "too-many" | "not-relevant" | "didnt-sign-up";
-export const unsubscribeReasons: UnsubscribeReason[] = ["too-many", "not-relevant", "didnt-sign-up"];
-
-export const pauseMonths = [1, 2, 3] as const;
-export type PauseMonths = (typeof pauseMonths)[number];
+/** How long a pause lasts: a whole number and a unit (FigJam: "[number] [weeks, months, years]"). */
+export const pauseUnits = ["weeks", "months", "years"] as const;
+export type PauseUnit = (typeof pauseUnits)[number];
 
 /* ---- Dates and money, written the way the copy reads them ---- */
 
@@ -103,6 +94,12 @@ export function addDays(iso: string, days: number): string {
   return toIso(date);
 }
 
+/** The date a pause of `count` `unit`s starting `from` ends and the membership restarts. */
+export function addPause(from: string, count: number, unit: PauseUnit): string {
+  if (unit === "weeks") return addDays(from, count * 7);
+  return addMonths(from, unit === "years" ? count * 12 : count);
+}
+
 const dateFormat = new Intl.DateTimeFormat("en-CA", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" });
 export const formatDate = (iso: string) => dateFormat.format(parse(iso));
 
@@ -110,8 +107,3 @@ const moneyFormat = new Intl.NumberFormat("en-CA", { style: "currency", currency
 export const formatMoney = (dollars: number) => moneyFormat.format(dollars);
 
 export const tierById = (id: string) => tiers.find((t) => t.id === id) ?? tiers[0];
-/** The next tier down, or undefined on the lowest tier. */
-export function lowerTier(id: string): Tier | undefined {
-  const i = tiers.findIndex((t) => t.id === id);
-  return i > 0 ? tiers[i - 1] : undefined;
-}

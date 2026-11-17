@@ -1,104 +1,95 @@
-import type { EmailType, UnsubscribeReason } from "./data";
+import type { EmailReason, EmailType, MembershipReason, PauseUnit } from "./data";
 
 /*
- * Every user-facing string for the email page (A4, the doc's A1–A4) and membership (B1–B5) screens, word for
- * word from "SDC Unsubscribe & Cancel Membership — Step Copy"
- * (https://claude.ai/artifact/9oi6VCBrW5R1xkz3uA9DzV). Bracketed values in the doc are function
- * arguments here, filled from the member's record.
+ * Every user-facing string for the email page (A4) and the membership pages (B1, B4, B5). Copy is from
+ * "SDC Unsubscribe & Cancel Membership — Step Copy" (https://claude.ai/artifact/9oi6VCBrW5R1xkz3uA9DzV)
+ * where it has the string; bracketed values in the doc are function arguments here.
  *
- * `notInDoc` at the bottom holds the few strings the doc doesn't have. They are placeholders: confirm
- * them with SDC before build.
+ * Strings marked "Not in doc" come from the FigJam flow, Jesse's unsubscribe page or design, and are
+ * placeholders: confirm them with SDC before build.
  */
 
 export const unsubscribeCopy = {
-  /*
-   * The email types, shown in A4 under "Stay in the loop with fewer emails" (design): the doc's A2
-   * question with the types as checkboxes. The checkbox labels and labels marked "design" aren't the
-   * doc's: confirm with SDC.
-   */
-  a1: {
-    question: "Choose what you still want to hear about.",
+  pageTitle: "Email preferences and membership", // Not in doc.
+  back: "Back", // Not in doc.
+
+  /* Shared: the button a person pressed changes its text to the result and stops doing anything. */
+  undoUnsubscribe: "Unsubscribed by mistake?",
+  resubscribe: "Resubscribe",
+  resubscribed: "You're subscribed again. You'll get emails from SDC again.", // Not in doc (Jesse's).
+  unsubscribe: "Unsubscribe", // Not in doc (design).
+  unsubscribed: "You're unsubscribed", // The doc's A4 heading, as a button.
+  cancelMembership: "Cancel membership",
+
+  emails: {
+    heading: "Unsubscribe from SDC emails", // Not in doc (Jesse's).
+    question: "What's going on?",
+    reasons: {
+      "too-many": "I get too many emails",
+      "not-relevant": "The emails aren't relevant to me",
+      "no-more": "I don't want to hear from SDC anymore",
+    } satisfies Record<EmailReason, string>,
+
+    // Too many emails → fewer emails → preference saved.
+    typesQuestion: "Choose what you still want to hear about.",
     types: {
       monthly: "A monthly summary of SDC's work",
-      events: "Event and workshop invitations",
-      campaigns: "Campaigns and calls to action",
+      events: "Event and workshop invitations", // Not in doc (adapted).
+      campaigns: "Campaigns and calls to action", // Not in doc.
     } satisfies Record<EmailType, string>,
     save: "Save my preference",
-    /** Replaces the Save button's text after saving, until a tick changes. */
-    saved: "Your preference is saved",
-    /** Design. The unsubscribe button on A4. */
-    unsubscribeAll: "Unsubscribe",
-  },
+    saved: "Your preference is saved", // The doc's A2 confirmation, as a button.
 
-  /*
-   * The unsubscribe page, laid out after Luma's (design): "fewer emails" first, then the reasons in a
-   * card and the unsubscribe button, whose text becomes the result. Opening the page never unsubscribes.
-   */
-  a4: {
-    /** A4's visible heading (the green one). Jesse's heading, without the question mark. */
-    heading: "Unsubscribe from SDC emails",
-    /** Design. */
-    cardLabel: "Unsubscribe from",
-    cardLabelDone: "Unsubscribed from",
-    org: "Social Development Centre",
-    reasonQuestion: "Mind telling us why?",
-    reasons: {
-      "too-many": "Too many emails",
-      "not-relevant": "Not relevant to me",
-      "didnt-sign-up": "I didn't sign up for these",
-    } satisfies Record<UnsubscribeReason, string>,
-    /** Jesse's description, under the unsubscribe button. */
-    confirmNote: (isMember: boolean) =>
+    // Not relevant → the intake form, to update interests.
+    interestsBody: "We'll only email you about the topics you pick. You can change this anytime from the link in any SDC email.",
+    interestsLink: "Tell us what you care about",
+
+    /** Jesse's note under the unsubscribe button. */
+    unsubscribeNote: (isMember: boolean) =>
       isMember ? "You'll stop getting emails from SDC. You'll still be a member." : "You'll stop getting emails from SDC.",
-    /** Replaces the unsubscribe button's text once pressed, like Save's "Your preference is saved". */
-    done: "You're unsubscribed",
-    undoQuestion: "Unsubscribed by mistake?",
-    resubscribe: "Resubscribe",
-    /** Design: the way to stay, like Luma's "All notification preferences". */
-    fewerEmails: "Stay in the loop with fewer emails",
+
+    // After unsubscribing, for members (FigJam: "Membership is still active and will be automatically renewed").
     membership: (tier: string, date: string, amount: string) =>
       `Your ${tier} membership is still active. It renews on ${date} for ${amount}.`,
-    cancelMembership: "Cancel membership",
+    soundsGood: "Sounds good", // Not in doc (FigJam).
   },
 
-  b1: {
+  membership: {
     heading: "Pause or cancel your membership",
     summary: (tier: string, amount: string, date: string) => `${tier} membership · ${amount} a month · next payment ${date}`,
-    question: "What's going on? (optional)",
-    tooManyEmails: "I get too many emails",
-    costsTooMuch: "It costs too much right now",
-    needBreak: "I need a break",
-    notInvolved: "I don't want to be involved with SDC anymore",
-    cancelMembership: "Cancel membership",
-  },
+    question: "What's going on?",
+    reasons: {
+      emails: "I get too many emails",
+      budget: "It costs too much right now",
+      break: "I need a break",
+      done: "I don't want to be involved with SDC anymore",
+    } satisfies Record<MembershipReason, string>,
 
-  b2: {
-    heading: "Ways to pay less",
-    body: "Here's what you can do instead of cancelling.",
-    switchTier: (lowerTier: string, price: string, whatChanges: string) =>
-      `Switch to ${lowerTier} for ${price} a month. ${whatChanges}`,
-    pause: "Pause for up to 3 months. You won't be charged while paused.",
-    cancelMembership: "Cancel membership",
-    switchedHeading: (lowerTier: string) => `You're on ${lowerTier} now`,
-    switchedBody: (nextBillingDate: string, price: string) => `Starting ${nextBillingDate}, you'll pay ${price} a month.`,
-  },
+    // Too many emails → unsubscribe from emails instead (FigJam).
+    emailsBody: "You can stop getting emails and keep your membership.", // Not in doc.
+    emailsAction: "Unsubscribe from emails instead", // Not in doc.
 
-  b3: {
-    heading: "Pause your membership",
-    question: "How long?",
-    months: (n: number) => (n === 1 ? "1 month" : `${n} months`),
+    // Budget → pause, or cancel completely (the cancel button below). Need a break → pause.
+    budgetBody: "You can pause instead.", // Not in doc. "Discontinue completely" is the cancel button below.
+    pauseLength: "How long?",
+    pauseUnit: "Weeks, months or years", // Not in doc.
+    pauseUnits: { weeks: "Weeks", months: "Months", years: "Years" } satisfies Record<PauseUnit, string>,
+    pauseLengthError: "Enter a whole number, like 2.", // Not in doc.
     whatHappens:
       "You won't be charged while paused. Your voting rights and member benefits are on hold until your membership restarts.",
     pause: "Pause membership",
-    cancelInstead: "Cancel instead",
-    pausedHeading: "Your membership is paused",
+    paused: "Your membership is paused", // The doc's B3 confirmation, as a button.
     pausedBody: (restartDate: string, amount: string, reminderDate: string) =>
       `It restarts on ${restartDate}, and you'll be charged ${amount} that day. We'll email you on ${reminderDate} before that happens.`,
     restartQuestion: "Want to come back sooner?",
     restartNow: "Restart my membership now",
+    restarted: "Your membership is active again.", // Not in doc.
+
+    // No longer want to be involved → thank them (FigJam), then the cancel button.
+    thanks: "Thank you for being part of SDC. You can cancel below, and you can rejoin anytime.", // Not in doc.
   },
 
-  b4: {
+  cancel: {
     heading: "Cancel your membership?",
     noMoreCharges: "You won't be charged again.",
     endsToday: "Your voting rights and member benefits end today.",
@@ -106,28 +97,15 @@ export const unsubscribeCopy = {
       `Your voting rights and member benefits continue until ${periodEndDate}.`,
     notRefundable: (lastBillingDate: string) => `Your payment on ${lastBillingDate} isn't refundable.`,
     rejoin: "You can rejoin anytime.",
-    cancelMembership: "Cancel membership",
     keepMembership: "Keep my membership",
     noteLabel: "Anything you'd like us to know? (optional)",
   },
 
-  b5: {
+  cancelled: {
     heading: "Your membership is cancelled",
     body: (email: string) => `You won't be charged again. We've sent a confirmation to ${email}.`,
     emailQuestion: "Want to keep hearing about SDC's work?",
     keepEmails: "Keep getting emails",
-    unsubscribeAll: "Unsubscribe from all emails",
-  },
-
-  /** Placeholders: the doc doesn't give these. Confirm with SDC before build. */
-  notInDoc: {
-    pageTitle: "Email preferences and membership",
-    back: "Back",
-    reasonThanks: "Thanks for telling us.",
-    // From Jesse's unsubscribe page (origin/jesse/email-links).
-    resubscribedHeading: "You're subscribed again",
-    resubscribedBody: "You'll get emails from SDC again.",
-    emailsKept: "You'll keep getting emails from SDC.",
-    restarted: "Your membership is active again.",
+    emailsKept: "You'll keep getting emails", // Not in doc.
   },
 };

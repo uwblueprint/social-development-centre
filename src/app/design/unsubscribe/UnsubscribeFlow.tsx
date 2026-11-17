@@ -1,170 +1,86 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { styled } from "next-yak";
-import { ArrowLeft, Check, ChevronDown, ChevronRight, CircleCheck, CirclePause } from "lucide-react";
+import { keyframes, styled } from "next-yak";
+import { Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { Card, CardContent, CardDescription } from "@/components/ui/Card";
 import { Checkbox } from "@/components/ui/Checkbox";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/Collapsible";
+import { Collapsible, CollapsibleContent } from "@/components/ui/Collapsible";
 import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
+import { Input } from "@/components/ui/Input";
 import { RadioGroup, RadioGroupOption } from "@/components/ui/RadioGroup";
+import { Select } from "@/components/ui/Select";
 import { Separator } from "@/components/ui/Separator";
 import { Textarea } from "@/components/ui/Textarea";
-import {
-  AuthActions,
-  AuthColumn,
-  AuthHeading,
-  AuthScreen,
-  Footnote,
-  IconWell,
-  SdcLogo,
-} from "@/features/auth/AuthScreen";
+import { AuthActions, AuthColumn, AuthHeading, AuthScreen, LinkButton, SdcLogo } from "@/features/auth/AuthScreen";
 import { unsubscribeCopy as copy } from "./copy";
 import {
   DEMO_TODAY,
   RESTART_REMINDER_DAYS,
   addDays,
   addMonths,
+  addPause,
   demoMember,
+  emailReasons,
   emailTypes,
   formatDate,
   formatMoney,
-  lowerTier,
-  pauseMonths,
+  membershipReasons,
+  pauseUnits,
   tierById,
   type CutOffPolicy,
-  type EmailResult,
+  type EmailReason,
   type EmailType,
+  type MembershipReason,
   type MembershipStatus,
-  type UnsubscribeReason,
-  type PauseMonths,
+  type PauseUnit,
   type Screen,
-  unsubscribeReasons,
 } from "./data";
 
 /*
- * The email page (A4) and pause/cancel membership (B1–B5), reached from the two footer links in every
- * SDC email. Built on Jesse's unsubscribe page (origin/jesse/email-links): the sign-in screen's calm
- * centered column, logo and full-width buttons, from src/features/auth/AuthScreen. Client state only:
- * saving, pausing and cancelling just show their confirmation.
+ * The email page (A4) and the pause/cancel membership pages (B1, B4, B5), reached from the two footer
+ * links in every SDC email. The flow follows the "Unsub flow" FigJam board; the look is Jesse's
+ * unsubscribe page (origin/jesse/email-links), built from src/features/auth/AuthScreen. Client state
+ * only: saving, pausing and cancelling just show their result.
  *
- * A4, laid out after Luma's unsubscribe page (design):
- * - The green "Unsubscribe from SDC emails" heading (the only visible heading; other screens keep an h1
- *   for screen readers only, and result screens start their text with it).
- * - "Stay in the loop with fewer emails" first. It slides open the email types (the doc's A1–A3) with
- *   Save, and slides the reasons shut. Saving turns Save into "Your preference is saved" until a tick
- *   changes; saving with nothing ticked unsubscribes.
- * - The reasons (multi-select) in a card, then "Unsubscribe". Opening the page never unsubscribes; the
- *   button does, in place, and its text becomes "You're unsubscribed" like Save's. Then the undo and,
- *   for members, "Cancel membership".
+ * Three patterns hold on every screen (see README.md):
+ * 1. One template: logo, green heading (with at most one short line under it), content, actions.
+ *    The column sits at the top of the page, so nothing above a change ever moves.
+ * 2. "What's going on?" is one bordered list of answers. Choosing one slides open its follow-up
+ *    under it (and closes the last one's); there are no extra screens for follow-ups.
+ * 3. The button a person presses changes its text to the result ("Your preference is saved",
+ *    "You're unsubscribed", "Your membership is paused") and stops doing anything. An undo, when there
+ *    is one, is a muted line with a text button under it.
  *
- * Two rules from the doc hold: Unsubscribe (A4) and "Cancel membership" (B1–B4) are always visible as
- * real buttons, and reason questions are optional.
+ * Two rules from the doc hold: Unsubscribe and "Cancel membership" are always visible, and every
+ * question is optional.
  */
 
-/* ---- New here (see README.md): AuthScreen has no equivalent ---- */
+/* ---- Template ---- */
 
-/** The screen's h1, for screen readers only (design removed visible headings). Focus moves here. */
-const HiddenHeading = styled.h1`
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-`;
-
-/** The screen's text under the logo or icon: AuthHeading's description, without the title. */
-const Lead = styled.p`
-  margin: 0;
-  color: var(--color-text-muted);
-  text-align: center;
-  white-space: pre-line;
-`;
-
-/** A question inside the column: A4's email types and reasons, B1's reasons, B3's length, B5's email question. */
-const Question = styled.h2`
-  margin: 0;
-  font-size: var(--text-md);
-  font-weight: var(--weight-medium);
-  line-height: var(--leading-heading);
-`;
-
-/** A choice that moves to another screen (B1, B2): the whole row is the button, with a chevron. */
-const NavCard = styled(Button)`
-  justify-content: space-between;
-  gap: var(--space-3);
-  width: 100%;
-  height: auto;
-  padding: var(--space-3);
-  font-size: var(--text-md);
-  line-height: var(--leading-ui);
-  text-align: left;
-  white-space: normal;
-`;
-
-/** The fewer-emails trigger's chevron: points down, turns up while open. */
-const Chevron = styled(Icon)`
-  flex-shrink: 0;
-  transition: rotate var(--duration) var(--ease);
-
-  [data-state="open"] > & {
-    rotate: 180deg;
+const fadeIn = keyframes`
+  from {
+    opacity: 0;
   }
 `;
 
-/** Room inside a collapsible so focus rings aren't clipped by its overflow: hidden. */
-const Panel = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-1) var(--space-1);
+/** AuthScreen, top-aligned instead of centered: a change in the column never moves what's above it. */
+const Page = styled(AuthScreen)`
+  place-items: start center;
+  padding-top: var(--space-8);
+
+  @media (max-width: 40rem) {
+    padding-top: var(--space-6);
+  }
 `;
 
-/**
- * A short result line that replaces the button just pressed. Focus moves to it, so keyboard and
- * screen-reader users aren't dropped at the top of the page when the button disappears.
- */
-function StatusLine({ children }: { children: ReactNode }) {
-  const ref = useRef<HTMLParagraphElement>(null);
-  useEffect(() => ref.current?.focus(), []);
-  return (
-    <Footnote ref={ref} role="status" tabIndex={-1}>
-      {children}
-    </Footnote>
-  );
-}
-
-/** A checkbox's label at body size, like the radio options: the kit's Checkbox label is form-label size. */
-const ChoiceText = styled.span`
-  font-size: var(--text-md);
-  line-height: var(--leading-ui);
-  color: var(--color-text);
+/** Each new screen fades in (reduced motion is handled globally). Key it by screen. */
+const Column = styled(AuthColumn)`
+  animation: ${fadeIn} var(--duration) var(--ease);
 `;
 
-/** The organization's name in A4's card, under "Unsubscribe from". */
-const CardName = styled.p`
-  margin: 0;
-  font-size: var(--text-md);
-  font-weight: var(--weight-medium);
-  line-height: var(--leading-ui);
-`;
-
-/** Small print, left-aligned with the content above it. */
-const Note = styled.p`
-  margin: 0;
-  font-size: var(--text-sm);
-  line-height: var(--leading-ui);
-  color: var(--color-text-muted);
-`;
-
-/* ---- Layout only ---- */
-
-/** Left-aligned content (questions, choices) at the column's full width. */
+/** Content under the heading: left-aligned, full width. */
 const Stack = styled.div`
   display: flex;
   flex-direction: column;
@@ -172,12 +88,67 @@ const Stack = styled.div`
   width: 100%;
 `;
 
-/** Text with a button after it on one line: "Unsubscribed by mistake? Resubscribe". */
-const Inline = styled.div`
+/** A question above a list of answers. */
+const Question = styled.h2`
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-heading);
+`;
+
+/** Small print, left-aligned. Muted, 4.5:1. */
+const Note = styled.p`
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-ui);
+  color: var(--color-text-muted);
+
+  &:focus {
+    outline: none;
+  }
+`;
+
+/** Body-size text inside a follow-up. */
+const Body = styled.p`
+  margin: 0;
+  color: var(--color-text-muted);
+`;
+
+/* ---- Pattern 2: answers with follow-ups ---- */
+
+/** One bordered group of answers, divided by 1px lines (no shadow: shadows are for overlays). */
+const OptionList = styled.div`
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
+  flex-direction: column;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+
+  > * + * {
+    border-top: 1px solid var(--color-border);
+  }
+`;
+
+/** A follow-up slides open at the slower height duration, the token for "things with real distance". */
+const FollowUp = styled(CollapsibleContent)`
+  &&[data-state] {
+    animation-duration: var(--duration-slow);
+  }
+`;
+
+/** A follow-up's contents, inset under its answer. Padding also keeps focus rings inside the clip. */
+const FollowUpBody = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-1) var(--space-3) var(--space-3);
+  animation: ${fadeIn} var(--duration-slow) var(--ease);
+`;
+
+/** A checkbox or answer label at body size; the kit's labels are form-label size. */
+const ChoiceText = styled.span`
+  font-size: var(--text-md);
+  line-height: var(--leading-ui);
+  color: var(--color-text);
 `;
 
 const Choices = styled.div`
@@ -186,60 +157,168 @@ const Choices = styled.div`
   gap: var(--space-3);
 `;
 
-const paragraphs = (...lines: (string | false)[]) => lines.filter(Boolean).join("\n\n");
+interface Option<T extends string> {
+  value: T;
+  label: string;
+  followUp?: ReactNode;
+}
+
+function Options<T extends string>({
+  id,
+  question,
+  options,
+  value,
+  onChange,
+}: {
+  id: string;
+  question: string;
+  options: Option<T>[];
+  value: T | null;
+  onChange: (value: T) => void;
+}) {
+  return (
+    <Stack>
+      <Question id={id}>{question}</Question>
+      <RadioGroup aria-labelledby={id} value={value ?? ""} onValueChange={(v) => onChange(v as T)}>
+        <OptionList>
+          {options.map((o) => (
+            <div key={o.value}>
+              <RadioGroupOption value={o.value} label={<ChoiceText>{o.label}</ChoiceText>} />
+              {o.followUp && (
+                <Collapsible open={value === o.value}>
+                  <FollowUp>
+                    <FollowUpBody>{o.followUp}</FollowUpBody>
+                  </FollowUp>
+                </Collapsible>
+              )}
+            </div>
+          ))}
+        </OptionList>
+      </RadioGroup>
+    </Stack>
+  );
+}
+
+/* ---- Pattern 3: results ---- */
+
+/**
+ * A pressed button's result: same place, its text says what happened, and it does nothing more.
+ * aria-disabled on the secondary style, not `disabled`: the kit fades disabled buttons below 4.5:1,
+ * and this text needs reading. No disabled reason (design: the label explains it). It's a plain kit
+ * Button (a function, not a component) so React updates the pressed button in place and focus stays
+ * on it; no transition, so it doesn't fade through the old button's colours.
+ */
+const done = (label: string) => (
+  <Button type="button" $variant="secondary" $size="lg" aria-disabled="true" style={{ transition: "none" }}>
+    <Icon icon={Check} size={16} />
+    {label}
+  </Button>
+);
+
+/** "Unsubscribed by mistake? Resubscribe": a muted line with a text button. */
+const UndoLine = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+`;
+
+/**
+ * A result line that replaces a button that's gone (Resubscribe, Restart). Fades in and takes focus,
+ * so keyboard and screen-reader users aren't dropped at the top of the page.
+ */
+function StatusLine({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLParagraphElement>(null);
+  useEffect(() => ref.current?.focus(), []);
+  return (
+    <FadingNote ref={ref} role="status" tabIndex={-1}>
+      {children}
+    </FadingNote>
+  );
+}
+
+const FadingNote = styled(Note)`
+  animation: ${fadeIn} var(--duration) var(--ease);
+`;
+
+/** The cancellation facts on B4, as a short list rather than separate paragraphs. */
+const Facts = styled.ul`
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding-left: var(--space-5);
+  color: var(--color-text-muted);
+`;
+
+/** The pause length: a number and a unit side by side, wrapping on a narrow phone. */
+const PauseFields = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+
+  > * {
+    flex: 1 1 8rem;
+  }
+`;
+
+/* ---- The flow ---- */
 
 export interface FlowStart {
   screen: Screen;
-  /** Open B2's or B3's confirmed state. */
-  done: boolean;
-  /** Open A4 with this email result. */
-  emailResult: EmailResult | null;
-  /** Open A4 with "fewer emails" expanded. */
-  fewerOpen: boolean;
-  /** A paying member. False shows the subscriber-only version of A4 (no membership lines). */
+  emailReason: EmailReason | null;
+  membershipReason: MembershipReason | null;
+  /** A4: saved | unsubscribed | resubscribed. B1: paused | unsubscribed. */
+  state: string | null;
+  /** A paying member. False shows A4 for someone who only subscribes. */
   isMember: boolean;
   policy: CutOffPolicy;
   tierId: string;
 }
 
+const isWholeNumber = (s: string) => /^[1-9]\d*$/.test(s.trim());
+
 export function UnsubscribeFlow({ start }: { start: FlowStart }) {
-  const startTier = tierById(start.tierId);
+  const tier = tierById(start.tierId);
+  const nextPayment = demoMember.nextPaymentDate;
+  const st = start.state;
 
   const [screen, setScreen] = useState<Screen>(start.screen);
-  const [done, setDone] = useState(start.done);
   const [history, setHistory] = useState<Screen[]>([]);
 
-  // The member's record as these screens change it.
-  const [emailsWanted, setEmailsWanted] = useState<EmailType[]>(() => {
-    if (start.screen === "A4" && start.done) return [];
-    if (start.emailResult === "saved") return ["monthly"];
-    return [...emailTypes];
-  });
-  const [emailResult, setEmailResult] = useState<EmailResult | null>(start.emailResult);
+  // The member's record as these pages change it.
+  const [subscribed, setSubscribed] = useState(st !== "unsubscribed");
   const [membership, setMembership] = useState<MembershipStatus>(() => {
     if (!start.isMember) return "none";
     if (start.screen === "B5") return "cancelled";
-    if (start.screen === "B3" && start.done) return "paused";
+    if (start.screen === "B1" && st === "paused") return "paused";
     return "active";
   });
-  const [tierId, setTierId] = useState(() =>
-    start.screen === "B2" && start.done ? (lowerTier(startTier.id) ?? startTier).id : startTier.id,
-  );
-  const subscribed = emailsWanted.length > 0;
 
-  // Answers.
-  const [ticked, setTicked] = useState<EmailType[]>(emailsWanted);
-  const [fewerOpen, setFewerOpen] = useState(start.fewerOpen);
-  const [reasons, setReasons] = useState<UnsubscribeReason[]>([]);
-  const [pause, setPause] = useState<PauseMonths>(1);
+  // Email page.
+  const [emailReason, setEmailReason] = useState<EmailReason | null>(
+    start.emailReason ?? (st === "saved" ? "too-many" : null),
+  );
+  const [ticked, setTicked] = useState<EmailType[]>(st === "saved" ? ["monthly"] : [...emailTypes]);
+  const [saved, setSaved] = useState(st === "saved");
+  const [resubscribed, setResubscribed] = useState(st === "resubscribed");
+  const [membershipAcknowledged, setMembershipAcknowledged] = useState(false);
+
+  // Membership page.
+  const [membershipReason, setMembershipReason] = useState<MembershipReason | null>(
+    start.membershipReason ?? (st === "paused" ? "break" : st === "unsubscribed" && start.screen === "B1" ? "emails" : null),
+  );
+  const [pauseCount, setPauseCount] = useState("1");
+  const [pauseUnit, setPauseUnit] = useState<PauseUnit>("months");
+  const [pauseError, setPauseError] = useState<string>();
+  const [restarted, setRestarted] = useState(false);
   const [note, setNote] = useState("");
 
-  // Small follow-ups that stay on the same screen.
-  const [emailsKept, setEmailsKept] = useState(false);
-  const [emailsDropped, setEmailsDropped] = useState(false);
-  const [restarted, setRestarted] = useState(false);
+  // Cancelled page: the answer to "Want to keep hearing about SDC's work?".
+  const [emailsAnswer, setEmailsAnswer] = useState<"kept" | "unsubscribed" | null>(null);
+  const [askedAboutEmails, setAskedAboutEmails] = useState(subscribed);
 
-  // A new screen replaces the old one, so move focus to its (hidden) heading for screen readers.
+  // A new screen replaces the old one, so move focus to its heading for screen readers.
   const firstRender = useRef(true);
   useEffect(() => {
     if (firstRender.current) {
@@ -247,436 +326,361 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
       return;
     }
     document.querySelector<HTMLElement>("main h1")?.focus();
-  }, [screen, done]);
+  }, [screen]);
 
-  const tier = tierById(tierId);
-  const lower = lowerTier(tierId);
-  const nextPayment = demoMember.nextPaymentDate;
+  const activeMember = membership === "active";
+  const restartDate = isWholeNumber(pauseCount) ? addPause(DEMO_TODAY, Number(pauseCount), pauseUnit) : DEMO_TODAY;
 
   function go(next: Screen) {
     setHistory((h) => [...h, screen]);
     setScreen(next);
-    setDone(false);
   }
-
   function back() {
     const previous = history.at(-1);
     if (!previous) return;
     setHistory((h) => h.slice(0, -1));
     setScreen(previous);
-    setDone(false);
   }
 
-  /* Fewer emails' Save. Saving with nothing ticked is unsubscribing. */
-  function save(types: EmailType[]) {
-    if (types.length === 0) return unsubscribe();
-    setEmailsWanted(types);
-    setEmailResult("saved");
-  }
-  /** A4's unsubscribe button: unsubscribes in place. The reasons go with it. */
   function unsubscribe() {
-    setEmailsWanted([]);
-    setTicked([]);
-    setEmailResult(null);
+    setSubscribed(false);
+    setResubscribed(false);
+    setSaved(false);
+    setMembershipAcknowledged(false);
   }
-  /** The undo under it: back to everything, on the same page. */
   function resubscribe() {
-    setEmailsWanted([...emailTypes]);
+    setSubscribed(true);
     setTicked([...emailTypes]);
-    setEmailResult("resubscribed");
-  }
-  /** Opens or closes "fewer emails". If they'd unsubscribed, it starts from everything ticked. */
-  function toggleFewer(open: boolean) {
-    if (open && !subscribed) setTicked([...emailTypes]);
-    if (open) setEmailResult(null);
-    setFewerOpen(open);
+    setResubscribed(true);
   }
   function tick(type: EmailType, on: boolean) {
     setTicked((ts) => (on ? emailTypes.filter((t) => t === type || ts.includes(t)) : ts.filter((t) => t !== type)));
     // "Saved" describes what was saved; once the ticks change, Save is live again.
-    setEmailResult(null);
+    setSaved(false);
   }
-
-  function switchTier() {
-    if (!lower) return;
-    setTierId(lower.id);
-    setHistory((h) => [...h, screen]);
-    setScreen("B2");
-    setDone(true);
+  function save() {
+    // Saving with nothing ticked is unsubscribing.
+    if (ticked.length === 0) return unsubscribe();
+    setSubscribed(true);
+    setResubscribed(false);
+    setSaved(true);
   }
-
+  function pause() {
+    if (!isWholeNumber(pauseCount)) return setPauseError(copy.membership.pauseLengthError);
+    setPauseError(undefined);
+    setMembership("paused");
+    setRestarted(false);
+  }
   function cancelMembership() {
     setMembership("cancelled");
-    setEmailsKept(false);
-    setEmailsDropped(false);
+    setAskedAboutEmails(subscribed);
+    setEmailsAnswer(null);
     setHistory([]);
     setScreen("B5");
-    setDone(false);
   }
 
-  const navCard = (label: string, onClick: () => void) => (
-    <NavCard type="button" $variant="outline" onClick={onClick}>
-      <span>{label}</span>
-      <Icon icon={ChevronRight} size={20} />
-    </NavCard>
-  );
-
-  const cancelButton = (label: string = copy.b1.cancelMembership) => (
+  const cancelButton = (
     <Button type="button" $variant="danger-outline" $size="lg" onClick={() => go("B4")}>
-      {label}
+      {copy.cancelMembership}
     </Button>
   );
-
-  // Back on in-between screens (A4 when opened from B1); end states, confirmations and B4 (whose "Keep
-  // my membership" already goes back) don't get one.
-  const canGoBack = history.length > 0 && !done && screen !== "B4" && screen !== "B5";
-  const backButton = canGoBack && (
-    <Button type="button" $variant="ghost" $size="lg" onClick={back}>
-      <Icon icon={ArrowLeft} size={16} />
-      {copy.notInDoc.back}
-    </Button>
+  const undoUnsubscribe = (
+    <UndoLine>
+      <Note>{copy.undoUnsubscribe}</Note>
+      <Button type="button" $variant="ghost" onClick={resubscribe}>
+        {copy.resubscribe}
+      </Button>
+    </UndoLine>
   );
 
-  // Membership lines only while the membership is active: after a cancel they'd be wrong.
-  const activeMember = membership === "active";
-
-  /*
-   * A4's unsubscribe button. Once pressed, its text says so and it does nothing
-   * (aria-disabled on the secondary style, as Save does). Under it: the undo, then "Cancel membership"
-   * for members, which only appears after unsubscribing.
-   */
-  const unsubscribeControls = (
+  /* The pause form, shared by "It costs too much right now" and "I need a break". */
+  const pauseForm = (
     <>
-      {subscribed ? (
-        <Button type="button" $variant="danger-outline" $size="lg" onClick={unsubscribe}>
-          {copy.a1.unsubscribeAll}
-        </Button>
+      {membership !== "paused" && (
+        <>
+          <PauseFields>
+            <Field label={copy.membership.pauseLength} error={pauseError}>
+              {(props) => (
+                <Input
+                  {...props}
+                  name="pause-count"
+                  inputMode="numeric"
+                  value={pauseCount}
+                  onChange={(e) => {
+                    setPauseCount(e.target.value);
+                    setPauseError(undefined);
+                  }}
+                />
+              )}
+            </Field>
+            <Field label={copy.membership.pauseUnit}>
+              {(props) => (
+                <Select
+                  {...props}
+                  value={pauseUnit}
+                  onValueChange={(v) => setPauseUnit(v as PauseUnit)}
+                  options={pauseUnits.map((u) => ({ value: u, label: copy.membership.pauseUnits[u] }))}
+                />
+              )}
+            </Field>
+          </PauseFields>
+          <Body>{copy.membership.whatHappens}</Body>
+        </>
+      )}
+      {membership === "paused" ? (
+        done(copy.membership.paused)
       ) : (
-        <Button type="button" $variant="secondary" $size="lg" aria-disabled="true">
-          <Icon icon={Check} size={16} />
-          {copy.a4.done}
+        <Button type="button" $size="lg" onClick={pause}>
+          {copy.membership.pause}
         </Button>
       )}
-      {subscribed && emailResult === "resubscribed" && (
-        <StatusLine>{`${copy.notInDoc.resubscribedHeading}. ${copy.notInDoc.resubscribedBody}`}</StatusLine>
+      {membership === "paused" && (
+        <>
+          <Body>
+            {copy.membership.pausedBody(
+              formatDate(restartDate),
+              formatMoney(tier.monthlyPrice),
+              formatDate(addDays(restartDate, -RESTART_REMINDER_DAYS)),
+            )}
+          </Body>
+          <UndoLine>
+            <Note>{copy.membership.restartQuestion}</Note>
+            <Button
+              type="button"
+              $variant="ghost"
+              onClick={() => {
+                setMembership("active");
+                setRestarted(true);
+              }}
+            >
+              {copy.membership.restartNow}
+            </Button>
+          </UndoLine>
+        </>
       )}
-      {!subscribed && (
-        <Inline>
-          <Note>{copy.a4.undoQuestion}</Note>
-          <Button type="button" $variant="ghost" onClick={resubscribe}>
-            {copy.a4.resubscribe}
-          </Button>
-        </Inline>
-      )}
-    </>
-  );
-  const membershipControls = !subscribed && activeMember && (
-    <>
-      <Separator />
-      <Note>{copy.a4.membership(tier.name, formatDate(nextPayment), formatMoney(tier.monthlyPrice))}</Note>
-      {cancelButton(copy.a4.cancelMembership)}
+      {membership === "active" && restarted && <StatusLine>{copy.membership.restarted}</StatusLine>}
     </>
   );
 
-  /*
-   * Each screen fills `top` (logo or icon), `title` (the hidden h1), `lead` (the centered text),
-   * `body` (left-aligned content) and `actions` (full-width buttons, the main action first).
-   */
-  let top: ReactNode = <SdcLogo />;
-  let title = "";
-  /** A4 shows its heading (the green AuthHeading); every other screen's is for screen readers only. */
-  let visibleTitle = false;
-  let lead = "";
-  let body: ReactNode = null;
+  /* Each screen fills the template: heading, an optional line under it, content and actions. */
+  let heading = "";
+  let line: string | undefined;
+  let content: ReactNode = null;
   let actions: ReactNode = null;
 
   switch (screen) {
     case "A4": {
-      const saved = emailResult === "saved";
-      title = copy.a4.heading;
-      visibleTitle = true;
-      body = (
-        <Stack>
-          <Collapsible open={fewerOpen} onOpenChange={toggleFewer}>
-            <CollapsibleTrigger asChild>
-              <NavCard type="button" $variant="outline">
-                <span>{copy.a4.fewerEmails}</span>
-                <Chevron icon={ChevronDown} size={20} />
-              </NavCard>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <Panel role="group" aria-labelledby="fewer-question">
-                <Question id="fewer-question">{copy.a1.question}</Question>
-                <Choices>
-                  {emailTypes.map((t) => (
-                    <Checkbox
-                      key={t}
-                      name="emails"
-                      value={t}
-                      label={<ChoiceText>{copy.a1.types[t]}</ChoiceText>}
-                      checked={ticked.includes(t)}
-                      onCheckedChange={(on) => tick(t, on === true)}
-                    />
-                  ))}
-                </Choices>
-                {/*
-                  After saving, the button says so and does nothing until a tick changes. aria-disabled on
-                  the secondary style, not `disabled`: the kit fades disabled buttons below 4.5:1, and this
-                  text needs reading. No disabled reason (design): the label explains it.
-                */}
-                {saved ? (
-                  <Button type="button" $variant="secondary" $size="lg" aria-disabled="true">
-                    <Icon icon={Check} size={16} />
-                    {copy.a1.saved}
-                  </Button>
-                ) : (
-                  <Button type="button" $size="lg" onClick={() => save(ticked)}>
-                    {copy.a1.save}
-                  </Button>
-                )}
-              </Panel>
-            </CollapsibleContent>
-          </Collapsible>
-          {/* The reasons slide shut while "fewer emails" is open. */}
-          <Collapsible open={!fewerOpen}>
-            <CollapsibleContent>
-              <Card>
-                <CardContent>
-                  <CardDescription>{subscribed ? copy.a4.cardLabel : copy.a4.cardLabelDone}</CardDescription>
-                  <CardName>{copy.a4.org}</CardName>
-                </CardContent>
-                <Separator />
-                <CardContent>
-                  <Stack role="group" aria-labelledby="a4-reason">
-                    <Question id="a4-reason">{copy.a4.reasonQuestion}</Question>
-                    <Choices>
-                      {unsubscribeReasons.map((r) => (
-                        <Checkbox
-                          key={r}
-                          name="reason"
-                          value={r}
-                          label={<ChoiceText>{copy.a4.reasons[r]}</ChoiceText>}
-                          checked={reasons.includes(r)}
-                          onCheckedChange={(on) =>
-                            setReasons((rs) => (on === true ? [...rs, r] : rs.filter((x) => x !== r)))
-                          }
-                        />
-                      ))}
-                    </Choices>
-                  </Stack>
-                </CardContent>
-              </Card>
-            </CollapsibleContent>
-          </Collapsible>
-        </Stack>
+      heading = copy.emails.heading;
+      content = (
+        <Options
+          id="emails-question"
+          question={copy.emails.question}
+          value={emailReason}
+          onChange={setEmailReason}
+          options={emailReasons.map((r) => ({
+            value: r,
+            label: copy.emails.reasons[r],
+            followUp:
+              r === "too-many" ? (
+                <>
+                  <Body>{copy.emails.typesQuestion}</Body>
+                  <Choices role="group" aria-label={copy.emails.typesQuestion}>
+                    {emailTypes.map((t) => (
+                      <Checkbox
+                        key={t}
+                        name="emails"
+                        value={t}
+                        label={<ChoiceText>{copy.emails.types[t]}</ChoiceText>}
+                        checked={ticked.includes(t)}
+                        onCheckedChange={(on) => tick(t, on === true)}
+                      />
+                    ))}
+                  </Choices>
+                  {saved ? (
+                    done(copy.emails.saved)
+                  ) : (
+                    <Button type="button" $size="lg" onClick={save}>
+                      {copy.emails.save}
+                    </Button>
+                  )}
+                </>
+              ) : r === "not-relevant" ? (
+                <>
+                  <Body>{copy.emails.interestsBody}</Body>
+                  <LinkButton href="/intake-form" $variant="outline">
+                    {copy.emails.interestsLink}
+                  </LinkButton>
+                </>
+              ) : undefined,
+          }))}
+        />
       );
       actions = (
         <>
-          {unsubscribeControls}
-          {subscribed && <Note>{copy.a4.confirmNote(activeMember)}</Note>}
-          {membershipControls}
-          {backButton}
+          {subscribed ? (
+            <Button type="button" $variant="danger-outline" $size="lg" onClick={unsubscribe}>
+              {copy.unsubscribe}
+            </Button>
+          ) : (
+            done(copy.unsubscribed)
+          )}
+          {subscribed && resubscribed && <StatusLine>{copy.resubscribed}</StatusLine>}
+          {subscribed && <Note>{copy.emails.unsubscribeNote(activeMember)}</Note>}
+          {!subscribed && undoUnsubscribe}
+          {/* FigJam: after unsubscribing, members hear their membership is still active. */}
+          {!subscribed && activeMember && (
+            <>
+              <Separator />
+              <Note id="membership-line" tabIndex={-1}>
+                {copy.emails.membership(tier.name, formatDate(nextPayment), formatMoney(tier.monthlyPrice))}
+              </Note>
+              {!membershipAcknowledged && (
+                <>
+                  <Button
+                    type="button"
+                    $size="lg"
+                    onClick={() => {
+                      setMembershipAcknowledged(true);
+                      document.getElementById("membership-line")?.focus();
+                    }}
+                  >
+                    {copy.emails.soundsGood}
+                  </Button>
+                  {cancelButton}
+                </>
+              )}
+            </>
+          )}
         </>
       );
       break;
     }
 
-    case "B1":
-      title = copy.b1.heading;
-      lead = copy.b1.summary(tier.name, formatMoney(tier.monthlyPrice), formatDate(nextPayment));
-      body = (
-        <Stack role="group" aria-labelledby="b1-question">
-          <Question id="b1-question">{copy.b1.question}</Question>
-          {navCard(copy.b1.tooManyEmails, () => {
-            toggleFewer(true);
-            go("A4");
-          })}
-          {navCard(copy.b1.costsTooMuch, () => go("B2"))}
-          {navCard(copy.b1.needBreak, () => go("B3"))}
-          {navCard(copy.b1.notInvolved, () => go("B4"))}
-        </Stack>
+    case "B1": {
+      heading = copy.membership.heading;
+      line = copy.membership.summary(tier.name, formatMoney(tier.monthlyPrice), formatDate(nextPayment));
+      content = (
+        <Options
+          id="membership-question"
+          question={copy.membership.question}
+          value={membershipReason}
+          onChange={setMembershipReason}
+          options={membershipReasons.map((r) => ({
+            value: r,
+            label: copy.membership.reasons[r],
+            followUp:
+              r === "emails" ? (
+                <>
+                  <Body>{copy.membership.emailsBody}</Body>
+                  {subscribed ? (
+                    <Button type="button" $size="lg" onClick={unsubscribe}>
+                      {copy.membership.emailsAction}
+                    </Button>
+                  ) : (
+                    done(copy.unsubscribed)
+                  )}
+                  {subscribed && resubscribed && <StatusLine>{copy.resubscribed}</StatusLine>}
+                  {!subscribed && undoUnsubscribe}
+                </>
+              ) : r === "budget" ? (
+                <>
+                  <Body>{copy.membership.budgetBody}</Body>
+                  {pauseForm}
+                </>
+              ) : r === "break" ? (
+                pauseForm
+              ) : (
+                <Body>{copy.membership.thanks}</Body>
+              ),
+          }))}
+        />
       );
-      actions = cancelButton();
-      break;
-
-    case "B2":
-      if (done) {
-        top = <IconWell icon={CircleCheck} tone="brand" />;
-        title = copy.b2.switchedHeading(tier.name);
-        lead = paragraphs(`${title}.`, copy.b2.switchedBody(formatDate(nextPayment), formatMoney(tier.monthlyPrice)));
-        actions = cancelButton();
-        break;
-      }
-      title = copy.b2.heading;
-      lead = copy.b2.body;
-      body = (
-        <Stack>
-          {lower && navCard(copy.b2.switchTier(lower.name, formatMoney(lower.monthlyPrice), lower.whatChanges), switchTier)}
-          {navCard(copy.b2.pause, () => go("B3"))}
-        </Stack>
-      );
-      actions = (
-        <>
-          {cancelButton(copy.b2.cancelMembership)}
-          {backButton}
-        </>
-      );
-      break;
-
-    case "B3": {
-      if (done) {
-        const restart = addMonths(DEMO_TODAY, pause);
-        top = <IconWell icon={CirclePause} tone="neutral" />;
-        title = copy.b3.pausedHeading;
-        lead = paragraphs(
-          `${title}.`,
-          copy.b3.pausedBody(
-            formatDate(restart),
-            formatMoney(tier.monthlyPrice),
-            formatDate(addDays(restart, -RESTART_REMINDER_DAYS)),
-          ),
-        );
-        actions = (
-          <>
-            {restarted ? (
-              <StatusLine>{copy.notInDoc.restarted}</StatusLine>
-            ) : (
-              <>
-                <Footnote>{copy.b3.restartQuestion}</Footnote>
-                <Button
-                  type="button"
-                  $variant="outline"
-                  $size="lg"
-                  onClick={() => {
-                    setMembership("active");
-                    setRestarted(true);
-                  }}
-                >
-                  {copy.b3.restartNow}
-                </Button>
-              </>
-            )}
-            {cancelButton()}
-          </>
-        );
-        break;
-      }
-      title = copy.b3.heading;
-      lead = copy.b3.whatHappens;
-      body = (
-        <Stack>
-          <Question id="b3-question">{copy.b3.question}</Question>
-          <RadioGroup
-            name="pause"
-            aria-labelledby="b3-question"
-            value={String(pause)}
-            onValueChange={(v) => setPause(Number(v) as PauseMonths)}
-          >
-            {pauseMonths.map((n) => (
-              <RadioGroupOption key={n} value={String(n)} label={copy.b3.months(n)} />
-            ))}
-          </RadioGroup>
-        </Stack>
-      );
-      actions = (
-        <>
-          <Button
-            type="button"
-            $size="lg"
-            onClick={() => {
-              setMembership("paused");
-              setRestarted(false);
-              setDone(true);
-            }}
-          >
-            {copy.b3.pause}
-          </Button>
-          {cancelButton(copy.b3.cancelInstead)}
-          {backButton}
-        </>
-      );
+      actions = cancelButton;
       break;
     }
 
     case "B4":
-      title = copy.b4.heading;
-      lead = paragraphs(
-        copy.b4.noMoreCharges,
-        start.policy === "end-of-period"
-          ? copy.b4.endsAtPeriodEnd(formatDate(addDays(nextPayment, -1)))
-          : copy.b4.endsToday,
-        copy.b4.notRefundable(formatDate(addMonths(nextPayment, -1))),
-        copy.b4.rejoin,
-      );
-      body = (
+      heading = copy.cancel.heading;
+      content = (
         <Stack>
-          <Field label={copy.b4.noteLabel}>
+          <Facts>
+            <li>{copy.cancel.noMoreCharges}</li>
+            <li>
+              {start.policy === "end-of-period"
+                ? copy.cancel.endsAtPeriodEnd(formatDate(addDays(nextPayment, -1)))
+                : copy.cancel.endsToday}
+            </li>
+            <li>{copy.cancel.notRefundable(formatDate(addMonths(nextPayment, -1)))}</li>
+            <li>{copy.cancel.rejoin}</li>
+          </Facts>
+          <Field label={copy.cancel.noteLabel}>
             {(props) => (
               <Textarea {...props} name="note" rows={3} maxLength={600} value={note} onChange={(e) => setNote(e.target.value)} />
             )}
           </Field>
         </Stack>
       );
-      // Cancelling is this screen's point, so it comes first; danger-outline like every cancel.
       actions = (
         <>
           <Button type="button" $variant="danger-outline" $size="lg" onClick={cancelMembership}>
-            {copy.b4.cancelMembership}
+            {copy.cancelMembership}
           </Button>
           <Button type="button" $variant="outline" $size="lg" onClick={history.length > 0 ? back : () => go("B1")}>
-            {copy.b4.keepMembership}
+            {copy.cancel.keepMembership}
           </Button>
         </>
       );
       break;
 
-    case "B5": {
-      const askAboutEmails = subscribed && !emailsKept;
-      top = <IconWell icon={CircleCheck} tone="neutral" />;
-      title = copy.b5.heading;
-      lead = paragraphs(`${title}.`, copy.b5.body(demoMember.email));
-      if (emailsKept) actions = <StatusLine>{copy.notInDoc.emailsKept}</StatusLine>;
-      // Unsubscribing here happens in place, like A4's unsubscribe button.
-      if (emailsDropped) actions = <StatusLine>{`${copy.a4.done}.`}</StatusLine>;
-      if (askAboutEmails) {
-        body = (
+    case "B5":
+      heading = copy.cancelled.heading;
+      line = copy.cancelled.body(demoMember.email);
+      // Only ask about emails if they were still subscribed when they cancelled.
+      if (askedAboutEmails) {
+        content = (
           <Stack>
-            <Question>{copy.b5.emailQuestion}</Question>
+            <Question>{copy.cancelled.emailQuestion}</Question>
           </Stack>
         );
+        // Each button keeps its place, so the one pressed keeps focus as it turns into its result.
         actions = (
           <>
-            <Button type="button" $size="lg" onClick={() => setEmailsKept(true)}>
-              {copy.b5.keepEmails}
-            </Button>
-            <Button
-              type="button"
-              $variant="danger-outline"
-              $size="lg"
-              onClick={() => {
-                unsubscribe();
-                setEmailsDropped(true);
-              }}
-            >
-              {copy.b5.unsubscribeAll}
-            </Button>
+            {emailsAnswer === "kept" ? (
+              done(copy.cancelled.emailsKept)
+            ) : emailsAnswer === null ? (
+              <Button type="button" $size="lg" onClick={() => setEmailsAnswer("kept")}>
+                {copy.cancelled.keepEmails}
+              </Button>
+            ) : null}
+            {emailsAnswer === "unsubscribed" ? (
+              done(copy.unsubscribed)
+            ) : emailsAnswer === null ? (
+              <Button
+                type="button"
+                $variant="danger-outline"
+                $size="lg"
+                onClick={() => {
+                  setSubscribed(false);
+                  setEmailsAnswer("unsubscribed");
+                }}
+              >
+                {copy.unsubscribe}
+              </Button>
+            ) : null}
           </>
         );
       }
       break;
-    }
   }
 
   return (
-    <AuthScreen>
-      <AuthColumn $wide key={`${screen}-${done}`}>
-        {!visibleTitle && <HiddenHeading tabIndex={-1}>{title}</HiddenHeading>}
-        {top}
-        {visibleTitle && <AuthHeading title={title} />}
-        {lead && <Lead>{lead}</Lead>}
-        {body}
+    <Page>
+      <Column $wide key={screen}>
+        <SdcLogo />
+        <AuthHeading title={heading} description={line} />
+        {content}
         {actions && <AuthActions>{actions}</AuthActions>}
-      </AuthColumn>
-    </AuthScreen>
+      </Column>
+    </Page>
   );
 }

@@ -1,49 +1,52 @@
 # Unsubscribe, pause and cancel membership (design)
 
-Member-facing screens reached from the two footer links in every SDC email: A4 (the email page, footer link 1, opened by default) and B1–B5 (membership, footer link 2). Copy is from [SDC Unsubscribe & Cancel Membership — Step Copy](https://claude.ai/artifact/9oi6VCBrW5R1xkz3uA9DzV) except where noted below. Demo data only. Open at `/design/unsubscribe`; `page.tsx` lists the query parameters for every screen and variant.
+Member-facing pages reached from the two footer links in every SDC email:
 
-## Built on Jesse's unsubscribe page, laid out after Luma's
+- **A4, the email page** (footer link 1, opens by default).
+- **B1, the membership page** (footer link 2, "Pause or cancel membership"), then **B4** (confirm cancelling) and **B5** (cancelled).
 
-The look comes from Jesse's `/unsubscribe/[token]` page (branch `origin/jesse/email-links`): the sign-in screen's centered column, the SDC logo and full-width buttons. A4's layout follows Luma's unsubscribe page, in our kit. Design decisions:
+The flow follows the [Unsub flow FigJam board](https://www.figma.com/board/jvbGjJ6Wb3CZIOjTB6x81Z/Unsub-flow). Copy is from [SDC Unsubscribe & Cancel Membership — Step Copy](https://claude.ai/artifact/9oi6VCBrW5R1xkz3uA9DzV) where it has the string; `copy.ts` marks everything else "Not in doc". Demo data only. Open at `/design/unsubscribe`; `page.tsx` lists the query parameters for every state. What the backend needs is in `docs/backend/unsubscribe.md`.
 
-- **A4 is the only screen with a visible heading**: the green "Unsubscribe from SDC emails" (`AuthHeading`). Every other screen keeps an h1 for screen readers only, and result screens (B2 switched, B3 paused, B5) start their text with what the heading used to say.
-- **"Stay in the loop with fewer emails" comes first.** It's a kit `Collapsible`: it slides open the email types (the doc's A1–A3, as checkboxes, since the types are independent) with Save, and slides the reasons card shut. After saving, Save reads "Your preference is saved" and does nothing until a tick changes. It's `aria-disabled` on the secondary style rather than `disabled`, because the kit fades disabled buttons below 4.5:1 contrast, and it has no disabled reason (design: the label explains it). Saving with nothing ticked unsubscribes. B1's "I get too many emails" opens A4 with it expanded.
-- **The reasons** sit in a kit `Card` (multi-select, so the reasons must all be able to be true at once; no "Other").
-- **"Unsubscribe"** is always visible. Opening the page never unsubscribes; the button does, in place, and its text becomes "✓ You're unsubscribed" the same way Save does. Under it: "Unsubscribed by mistake? Resubscribe", then, for members only and only after unsubscribing, the membership line and "Cancel membership". B5's "Unsubscribe from all emails" unsubscribes in place too.
-- Membership and voting notices aren't a checkbox, because voting members can't turn the legally required ones off.
-- Checkbox labels are body size (`ChoiceText`), like the radio options; the kit's Checkbox label is form-label size.
+## Three patterns, on every page
+
+1. **One template.** SDC logo, green heading (`AuthHeading`, with at most one short line under it), content, then actions in a full-width column. The column is top-aligned, so opening or changing something never moves what's above it. Each new page fades in.
+2. **"What's going on?" is one bordered list of answers** (kit `RadioGroup`, one answer, optional). Choosing an answer slides its follow-up open under it (kit `Collapsible`, `--duration-slow`) and closes the previous one. Follow-ups never open a new page.
+   - Email page: too many emails → tick the email types you want → Save. Not relevant → link to the intake form to update interests. Don't want to hear from SDC → the Unsubscribe button below.
+   - Membership page: too many emails → "Unsubscribe from emails instead". Budget → pause, or cancel completely with the button below. Need a break → pause for a number of weeks, months or years. No longer involved → a thank-you, then the button below.
+3. **The button you press becomes its result.** It stays in place, its text says what happened ("✓ Your preference is saved", "✓ You're unsubscribed", "✓ Your membership is paused", "✓ You'll keep getting emails") and it does nothing more. It's `aria-disabled` on the secondary style rather than `disabled`, because the kit fades disabled buttons below 4.5:1, and it has no disabled reason (design: the label explains it). Focus stays on it. An undo, where there is one, is a muted line with a text button under it ("Unsubscribed by mistake? Resubscribe", "Want to come back sooner? Restart my membership now").
+
+Unsubscribe and Cancel membership are always visible, as the FigJam board and the doc ask. After unsubscribing, members see that their membership is still active, with "Sounds good" and "Cancel membership".
+
+Buttons: black primary for the main action, red outline for Unsubscribe and Cancel membership, outline for Keep my membership.
 
 ## Reused
 
 | Piece | From | Used for |
 | --- | --- | --- |
-| `AuthScreen`, `AuthColumn`, `AuthHeading`, `AuthActions`, `Footnote`, `IconWell`, `SdcLogo` | `src/features/auth/AuthScreen.tsx` | Every screen's shell, A4's green heading, buttons column, small text and result icons |
-| `--color-brand-heading`, `--color-brand-tint`, `public/brand/sdc-logo.png` | `src/components/ui/tokens.ts`, `public/brand/` | A4's green heading, the icon tint and the logo |
-| `Button`, `Card`, `Checkbox`, `Collapsible`, `RadioGroup` + `RadioGroupOption`, `Field`, `Textarea`, `Separator`, `Icon` | `src/components/ui/` | Everything else |
+| `AuthScreen`, `AuthColumn`, `AuthHeading`, `AuthActions`, `LinkButton`, `SdcLogo` | `src/features/auth/AuthScreen.tsx` | The template, the green heading, the actions column, the intake-form link |
+| `--color-brand-heading`, `--color-brand-tint`, `public/brand/sdc-logo.png` | `src/components/ui/tokens.ts`, `public/brand/` | The green heading and the logo |
+| `Button`, `Checkbox`, `Collapsible`, `Field`, `Input`, `RadioGroup` + `RadioGroupOption`, `Select`, `Separator`, `Textarea`, `Icon` | `src/components/ui/` | Everything else |
 
-`AuthScreen.tsx`, the logo and the two brand tokens are on main but not yet on this branch, so they are copied over exactly as main has them (no edits). When this branch takes main, they merge without changes.
+`AuthScreen.tsx`, the logo and the two brand tokens are on main but not yet on this branch, so they are copied over exactly as main has them. When this branch takes main, they merge without changes.
 
-## New components
+## New here
 
 They live in `UnsubscribeFlow.tsx`; promote them if another flow needs them.
 
-| Component | Where | Why it's new |
-| --- | --- | --- |
-| `danger-outline` Button variant | `src/components/ui/Button.tsx` (main has the same variant now) | "Cancel membership" and "Unsubscribe from all" must always be visible as real buttons without competing with the main action. |
-| `NavCard` | `UnsubscribeFlow.tsx` | A full-width choice with a chevron: moves to another screen (B1, B2), or opens "fewer emails" on A4 (`Chevron` turns while open). A kit outline `Button`. |
-| `Panel` | `UnsubscribeFlow.tsx` | Inner padding for collapsible content, so focus rings aren't clipped. |
-| `Question` | `UnsubscribeFlow.tsx` | An `h2` for a question inside the column (A4, B1, B3, B5). |
-| `HiddenHeading`, `Lead` | `UnsubscribeFlow.tsx` | The screen-reader-only h1, and `AuthHeading`'s description without its title. |
-| `CardName` | `UnsubscribeFlow.tsx` | "Social Development Centre" under the card's "Unsubscribe from" label. |
-| `ChoiceText` | `UnsubscribeFlow.tsx` | Body-size checkbox labels (A4). |
-| `StatusLine` | `UnsubscribeFlow.tsx` | A result line that replaces the button just pressed and takes focus (A4 resubscribed, B3 Restart, B5 Keep getting emails and Unsubscribe). |
-| `Note` | `UnsubscribeFlow.tsx` | Small print under the unsubscribe button: Jesse's note, the undo question and the membership line. |
+| Piece | Why it's new |
+| --- | --- |
+| `danger-outline` Button variant (`src/components/ui/Button.tsx`; main has the same variant now) | Unsubscribe and Cancel membership must always be visible without competing with the main action. |
+| `Options` (with `OptionList`, `FollowUp`) | A radio question whose answers each slide open a follow-up. The kit has radios and collapsibles but not the two together. |
+| `done()` | A pressed button turned into its result (see pattern 3). |
+| `UndoLine`, `StatusLine` | The undo line, and a result line that replaces a button that's gone (resubscribed, restarted). `StatusLine` takes focus. |
+| `ChoiceText` | Body-size labels for answers and checkboxes; the kit's labels are form-label size. |
+| `Page`, `Column` | `AuthScreen` top-aligned, and a fade-in per page. |
 
-Layout-only wrappers (no visual style): `Stack` and `Choices`.
+Layout-only: `Stack`, `Choices`, `PauseFields`, `Facts`, `Question`, `Note`, `Body`.
 
-## Copy not in the doc
+## Open with SDC
 
-Confirm with SDC:
-
-- A4's email-type labels ("A monthly summary of SDC's work", "Event and workshop invitations", "Campaigns and calls to action"), "Stay in the loop with fewer emails", the "Unsubscribe from" / "Unsubscribed from" card label and "Unsubscribe". They're design's; SDC still has to list the email types it sends.
-- Placeholders in `copy.ts` under `notInDoc`: "Back", "Thanks for telling us.", "You're subscribed again" / "You'll get emails from SDC again." (Jesse's), "You'll keep getting emails from SDC.", "Your membership is active again.", and the page title.
+- Strings marked "Not in doc" in `copy.ts`, including the email-type labels (SDC still has to list the types it sends), "Sounds good", "Unsubscribe from emails instead", the pause-unit label and error, and the thank-you line.
+- A maximum pause length: the copy doc said 3 months, the FigJam board leaves it open.
+- The copy doc's tier switch ("Switch to [lower tier]") isn't in the FigJam flow, so it's gone.
+- Footer link 1 now opens the email page, not the doc's A1 preferences screen.
