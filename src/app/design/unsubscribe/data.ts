@@ -5,19 +5,19 @@
  */
 
 /**
- * A4: the unsubscribe page, footer link 1 (Luma-style: reasons, then confirm, then the result in
- * place). A1: email preferences, from A4's "fewer emails": tick the email types you want and save.
- * B1–B5: membership (footer link 2). The doc's A2 and A3 are folded into A1.
+ * A4: the email page, footer link 1 (laid out after Luma's unsubscribe page). "Stay in the loop with
+ * fewer emails" opens the email types in place (the doc's A1–A3); the reasons and the unsubscribe
+ * button sit under it. B1–B5: membership (footer link 2).
  */
-export type Screen = "A1" | "A4" | "B1" | "B2" | "B3" | "B4" | "B5";
-export const SCREENS: Screen[] = ["A1", "A4", "B1", "B2", "B3", "B4", "B5"];
+export type Screen = "A4" | "B1" | "B2" | "B3" | "B4" | "B5";
+export const SCREENS: Screen[] = ["A4", "B1", "B2", "B3", "B4", "B5"];
 
 /** Screens with a confirmed state that can be opened directly with ?state=done (A4: unsubscribed). */
 export const SCREENS_WITH_DONE: Screen[] = ["A4", "B2", "B3"];
 
 /**
- * A1's result, if any. Open one directly with ?state=…: "saved" turns Save into "Your preference is
- * saved" until a tick changes; "resubscribed" shows a line under the buttons.
+ * A4's email result, if any. Open one directly with ?state=…: "saved" (fewer emails open) turns Save
+ * into "Your preference is saved" until a tick changes; "resubscribed" shows a line under Unsubscribe.
  */
 export type EmailResult = "saved" | "resubscribed";
 export const EMAIL_RESULTS: EmailResult[] = ["saved", "resubscribed"];
@@ -69,7 +69,7 @@ export const DEMO_TODAY = "2026-11-11";
 export const RESTART_REMINDER_DAYS = 7;
 
 /**
- * The email types A1 lets people tick, independent of each other so any mix makes sense. Placeholders
+ * The email types A4's "fewer emails" lets people tick, independent of each other so any mix makes sense. Placeholders
  * until SDC lists the email types it actually sends (doc: Open questions). Membership and voting
  * notices aren't here: voting members can't turn the legally required ones off.
  */

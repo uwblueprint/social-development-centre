@@ -1,7 +1,7 @@
 import type { EmailType, UnsubscribeReason } from "./data";
 
 /*
- * Every user-facing string for the email-preferences (A1–A4) and membership (B1–B5) screens, word for
+ * Every user-facing string for the email page (A4, the doc's A1–A4) and membership (B1–B5) screens, word for
  * word from "SDC Unsubscribe & Cancel Membership — Step Copy"
  * (https://claude.ai/artifact/9oi6VCBrW5R1xkz3uA9DzV). Bracketed values in the doc are function
  * arguments here, filled from the member's record.
@@ -12,14 +12,11 @@ import type { EmailType, UnsubscribeReason } from "./data";
 
 export const unsubscribeCopy = {
   /*
-   * A1 folds the doc's A1–A3 into one screen (design): the doc's A2 question with the email types as
-   * checkboxes. The checkbox labels and the two button labels below marked "design" aren't the doc's:
-   * confirm with SDC.
+   * The email types, shown in A4 under "Stay in the loop with fewer emails" (design): the doc's A2
+   * question with the types as checkboxes. The checkbox labels and labels marked "design" aren't the
+   * doc's: confirm with SDC.
    */
   a1: {
-    /** Screen readers only: there are no visible headings (design). */
-    heading: "What would you like to change?",
-    subtext: (email: string) => `Emails sent to ${email}`,
     question: "Choose what you still want to hear about.",
     types: {
       monthly: "A monthly summary of SDC's work",
@@ -29,8 +26,8 @@ export const unsubscribeCopy = {
     save: "Save my preference",
     /** Replaces the Save button's text after saving, until a tick changes. */
     saved: "Your preference is saved",
-    /** Design. */
-    unsubscribeAll: "Unsubscribe from all communications",
+    /** Design. The unsubscribe button on A4. */
+    unsubscribeAll: "Unsubscribe",
   },
 
   /*
@@ -38,7 +35,7 @@ export const unsubscribeCopy = {
    * card and the unsubscribe button, whose text becomes the result. Opening the page never unsubscribes.
    */
   a4: {
-    /** Screen readers only. Jesse's heading, without the question mark. */
+    /** A4's visible heading (the green one). Jesse's heading, without the question mark. */
     heading: "Unsubscribe from SDC emails",
     /** Design. */
     cardLabel: "Unsubscribe from",
@@ -50,10 +47,10 @@ export const unsubscribeCopy = {
       "not-relevant": "Not relevant to me",
       "didnt-sign-up": "I didn't sign up for these",
     } satisfies Record<UnsubscribeReason, string>,
-    /** Jesse's description, under the unsubscribe button (A1's "Unsubscribe from all communications"). */
+    /** Jesse's description, under the unsubscribe button. */
     confirmNote: (isMember: boolean) =>
       isMember ? "You'll stop getting emails from SDC. You'll still be a member." : "You'll stop getting emails from SDC.",
-    /** Replaces the unsubscribe button's text once pressed, like A1's "Your preference is saved". */
+    /** Replaces the unsubscribe button's text once pressed, like Save's "Your preference is saved". */
     done: "You're unsubscribed",
     undoQuestion: "Unsubscribed by mistake?",
     resubscribe: "Resubscribe",
