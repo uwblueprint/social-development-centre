@@ -18,7 +18,7 @@ export const unsubscribeCopy = {
   resubscribe: "Resubscribe",
   resubscribed: "You're subscribed again. You'll get emails from SDC again.", // Not in doc (Jesse's).
   unsubscribe: "Unsubscribe", // Not in doc (design).
-  unsubscribed: "You're unsubscribed", // The doc's A4 heading, as a button.
+  unsubscribed: "You're unsubscribed", // The doc's A4 heading: the email page's heading after unsubscribing, and a button's result elsewhere.
   cancelMembership: "Cancel membership",
 
   emails: {

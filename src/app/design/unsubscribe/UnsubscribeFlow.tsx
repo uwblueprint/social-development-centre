@@ -108,10 +108,24 @@ const Note = styled.p`
   }
 `;
 
-/** Body-size text inside a follow-up. */
+/** A follow-up's description: smaller than the answer above it, so the answer reads first. */
 const Body = styled.p`
   margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-ui);
   color: var(--color-text-muted);
+`;
+
+/** A message the page is about, at body size (the membership line after unsubscribing). */
+const Lead = styled.p`
+  margin: 0;
+  font-size: var(--text-md);
+  line-height: var(--leading-ui);
+  color: var(--color-text);
+
+  &:focus {
+    outline: none;
+  }
 `;
 
 /* ---- Pattern 2: answers with follow-ups ---- */
@@ -328,6 +342,16 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
     document.querySelector<HTMLElement>("main h1")?.focus();
   }, [screen]);
 
+  // On the email page, unsubscribing turns the page into "You're unsubscribed": move focus to that heading.
+  const firstSubscribedRender = useRef(true);
+  useEffect(() => {
+    if (firstSubscribedRender.current) {
+      firstSubscribedRender.current = false;
+      return;
+    }
+    if (screen === "A4" && !subscribed) document.querySelector<HTMLElement>("main h1")?.focus();
+  }, [subscribed]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const activeMember = membership === "active";
   const restartDate = isWholeNumber(pauseCount) ? addPause(DEMO_TODAY, Number(pauseCount), pauseUnit) : DEMO_TODAY;
 
@@ -470,70 +494,73 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
 
   switch (screen) {
     case "A4": {
-      heading = copy.emails.heading;
+      // Unsubscribing turns this page into "You're unsubscribed": the question slides closed, and
+      // resubscribing slides it open again.
+      heading = subscribed ? copy.emails.heading : copy.unsubscribed;
       content = (
-        <Options
-          id="emails-question"
-          question={copy.emails.question}
-          value={emailReason}
-          onChange={setEmailReason}
-          options={emailReasons.map((r) => ({
-            value: r,
-            label: copy.emails.reasons[r],
-            followUp:
-              r === "too-many" ? (
-                <>
-                  <Body>{copy.emails.typesQuestion}</Body>
-                  <Choices role="group" aria-label={copy.emails.typesQuestion}>
-                    {emailTypes.map((t) => (
-                      <Checkbox
-                        key={t}
-                        name="emails"
-                        value={t}
-                        label={<ChoiceText>{copy.emails.types[t]}</ChoiceText>}
-                        checked={ticked.includes(t)}
-                        onCheckedChange={(on) => tick(t, on === true)}
-                      />
-                    ))}
-                  </Choices>
-                  {saved ? (
-                    done(copy.emails.saved)
-                  ) : (
-                    <Button type="button" $size="lg" onClick={save}>
-                      {copy.emails.save}
-                    </Button>
-                  )}
-                </>
-              ) : r === "not-relevant" ? (
-                <>
-                  <Body>{copy.emails.interestsBody}</Body>
-                  <LinkButton href="/intake-form" $variant="outline">
-                    {copy.emails.interestsLink}
-                  </LinkButton>
-                </>
-              ) : undefined,
-          }))}
-        />
+        <Collapsible open={subscribed}>
+          <FollowUp>
+            <Options
+              id="emails-question"
+              question={copy.emails.question}
+              value={emailReason}
+              onChange={setEmailReason}
+              options={emailReasons.map((r) => ({
+                value: r,
+                label: copy.emails.reasons[r],
+                followUp:
+                  r === "too-many" ? (
+                    <>
+                      <Body>{copy.emails.typesQuestion}</Body>
+                      <Choices role="group" aria-label={copy.emails.typesQuestion}>
+                        {emailTypes.map((t) => (
+                          <Checkbox
+                            key={t}
+                            name="emails"
+                            value={t}
+                            label={<ChoiceText>{copy.emails.types[t]}</ChoiceText>}
+                            checked={ticked.includes(t)}
+                            onCheckedChange={(on) => tick(t, on === true)}
+                          />
+                        ))}
+                      </Choices>
+                      {saved ? (
+                        done(copy.emails.saved)
+                      ) : (
+                        <Button type="button" $size="lg" onClick={save}>
+                          {copy.emails.save}
+                        </Button>
+                      )}
+                    </>
+                  ) : r === "not-relevant" ? (
+                    <>
+                      <Body>{copy.emails.interestsBody}</Body>
+                      <LinkButton href="/intake-form" $variant="outline">
+                        {copy.emails.interestsLink}
+                      </LinkButton>
+                    </>
+                  ) : undefined,
+              }))}
+            />
+          </FollowUp>
+        </Collapsible>
       );
-      actions = (
+      actions = subscribed ? (
         <>
-          {subscribed ? (
-            <Button type="button" $variant="danger-outline" $size="lg" onClick={unsubscribe}>
-              {copy.unsubscribe}
-            </Button>
-          ) : (
-            done(copy.unsubscribed)
-          )}
-          {subscribed && resubscribed && <StatusLine>{copy.resubscribed}</StatusLine>}
-          {subscribed && <Note>{copy.emails.unsubscribeNote(activeMember)}</Note>}
-          {!subscribed && undoUnsubscribe}
+          <Button type="button" $variant="danger-outline" $size="lg" onClick={unsubscribe}>
+            {copy.unsubscribe}
+          </Button>
+          {/* After resubscribing, the confirmation replaces the note about what unsubscribing does. */}
+          {resubscribed ? <StatusLine>{copy.resubscribed}</StatusLine> : <Note>{copy.emails.unsubscribeNote(activeMember)}</Note>}
+        </>
+      ) : (
+        <>
           {/* FigJam: after unsubscribing, members hear their membership is still active. */}
-          {!subscribed && activeMember && (
+          {activeMember && (
             <>
-              <Separator />
-              <Note id="membership-line" tabIndex={-1}>
+              <Lead id="membership-line" tabIndex={-1}>
                 {copy.emails.membership(tier.name, formatDate(nextPayment), formatMoney(tier.monthlyPrice))}
-              </Note>
+              </Lead>
               {!membershipAcknowledged && (
                 <>
                   <Button
@@ -549,8 +576,11 @@ export function UnsubscribeFlow({ start }: { start: FlowStart }) {
                   {cancelButton}
                 </>
               )}
+              <Separator />
             </>
           )}
+          {/* The undo comes last, under everything else. */}
+          {undoUnsubscribe}
         </>
       );
       break;

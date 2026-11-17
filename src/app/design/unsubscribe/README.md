@@ -15,7 +15,11 @@ The flow follows the [Unsub flow FigJam board](https://www.figma.com/board/jvbGj
    - Membership page: too many emails → "Unsubscribe from emails instead". Budget → pause, or cancel completely with the button below. Need a break → pause for a number of weeks, months or years. No longer involved → a thank-you, then the button below.
 3. **The button you press becomes its result.** It stays in place, its text says what happened ("✓ Your preference is saved", "✓ You're unsubscribed", "✓ Your membership is paused", "✓ You'll keep getting emails") and it does nothing more. It's `aria-disabled` on the secondary style rather than `disabled`, because the kit fades disabled buttons below 4.5:1, and it has no disabled reason (design: the label explains it). Focus stays on it. An undo, where there is one, is a muted line with a text button under it ("Unsubscribed by mistake? Resubscribe", "Want to come back sooner? Restart my membership now").
 
-Unsubscribe and Cancel membership are always visible, as the FigJam board and the doc ask. After unsubscribing, members see that their membership is still active, with "Sounds good" and "Cancel membership".
+Unsubscribe and Cancel membership are always visible, as the FigJam board and the doc ask.
+
+The email page's Unsubscribe is the one exception to pattern 3: the whole page becomes the result. The question slides closed, the heading changes to "You're unsubscribed" and takes focus, members see that their membership is still active (body size) with "Sounds good" and "Cancel membership", and "Unsubscribed by mistake? Resubscribe" is the last line. Resubscribing slides the question open again and replaces the note under Unsubscribe with "You're subscribed again".
+
+Text inside an opened answer is small and muted, so the answer above it reads first.
 
 Buttons: black primary for the main action, red outline for Unsubscribe and Cancel membership, outline for Keep my membership.
 
@@ -40,6 +44,7 @@ They live in `UnsubscribeFlow.tsx`; promote them if another flow needs them.
 | `done()` | A pressed button turned into its result (see pattern 3). |
 | `UndoLine`, `StatusLine` | The undo line, and a result line that replaces a button that's gone (resubscribed, restarted). `StatusLine` takes focus. |
 | `ChoiceText` | Body-size labels for answers and checkboxes; the kit's labels are form-label size. |
+| `Lead` | Body-size text for the membership message after unsubscribing. |
 | `Page`, `Column` | `AuthScreen` top-aligned, and a fade-in per page. |
 
 Layout-only: `Stack`, `Choices`, `PauseFields`, `Facts`, `Question`, `Note`, `Body`.
