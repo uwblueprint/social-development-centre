@@ -45,7 +45,7 @@ export const Heading = styled.div`
   }
 `;
 
-/** Content under the heading: left-aligned, full width. */
+/** Content under the heading, full width. Messages in it are centred like the heading; questions and answer lists stay left-aligned. */
 export const Stack = styled.div`
   display: flex;
   flex-direction: column;
@@ -56,14 +56,16 @@ export const Stack = styled.div`
 /** A question above a list of answers. */
 export const Question = styled.h2`
   margin: 0;
+  text-align: left;
   font-size: var(--text-md);
   font-weight: var(--weight-medium);
   line-height: var(--leading-heading);
 `;
 
-/** Small print, left-aligned. Muted, 4.5:1. */
+/** Small print, centred under the heading. Muted, 4.5:1. */
 export const Note = styled.p`
   margin: 0;
+  text-align: center;
   font-size: var(--text-sm);
   line-height: var(--leading-ui);
   color: var(--color-text-muted);
@@ -81,9 +83,10 @@ export const Body = styled.p`
   color: var(--color-text-muted);
 `;
 
-/** A message the page is about, at body size (the membership line after unsubscribing). */
+/** A message the page is about, at body size and centred (the membership line after unsubscribing). */
 export const Lead = styled.p`
   margin: 0;
+  text-align: center;
   font-size: var(--text-md);
   line-height: var(--leading-ui);
   color: var(--color-text);
@@ -194,11 +197,12 @@ export const done = (label: string) => (
   </Button>
 );
 
-/** "Unsubscribed by mistake? Resubscribe": a muted line with a text button. */
+/** "Unsubscribed by mistake? Resubscribe": a muted line with a text button, centred. */
 export const UndoLine = styled.div`
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: var(--space-2);
 `;
 

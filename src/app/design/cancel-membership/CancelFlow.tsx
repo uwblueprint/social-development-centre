@@ -138,7 +138,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
           <Stack>
             {/* After Disney+: the restart date updates as they choose, before they press Pause. */}
             <Lead aria-live="polite">{copy.pause.restartsOn(formatDate(restartDate))}</Lead>
-            <Body>{copy.pause.whatHappens}</Body>
+            <Note>{copy.pause.whatHappens}</Note>
           </Stack>
         </Template>
       );
