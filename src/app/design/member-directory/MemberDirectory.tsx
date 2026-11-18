@@ -51,7 +51,7 @@ import { MemberSheet } from "./MemberSheet";
 import { ImportMembersDialog, type NewMember, type TagUpdate } from "./ImportMembersDialog";
 import { TagPicker } from "./TagPicker";
 import { BulkTagsPopover } from "./BulkTagsPopover";
-import { Tag } from "@/components/ui/Tag";
+import { RemovableTag, Tag } from "@/components/ui/Tag";
 import { SEARCH_FOR, SLOW_SEARCH_FOR, useLabDeferred, useLabLoad, useStateLab } from "../_state-lab/useStateLab";
 import { VisuallyHidden } from "./SheetStates";
 import { AccessState, FilterOptionsLoader, ListFailed, ListLoading, StatusBanner, TagsFailed } from "./ListStates";
@@ -75,21 +75,22 @@ const ToolbarBox = styled.div`
 
 const Toolbar = styled.div`
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
   min-width: 0;
 
   @container (max-width: 640px) {
     flex-direction: column;
+    flex-wrap: nowrap;
     align-items: stretch;
-    gap: var(--space-2);
   }
 `;
 
-/* The search takes all the room the filters leave; its field is already the control height. */
+/* The search is the one thing that shrinks: the filter buttons keep their size, and drop to their own line only when even a small search can't fit beside them. */
 const SearchBox = styled.div`
-  flex: 1 1 var(--search-width);
-  min-width: calc(var(--space-8) * 3);
+  flex: 1 1 calc(var(--space-8) * 2);
+  min-width: calc(var(--space-8) * 2);
 
   @container (max-width: 640px) {
     flex: none;
@@ -104,13 +105,68 @@ const FilterButton = styled(Button)`
   }
 `;
 
+/* The applied mark always takes its room, so a trigger is the same width applied or not; it only shows when the filter is applied. */
+const AppliedMark = styled.span`
+  display: inline-flex;
+  flex: none;
+
+  &[data-on="false"] {
+    visibility: hidden;
+  }
+`;
+
+/* Search row, chips and results line as one block: one tight rhythm inside, the page's rhythm around it (a step tighter before the table). */
+const FilterArea = styled.div`
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin-bottom: calc(var(--space-1) * -1);
+`;
+
+/* Chips on the left, the results line on the right; they share a line when both are short and stack when not. The empty results line (the live region) takes no room. */
+const SummaryRow = styled.div`
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-width: 0;
+
+  &:has(> :not(:empty)) {
+    margin-top: var(--space-2);
+  }
+`;
+
 /* The applied filters, one chip each, under the search row. */
 const AppliedRow = styled.div`
   display: flex;
+  flex: 1 1 auto;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
   min-width: 0;
+`;
+
+/* One applied tag filter: a tiny label, then each tag as its own pill. */
+const TagChipGroup = styled.span`
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+`;
+
+const ChipLead = styled.span`
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+`;
+
+/* Keeps the "Must have all of them" row in the Tags editor in its place before it applies, so the popover doesn't change height when the second tag lands. */
+const Reserved = styled.div`
+  &[data-hidden="true"] {
+    visibility: hidden;
+  }
 `;
 
 /* "People" with the count beside it, smaller and muted. */
@@ -129,16 +185,12 @@ const FilterRow = styled.div`
   flex-wrap: nowrap;
   align-items: center;
   gap: var(--space-2);
-  flex: 0 1 auto;
-  min-width: 0;
+  flex: none;
+  max-width: calc(100% + var(--space-2));
   margin: calc(var(--space-1) * -1);
   padding: var(--space-1);
   overflow-x: auto;
   scrollbar-width: thin;
-
-  @container (max-width: 640px) {
-    flex: none;
-  }
 
   & > * {
     flex: none;
@@ -149,6 +201,7 @@ const FilterRow = styled.div`
 const FilterGroup = styled.span`
   display: inline-flex;
   align-items: center;
+  height: var(--pill-height);
   border-radius: var(--radius-md);
 
   background: var(--color-secondary);
@@ -164,6 +217,15 @@ const ResultsLine = styled.div`
   gap: var(--space-2);
   font-size: var(--text-sm);
   color: var(--color-text-muted);
+
+  /* Beside the chips it sits at the right; alone it starts at the left. */
+  &:not(:first-child) {
+    margin-left: auto;
+  }
+
+  &:empty {
+    position: absolute;
+  }
 `;
 
 const ChipLabel = styled.span`
@@ -173,9 +235,18 @@ const ChipLabel = styled.span`
   max-width: calc(var(--space-8) * 4);
 `;
 
+/* Chip buttons at the pill height, smaller than the triggers. */
+const ChipButton = styled(Button)`
+  &&& {
+    height: var(--pill-height);
+    padding: 0 var(--space-2);
+  }
+`;
+
 const ChipRemove = styled(Button)`
   &&& {
-    width: var(--space-6);
+    width: var(--pill-height);
+    height: var(--pill-height);
     padding: 0;
   }
 `;
@@ -498,7 +569,8 @@ interface Filters {
   /** People who have none of these tags. */
   notTags: string[];
   status: MemberStatus[];
-  emails: "" | "on" | "off";
+  /** "on" (subscribed only) is the default view, not an applied filter. */
+  emails: "on" | "any" | "off";
   /** The intake-form filters match anyone who has any of the chosen values. */
   interests: string[];
   ways: string[];
@@ -559,7 +631,7 @@ const noFilters: Filters = {
   tagMode: "any",
   notTags: [],
   status: [],
-  emails: "",
+  emails: "on",
   interests: [],
   ways: [],
   location: [],
@@ -620,7 +692,7 @@ function matches(m: Member, f: Filters, q: string) {
 }
 
 const filterCount = (f: Filters) =>
-  [f.joined.preset, f.emails].filter(Boolean).length + [f.status, f.interests, f.ways, f.location, f.time].filter((v) => v.length).length + [f.tags, f.notTags].filter((v) => v.length).length;
+  [f.joined.preset, f.emails !== noFilters.emails].filter(Boolean).length +[f.status, f.interests, f.ways, f.location, f.time].filter((v) => v.length).length + [f.tags, f.notTags].filter((v) => v.length).length;
 
 /**
  * A checkbox list. Changes apply at once. Each count is how many people have that value among those who match the search and the
@@ -920,6 +992,13 @@ function Directory() {
       return ka < kb ? -dir : ka > kb ? dir : 0;
     });
   }, [pool, appliedFilters, sq, sort]);
+
+  /* What the chips and the results line show: the latest filters and count, but frozen while a filter editor is open. */
+  const live = { filters, applied: appliedFilters, n: rows.length, term: sq.trim() };
+  const [settled, setSettled] = React.useState(live);
+  if (openFilter === null && (settled.filters !== live.filters || settled.applied !== live.applied || settled.n !== live.n || settled.term !== live.term)) {
+    setSettled(live);
+  }
 
   /* Paging. `pageState` is the page asked for; `shownPage` is the one on screen, which trails it while a page "loads" (Slow loading). */
   const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
@@ -1341,9 +1420,13 @@ function Directory() {
           <>
             <OptionsNote>{filters.tagMode === "all" ? "Show people who have all of these tags." : "Show people who have any of these tags."}</OptionsNote>
             <TagPicker aria-label="Tags" value={filters.tags} options={allTags} colors={tagColors} onValueChange={(tags) => setFilter("tags", tags)} />
-            {filters.tags.length > 1 && (
-              <Checkbox label="Must have all of them" checked={filters.tagMode === "all"} onCheckedChange={(on) => setFilter("tagMode", on === true ? "all" : "any")} />
-            )}
+            <Reserved data-hidden={filters.tags.length < 2} aria-hidden={filters.tags.length < 2 ? true : undefined}>
+              <Checkbox
+                label="Must have all of them"
+                checked={filters.tagMode === "all"}
+                onCheckedChange={(on) => setFilter("tagMode", on === true ? "all" : "any")}
+              />
+            </Reserved>
           </>
         )}
       </FilterEditor>
@@ -1364,10 +1447,10 @@ function Directory() {
     emails: (
       <FilterEditor>
         <RadioList>
-          <RadioGroup aria-label="Emails" value={filters.emails || "any"} onValueChange={(v) => setFilter("emails", (v === "any" ? "" : v) as Filters["emails"])}>
-            <RadioGroupOption value="any" label="Any" />
-            <RadioGroupOption value="on" label="On" />
-            <RadioGroupOption value="off" label="Off" />
+          <RadioGroup aria-label="Emails" value={filters.emails} onValueChange={(v) => setFilter("emails", v as Filters["emails"])}>
+            <RadioGroupOption value="on" label="Subscribed only" />
+            <RadioGroupOption value="any" label="Everyone" />
+            <RadioGroupOption value="off" label="Unsubscribed only" />
           </RadioGroup>
         </RadioList>
       </FilterEditor>
@@ -1407,7 +1490,7 @@ function Directory() {
   /** "A", "A or B", "A, B or C": the choices in plain words. */
   const joinWords = (values: string[], word: "or" | "and") => (values.length < 2 ? values.join("") : `${values.slice(0, -1).join(", ")} ${word} ${values[values.length - 1]}`);
   /** What an applied filter says, in full and in plain words, e.g. "Tagged Board or Volunteer". Empty when the filter is not applied. */
-  const filterSummary = (key: FilterKey): string => {
+  const summaryOf = (key: FilterKey, filters: Filters): string => {
     switch (key) {
       case "tags":
         return filters.tags.length ? `Tagged ${joinWords(filters.tags, filters.tagMode === "all" ? "and" : "or")}` : "";
@@ -1416,7 +1499,7 @@ function Directory() {
       case "status":
         return filters.status.length ? `Status: ${joinWords(filters.status.map((v) => statusLabel[v]), "or")}` : "";
       case "emails":
-        return filters.emails === "on" ? "Emails on" : filters.emails === "off" ? "Emails off" : "";
+        return filters.emails === "any" ? "Emails: everyone" : filters.emails === "off" ? "Emails off" : "";
       case "joined": {
         const j = filters.joined;
         if (j.preset === "custom") {
@@ -1437,8 +1520,36 @@ function Directory() {
         return filters[key].length ? `${filterLabels[key]}: ${joinWords(filters[key], "or")}` : "";
     }
   };
+  const filterSummary = (key: FilterKey) => summaryOf(key, filters);
+  /** The chips and the results line follow the filters as they stood when the last editor closed, so nothing above the table moves while a popover is open. */
+  const settledSummary = (key: FilterKey) => summaryOf(key, settled.filters);
   /** The filters with a value, in row order: each gets a chip under the search. */
-  const appliedKeys = [...quickFilters, ...moreFilters].filter((key) => filterSummary(key));
+  const appliedKeys = [...quickFilters, ...moreFilters].filter((key) => settledSummary(key));
+
+  /** One tag pill per chosen tag, in its own colour, each with its own ×. */
+  const tagChips = (key: "tags" | "notTags") => {
+    const f = settled.filters;
+    const lead = key === "notTags" ? "Not tagged" : f.tagMode === "all" ? "Tagged all of" : "Tagged";
+    return (
+      <TagChipGroup key={key} role="group" aria-label={lead} data-filter={key}>
+        <ChipLead aria-hidden="true">{lead}</ChipLead>
+        {f[key].map((t) => (
+          <RemovableTag
+            key={t}
+            color={tagColors[t]}
+            onRemove={() => {
+              const left = filters[key].filter((x) => x !== t);
+              setFilter(key, left);
+              if (key === "tags" && !left.length) setFilter("tagMode", "any");
+              setOpenFilter(null);
+            }}
+          >
+            {t}
+          </RemovableTag>
+        ))}
+      </TagChipGroup>
+    );
+  };
 
   const columns: TableColumn<Member>[] = [
     {
@@ -1730,6 +1841,7 @@ function Directory() {
       {loading && <ListLoading takingLonger={load.takingLonger} />}
       {!loading && (pageFailed || listFailed) && <ListFailed onRetry={() => setRetried((r) => ({ ...r, list: true }))} />}
 
+      <FilterArea>
       <ToolbarBox>
       <Toolbar>
         <SearchBox>
@@ -1759,19 +1871,22 @@ function Directory() {
                     }}
                     type="button"
                     $variant={active ? "secondary" : "outline"}
+                    $size="sm"
                     aria-label={active ? `${filterLabels[key]}, applied: ${summary}` : undefined}
                   >
-                    {active && <Icon icon={Check} size={14} />}
+                    <AppliedMark data-on={active} aria-hidden="true">
+                      <Icon icon={Check} size={14} />
+                    </AppliedMark>
                     {filterLabels[key]}
                     <Icon icon={ChevronDown} size={14} />
                   </FilterButton>
                 </PopoverTrigger>
-                {intakeFilters.includes(key) ? (
-                  <WidePopover align="start" showClose={false} aria-label={filterLabels[key]}>
+                {intakeFilters.includes(key) || key === "tags" || key === "notTags" ? (
+                  <WidePopover side="bottom" align="start" collisionPadding={16} showClose={false} aria-label={filterLabels[key]}>
                     <FilterOptionsLoader slow={lab.slowLoading}>{filterEditor[key]}</FilterOptionsLoader>
                   </WidePopover>
                 ) : (
-                  <PopoverContent align="start" showClose={false} aria-label={filterLabels[key]}>
+                  <PopoverContent side="bottom" align="start" collisionPadding={16} showClose={false} aria-label={filterLabels[key]}>
                     <FilterOptionsLoader slow={lab.slowLoading}>{filterEditor[key]}</FilterOptionsLoader>
                   </PopoverContent>
                 )}
@@ -1781,7 +1896,7 @@ function Directory() {
           {moreFilters.some((key) => !filterSummary(key) && !pinned.includes(key)) && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <FilterButton ref={moreButton} type="button" $variant="outline">
+                <FilterButton ref={moreButton} type="button" $variant="outline" $size="sm">
                   More
                   <Icon icon={ChevronDown} size={14} />
                 </FilterButton>
@@ -1817,52 +1932,69 @@ function Directory() {
       </Toolbar>
       </ToolbarBox>
 
-      {showList && appliedKeys.length > 0 && (
-        <AppliedRow role="group" aria-label="Applied filters">
-          {appliedKeys.map((key) => (
-            <FilterGroup key={key} data-filter={key}>
-              <Button type="button" $variant="ghost" $size="sm" onClick={() => setOpenFilter(key)} aria-label={`Change filter: ${filterSummary(key)}`}>
-                <ChipLabel>{filterSummary(key)}</ChipLabel>
-              </Button>
-              <ChipRemove type="button" $variant="ghost" $size="sm" aria-label={`Remove filter: ${filterSummary(key)}`} onClick={() => removeFilter(key)}>
-                <Icon icon={X} size={14} />
-              </ChipRemove>
-            </FilterGroup>
-          ))}
-        </AppliedRow>
-      )}
-
       {showList && (
-        <ResultsLine role="status" aria-live="polite" aria-atomic="true">
-          {(() => {
-            const term = sq.trim();
-            const nFilters = filterCount(appliedFilters);
-            if (!term && !nFilters) return null;
-            const n = rows.length;
-            const noun = n === 1 ? "person" : "people";
-            const verb = n === 1 ? "matches" : "match";
-            const what = term && nFilters ? `“${term}” and these filters` : term ? `“${term}”` : "these filters";
-            const clear = term && nFilters ? "Clear all" : term ? "Clear search" : "Clear filters";
-            return (
-              <>
-                <span>{`${n} ${noun} ${verb} ${what}`}</span>
-                <Button
-                  type="button"
-                  $variant="ghost"
-                  $size="sm"
-                  onClick={() => {
-                    if (term) setQ("");
-                    if (nFilters) clearFilters();
-                    else setSelected(new Set());
-                  }}
-                >
-                  {clear}
-                </Button>
-              </>
-            );
-          })()}
-        </ResultsLine>
+        <SummaryRow>
+          {appliedKeys.length > 0 && (
+            <AppliedRow role="group" aria-label="Applied filters">
+              {appliedKeys.map((key) =>
+                key === "tags" || key === "notTags" ? (
+                  tagChips(key)
+                ) : (
+                  <FilterGroup key={key} data-filter={key}>
+                    <ChipButton type="button" $variant="ghost" $size="sm" onClick={() => setOpenFilter(key)} aria-label={`Change filter: ${settledSummary(key)}`}>
+                      <ChipLabel>{settledSummary(key)}</ChipLabel>
+                    </ChipButton>
+                    <ChipRemove type="button" $variant="ghost" $size="sm" aria-label={`Remove filter: ${settledSummary(key)}`} onClick={() => removeFilter(key)}>
+                      <Icon icon={X} size={14} />
+                    </ChipRemove>
+                  </FilterGroup>
+                ),
+              )}
+            </AppliedRow>
+          )}
+          <ResultsLine role="status" aria-live="polite" aria-atomic="true">
+            {(() => {
+              const term = settled.term;
+              const nFilters = filterCount(settled.applied);
+              if (!term && !nFilters) {
+                /* The default view: unsubscribed people stay out of the list until asked for. */
+                if (settled.filters.emails !== "on") return null;
+                return (
+                  <>
+                    <span>Unsubscribed people are hidden.</span>
+                    <Button type="button" $variant="ghost" $size="sm" onClick={() => setFilter("emails", "any")}>
+                      Show them
+                    </Button>
+                  </>
+                );
+              }
+              const n = settled.n;
+              const noun = n === 1 ? "person" : "people";
+              const verb = n === 1 ? "matches" : "match";
+              const what = term && nFilters ? `“${term}” and these filters` : term ? `“${term}”` : "these filters";
+              const clear = term && nFilters ? "Clear all" : term ? "Clear search" : "Clear filters";
+              return (
+                <>
+                  <span>{`${n} ${noun} ${verb} ${what}`}</span>
+                  <Button
+                    type="button"
+                    $variant="ghost"
+                    $size="sm"
+                    onClick={() => {
+                      if (term) setQ("");
+                      if (nFilters) clearFilters();
+                      else setSelected(new Set());
+                    }}
+                  >
+                    {clear}
+                  </Button>
+                </>
+              );
+            })()}
+          </ResultsLine>
+        </SummaryRow>
       )}
+      </FilterArea>
 
       {showList && (
       <ListWrap ref={listRef} role="presentation" onKeyDown={onListKeyDown} onClickCapture={onListClickCapture} onFocus={onListFocus}>
@@ -1888,17 +2020,30 @@ function Directory() {
               setQ("");
               clearFilters();
             }}
-            empty={{
-              icon: UsersRound,
-              title: "No one here yet",
-              description: "Add a member, or import the people who already pay.",
-              action: (
-                <Button type="button" onClick={() => setDialog({ kind: "add" })}>
-                  <Icon icon={Plus} size={16} />
-                  Add member
-                </Button>
-              ),
-            }}
+            empty={
+              !noPeople
+                ? {
+                    icon: UsersRound,
+                    title: "No subscribed people",
+                    description: "Unsubscribed people are hidden.",
+                    action: (
+                      <Button type="button" $variant="secondary" onClick={() => setFilter("emails", "any")}>
+                        Show them
+                      </Button>
+                    ),
+                  }
+                : {
+                    icon: UsersRound,
+                    title: "No one here yet",
+                    description: "Add a member, or import the people who already pay.",
+                    action: (
+                      <Button type="button" onClick={() => setDialog({ kind: "add" })}>
+                        <Icon icon={Plus} size={16} />
+                        Add member
+                      </Button>
+                    ),
+                  }
+            }
           />
         }
       />
