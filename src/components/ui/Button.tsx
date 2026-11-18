@@ -62,7 +62,7 @@ export const Button = styled.button<{ $variant?: Variant; $size?: Size }>`
       color: var(--color-text);
       border-color: var(--color-border-strong);
       &:hover:not(:disabled):not([aria-disabled="true"]) {
-        background: var(--color-outline-hover);
+        background: var(--color-bg-hover);
       }
     `}
   ${({ $variant }) =>

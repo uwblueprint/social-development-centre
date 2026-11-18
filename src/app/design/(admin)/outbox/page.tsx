@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { OutboxPage } from "./OutboxPage";
+import { OutboxPage } from "./_components/OutboxPage";
 
 export const metadata: Metadata = { title: "Outbox" };
 

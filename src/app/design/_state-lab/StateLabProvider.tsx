@@ -66,10 +66,23 @@ const Row = styled.div`
   border-top: 1px solid var(--color-border);
 `;
 
-const RowLabel = styled(Label)`
+const RowText = styled.div`
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+`;
+
+const RowLabel = styled(Label)`
   margin-bottom: 0;
+  overflow-wrap: anywhere;
+`;
+
+const RowHint = styled.span`
+  font-size: var(--text-sm);
+  line-height: var(--leading-ui);
+  color: var(--color-text-muted);
   overflow-wrap: anywhere;
 `;
 
@@ -123,14 +136,14 @@ function Lab({ children }: { children: React.ReactNode }) {
   const value = React.useMemo(() => ({ active, register }), [active, register]);
 
   const registered = [...pages.values()];
+  const notApplicable = new Set(registered.flatMap((p) => p.notApplicable));
   const groups: { title: string; states: readonly LabState[] }[] = [
-    { title: "Connection", states: GENERAL.connection },
-    { title: "Data", states: [...GENERAL.data, ...registered.flatMap((p) => p.data)] },
-    { title: "Actions", states: registered.flatMap((p) => p.actions) },
-    { title: "Access", states: GENERAL.access },
+    { title: "Page", states: GENERAL.page },
+    { title: "Section", states: [...GENERAL.section, ...registered.flatMap((p) => p.data)] },
+    { title: "Action", states: [...GENERAL.action, ...registered.flatMap((p) => p.actions)] },
   ].filter((g) => g.states.length > 0);
 
-  const names = groups.flatMap((g) => g.states).filter((st) => active.has(st.id)).map((st) => st.label);
+  const names = groups.flatMap((g) => g.states).filter((st) => active.has(st.id) && !notApplicable.has(st.id)).map((st) => st.label);
   const shown = names.slice(0, SHOWN).join(", ");
   const more = names.length > SHOWN ? ` +${names.length - SHOWN}` : "";
 
@@ -167,10 +180,15 @@ function Lab({ children }: { children: React.ReactNode }) {
                 <GroupTitle>{group.title}</GroupTitle>
                 {group.states.map((state) => {
                   const id = `state-lab-${state.id}`;
+                  const skipped = notApplicable.has(state.id);
+                  const hint = skipped ? "Doesn't apply to this screen." : state.description;
                   return (
                     <Row key={state.id}>
-                      <RowLabel htmlFor={id}>{state.label}</RowLabel>
-                      <Switch id={id} checked={active.has(state.id)} onCheckedChange={(on) => set(state.id, on)} />
+                      <RowText>
+                        <RowLabel htmlFor={id}>{state.label}</RowLabel>
+                        {hint && <RowHint id={`${id}-hint`}>{hint}</RowHint>}
+                      </RowText>
+                      <Switch id={id} aria-describedby={hint ? `${id}-hint` : undefined} disabled={skipped} checked={active.has(state.id) && !skipped} onCheckedChange={(on) => set(state.id, on)} />
                     </Row>
                   );
                 })}

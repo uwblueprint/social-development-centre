@@ -2,9 +2,14 @@
 
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from "react";
 import type { FocusEvent } from "react";
-import { styled } from "next-yak";
+import { keyframes, styled } from "next-yak";
 import { Tabs as TabsPrimitive } from "radix-ui";
 
+/**
+ * Pass `activationMode="manual"` when selecting a tab is not free (it loads content): arrow keys then
+ * move focus only, and Enter or Space selects. The default stays automatic (arrow keys select), which
+ * is the ARIA recommendation when panels appear instantly.
+ */
 export const Tabs = TabsPrimitive.Root;
 
 const StyledTabsList = styled(TabsPrimitive.List)`
@@ -12,10 +17,16 @@ const StyledTabsList = styled(TabsPrimitive.List)`
   display: flex;
   align-items: flex-end;
   gap: var(--space-4);
-  /* The divider is an inset shadow, not a border, so the active underline sits inside the list and
-     nothing overflows vertically. Narrow screens can still swipe sideways; the scrollbar is hidden
-     (keyboard focus scrolls the active tab into view). */
-  box-shadow: inset 0 -1px 0 var(--color-border);
+  /* A scroll container clips outer shadows, so it reserves the focus ring's reach (4px) on every side
+     as padding and gives it back as negative margin: the tabs sit where they always did. The tabs'
+     offsetLeft counts the padding, and so does the indicator's left: 0, so they stay aligned. The
+     divider is a background line, not a border or shadow, so it stays where the tabs end (4px up from
+     the padding box's bottom) and stops at the visible edges. Narrow screens can still swipe sideways;
+     the scrollbar is hidden (keyboard focus scrolls the active tab into view, ring included). */
+  padding: var(--space-1);
+  margin: calc(var(--space-1) * -1);
+  scroll-padding: var(--space-1);
+  background: linear-gradient(var(--color-border), var(--color-border)) no-repeat var(--space-1) calc(100% - var(--space-1)) / calc(100% - 2 * var(--space-1)) 1px;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
@@ -31,22 +42,77 @@ const StyledTabsList = styled(TabsPrimitive.List)`
 `;
 
 /*
- * The active line jumps to the selected tab (no sliding: selection is instant). Positioned from the
- * selected tab's box via --tab-x / --tab-w. Reduced motion is handled globally.
+ * The active line slides from the old tab to the new one, resizing to the new tab's width as it goes.
+ * Positioned from the selected tab's box via --tab-x / --tab-w. The first placement doesn't animate
+ * (it waits for data-indicator="ready"). Reduced motion is handled globally.
  */
+const sweep = keyframes`
+  from { transform: translateX(-100%); }
+  to { transform: translateX(250%); }
+`;
+
 const Indicator = styled.span`
   position: absolute;
   left: 0;
-  bottom: 0;
+  /* Level with the tabs' bottom edge, above the list's bottom padding. */
+  bottom: var(--space-1);
   width: var(--tab-w, 0);
   height: 2px;
   background: var(--color-text);
   translate: var(--tab-x, 0) 0;
   pointer-events: none;
+  overflow: hidden;
+
+  ${StyledTabsList}[data-indicator="ready"] & {
+    transition:
+      translate var(--duration-slow) var(--ease-out),
+      width var(--duration-slow) var(--ease-out);
+  }
+
+  /* Loading: the line becomes a quiet track with a --color-primary segment sweeping across the tab's width. */
+  ${StyledTabsList}[data-loading] & {
+    background: var(--color-border-strong);
+  }
+
+  ${StyledTabsList}[data-loading] &::after {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 40%;
+    background: var(--color-primary);
+    animation: ${sweep} calc(var(--duration-slow) * 5) var(--ease) infinite;
+  }
+
+  /* No movement: a fixed half-width segment still reads as busy. */
+  @media (prefers-reduced-motion: reduce) {
+    ${StyledTabsList}[data-loading] &::after {
+      width: 50%;
+      animation: none;
+    }
+  }
 `;
 
+const VisuallyHidden = styled.span`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+`;
+
+interface TabsListProps extends TabsPrimitive.TabsListProps {
+  /** The selected tab's content is loading: its underline shows a sweeping progress line and the list is `aria-busy`. */
+  loading?: boolean;
+  /** Announced politely while `loading`, e.g. "Loading All". Without it the animation is the only cue, so always pass it. */
+  loadingLabel?: string;
+}
+
 /** Every tab set shares the active line. */
-export const TabsList = forwardRef<HTMLDivElement, TabsPrimitive.TabsListProps>(function TabsList({ children, ...props }, ref) {
+export const TabsList = forwardRef<HTMLDivElement, TabsListProps>(function TabsList({ children, loading = false, loadingLabel, ...props }, ref) {
   const listRef = useRef<HTMLDivElement>(null);
   useImperativeHandle(ref, () => listRef.current as HTMLDivElement);
 
@@ -76,16 +142,22 @@ export const TabsList = forwardRef<HTMLDivElement, TabsPrimitive.TabsListProps>(
     list.querySelectorAll('[role="tab"]').forEach((tab) => resize.observe(tab));
     return () => {
       window.clearTimeout(frame);
+      // Start over next time, or a remount (React runs effects twice in dev) never reaches "ready" and never slides.
+      list.removeAttribute("data-indicator");
       mutations.disconnect();
       resize.disconnect();
     };
   }, []);
 
   return (
-    <StyledTabsList {...props} ref={listRef}>
-      {children}
-      <Indicator aria-hidden="true" />
-    </StyledTabsList>
+    <>
+      <StyledTabsList {...props} ref={listRef} data-loading={loading ? "" : undefined} aria-busy={loading || undefined}>
+        {children}
+        <Indicator aria-hidden="true" />
+      </StyledTabsList>
+      {/* Outside the tablist (its children are tabs), so the announcement isn't a tablist child. */}
+      <VisuallyHidden role="status">{loading && loadingLabel ? loadingLabel : ""}</VisuallyHidden>
+    </>
   );
 });
 
@@ -118,8 +190,20 @@ const StyledTabsTrigger = styled(TabsPrimitive.Trigger)`
     border-bottom-color: var(--color-text);
   }
 
-  &:focus-visible {
+  /* The focus ring hugs the label box (the trigger's content box, padding and underline excluded), so it
+     never covers the active underline: ring = where the keyboard is, underline = what is selected. The
+     ring's 4px reach stays inside the trigger (its padding), so nothing clips it. */
+  position: relative;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: var(--space-3) var(--space-1) calc(var(--space-3) - 2px);
     border-radius: var(--radius-sm);
+    pointer-events: none;
+  }
+
+  &:focus-visible::after {
     box-shadow: var(--focus-ring);
   }
 
