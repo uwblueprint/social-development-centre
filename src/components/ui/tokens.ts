@@ -294,8 +294,7 @@ globalStyle`
     --z-tooltip: 70; /* tooltips and hover cards, above the control they describe */
     --z-toast: 80; /* toasts confirm actions taken anywhere, including inside a modal */
 
-    /* Dialogs soften what's behind them so the decision in front reads first. Sheets don't blur:
-       the list behind a sheet is context people keep reading. */
+    /* Dialogs and sheets soften what's behind them (PM request, Nov 2026) so the panel in front reads first. */
     --overlay-blur: 2px;
   }
 

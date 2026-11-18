@@ -32,7 +32,7 @@ const Overlay = styled(DialogPrimitive.Overlay)`
   position: fixed;
   inset: 0;
   background: var(--color-overlay);
-  /* Dialogs blur what's behind them; sheets don't (see tokens: --overlay-blur). */
+  /* Dialogs and sheets blur what's behind them (see tokens: --overlay-blur). */
   backdrop-filter: blur(var(--overlay-blur));
   z-index: var(--z-modal);
   animation: ${overlayShow} var(--duration) var(--ease-out);

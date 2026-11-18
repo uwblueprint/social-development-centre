@@ -35,6 +35,8 @@ const Overlay = styled(DialogPrimitive.Overlay)`
   position: fixed;
   inset: 0;
   background: var(--color-overlay);
+  /* Same scrim and blur as Dialog (--overlay-blur). */
+  backdrop-filter: blur(var(--overlay-blur));
   z-index: var(--z-modal);
   animation: ${overlayShow} var(--duration-slow) var(--ease-out);
 
