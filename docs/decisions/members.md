@@ -9,6 +9,13 @@ decisions are in [directory.md](directory.md).
 - **Data:** existing general members stay members.
 - **Status:** the Decision Log marks this "Needs validation" with SDC. If SDC wants a paid tier back, it returns as a tag or a column, not a second kind of member.
 
+## 1a. Membership tiers return as a column (17 Nov 2026)
+- **Decision:** members choose one tier (Gold $50, Silver $25, Bronze $10 to start; admins add, edit, delete and reorder them in Settings). This is the "column" option from decision 1: still one kind of member, with `memberships.tier_id` saying what they pay. The platform still doesn't take payments.
+- **Soft delete:** a deleted tier gets `archived_at`. Members keep it and keep paying its price; new members can't choose it. There is no restore. Names must be unique only among tiers still offered, so "Gold" can be deleted and created again as a different row.
+- **Price changes** apply to everyone on the tier, including members on a deleted tier.
+- **One-time choice:** `/tiers` is shown once; a member who has a tier is sent home. Nothing checks the tier is "right" for them.
+- **Backend:** see [../backend/tiers.md](../backend/tiers.md).
+
 ## 2. Adding a member emails a sign-in link
 - **Decision (Jesse, 8 Oct 2026):** **Add member** sends the standard "Your SDC sign-in link" email (valid 1 hour; they can ask for another on the sign-in page).
 - **Why:** it's the only email we can send today. It stands in for a designed welcome email, which needs the Send Email Hook (see [../auth.md](../auth.md#not-built-yet)).
