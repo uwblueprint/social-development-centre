@@ -107,6 +107,12 @@ const QuietButton = styled(Button)`
     background: transparent;
     color: var(--color-text);
   }
+  /* Text actions read as links: underlined on hover and on keyboard focus. */
+  &&:hover:not(:disabled),
+  &&:focus-visible {
+    text-decoration: underline;
+    text-underline-offset: var(--space-1);
+  }
   &::after {
     content: "";
     position: absolute;
@@ -314,8 +320,10 @@ const CountdownDate = styled.time`
 
 /* Activity: circle, line, circle. The title sits on the dot's centre line. */
 const Timeline = styled.ol`
-  /* The dot is exactly one title line tall (--text-sm at --leading-body), so it centres on the first line. */
-  --timeline-dot: calc(var(--text-sm) * var(--leading-body));
+  /* One title line (--text-sm at --leading-body). */
+  --timeline-line: calc(var(--text-sm) * var(--leading-body));
+  /* The dot is 28px: roomy enough to read its icon. The title's first line is centred on it (see TimelineTitle). */
+  --timeline-dot: calc(var(--space-6) - var(--space-1));
   margin: 0;
   padding: 0;
   list-style: none;
@@ -373,7 +381,8 @@ const TONE_COLOR: Record<Tone, string> = {
   payment: "warning",
 };
 
-const TimelineDot = styled.span<{ $tone?: Tone }>`
+/* A routine email's dot is smaller and neutral, so member actions stand out from automated mail. */
+const TimelineDot = styled.span<{ $tone?: Tone; $quiet?: boolean }>`
   position: relative;
   z-index: var(--z-raised);
   align-self: start;
@@ -381,19 +390,30 @@ const TimelineDot = styled.span<{ $tone?: Tone }>`
   align-items: center;
   justify-content: center;
   box-shadow: 0 0 0 var(--space-1) var(--section-bg);
-  width: var(--timeline-dot);
-  height: var(--timeline-dot);
+  width: ${({ $quiet }) => ($quiet ? "calc(var(--timeline-dot) - var(--space-2))" : "var(--timeline-dot)")};
+  height: ${({ $quiet }) => ($quiet ? "calc(var(--timeline-dot) - var(--space-2))" : "var(--timeline-dot)")};
+  /* Centred in the dot column and on the title's first line. */
+  justify-self: center;
+  margin-top: ${({ $quiet }) => ($quiet ? "var(--space-1)" : "0")};
   border-radius: var(--radius-full);
-  border: 1px solid ${({ $tone }) => ($tone ? `var(--color-${TONE_COLOR[$tone]}-border)` : "var(--color-border)")};
-  background: ${({ $tone }) => ($tone ? `var(--color-${TONE_COLOR[$tone]}-subtle)` : "var(--color-surface-raised)")};
-  color: ${({ $tone }) => ($tone ? `var(--color-${TONE_COLOR[$tone]})` : "var(--color-text-muted)")};
+  border: 1px solid ${({ $tone, $quiet }) => ($tone && !$quiet ? `var(--color-${TONE_COLOR[$tone]}-border)` : "var(--color-border)")};
+  background: ${({ $tone, $quiet }) => ($tone && !$quiet ? `var(--color-${TONE_COLOR[$tone]}-subtle)` : "var(--color-surface-raised)")};
+  color: ${({ $tone, $quiet }) => ($tone && !$quiet ? `var(--color-${TONE_COLOR[$tone]})` : "var(--color-text-muted)")};
 `;
 
-/* A row title: --text-sm medium at body line height. An email's chevron follows the last word. */
-const TimelineTitle = styled.div`
+/*
+ * A row title: --text-sm medium at body line height. An email's chevron follows the last word. The box is as tall
+ * as the dot with the first line centred in it, so title and dot share a centre line. Routine emails are
+ * regular weight and muted.
+ */
+const TimelineTitle = styled.div<{ $quiet?: boolean }>`
+  box-sizing: border-box;
+  min-height: var(--timeline-dot);
+  padding-top: calc((var(--timeline-dot) - var(--timeline-line)) / 2);
   font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
+  font-weight: ${({ $quiet }) => ($quiet ? "var(--weight-regular)" : "var(--weight-medium)")};
   line-height: var(--leading-body);
+  color: ${({ $quiet }) => ($quiet ? "var(--color-text-muted)" : "inherit")};
   overflow-wrap: anywhere;
 `;
 
@@ -410,7 +430,7 @@ const TitleTail = styled.span`
 `;
 
 const TimelineSub = styled.div`
-  margin-top: var(--space-1);
+  margin-top: 0;
   font-size: var(--text-xs);
   line-height: var(--leading-ui);
   color: var(--color-text-muted);
@@ -453,6 +473,12 @@ const EmailTrigger = styled(CollapsibleTrigger)`
   cursor: pointer;
   border-radius: var(--radius-sm);
 
+  /* Hover and keyboard focus underline the title, like a text link. */
+  &:hover > :first-child,
+  &:focus-visible > :first-child {
+    text-decoration: underline;
+    text-underline-offset: var(--space-1);
+  }
   &:focus-visible {
     box-shadow: var(--focus-ring);
   }
@@ -1131,14 +1157,18 @@ type ActivityView = "all" | "email" | "member";
 /* The search field only appears once there is enough history to search. */
 const SEARCH_MIN = 12;
 
-/* Icon size for the activity dots and chevrons. */
+/* Icon size for the activity dots and chevrons; routine emails get a smaller dot and icon. */
 const ACTIVITY_ICON = 16;
+const QUIET_ICON = 14;
+
+/* The summary line appears once there is enough history to need it. */
+const SUMMARY_MIN = 6;
 
 /* Everything newer than this many months back is grouped by month; older items are grouped by year. */
 const RECENT_MONTHS = 12;
 
-/* A group folds 3 or more emails from the same template into one row. */
-const FOLD_FROM = 3;
+/* A group folds 2 or more emails from the same template into one row; a single routine email stays a quiet row. */
+const FOLD_FROM = 2;
 
 /** Names for the email templates SDC sends (see `template` in demoHistory.ts). A template without a name is never folded. */
 const TEMPLATE_LABELS: Record<string, string> = {
@@ -1151,6 +1181,9 @@ const TEMPLATE_LABELS: Record<string, string> = {
   "renewal-thanks": "Renewal thank-yous",
   "agm-notice": "AGM notices",
 };
+
+/** A routine email: sent automatically from one of SDC's templates. Personal emails have no template. */
+const isRoutine = (r: Row) => r.kind === "email" && !!r.template && !!TEMPLATE_LABELS[r.template];
 
 /** Payments join the stored activity as their own rows. */
 function activityRows(m: Member): Row[] {
@@ -1255,12 +1288,19 @@ const GroupHeader = styled.h4`
   top: 0;
   z-index: var(--z-sticky);
   margin: 0;
-  padding: var(--space-2) 0;
+  /* Its own space: opaque, with room below so the first row starts clear of it. */
+  padding: var(--space-2) 0 var(--space-3);
   background: var(--section-bg);
   font-size: var(--text-xs);
   font-weight: var(--weight-medium);
   line-height: var(--leading-ui);
   color: var(--color-text-muted);
+`;
+
+/* One quiet line of the gist, so the admin doesn't have to scroll for it. */
+const Summary = styled(Muted)`
+  font-size: var(--text-xs);
+  line-height: var(--leading-ui);
 `;
 
 /* Skeleton rows for the next year while it loads. */
@@ -1280,6 +1320,11 @@ const BundleTrigger = styled(CollapsibleTrigger)`
   cursor: pointer;
   border-radius: var(--radius-sm);
 
+  &:hover > :first-child,
+  &:focus-visible > :first-child {
+    text-decoration: underline;
+    text-underline-offset: var(--space-1);
+  }
   &:focus-visible {
     box-shadow: var(--focus-ring);
   }
@@ -1405,6 +1450,17 @@ function ActivitySection({
   const shownGroups = [...recent, ...older.slice(0, revealed)];
   const nextYear = searching ? undefined : older[revealed];
 
+  const lastEmail = everything.find((a) => a.kind === "email");
+  const eventsAttended = everything.filter((a) => a.kind === "event").length;
+  const summary = [
+    `Member since ${MONTH_SHORT[Number(m.joinedAt.slice(5, 7)) - 1]} ${m.joinedAt.slice(0, 4)}`,
+    lastEmail && `Last email ${formatDate(lastEmail.at)}`,
+    counts.email > 0 && plural(counts.email, "email"),
+    eventsAttended > 0 && `${plural(eventsAttended, "event")} attended`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   const rowProps = { onEditPayment, lab, loadedEmails, onEmailLoaded: markLoaded };
   const searchLabel = view === "email" ? "Search emails" : view === "member" ? "Search activity" : "Search all";
   return (
@@ -1419,6 +1475,7 @@ function ActivitySection({
     >
     <Section aria-label="Activity">
       <SectionHeader title="Activity" />
+      {!failed && everything.length >= SUMMARY_MIN && <Summary>{summary}</Summary>}
       <TabsList aria-label="Show" loading={refreshing}>
         <TabsTrigger value="all">
           All<TabCount>{counts.all}</TabCount>
@@ -1561,15 +1618,16 @@ function ActivityRow({
   onEmailLoaded: (id: string) => void;
 }) {
   const date = <TimelineDate dateTime={a.at}>{formatDate(a.at)}</TimelineDate>;
+  const routine = isRoutine(a);
   return (
     <TimelineItem data-reveal={a.payment ? "" : undefined}>
-      <TimelineDot $tone={TONES[a.kind]}>
-        <Icon icon={ICONS[a.kind]} size={ACTIVITY_ICON} />
+      <TimelineDot $tone={TONES[a.kind]} $quiet={routine}>
+        <Icon icon={ICONS[a.kind]} size={routine ? QUIET_ICON : ACTIVITY_ICON} />
       </TimelineDot>
       {a.kind === "email" ? (
         <EmailCollapsible>
           <EmailTrigger>
-            <TimelineTitle>
+            <TimelineTitle $quiet={routine}>
               {titleHead(a.title)}
               <TitleTail>
                 {titleLast(a.title)}
@@ -1625,12 +1683,12 @@ function BundleRow({
   const title = `${label} · ${rows.length} emails`;
   return (
     <TimelineItem>
-      <TimelineDot $tone="email">
-        <Icon icon={Mail} size={ACTIVITY_ICON} />
+      <TimelineDot $tone="email" $quiet>
+        <Icon icon={Mail} size={QUIET_ICON} />
       </TimelineDot>
       <EmailCollapsible open={open} onOpenChange={onOpenChange}>
         <BundleTrigger>
-          <TimelineTitle>
+          <TimelineTitle $quiet>
             {titleHead(title)}
             <TitleTail>
               {titleLast(title)}
