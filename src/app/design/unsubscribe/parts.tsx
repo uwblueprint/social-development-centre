@@ -7,12 +7,14 @@ import { Button } from "@/components/ui/Button";
 import { Collapsible, CollapsibleContent } from "@/components/ui/Collapsible";
 import { Icon } from "@/components/ui/Icon";
 import { RadioGroup, RadioGroupOption } from "@/components/ui/RadioGroup";
+import { Separator } from "@/components/ui/Separator";
 import { AuthActions, AuthColumn, AuthHeading, AuthScreen, SdcLogo } from "@/features/auth/AuthScreen";
 
 /*
  * Pieces shared by the email flow (/design/unsubscribe) and the cancel-membership flow
  * (/design/cancel-membership), so both follow the same three patterns (see README.md):
- * 1. One template: logo, green heading (with at most one short line under it), content, actions.
+ * 1. One template: logo, green heading with what happened right under it, content, actions, and an
+ *    undo set apart by a divider.
  * 2. A question is one bordered list of answers; choosing one slides open its follow-up.
  * 3. The button a person presses changes its text to the result and stops doing anything. An undo,
  *    when there is one, is a muted line with a text button.
@@ -26,9 +28,29 @@ export const fadeIn = keyframes`
   }
 `;
 
-/** Each new screen fades in (reduced motion is handled globally). Key it by screen. */
+/**
+ * Each new screen fades in (reduced motion is handled globally). Key it by screen. Sections sit
+ * further apart than AuthColumn's default, so the heading and its line read as one group.
+ */
 export const Column = styled(AuthColumn)`
+  gap: var(--space-6);
   animation: ${fadeIn} var(--duration) var(--ease);
+`;
+
+/** The heading and what happened, one tight group. */
+const HeadingGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+`;
+
+/** The undo, after a divider: an afterthought, not the next step. */
+const UndoSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
 `;
 
 /**
@@ -53,10 +75,10 @@ export const Stack = styled.div`
   width: 100%;
 `;
 
-/** A question above a list of answers. */
+/** A question above a list of answers, centred like the heading. */
 export const Question = styled.h2`
   margin: 0;
-  text-align: left;
+  text-align: center;
   font-size: var(--text-md);
   font-weight: var(--weight-medium);
   line-height: var(--leading-heading);
@@ -83,7 +105,7 @@ export const Body = styled.p`
   color: var(--color-text-muted);
 `;
 
-/** A message the page is about, at body size and centred (the membership line after unsubscribing). */
+/** What happened, at body size, near-black and centred. The template's line under the heading. */
 export const Lead = styled.p`
   margin: 0;
   text-align: center;
@@ -224,29 +246,45 @@ export const FadingNote = styled(Note)`
   animation: ${fadeIn} var(--duration) var(--ease);
 `;
 
-/** Pattern 1: the template every screen fills. Keyed by `screenKey` so each screen fades in. */
+/**
+ * Pattern 1: the template every screen fills. Keyed by `screenKey` so each screen fades in.
+ * - `line`: what happened, in one or two sentences, right under the heading (near-black, `Lead`).
+ *   Every screen uses this one treatment; grey (`Note`) is only for small print in `children`.
+ * - `undo`: a muted question and a text button, after a divider below the actions.
+ */
 export function Template({
   screenKey,
   heading,
   line,
   children,
   actions,
+  undo,
 }: {
   screenKey: string;
   heading: string;
   line?: ReactNode;
   children?: ReactNode;
   actions?: ReactNode;
+  undo?: ReactNode;
 }) {
   return (
     <AuthScreen>
       <Column $wide key={screenKey}>
         <SdcLogo />
-        <Heading>
-          <AuthHeading title={heading} description={line} />
-        </Heading>
+        <HeadingGroup>
+          <Heading>
+            <AuthHeading title={heading} />
+          </Heading>
+          {line && <Lead>{line}</Lead>}
+        </HeadingGroup>
         {children}
         {actions && <AuthActions>{actions}</AuthActions>}
+        {undo && (
+          <UndoSection>
+            <Separator />
+            <UndoLine>{undo}</UndoLine>
+          </UndoSection>
+        )}
       </Column>
     </AuthScreen>
   );

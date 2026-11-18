@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Collapsible } from "@/components/ui/Collapsible";
-import { Separator } from "@/components/ui/Separator";
 import { LinkButton } from "@/features/auth/AuthScreen";
 import { unsubscribeCopy as copy } from "./copy";
 import { demoMember, emailReasons, emailTypes, formatDate, formatMoney, tierById, type EmailReason, type EmailType } from "./data";
@@ -14,12 +13,10 @@ import {
   ChoiceText,
   Choices,
   FollowUp,
-  Lead,
   Note,
   Options,
   StatusLine,
   Template,
-  UndoLine,
   done,
   useFocusHeadingOn,
 } from "./parts";
@@ -99,6 +96,12 @@ export function UnsubscribeFlow({ start }: { start: EmailFlowStart }) {
       // Unsubscribing turns this page into "You're unsubscribed": the question slides closed, and
       // resubscribing slides it open again.
       heading={subscribed ? copy.emails.heading : copy.unsubscribed}
+      // FigJam: after unsubscribing, members hear their membership is still active.
+      line={
+        !subscribed &&
+        start.isMember &&
+        copy.emails.membership(tier.name, formatDate(demoMember.nextPaymentDate), formatMoney(tier.monthlyPrice))
+      }
       actions={
         subscribed ? (
           <>
@@ -108,29 +111,26 @@ export function UnsubscribeFlow({ start }: { start: EmailFlowStart }) {
             {/* After resubscribing, the confirmation replaces the note about what unsubscribing does. */}
             {resubscribed ? <StatusLine>{copy.resubscribed}</StatusLine> : <Note>{copy.emails.unsubscribeNote(start.isMember)}</Note>}
           </>
-        ) : (
+        ) : start.isMember ? (
           <>
-            {/* FigJam: after unsubscribing, members hear their membership is still active. */}
-            {start.isMember && (
-              <>
-                <Lead>{copy.emails.membership(tier.name, formatDate(demoMember.nextPaymentDate), formatMoney(tier.monthlyPrice))}</Lead>
-                <Button type="button" $size="lg" onClick={() => setScreen("closed")}>
-                  {copy.emails.soundsGood}
-                </Button>
-                {/* They chose to cancel, so the cancel flow opens at "Before you go". */}
-                <Button type="button" $variant="danger-outline" $size="lg" onClick={() => router.push("/design/cancel-membership?step=reasons")}>
-                  {copy.cancelMembership}
-                </Button>
-                <Separator />
-              </>
-            )}
-            {/* The undo comes last, under everything else. */}
-            <UndoLine>
-              <Note>{copy.undoUnsubscribe}</Note>
-              <Button type="button" $variant="ghost" onClick={resubscribe}>
-                {copy.resubscribe}
-              </Button>
-            </UndoLine>
+            <Button type="button" $size="lg" onClick={() => setScreen("closed")}>
+              {copy.emails.soundsGood}
+            </Button>
+            {/* They chose to cancel, so the cancel flow opens at "Before you go". */}
+            <Button type="button" $variant="danger-outline" $size="lg" onClick={() => router.push("/design/cancel-membership?step=reasons")}>
+              {copy.cancelMembership}
+            </Button>
+          </>
+        ) : undefined
+      }
+      // The undo comes last, under everything else.
+      undo={
+        !subscribed && (
+          <>
+            <Note>{copy.undoUnsubscribe}</Note>
+            <Button type="button" $variant="ghost" onClick={resubscribe}>
+              {copy.resubscribe}
+            </Button>
           </>
         )
       }

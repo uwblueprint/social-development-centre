@@ -18,7 +18,7 @@ import {
   type MembershipReason,
   type PauseLength,
 } from "../unsubscribe/data";
-import { Body, Lead, Note, Options, Question, Stack, Template, UndoLine, done, useFocusHeadingOn } from "../unsubscribe/parts";
+import { Body, Lead, Note, Options, Question, Stack, Template, done, useFocusHeadingOn } from "../unsubscribe/parts";
 import { cancelCopy as copy } from "./copy";
 
 /*
@@ -146,24 +146,18 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
         <Template
           screenKey={step}
           heading={undone ? copy.active.heading : copy.paused.heading}
-          line={undone ? copy.active.thanks : undefined}
-          actions={
+          line={undone ? copy.active.thanks : copy.paused.body(formatDate(restartDate), formatMoney(tier.monthlyPrice))}
+          undo={
             !undone && (
-              <UndoLine>
+              <>
                 <Note>{copy.paused.restartQuestion}</Note>
                 <Button type="button" $variant="ghost" onClick={() => setUndone(true)}>
                   {copy.paused.restartNow}
                 </Button>
-              </UndoLine>
+              </>
             )
           }
-        >
-          {!undone && (
-            <Stack>
-              <Lead>{copy.paused.body(formatDate(restartDate), formatMoney(tier.monthlyPrice))}</Lead>
-            </Stack>
-          )}
-        </Template>
+        />
       );
 
     case "reasons":
@@ -245,23 +239,19 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
         <Template
           screenKey={step}
           heading={undone ? copy.switched.stayed(tier.name) : copy.switched.heading(switched.name)}
-          line={shared.emails.closeTab}
-          actions={
+          line={!undone && copy.switched.body(formatDate(nextPayment), formatMoney(switched.monthlyPrice))}
+          undo={
             !undone && (
-              <UndoLine>
+              <>
                 <Note>{copy.switched.undoQuestion}</Note>
                 <Button type="button" $variant="ghost" onClick={() => setUndone(true)}>
                   {copy.switched.undo(tier.name)}
                 </Button>
-              </UndoLine>
+              </>
             )
           }
         >
-          {!undone && (
-            <Stack>
-              <Lead>{copy.switched.body(formatDate(nextPayment), formatMoney(switched.monthlyPrice))}</Lead>
-            </Stack>
-          )}
+          {!undone && <Note>{shared.emails.closeTab}</Note>}
         </Template>
       );
 
@@ -270,9 +260,11 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
         <Template
           screenKey={step}
           heading={undone ? copy.resubscribed : shared.unsubscribed}
-          actions={
+          // Resubscribing changes nothing about the membership, so this line stays.
+          line={shared.emails.membership(tier.name, formatDate(nextPayment), formatMoney(tier.monthlyPrice))}
+          undo={
             !undone && (
-              <UndoLine>
+              <>
                 <Note>{shared.undoUnsubscribe}</Note>
                 <Button
                   type="button"
@@ -284,15 +276,10 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
                 >
                   {shared.resubscribe}
                 </Button>
-              </UndoLine>
+              </>
             )
           }
-        >
-          {/* Resubscribing changes nothing about the membership, so this line stays. */}
-          <Stack>
-            <Lead>{shared.emails.membership(tier.name, formatDate(nextPayment), formatMoney(tier.monthlyPrice))}</Lead>
-          </Stack>
-        </Template>
+        />
       );
 
     case "confirm":
@@ -300,8 +287,13 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
         <Template
           screenKey={step}
           heading={copy.confirm.heading}
+          line={copy.confirm.whatEnds}
+          // Keeping is the filled button, first; cancelling is the red outline under it.
           actions={
             <>
+              <Button type="button" $size="lg" onClick={() => go("kept")}>
+                {copy.confirm.keepMembership}
+              </Button>
               <Button
                 type="button"
                 $variant="danger-outline"
@@ -314,16 +306,10 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
               >
                 {shared.cancelMembership}
               </Button>
-              <Button type="button" $variant="outline" $size="lg" onClick={() => go("kept")}>
-                {copy.confirm.keepMembership}
-              </Button>
             </>
           }
         >
-          <Stack>
-            <Lead>{copy.confirm.whatEnds}</Lead>
-            <Note>{copy.confirm.refund(formatDate(addMonths(nextPayment, -1)), copy.confirm.refundEmail)}</Note>
-          </Stack>
+          <Note>{copy.confirm.refund(formatDate(addMonths(nextPayment, -1)), copy.confirm.refundEmail)}</Note>
         </Template>
       );
 
@@ -342,6 +328,8 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
           actions={
             askedAboutEmails && (
               <>
+                {/* The question groups with its buttons, apart from the small print above. */}
+                <Question>{copy.cancelled.emailQuestion}</Question>
                 {emailsAnswer === "kept" ? (
                   done(copy.cancelled.emailsKept)
                 ) : emailsAnswer === null ? (
@@ -368,10 +356,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
             )
           }
         >
-          <Stack>
-            <Lead>{copy.cancelled.confirmationSent(demoMember.email)}</Lead>
-            {askedAboutEmails && <Question>{copy.cancelled.emailQuestion}</Question>}
-          </Stack>
+          <Note>{copy.cancelled.confirmationSent(demoMember.email)}</Note>
         </Template>
       );
   }

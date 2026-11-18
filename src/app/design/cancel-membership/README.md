@@ -27,7 +27,7 @@ Before you go ──────┤ (need a break, or too expensive → Pause in
 
   "Continue to cancel" is always visible: the question never stands between someone and cancelling.
 - **End screens for each alternative** (`?step=paused|switched|unsubscribed`). Saying yes to an alternative ends the flow on its own screen: the outcome as the heading, the details with dates and amounts in bold, and a muted undo line ("Switched" also says "Awesome! You can close this tab now."). Undoing changes the heading ("Your membership is active again" with "Thank you for your support.", "You'll stay a Supporter member", "You're subscribed again") and moves focus to it.
-- **Cancel your membership?** (`?step=confirm`). "Your voting rights and member benefits end at the end of the month, and you won't be charged again.", then, in small grey text, how to ask for a refund (email admin@sdc.com). Cancel membership, or Keep my membership.
+- **Cancel your membership?** (`?step=confirm`). "Your voting rights and member benefits end at the end of the month, and you won't be charged again.", then, in small grey text, how to ask for a refund (email admin@sdc.com). Keep my membership (filled, first) or Cancel membership (red outline, second).
 - **Your membership is active again** (`?step=kept`). After Keep my membership: "Thank you for your support." Nothing else to do.
 - **We're sorry to see you go** (`?step=cancelled`). Thanks (the "supporter since" line lives only here), the confirmation email and "You can rejoin anytime", and, if they still get emails, Keep getting emails / Unsubscribe.
 

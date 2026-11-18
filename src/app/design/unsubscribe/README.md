@@ -14,9 +14,9 @@ The flow follows the [Unsub flow FigJam board](https://www.figma.com/board/jvbGj
 
 Both flows are built from `parts.tsx`:
 
-1. **One template** (`Template`). SDC logo, green heading (with at most one short line under it; it gets smaller as the screen narrows), content, then actions in a full-width column, centred on the page. Each new screen fades in.
+1. **One template** (`Template`). SDC logo; green heading (it gets smaller as the screen narrows) with what happened right under it as one tight group (`line`: near-black, body size, centred, every screen the same); content; actions; then the undo, if any, after a divider. Sections are `--space-6` apart, the heading and its line `--space-2`, so grouping comes from spacing. Grey (`Note`) is only for small print: refunds, the undo question, what pausing means. Questions are centred over their answer list. Each new screen fades in.
 2. **A question is one bordered list of answers** (`Options`: kit `RadioGroup`, one answer, optional). Choosing an answer slides its follow-up open under it (kit `Collapsible`, `--duration-slow`) and closes the previous one. Follow-ups never open a new page. Text inside a follow-up is small and muted, so the answer above it reads first; messages the page is about are body size (`Lead`).
-3. **The button you press becomes its result** (`done()`). It stays in place, says what happened ("✓ Your preference is saved") and does nothing more. It's `aria-disabled` on the secondary style rather than `disabled`, because the kit fades disabled buttons below 4.5:1, and it has no disabled reason (design: the label explains it). Focus stays on it. An undo is a muted line with a text button under it (`UndoLine`).
+3. **The button you press becomes its result** (`done()`). It stays in place, says what happened ("✓ Your preference is saved") and does nothing more. It's `aria-disabled` on the secondary style rather than `disabled`, because the kit fades disabled buttons below 4.5:1, and it has no disabled reason (design: the label explains it). Focus stays on it. An undo is a muted question and a text button after a divider (`Template`'s `undo`).
 
 Buttons: black primary for the main action, red outline for Unsubscribe and cancelling, outline for the rest.
 
