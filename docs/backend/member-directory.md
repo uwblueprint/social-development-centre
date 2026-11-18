@@ -57,6 +57,23 @@ Items marked **new** don't exist in the PR #40 schema yet.
 First name, last name, email (unique), type, amount and method for paid, join date (backdate only while
 adding; PR #40's `add_member(..., p_joined_at)`), and "Send join emails" (default on; PR #40's `join_emails`).
 
+## Bulk import
+Design: `ImportMembersDialog.tsx`. An admin picks a CSV (a Ride for Refuge export, an event sign-in sheet), matches
+columns (email required; first name, last name and tags optional), reviews, then adds everyone. The file is parsed in
+the browser, so the backend never sees the file itself.
+- **Bulk create (new):** one action taking up to 1,000 rows of `{ email, first_name?, last_name?, tags[] }`, plus
+  `add_tags_to_existing` (bool). Creates people as members, type complimentary (open: PM may want the type in the file),
+  joined today, "Added by an admin", `join_emails` off. Same shape as `add_member`, run in one transaction per batch.
+- **Dedupe by email on the server**, case-insensitively, against the directory and within the file. The screen checks
+  too, but the server decides: someone may have been added since the dialog opened.
+- **Per-row results:** for each input row, `created`, `skipped_existing` (with `tags_added` when the box was ticked),
+  `duplicate_in_file` or `invalid` with a reason. The screen shows counts and offers the failed rows as CSV.
+- **Tags:** names match existing tags case-insensitively; unknown names are created (`create_tag`) in the same call.
+- **Limits:** 1,000 rows per import (the screen refuses larger files with "split the file"); reject over this size
+  server-side too. Rate-limit per admin.
+- **Audit log:** one entry per import (who, when, file name, counts created / skipped / failed) and the usual
+  `tag_events` and "Added by an admin" activity per person. Undo (from the toast) removes the people this import created.
+
 ## Not here
 No phone numbers or call logging (client, Oct 23). No tax receipts (client, Oct 23).
 

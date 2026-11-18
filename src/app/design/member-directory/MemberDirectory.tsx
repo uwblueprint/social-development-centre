@@ -46,8 +46,10 @@ import {
   type Payment,
   type TagColor,
 } from "./data";
+import { INTAKE_TIMES, PLACES } from "./demoHistory";
 import { snapshotOf, useUndoableUpdate } from "./undo";
 import { MemberSheet } from "./MemberSheet";
+import { ImportMembersDialog, type NewMember, type TagUpdate } from "./ImportMembersDialog";
 import { TagPicker } from "./TagPicker";
 import { BulkTagsPopover } from "./BulkTagsPopover";
 import { Tag } from "@/components/ui/Tag";
@@ -66,17 +68,60 @@ import {
 
 /* ---------- layout ---------- */
 
-/* The quick-filter row under the header. On narrow screens it scrolls sideways inside itself, so the page never does.
+/* Search and filters in one row under the header. Narrow: the search takes its own full-width line and the filters scroll beneath it. */
+const ToolbarBox = styled.div`
+  container-type: inline-size;
+  min-width: 0;
+`;
+
+const Toolbar = styled.div`
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+
+  @container (max-width: 640px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+`;
+
+const SearchBox = styled.div`
+  flex: 0 0 var(--search-width);
+  min-width: 0;
+
+  @container (max-width: 640px) {
+    flex-basis: auto;
+  }
+`;
+
+/* "People" with the count beside it, smaller and muted. */
+const TitleCount = styled.span`
+  margin-left: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-regular);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+`;
+
+/* The quick-filter row beside the search. On narrow screens it scrolls sideways inside itself, so the page never does.
    The small padding (cancelled by the margin) gives focus rings room inside the scroll box. */
 const FilterRow = styled.div`
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
   gap: var(--space-2);
+  flex: 1 1 0;
+  min-width: 0;
   margin: calc(var(--space-1) * -1);
   padding: var(--space-1);
   overflow-x: auto;
   scrollbar-width: thin;
+
+  @container (max-width: 640px) {
+    flex: none;
+  }
 
   & > * {
     flex: none;
@@ -140,13 +185,14 @@ const OptionList = styled(MenuList)`
   overflow-y: auto;
 `;
 
+/* Rows grow with their text: long answers wrap, and the checkbox and the count stay level with the first line. */
 const OptionRow = styled.div`
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-2);
   min-height: var(--menu-row-height);
-  padding: 0 var(--space-2);
+  padding: var(--space-2);
   border-radius: var(--radius-sm);
 
   &:hover {
@@ -154,11 +200,42 @@ const OptionRow = styled.div`
   }
 `;
 
+/* The checkbox row may shrink, so a long label wraps inside it instead of running under the count. */
+const OptionCheck = styled.span`
+  flex: 1 1 auto;
+  min-width: 0;
+
+  & > span {
+    display: flex;
+    max-width: 100%;
+  }
+  & label {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+`;
+
+/* Same size and line height as the label, so the count sits on the label's first line. */
 const OptionCount = styled.span`
   flex: none;
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
+  line-height: var(--leading-ui);
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
+`;
+
+const OptionsNote = styled.p`
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+`;
+
+/* Long answers need room: about 360px on desktop, the screen width minus the page gutters on phones. */
+const WidePopover = styled(PopoverContent)`
+  &&& {
+    width: min(calc(var(--space-8) * 5.5), calc(100vw - var(--space-4) * 2));
+    max-width: calc(100vw - var(--space-4) * 2);
+  }
 `;
 
 /* Radio lists: same rows as the checkbox lists. */
@@ -473,6 +550,38 @@ const tagModeOptions: { value: TagMode; label: string }[] = [
   { value: "none", label: "Doesn't have" },
 ];
 
+/** Free-text "Other: ..." answers all count as one value, so they don't each become an option. */
+const OTHER = "Other";
+const answersOf = (m: Member, key: "interests" | "ways") => (m.intake?.[key] ?? []).map((v) => (v.startsWith("Other:") ? OTHER : v));
+
+type CheckKey = "status" | "interests" | "ways" | "location" | "time";
+
+/** The values one person has for a checkbox filter. */
+function valuesOf(m: Member, key: CheckKey): string[] {
+  if (key === "status") return [m.status];
+  if (key === "interests" || key === "ways") return answersOf(m, key);
+  const v = m.intake?.[key];
+  return v ? [v] : [];
+}
+
+const formOrder: Partial<Record<CheckKey, string[]>> = { location: PLACES.map((p) => p.location), time: INTAKE_TIMES };
+
+/**
+ * The values present in the list. Location and Availability keep the form's own order; Interests and Ways to help go by how many
+ * people chose each (the whole list, so rows don't jump as you tick), with Other last.
+ */
+function optionValues(pool: Member[], key: Exclude<CheckKey, "status">): string[] {
+  const totals = new Map<string, number>();
+  for (const m of pool) for (const v of new Set(valuesOf(m, key))) totals.set(v, (totals.get(v) ?? 0) + 1);
+  const order = formOrder[key];
+  const rank = (v: string) => (order?.includes(v) ? order.indexOf(v) : order ? order.length : 0);
+  return [...totals.keys()].sort((a, b) => {
+    if (order) return rank(a) - rank(b) || a.localeCompare(b);
+    if ((a === OTHER) !== (b === OTHER)) return a === OTHER ? 1 : -1;
+    return (totals.get(b) ?? 0) - (totals.get(a) ?? 0) || a.localeCompare(b);
+  });
+}
+
 const has = (value: string, query: string) => value.toLowerCase().includes(query.trim().toLowerCase());
 
 function matches(m: Member, f: Filters, q: string) {
@@ -487,8 +596,8 @@ function matches(m: Member, f: Filters, q: string) {
   if (!joinedMatches(f.joined, m.joinedAt)) return false;
   if (f.emails === "on" && !m.subscribed) return false;
   if (f.emails === "off" && m.subscribed) return false;
-  if (f.interests.length && !f.interests.some((v) => m.intake?.interests?.includes(v))) return false;
-  if (f.ways.length && !f.ways.some((v) => m.intake?.ways?.includes(v))) return false;
+  if (f.interests.length && !f.interests.some((v) => answersOf(m, "interests").includes(v))) return false;
+  if (f.ways.length && !f.ways.some((v) => answersOf(m, "ways").includes(v))) return false;
   if (f.location.length && !(m.intake?.location && f.location.includes(m.intake.location))) return false;
   if (f.time.length && !(m.intake?.time && f.time.includes(m.intake.time))) return false;
   return true;
@@ -497,9 +606,58 @@ function matches(m: Member, f: Filters, q: string) {
 const filterCount = (f: Filters) =>
   [f.joined.preset, f.emails].filter(Boolean).length + [f.status, f.interests, f.ways, f.location, f.time].filter((v) => v.length).length + (f.tags.length ? 1 : 0);
 
-/** The sorted, distinct non-empty values, for a filter's options. */
-const distinct = (values: (string | undefined)[]) =>
-  Array.from(new Set(values.filter((v): v is string => Boolean(v)))).sort((a, b) => a.localeCompare(b));
+/**
+ * A checkbox list. Changes apply at once. Each count is how many people have that value among those who match the search and the
+ * other filters (not this one), so the numbers follow what is on screen, and an option at 0 shows it would find no one.
+ */
+function CheckList({
+  fieldKey,
+  label,
+  options,
+  pool,
+  filters,
+  q,
+  onChange,
+}: {
+  fieldKey: CheckKey;
+  label: string;
+  options: { value: string; label: string }[];
+  pool: Member[];
+  filters: Filters;
+  q: string;
+  onChange: (values: string[]) => void;
+}) {
+  const chosenValues = filters[fieldKey] as string[];
+  const counts = React.useMemo(() => {
+    const rest = { ...filters, [fieldKey]: [] };
+    const out = new Map<string, number>();
+    for (const m of pool) {
+      if (!matches(m, rest, q)) continue;
+      for (const v of new Set(valuesOf(m, fieldKey))) out.set(v, (out.get(v) ?? 0) + 1);
+    }
+    return out;
+  }, [pool, filters, fieldKey, q]);
+  return (
+    <FilterEditor role="group" aria-label={label}>
+      <OptionList>
+        {options.map((o) => (
+          <OptionRow key={o.value}>
+            <OptionCheck>
+              <Checkbox
+                label={o.label}
+                checked={chosenValues.includes(o.value)}
+                onCheckedChange={(on) => onChange(on === true ? [...chosenValues, o.value] : chosenValues.filter((v) => v !== o.value))}
+              />
+            </OptionCheck>
+            <OptionCount>{counts.get(o.value) ?? 0}</OptionCount>
+          </OptionRow>
+        ))}
+        {!options.length && <OptionsNote>No values yet</OptionsNote>}
+      </OptionList>
+      {options.length > 0 && <OptionsNote>Counts follow the search and your other filters.</OptionsNote>}
+    </FilterEditor>
+  );
+}
 
 /* ---------- columns ---------- */
 
@@ -616,6 +774,7 @@ const FILTER_APPLY_FOR = 1200;
 
 type DialogState =
   | { kind: "add" }
+  | { kind: "import" }
   | { kind: "note" }
   | { kind: "details" }
   | { kind: "membership" }
@@ -724,10 +883,10 @@ function Directory() {
   const noPeople = pool.length === 0;
   const intakeOptions = React.useMemo(
     () => ({
-      interests: distinct(pool.flatMap((m) => m.intake?.interests ?? [])),
-      ways: distinct(pool.flatMap((m) => m.intake?.ways ?? [])),
-      location: distinct(pool.map((m) => m.intake?.location)),
-      time: distinct(pool.map((m) => m.intake?.time)),
+      interests: optionValues(pool, "interests"),
+      ways: optionValues(pool, "ways"),
+      location: optionValues(pool, "location"),
+      time: optionValues(pool, "time"),
     }),
     [pool],
   );
@@ -814,6 +973,48 @@ function Directory() {
       setTags(p.id, [...p.tags, ...missing]);
     });
     undoable(`Added ${tags.join(", ")} to ${plural(ids.length, "person", "people")}`, snapshotOf(members, ids), `Restored ${plural(ids.length, "person", "people")}`);
+  }
+
+  /** The CSV import: new people and tag additions to people already here, as one change with one Undo. */
+  function importPeople(people: NewMember[], tagUpdates: TagUpdate[]) {
+    const byEmail = new Map(tagUpdates.map((u) => [u.email.trim().toLowerCase(), u.tags]));
+    const touched = members.filter((m) => byEmail.has(m.email.trim().toLowerCase()));
+    const created: Member[] = people.map((d) => ({
+      id: newId("m"),
+      firstName: d.firstName,
+      lastName: d.lastName,
+      email: d.email,
+      status: d.status,
+      kind: d.kind,
+      joinedAt: d.joinedAt,
+      endsAt: d.endsAt,
+      subscribed: true,
+      tags: d.tags,
+      payments: [],
+      activity: [{ id: newId("a"), kind: "joined", title: joinedTitle(d.howJoined), at: d.joinedAt }],
+      howJoined: d.howJoined,
+      referrals: [],
+    }));
+    const snap = { ...snapshotOf(members, touched.map((m) => m.id)), created: created.map((m) => m.id) };
+    const newTags = [...created.flatMap((m) => m.tags), ...[...byEmail.values()].flat()];
+    setTagColors((c) => {
+      const next = { ...c };
+      for (const t of newTags) if (!(t in next)) next[t] = undefined;
+      return next;
+    });
+    setMembers((list) => [
+      ...created,
+      ...list.map((m) => {
+        const add = byEmail.get(m.email.trim().toLowerCase());
+        if (!add) return m;
+        const fresh = add.filter((t) => !m.tags.some((x) => x.toLowerCase() === t.toLowerCase()));
+        if (!fresh.length) return m;
+        const log = fresh.map((t) => ({ id: newId("a"), kind: "tag" as const, title: `Tagged ${t}`, at: TODAY }));
+        return { ...m, tags: [...m.tags, ...fresh], activity: [...log, ...m.activity] };
+      }),
+    ]);
+    close();
+    undoable(`Added ${plural(created.length, "person", "people")}`, snap, "Change undone");
   }
 
   function copy(text: string, message: string) {
@@ -1109,35 +1310,10 @@ function Directory() {
     }
   }
 
-  /** How many people in the list have each value, for the checkbox lists. */
-  const countOf = (key: "status" | "interests" | "ways" | "location" | "time", value: string) =>
-    pool.filter((m) => {
-      if (key === "status") return m.status === value;
-      if (key === "interests" || key === "ways") return m.intake?.[key]?.includes(value);
-      return m.intake?.[key] === value;
-    }).length;
-
-  /** A checkbox list: changes apply at once. */
-  const checkList = (key: "status" | "interests" | "ways" | "location" | "time", label: string, options: { value: string; label: string }[]) => {
-    const chosenValues = filters[key] as string[];
-    return (
-      <FilterEditor role="group" aria-label={label}>
-        <OptionList>
-          {options.map((o) => (
-            <OptionRow key={o.value}>
-              <Checkbox
-                label={o.label}
-                checked={chosenValues.includes(o.value)}
-                onCheckedChange={(on) => setFilter(key, (on === true ? [...chosenValues, o.value] : chosenValues.filter((v) => v !== o.value)) as never)}
-              />
-              <OptionCount>{countOf(key, o.value)}</OptionCount>
-            </OptionRow>
-          ))}
-          {!options.length && <OptionCount>No values yet</OptionCount>}
-        </OptionList>
-      </FilterEditor>
-    );
-  };
+  /** A checkbox list for one filter. */
+  const checkList = (key: CheckKey, label: string, options: { value: string; label: string }[]) => (
+    <CheckList fieldKey={key} label={label} options={options} pool={pool} filters={filters} q={sq} onChange={(values) => setFilter(key, values as never)} />
+  );
   const fromData = (values: string[]) => values.map((v) => ({ value: v, label: v }));
 
   const filterEditor: Record<FilterKey, React.ReactNode> = {
@@ -1157,7 +1333,8 @@ function Directory() {
     emails: (
       <FilterEditor>
         <RadioList>
-          <RadioGroup aria-label="Emails" value={filters.emails} onValueChange={(v) => setFilter("emails", v as Filters["emails"])}>
+          <RadioGroup aria-label="Emails" value={filters.emails || "any"} onValueChange={(v) => setFilter("emails", (v === "any" ? "" : v) as Filters["emails"])}>
+            <RadioGroupOption value="any" label="Any" />
             <RadioGroupOption value="on" label="On" />
             <RadioGroupOption value="off" label="Off" />
           </RadioGroup>
@@ -1181,10 +1358,10 @@ function Directory() {
         {filters.joined.preset === "custom" && (
           <>
             <Field label="From">
-              {(props) => <DatePicker {...props} value={filters.joined.from} onValueChange={(v) => setFilter("joined", { ...filters.joined, from: v })} />}
+              {(props) => <DatePicker {...props} value={filters.joined.from} max={filters.joined.to || undefined} onValueChange={(v) => setFilter("joined", { ...filters.joined, from: v })} />}
             </Field>
             <Field label="To">
-              {(props) => <DatePicker {...props} value={filters.joined.to} onValueChange={(v) => setFilter("joined", { ...filters.joined, to: v })} />}
+              {(props) => <DatePicker {...props} value={filters.joined.to} min={filters.joined.from || undefined} onValueChange={(v) => setFilter("joined", { ...filters.joined, to: v })} />}
             </Field>
           </>
         )}
@@ -1198,17 +1375,31 @@ function Directory() {
 
   /** What a chip says after its name: the choice in a few words, "Housing +2" when there are more than two. */
   const list = (values: string[]) => (values.length <= 2 ? values.join(", ") : `${values[0]} +${values.length - 1}`);
+  /** Everything a chip chose, in full: it is the button's accessible name, since the visible text is cut with an ellipsis. */
+  const fullSummary = (key: FilterKey): string => {
+    switch (key) {
+      case "tags":
+        return `${filters.tagMode === "none" ? "not " : filters.tagMode === "any" ? "any of " : "all of "}${filters.tags.join(", ")}`;
+      case "status":
+        return filters.status.map((v) => statusLabel[v]).join(", ");
+      case "emails":
+      case "joined":
+        return filterSummary(key);
+      default:
+        return filters[key].join(", ");
+    }
+  };
   const filterSummary = (key: FilterKey): string => {
     switch (key) {
       case "tags":
-        return filters.tags.length ? `${filters.tagMode === "none" ? "not " : ""}${list(filters.tags)}` : "";
+        return filters.tags.length ? `${filters.tagMode === "none" ? "not " : filters.tagMode === "any" && filters.tags.length > 1 ? "any of " : ""}${list(filters.tags)}` : "";
       case "status":
         return list(filters.status.map((v) => statusLabel[v]));
       case "emails":
         return filters.emails === "on" ? "On" : filters.emails === "off" ? "Off" : "";
       case "joined": {
         const j = filters.joined;
-        if (j.preset === "custom") return j.from || j.to ? `${j.from || "…"} to ${j.to || "…"}` : "Custom range";
+        if (j.preset === "custom") return j.from || j.to ? `${j.from ? formatDate(j.from) : "…"} to ${j.to ? formatDate(j.to) : "…"}` : "Custom range";
         return joinedPresets.find((o) => o.value === j.preset)?.label ?? "";
       }
       default:
@@ -1466,8 +1657,49 @@ function Directory() {
     />
     <ListPage>
       <ListPageHeader
-        title={loading || pageFailed || listFailed ? "People" : `People (${pool.length})`}
-        search={
+        title={
+          loading || pageFailed || listFailed ? (
+            "People"
+          ) : (
+            <>
+              People
+              <TitleCount aria-hidden="true">{pool.length}</TitleCount>
+              <VisuallyHidden>{`, ${plural(pool.length, "person", "people")}`}</VisuallyHidden>
+            </>
+          )
+        }
+        actions={
+          <>
+            {showList && (
+              <Tooltip content="Export CSV">
+                <Button type="button" $variant="secondary" aria-label="Export CSV" onClick={() => exportCsv(chosen.length ? chosen : rows)}>
+                  <Icon icon={Download} size={16} />
+                </Button>
+              </Tooltip>
+            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button type="button">
+                  <Icon icon={Plus} size={16} />
+                  Add member
+                  <Icon icon={ChevronDown} size={14} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => setDialog({ kind: "add" })}>Add one member</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setDialog({ kind: "import" })}>Import from CSV</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </>
+        }
+      />
+
+      {loading && <ListLoading takingLonger={load.takingLonger} />}
+      {!loading && (pageFailed || listFailed) && <ListFailed onRetry={() => setRetried((r) => ({ ...r, list: true }))} />}
+
+      <ToolbarBox>
+      <Toolbar>
+        <SearchBox>
           <SearchField
             aria-label="Search by name, email or tag"
             placeholder="Search name, email or tag"
@@ -1479,27 +1711,7 @@ function Directory() {
             }}
             onSearch={setQ}
           />
-        }
-        actions={
-          <>
-            {showList && (
-              <Tooltip content="Export CSV">
-                <Button type="button" $variant="secondary" aria-label="Export CSV" onClick={() => exportCsv(chosen.length ? chosen : rows)}>
-                  <Icon icon={Download} size={16} />
-                </Button>
-              </Tooltip>
-            )}
-            <Button type="button" onClick={() => setDialog({ kind: "add" })}>
-              <Icon icon={Plus} size={16} />
-              Add member
-            </Button>
-          </>
-        }
-      />
-
-      {loading && <ListLoading takingLonger={load.takingLonger} />}
-      {!loading && (pageFailed || listFailed) && <ListFailed onRetry={() => setRetried((r) => ({ ...r, list: true }))} />}
-
+        </SearchBox>
       {showList && (
         <FilterRow role="group" aria-label="Filters">
           {[...quickFilters, ...intakeFilters.filter((key) => filterSummary(key) || pinned.includes(key))].map((key) => {
@@ -1516,6 +1728,7 @@ function Directory() {
                       type="button"
                       $variant={active ? "ghost" : "outline"}
                       $size="sm"
+                      aria-label={active ? `${filterLabels[key]}: ${fullSummary(key)}` : undefined}
                     >
                       <ChipLabel>{active ? `${filterLabels[key]}: ${summary}` : filterLabels[key]}</ChipLabel>
                       <Icon icon={ChevronDown} size={14} />
@@ -1527,9 +1740,15 @@ function Directory() {
                     </ChipRemove>
                   )}
                 </FilterGroup>
-                <PopoverContent align="start" showClose={false} aria-label={filterLabels[key]}>
-                  <FilterOptionsLoader slow={lab.slowLoading}>{filterEditor[key]}</FilterOptionsLoader>
-                </PopoverContent>
+                {intakeFilters.includes(key) ? (
+                  <WidePopover align="start" showClose={false} aria-label={filterLabels[key]}>
+                    <FilterOptionsLoader slow={lab.slowLoading}>{filterEditor[key]}</FilterOptionsLoader>
+                  </WidePopover>
+                ) : (
+                  <PopoverContent align="start" showClose={false} aria-label={filterLabels[key]}>
+                    <FilterOptionsLoader slow={lab.slowLoading}>{filterEditor[key]}</FilterOptionsLoader>
+                  </PopoverContent>
+                )}
               </Popover>
             );
           })}
@@ -1569,6 +1788,8 @@ function Directory() {
           )}
         </FilterRow>
       )}
+      </Toolbar>
+      </ToolbarBox>
 
       {showList && (
         <ResultsLine role="status" aria-live="polite" aria-atomic="true">
@@ -1764,6 +1985,16 @@ function Directory() {
             setOpenId(m.id);
             undoable(`Added ${d.firstName}`, { before: [], created: [m.id] }, "Change undone", () => setOpenId((id) => (id === m.id ? null : id)));
           }}
+        />
+      )}
+
+      {dialog?.kind === "import" && (
+        <ImportMembersDialog
+          open
+          onOpenChange={close}
+          existingEmails={new Set(members.map((m) => m.email.trim().toLowerCase()).filter(Boolean))}
+          knownTags={allTags}
+          onImport={importPeople}
         />
       )}
 
