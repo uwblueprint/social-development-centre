@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
+import Link from "next/link";
 import { keyframes, styled } from "next-yak";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -37,11 +38,11 @@ export const Column = styled(AuthColumn)`
   animation: ${fadeIn} var(--duration) var(--ease);
 `;
 
-/** The heading and what happened, one tight group. */
+/** The heading and what happened, one group: closer than sections (--space-6), with room to breathe. */
 const HeadingGroup = styled.div`
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-4);
   width: 100%;
 `;
 
@@ -115,6 +116,22 @@ export const Lead = styled.p`
 
   &:focus {
     outline: none;
+  }
+`;
+
+/**
+ * A link inside a sentence: the sentence's colour, underlined so it isn't told apart by colour alone.
+ * Same as the login page's ContactLink (src/app/login/SignInForm.tsx).
+ */
+export const TextLink = styled(Link)`
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  border-radius: var(--radius-sm);
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
   }
 `;
 

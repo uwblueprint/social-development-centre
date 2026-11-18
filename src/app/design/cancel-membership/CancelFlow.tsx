@@ -18,7 +18,7 @@ import {
   type MembershipReason,
   type PauseLength,
 } from "../unsubscribe/data";
-import { Body, Lead, Note, Options, Question, Stack, Template, done, useFocusHeadingOn } from "../unsubscribe/parts";
+import { Body, Lead, Note, Options, Stack, Template, TextLink, useFocusHeadingOn } from "../unsubscribe/parts";
 import { cancelCopy as copy } from "./copy";
 
 /*
@@ -67,7 +67,6 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
   const [switchedTo, setSwitchedTo] = useState(lowerTiers[0]?.id ?? tier.id);
   const [subscribed, setSubscribed] = useState(start.subscribed);
   const [askedAboutEmails, setAskedAboutEmails] = useState(start.subscribed);
-  const [emailsAnswer, setEmailsAnswer] = useState<"kept" | "unsubscribed" | null>(null);
   const [undone, setUndone] = useState(false);
 
   // A new step, or an undo that changes the heading: move focus to the heading.
@@ -300,7 +299,6 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
                 $size="lg"
                 onClick={() => {
                   setAskedAboutEmails(subscribed);
-                  setEmailsAnswer(null);
                   go("cancelled");
                 }}
               >
@@ -323,40 +321,16 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
           screenKey={step}
           heading={copy.cancelled.heading}
           line={copy.cancelled.line(formatMonthYear(demoMember.memberSince))}
-          // Only ask about emails if they were still subscribed when they cancelled. Each button keeps
-          // its place, so the one pressed keeps focus as it turns into its result.
-          actions={
-            askedAboutEmails && (
-              <>
-                {/* The question groups with its buttons, apart from the small print above. */}
-                <Question>{copy.cancelled.emailQuestion}</Question>
-                {emailsAnswer === "kept" ? (
-                  done(copy.cancelled.emailsKept)
-                ) : emailsAnswer === null ? (
-                  <Button type="button" $size="lg" onClick={() => setEmailsAnswer("kept")}>
-                    {copy.cancelled.keepEmails}
-                  </Button>
-                ) : null}
-                {emailsAnswer === "unsubscribed" ? (
-                  done(shared.unsubscribed)
-                ) : emailsAnswer === null ? (
-                  <Button
-                    type="button"
-                    $variant="danger-outline"
-                    $size="lg"
-                    onClick={() => {
-                      setSubscribed(false);
-                      setEmailsAnswer("unsubscribed");
-                    }}
-                  >
-                    {shared.unsubscribe}
-                  </Button>
-                ) : null}
-              </>
-            )
-          }
         >
-          <Note>{copy.cancelled.confirmationSent(demoMember.email)}</Note>
+          {/* Small print, no buttons: the unsubscribe line only if they were still getting emails. */}
+          <Stack>
+            <Note>{copy.cancelled.confirmationSent(demoMember.email)}</Note>
+            {askedAboutEmails && (
+              <Note>
+                {copy.cancelled.unsubscribe(<TextLink href="/design/unsubscribe">{copy.cancelled.unsubscribeLink}</TextLink>)}
+              </Note>
+            )}
+          </Stack>
         </Template>
       );
   }

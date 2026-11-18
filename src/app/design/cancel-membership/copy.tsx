@@ -110,9 +110,9 @@ export const cancelCopy = {
     heading: "We're sorry to see you go", // Shallot.
     line: (since: string) =>
       `You've been an SDC supporter since ${since}. SDC runs on the generosity of members like you, so thank you for being part of it.`, // Shallot.
-    confirmationSent: (email: string) => `We've sent a confirmation to ${email}. You can rejoin anytime.`,
-    emailQuestion: "Want to keep hearing about SDC's work?",
-    keepEmails: "Keep getting emails",
-    emailsKept: "You'll keep getting emails", // Not in doc.
+    confirmationSent: (email: string) => `We've sent a confirmation to ${email}.`,
+    // Shallot. Only for people still getting emails; "unsubscribe here" links to the email flow.
+    unsubscribe: (link: ReactNode) => <>If you would no longer like to hear from SDC, you can {link}.</>,
+    unsubscribeLink: "unsubscribe here",
   },
 };
