@@ -146,6 +146,8 @@ DEMO_EVENTS.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 /* ---------- emails ---------- */
 
 export interface Mail {
+  /** Which email SDC sends this is ("monthly-update", "receipt"...), so the member panel can fold repeats together. */
+  template?: string;
   title: string;
   body: string;
 }
@@ -181,6 +183,7 @@ export function monthlyMail(first: string, year: number, month0: number): Mail {
   const n = year * 12 + month0;
   const topic = MONTH_TOPICS[n % MONTH_TOPICS.length];
   return {
+    template: "monthly-update",
     title: `${MONTHS[month0]} at SDC: ${topic.s}`,
     body: `Hi ${first},\n\n${topic.t}\n\n${MONTH_CLOSERS[(n >> 1) % MONTH_CLOSERS.length]}\n\nThe SDC team`,
   };
@@ -192,11 +195,12 @@ export function welcomeMail(first: string, v: number): Mail {
     `Hi ${first},\n\nThank you for joining SDC. Your membership helps us keep community lunches free and keep pushing for housing people can afford.\n\nYou'll hear from us about once a month. If you ever want to talk, just reply to this email.\n\nThe SDC team`,
     `Hi ${first},\n\nWe're so glad you're here. Over the next few weeks we'll share the events members say they enjoy most, and ways to take part at your own pace.\n\nThe SDC team`,
   ];
-  return { title: `Welcome to SDC, ${first}`, body: bodies[v % bodies.length] };
+  return { template: "welcome", title: `Welcome to SDC, ${first}`, body: bodies[v % bodies.length] };
 }
 
 export function welcomeBackMail(first: string): Mail {
   return {
+    template: "welcome-back",
     title: `Welcome back, ${first}`,
     body: `Hi ${first},\n\nIt's good to have you back. Your membership is active again, and you'll get the monthly update starting this month.\n\nIf anything has changed since you were last with us, such as your address or email, just reply and let us know.\n\nSuhanya`,
   };
@@ -207,7 +211,7 @@ export function receiptMail(first: string, amount: string, date: string, v: numb
     `Hi ${first},\n\nThank you for your payment of ${amount} on ${date}. This is your receipt for your yearly SDC membership.\n\nNothing else is needed from you. Your membership renews automatically each year, and you can reply to this email any time to change or cancel it.\n\nThe SDC team`,
     `Hi ${first},\n\nWe received your payment of ${amount} on ${date}. Thank you! Please keep this email as your receipt.\n\nYour membership will renew by itself next year, and we'll send a reminder first.\n\nThe SDC team`,
   ];
-  return { title: "Your SDC membership receipt", body: bodies[v % bodies.length] };
+  return { template: "receipt", title: "Your SDC membership receipt", body: bodies[v % bodies.length] };
 }
 
 export function thanksMail(first: string, years: number, v: number): Mail {
@@ -217,11 +221,12 @@ export function thanksMail(first: string, years: number, v: number): Mail {
     `Hi ${first},\n\nThank you for renewing your membership. Members like you are why we can say yes when neighbours ask for help.\n\nThe SDC team`,
     `Hi ${first},\n\nYour membership has renewed for another year. After ${length} with us, you've seen a lot of what we do, and we'd love to hear what you'd like more of.\n\nJust reply to this email.\n\nSuhanya`,
   ];
-  return { title: years === 1 ? `Thank you for renewing, ${first}` : `Thank you for another year, ${first}`, body: bodies[v % bodies.length] };
+  return { template: "renewal-thanks", title: years === 1 ? `Thank you for renewing, ${first}` : `Thank you for another year, ${first}`, body: bodies[v % bodies.length] };
 }
 
 export function renewalReminderMail(first: string, amount: string, date: string): Mail {
   return {
+    template: "renewal-reminder",
     title: `Your membership renews on ${date}`,
     body: `Hi ${first},\n\nA quick note that your SDC membership will renew on ${date} for ${amount}. You don't need to do anything.\n\nIf you'd like to change your amount or pause for a year, just reply to this email.\n\nThe SDC team`,
   };
@@ -229,6 +234,7 @@ export function renewalReminderMail(first: string, amount: string, date: string)
 
 export function endedMail(first: string, date: string): Mail {
   return {
+    template: "ended",
     title: "Your SDC membership has ended",
     body: `Hi ${first},\n\nYour SDC membership ended on ${date}. Thank you for everything you gave during your time with us.\n\nIf you'd like to come back, you can rejoin any time on our website.\n\nThe SDC team`,
   };
@@ -236,6 +242,7 @@ export function endedMail(first: string, date: string): Mail {
 
 export function comeBackMail(first: string): Mail {
   return {
+    template: "come-back",
     title: "We'd love to have you back",
     body: `Hi ${first},\n\nWe've missed seeing you at SDC. If the timing was the problem, that's okay. You're welcome back whenever it suits you, and a new membership starts the day you rejoin.\n\nSuhanya`,
   };
@@ -246,11 +253,12 @@ export function agmMail(first: string, year: number, v: number): Mail {
     `Hi ${first},\n\nSDC's annual general meeting is coming up in November. Members can vote for the board and see how last year's money was spent.\n\nThe agenda and the annual report will be on our website two weeks before. We hope to see you there.\n\nThe SDC team`,
     `Hi ${first},\n\nThis is your notice for our ${year} annual general meeting, in the second week of November. You can join in person or online.\n\nIf you can't make it, you can still send questions ahead by replying to this email.\n\nThe SDC team`,
   ];
-  return { title: `Notice: SDC annual general meeting ${year}`, body: bodies[v % bodies.length] };
+  return { template: "agm-notice", title: `Notice: SDC annual general meeting ${year}`, body: bodies[v % bodies.length] };
 }
 
 export function annualReportMail(first: string): Mail {
   return {
+    template: "annual-report",
     title: "Our annual report is out",
     body: `Hi ${first},\n\nOur annual report is ready. It's short, and it has the numbers, a few stories and some photos from the lunches.\n\nIf anything surprises you, reply and tell me.\n\nThe SDC team`,
   };
@@ -265,12 +273,13 @@ export function inviteMail(first: string, e: DemoEvent, when: string, v: number)
     `Hi ${first},\n\nSave the date: ${e.name} is on ${when}, ${where}. ${e.blurb}\n\nNo need to sign up, but a quick reply helps us plan.\n\nThe SDC team`,
     `Hi ${first},\n\nMembers get the first invitation to ${e.name}. It's on ${when}, ${where}. ${e.blurb}\n\nWe'd love to see you.\n\nSuhanya`,
   ];
-  return { title: `You're invited: ${e.name}`, body: bodies[v % bodies.length] };
+  return { template: "event-invitation", title: `You're invited: ${e.name}`, body: bodies[v % bodies.length] };
 }
 
 export function eventReminderMail(first: string, e: DemoEvent, when: string, v: number): Mail {
   const where = e.place === "online" ? "online" : `at ${e.place}`;
   return {
+    template: "event-reminder",
     title: `Tomorrow: ${e.name}`,
     body: `Hi ${first},\n\nA reminder that ${e.name} is tomorrow (${when}), ${where}. ${TIPS[v % TIPS.length]}\n\nSee you there.\n\nThe SDC team`,
   };
@@ -281,7 +290,7 @@ export function volunteerAskMail(first: string, e: DemoEvent, when: string, v: n
     `Hi ${first},\n\nWe're looking for a few volunteers for ${e.name} on ${when}. Jobs range from greeting people at the door to helping set up the room, and most shifts are about two hours.\n\nIf you can help, reply with the time that suits you.\n\nThe SDC team`,
     `Hi ${first},\n\n${e.name} is coming up on ${when}, and we'd love a few extra hands. You don't need any experience. We'll show you what to do when you arrive.\n\nReply to this email if you're in.\n\nSuhanya`,
   ];
-  return { title: `Can you help with ${e.name}?`, body: bodies[v % bodies.length] };
+  return { template: "volunteer-ask", title: `Can you help with ${e.name}?`, body: bodies[v % bodies.length] };
 }
 
 export function personalMail(first: string, v: number): Mail {
@@ -297,6 +306,7 @@ export function personalMail(first: string, v: number): Mail {
 
 export function referralMail(first: string, referredFirst: string): Mail {
   return {
+    template: "referral",
     title: `${referredFirst} joined because of you`,
     body: `Hi ${first},\n\n${referredFirst} just became an SDC member through your invite. Thank you. This is how we grow.\n\nThe SDC team`,
   };

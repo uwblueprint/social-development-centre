@@ -69,6 +69,8 @@ export interface ActivityItem {
   detail?: string;
   /** Emails only: the message as sent, without the footer. */
   body?: string;
+  /** Emails only: which email SDC sends this is (e.g. "monthly-update"), so repeats can be folded together. */
+  template?: string;
 }
 
 export interface Member {
@@ -353,15 +355,16 @@ function build(s: Spec): Member {
 
   const items: ActivityItem[] = [];
   const payments: Payment[] = [];
-  const add = (k: ActivityKind, title: string, at: string, o: { detail?: string; body?: string; drop?: boolean } = {}) => {
+  const add = (k: ActivityKind, title: string, at: string, o: { detail?: string; body?: string; template?: string; drop?: boolean } = {}) => {
     if (at > TODAY) return;
     const item: ActivityItem = { id: nid("a"), kind: k, title, at };
     if (o.detail) item.detail = o.detail;
     if (o.body) item.body = o.body;
+    if (o.template) item.template = o.template;
     if (o.drop) droppable.add(item.id);
     items.push(item);
   };
-  const mail = (m: Mail, at: string, o: { detail?: string; drop?: boolean } = {}) => add("email", m.title, at, { body: m.body, ...o });
+  const mail = (m: Mail, at: string, o: { detail?: string; drop?: boolean } = {}) => add("email", m.title, at, { body: m.body, template: m.template, ...o });
   const paying = kind === "paid" && status !== "waiting";
   let yearIndex = 0;
 

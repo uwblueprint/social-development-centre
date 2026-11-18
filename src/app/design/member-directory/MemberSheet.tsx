@@ -35,7 +35,7 @@ import {
 import { Icon } from "@/components/ui/Icon";
 import { Sheet, SheetBody, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/Sheet";
 import { SearchField } from "@/components/ui/SearchField";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
+import { Tabs, TabsContent, TabsCount, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { Tooltip } from "@/components/ui/Tooltip";
 import {
   formatDate,
@@ -44,6 +44,8 @@ import {
   kindLabel,
   endHeadline,
   methodLabel,
+  plural,
+  TODAY,
   statusLabel,
   totalPaid,
   type ActivityKind,
@@ -63,7 +65,7 @@ import {
 } from "../_state-lab/useStateLab";
 import { ConnectionBanner, InlineAlert, SectionFailed, SectionSkeleton, Skeleton, VisuallyHidden } from "./SheetStates";
 
-/* Slow loading: how long each fetch in the panel takes (ms). A member's sections, an email's body, and the next page of history. */
+/* Slow loading: how long each fetch in the panel takes (ms). A member's sections, an email's body, and the next older year of history. */
 const MEMBER_LOAD_FOR = 1000;
 const EMAIL_BODY_LOAD_FOR = 1500;
 const MORE_LOAD_FOR = 1000;
@@ -312,6 +314,8 @@ const CountdownDate = styled.time`
 
 /* Activity: circle, line, circle. The title sits on the dot's centre line. */
 const Timeline = styled.ol`
+  /* The dot is exactly one title line tall (--text-sm at --leading-body), so it centres on the first line. */
+  --timeline-dot: calc(var(--text-sm) * var(--leading-body));
   margin: 0;
   padding: 0;
   list-style: none;
@@ -319,14 +323,14 @@ const Timeline = styled.ol`
 
 /*
  * Each entry has a dot beside its title. The connector runs through every row behind the dots; each dot's
- * ring (the sheet colour) cuts the gaps, so the line meets every dot. --space-2 above and below each row.
+ * ring (the sheet colour) cuts the gaps, so the line meets every dot. --space-3 above and below each row (--space-5 between rows).
  */
 const TimelineItem = styled.li`
   position: relative;
   display: grid;
-  grid-template-columns: var(--space-5) minmax(0, 1fr) auto;
+  grid-template-columns: var(--timeline-dot) minmax(0, 1fr) auto;
   column-gap: var(--space-3);
-  padding: var(--space-2) 0;
+  padding: var(--space-3) 0;
 
   &:first-child {
     padding-top: 0;
@@ -338,7 +342,7 @@ const TimelineItem = styled.li`
   &::before {
     content: "";
     position: absolute;
-    left: var(--space-3);
+    left: calc(var(--timeline-dot) / 2);
     top: 0;
     bottom: 0;
     width: 1px;
@@ -347,11 +351,11 @@ const TimelineItem = styled.li`
   }
   /* First row: start inside its dot. Last row: stop inside its dot (row padding plus half a dot). */
   &:first-child::before {
-    top: var(--space-3);
+    top: calc(var(--timeline-dot) / 2);
   }
   &:last-child::before {
     bottom: auto;
-    height: calc(var(--space-2) + var(--space-3));
+    height: calc(var(--space-3) + var(--timeline-dot) / 2);
   }
   &:only-child::before {
     display: none;
@@ -377,8 +381,8 @@ const TimelineDot = styled.span<{ $tone?: Tone }>`
   align-items: center;
   justify-content: center;
   box-shadow: 0 0 0 var(--space-1) var(--section-bg);
-  width: var(--space-5);
-  height: var(--space-5);
+  width: var(--timeline-dot);
+  height: var(--timeline-dot);
   border-radius: var(--radius-full);
   border: 1px solid ${({ $tone }) => ($tone ? `var(--color-${TONE_COLOR[$tone]}-border)` : "var(--color-border)")};
   background: ${({ $tone }) => ($tone ? `var(--color-${TONE_COLOR[$tone]}-subtle)` : "var(--color-surface-raised)")};
@@ -391,14 +395,22 @@ const TimelineTitle = styled.div`
   font-weight: var(--weight-medium);
   line-height: var(--leading-body);
   overflow-wrap: anywhere;
+`;
+
+/* The email chevron is text-sized (1em) and glued to the last word so it never wraps alone. */
+const TitleTail = styled.span`
+  white-space: nowrap;
 
   & > svg {
+    width: 1em;
+    height: 1em;
     margin-left: var(--space-1);
     vertical-align: middle;
   }
 `;
 
 const TimelineSub = styled.div`
+  margin-top: var(--space-1);
   font-size: var(--text-xs);
   line-height: var(--leading-ui);
   color: var(--color-text-muted);
@@ -407,7 +419,7 @@ const TimelineSub = styled.div`
 const TimelineDate = styled.time`
   align-self: start;
   font-size: var(--text-xs);
-  line-height: var(--leading-body);
+  line-height: var(--timeline-dot);
   color: var(--color-text-muted);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
@@ -450,7 +462,7 @@ const EmailTrigger = styled(CollapsibleTrigger)`
 `;
 
 const EmailPreview = styled.div`
-  margin-top: var(--space-2);
+  margin-top: var(--space-3);
   padding: var(--space-3);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -546,6 +558,8 @@ interface Row {
   detail?: string;
   body?: string;
   payment?: Payment;
+  /** Emails only: which template SDC sent it from. */
+  template?: string;
 }
 
 const ICONS: Record<Row["kind"], LucideIcon> = {
@@ -1114,10 +1128,29 @@ function MembershipSection({ member: m, onChange }: { member: Member; onChange: 
 
 type ActivityView = "all" | "email" | "member";
 
-const PAGE = 12;
+/* The search field only appears once there is enough history to search. */
+const SEARCH_MIN = 12;
 
 /* Icon size for the activity dots and chevrons. */
 const ACTIVITY_ICON = 16;
+
+/* Everything newer than this many months back is grouped by month; older items are grouped by year. */
+const RECENT_MONTHS = 12;
+
+/* A group folds 3 or more emails from the same template into one row. */
+const FOLD_FROM = 3;
+
+/** Names for the email templates SDC sends (see `template` in demoHistory.ts). A template without a name is never folded. */
+const TEMPLATE_LABELS: Record<string, string> = {
+  "monthly-update": "Monthly member update",
+  "event-invitation": "Event invitations",
+  "event-reminder": "Event reminders",
+  "volunteer-ask": "Volunteer requests",
+  receipt: "Membership receipts",
+  "renewal-reminder": "Renewal reminders",
+  "renewal-thanks": "Renewal thank-yous",
+  "agm-notice": "AGM notices",
+};
 
 /** Payments join the stored activity as their own rows. */
 function activityRows(m: Member): Row[] {
@@ -1134,12 +1167,149 @@ function activityRows(m: Member): Row[] {
   return [...m.activity, ...payments].sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : joined(a) - joined(b)));
 }
 
+/** One line in a group: a single row, or several emails from the same template folded into one expandable row. */
+type Entry = { kind: "row"; row: Row } | { kind: "bundle"; key: string; template: string; rows: Row[] };
+
+interface Group {
+  key: string;
+  label: string;
+  /** Older than the last 12 months: grouped by year, and revealed one year at a time. */
+  older: boolean;
+  count: number;
+  entries: Entry[];
+}
+
+const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+const monthIndex = (iso: string) => Number(iso.slice(0, 4)) * 12 + Number(iso.slice(5, 7)) - 1;
+
+/** "Jan–Dec 2025" for a spread across months, "Oct 3–19, 2026" within one month, a plain date for one day. */
+function rangeLabel(oldest: string, newest: string): string {
+  if (oldest === newest) return formatDate(newest);
+  const [ya, yb] = [Number(oldest.slice(0, 4)), Number(newest.slice(0, 4))];
+  const [ma, mb] = [Number(oldest.slice(5, 7)) - 1, Number(newest.slice(5, 7)) - 1];
+  if (ya === yb && ma === mb) return `${MONTH_SHORT[ma]} ${Number(oldest.slice(8, 10))}–${Number(newest.slice(8, 10))}, ${ya}`;
+  if (ya === yb) return `${MONTH_SHORT[ma]}–${MONTH_SHORT[mb]} ${ya}`;
+  return `${MONTH_SHORT[ma]} ${ya}–${MONTH_SHORT[mb]} ${yb}`;
+}
+
+/** Newest-first rows into month groups (last 12 months) and year groups (older). While searching, nothing is folded. */
+function groupRows(rows: Row[], fold: boolean): Group[] {
+  const recentFrom = monthIndex(TODAY) - (RECENT_MONTHS - 1);
+  const groups: { key: string; label: string; older: boolean; rows: Row[] }[] = [];
+  for (const r of rows) {
+    const older = monthIndex(r.at) < recentFrom;
+    const key = older ? `y:${r.at.slice(0, 4)}` : `m:${r.at.slice(0, 7)}`;
+    let g = groups[groups.length - 1];
+    if (!g || g.key !== key) {
+      g = { key, label: older ? r.at.slice(0, 4) : `${MONTH_NAMES[Number(r.at.slice(5, 7)) - 1]} ${r.at.slice(0, 4)}`, older, rows: [] };
+      groups.push(g);
+    }
+    g.rows.push(r);
+  }
+  return groups.map((g) => {
+    const byTemplate = new Map<string, Row[]>();
+    if (fold) {
+      for (const r of g.rows) {
+        if (r.kind === "email" && r.template && TEMPLATE_LABELS[r.template]) byTemplate.set(r.template, [...(byTemplate.get(r.template) ?? []), r]);
+      }
+    }
+    const entries: Entry[] = [];
+    for (const r of g.rows) {
+      const same = r.kind === "email" && r.template ? byTemplate.get(r.template) : undefined;
+      if (!same || same.length < FOLD_FROM) entries.push({ kind: "row", row: r });
+      else if (same[0] === r) entries.push({ kind: "bundle", key: `${g.key}|${r.template}`, template: r.template!, rows: same });
+    }
+    return { key: g.key, label: g.label, older: g.older, count: g.rows.length, entries };
+  });
+}
+
 /* The activity panel: no top padding (the section's gap spaces it) and the same column rhythm as the section. */
 const ActivityPanel = styled(TabsContent)`
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
   padding-top: 0;
+`;
+
+/* The tab's count: muted and small, next to the label, in every state of the tab. */
+const TabCount = styled(TabsCount)`
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+`;
+
+const Group = styled.div`
+  & + & {
+    margin-top: var(--space-4);
+  }
+`;
+
+/*
+ * A group's label sticks to the top of the sheet's scroll area while its rows scroll under it (the sheet colour
+ * hides them). It sits above the dots (--z-raised) so they pass beneath it. Each group has its own list, so the
+ * connector line starts and ends inside each group: it breaks at every header.
+ */
+const GroupHeader = styled.h4`
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  margin: 0;
+  padding: var(--space-2) 0;
+  background: var(--section-bg);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-ui);
+  color: var(--color-text-muted);
+`;
+
+/* Skeleton rows for the next year while it loads. */
+const LoadingList = styled(Timeline)`
+  margin-top: var(--space-4);
+`;
+
+/* The folded row's trigger: title on the left, date range on the right. On a phone the range moves under the title. */
+const BundleTrigger = styled(CollapsibleTrigger)`
+  all: unset;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: var(--space-3);
+  align-items: start;
+  width: 100%;
+  box-sizing: border-box;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+
+  &:focus-visible {
+    box-shadow: var(--focus-ring);
+  }
+  &[data-state="open"] svg {
+    transform: rotate(180deg);
+  }
+
+  @media (max-width: 480px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+`;
+
+const BundleDate = styled.span`
+  font-size: var(--text-xs);
+  line-height: var(--timeline-dot);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+
+  @media (max-width: 480px) {
+    grid-row: 2;
+    margin-top: var(--space-1);
+    line-height: var(--leading-ui);
+    white-space: normal;
+  }
+`;
+
+/* The emails inside a folded row sit under its title, each with its own dot and connector. */
+const NestedTimeline = styled(Timeline)`
+  margin-top: var(--space-3);
 `;
 
 function ActivitySection({
@@ -1161,10 +1331,20 @@ function ActivitySection({
 }) {
   const [view, setView] = React.useState<ActivityView>("all");
   const [q, setQ] = React.useState("");
-  const [shown, setShown] = React.useState(PAGE);
+  /* How many older years the person has revealed with "Show <year>", beyond the default. */
+  const [extraYears, setExtraYears] = React.useState(0);
+  /* Folded rows the person has opened. */
+  const [opened, setOpened] = React.useState<ReadonlySet<string>>(() => new Set());
   const needle = q.trim().toLowerCase();
   const [loadedEmails, setLoadedEmails] = React.useState<ReadonlySet<string>>(() => new Set());
   const markLoaded = React.useCallback((id: string) => setLoadedEmails((s) => (s.has(id) ? s : new Set(s).add(id))), []);
+  const toggleBundle = (key: string, open: boolean) =>
+    setOpened((s) => {
+      const next = new Set(s);
+      if (open) next.add(key);
+      else next.delete(key);
+      return next;
+    });
 
   // Slow loading: a new view or search term takes a while to come back. The previous rows stay, dimmed.
   const liveKey = `${view}|${needle}`;
@@ -1175,24 +1355,24 @@ function ActivitySection({
   const appliedView = appliedKey.slice(0, cut) as ActivityView;
   const appliedNeedle = appliedKey.slice(cut + 1);
 
-  // Slow loading: "Show more" fetches the next page of history.
+  // Slow loading: "Show <year>" fetches the next older year.
   const [loadingMore, setLoadingMore] = React.useState(false);
   const moreTimer = React.useRef<number | undefined>(undefined);
   React.useEffect(() => () => window.clearTimeout(moreTimer.current), []);
   const resetPaging = () => {
     window.clearTimeout(moreTimer.current);
     setLoadingMore(false);
-    setShown(PAGE);
+    setExtraYears(0);
   };
-  const showMore = () => {
+  const showEarlier = () => {
     if (loadingMore) return;
     if (!lab.slowLoading) {
-      setShown((n) => n + PAGE);
+      setExtraYears((n) => n + 1);
       return;
     }
     setLoadingMore(true);
     moreTimer.current = window.setTimeout(() => {
-      setShown((n) => n + PAGE);
+      setExtraYears((n) => n + 1);
       setLoadingMore(false);
     }, MORE_LOAD_FOR);
   };
@@ -1205,11 +1385,28 @@ function ActivitySection({
       : single
         ? base.slice(0, 1)
         : base;
-  const all = everything
+  const counts = {
+    all: everything.length,
+    email: everything.filter((a) => a.kind === "email").length,
+    member: everything.filter((a) => a.kind !== "email").length,
+  };
+  const matches = everything
     .filter((a) => (appliedView === "email" ? a.kind === "email" : appliedView === "member" ? a.kind !== "email" : true))
     .filter((a) => !appliedNeedle || [a.title, a.detail, a.body].some((t) => t?.toLowerCase().includes(appliedNeedle)));
-  const rows = all.slice(0, shown);
-  const more = Math.min(PAGE, all.length - rows.length);
+
+  /* Searching shows every match, in month and year groups, with nothing folded and no 12-month cut-off. */
+  const searching = !!appliedNeedle;
+  const groups = groupRows(matches, !searching);
+  const recent = groups.filter((g) => !g.older);
+  const older = groups.filter((g) => g.older);
+  /* The last 12 months by default; with nothing in them, the most recent year instead of an empty list. */
+  const baseYears = recent.length ? 0 : Math.min(1, older.length);
+  const revealed = searching ? older.length : Math.min(older.length, baseYears + extraYears);
+  const shownGroups = [...recent, ...older.slice(0, revealed)];
+  const nextYear = searching ? undefined : older[revealed];
+
+  const rowProps = { onEditPayment, lab, loadedEmails, onEmailLoaded: markLoaded };
+  const searchLabel = view === "email" ? "Search emails" : view === "member" ? "Search activity" : "Search all";
   return (
     <Tabs
       asChild
@@ -1223,19 +1420,25 @@ function ActivitySection({
     <Section aria-label="Activity">
       <SectionHeader title="Activity" />
       <TabsList aria-label="Show" loading={refreshing}>
-        <TabsTrigger value="all">All</TabsTrigger>
-        <TabsTrigger value="email">Emails</TabsTrigger>
-        <TabsTrigger value="member">Member activity</TabsTrigger>
+        <TabsTrigger value="all">
+          All<TabCount>{counts.all}</TabCount>
+        </TabsTrigger>
+        <TabsTrigger value="email">
+          Emails<TabCount>{counts.email}</TabCount>
+        </TabsTrigger>
+        <TabsTrigger value="member">
+          Member activity<TabCount>{counts.member}</TabCount>
+        </TabsTrigger>
       </TabsList>
       <ActivityPanel value={view}>
       {failed ? (
         <SectionFailed title="Couldn't load activity.">Try again to see emails, payments and changes.</SectionFailed>
       ) : (
         <>
-      {everything.length > PAGE && (
+      {everything.length > SEARCH_MIN && (
         <SearchField
-          aria-label="Search activity"
-          placeholder="Search activity"
+          aria-label={searchLabel}
+          placeholder={searchLabel}
           value={q}
           onChange={(e) => setQ(e.target.value)}
           onSearch={(v) => {
@@ -1247,32 +1450,51 @@ function ActivitySection({
       )}
       <Refreshing $pending={refreshing} aria-busy={refreshing || loadingMore || undefined}>
         {refreshing && <VisuallyHidden role="status">Updating activity</VisuallyHidden>}
-        {loadingMore && <VisuallyHidden role="status">Loading more activity</VisuallyHidden>}
-        {rows.length ? (
-          <Timeline>
-            {rows.map((a) => (
-              <ActivityRow key={a.id} item={a} onEditPayment={onEditPayment} lab={lab} loadedEmails={loadedEmails} onEmailLoaded={markLoaded} />
+        {loadingMore && <VisuallyHidden role="status">Loading earlier activity</VisuallyHidden>}
+        {searching && !refreshing && <VisuallyHidden role="status">{plural(matches.length, "match", "matches")}</VisuallyHidden>}
+        {shownGroups.length ? (
+          <>
+            {shownGroups.map((g) => (
+              <Group key={g.key}>
+                <GroupHeader>
+                  {g.label}
+                  <span aria-hidden="true"> · {g.count}</span>
+                  <VisuallyHidden>, {plural(g.count, "item")}</VisuallyHidden>
+                </GroupHeader>
+                <Timeline>
+                  {g.entries.map((e) =>
+                    e.kind === "row" ? (
+                      <ActivityRow key={e.row.id} item={e.row} {...rowProps} />
+                    ) : (
+                      <BundleRow key={e.key} label={TEMPLATE_LABELS[e.template]} rows={e.rows} open={opened.has(e.key)} onOpenChange={(o) => toggleBundle(e.key, o)} {...rowProps} />
+                    ),
+                  )}
+                </Timeline>
+              </Group>
             ))}
-            {loadingMore &&
-              [0, 1, 2].map((i) => (
-                <TimelineItem key={`more-${i}`} aria-hidden="true">
-                  <SkeletonDot $width="var(--space-5)" $height="var(--space-5)" />
-                  <SkeletonText>
-                    <Skeleton $width={i === 1 ? "55%" : "75%"} />
-                    <Skeleton $width="35%" $height="var(--space-2)" />
-                  </SkeletonText>
-                  <Skeleton $width="var(--space-8)" />
-                </TimelineItem>
-              ))}
-          </Timeline>
+            {loadingMore && (
+              <LoadingList aria-hidden="true">
+                {[0, 1, 2].map((i) => (
+                  <TimelineItem key={`more-${i}`}>
+                    <SkeletonDot $width="var(--timeline-dot)" $height="var(--timeline-dot)" />
+                    <SkeletonText>
+                      <Skeleton $width={i === 1 ? "55%" : "75%"} />
+                      <Skeleton $width="35%" $height="var(--space-2)" />
+                    </SkeletonText>
+                    <Skeleton $width="var(--space-8)" />
+                  </TimelineItem>
+                ))}
+              </LoadingList>
+            )}
+          </>
         ) : (
           <Muted>{appliedNeedle ? `No activity matches “${q.trim()}”.` : "Nothing yet."}</Muted>
         )}
       </Refreshing>
-      {more > 0 && (
+      {nextYear && (
         <div>
-          <SectionAction icon={loadingMore ? undefined : ChevronDown} iconSize={ACTIVITY_ICON} busy={loadingMore} onClick={showMore}>
-            {loadingMore ? "Loading…" : `Show ${more} more`}
+          <SectionAction icon={loadingMore ? undefined : ChevronDown} iconSize={ACTIVITY_ICON} busy={loadingMore} onClick={showEarlier}>
+            {loadingMore ? "Loading…" : `Show ${nextYear.label}`}
           </SectionAction>
         </div>
       )}
@@ -1315,6 +1537,16 @@ function EmailBody({
   return <EmailPreview>{a.body}</EmailPreview>;
 }
 
+/* Split a title so its last word can travel with the chevron. */
+function titleHead(t: string) {
+  const i = t.trimEnd().lastIndexOf(" ");
+  return i < 0 ? "" : t.slice(0, i + 1);
+}
+function titleLast(t: string) {
+  const s = t.trimEnd();
+  return s.slice(s.lastIndexOf(" ") + 1);
+}
+
 function ActivityRow({
   item: a,
   onEditPayment,
@@ -1338,8 +1570,11 @@ function ActivityRow({
         <EmailCollapsible>
           <EmailTrigger>
             <TimelineTitle>
-              {a.title}
-              <Icon icon={ChevronDown} size={ACTIVITY_ICON} />
+              {titleHead(a.title)}
+              <TitleTail>
+                {titleLast(a.title)}
+                <Icon icon={ChevronDown} size={ACTIVITY_ICON} />
+              </TitleTail>
             </TimelineTitle>
             {a.detail && <TimelineSub>{a.detail}</TimelineSub>}
           </EmailTrigger>
@@ -1363,6 +1598,55 @@ function ActivityRow({
       ) : (
         date
       )}
+    </TimelineItem>
+  );
+}
+
+/** Several emails from one template in one group, folded into a single row: "Monthly member update · 12 emails" and the dates they span. */
+function BundleRow({
+  label,
+  rows,
+  open,
+  onOpenChange,
+  onEditPayment,
+  lab,
+  loadedEmails,
+  onEmailLoaded,
+}: {
+  label: string;
+  rows: Row[];
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onEditPayment: (payment: Payment) => void;
+  lab: SheetLab;
+  loadedEmails: ReadonlySet<string>;
+  onEmailLoaded: (id: string) => void;
+}) {
+  const title = `${label} · ${rows.length} emails`;
+  return (
+    <TimelineItem>
+      <TimelineDot $tone="email">
+        <Icon icon={Mail} size={ACTIVITY_ICON} />
+      </TimelineDot>
+      <EmailCollapsible open={open} onOpenChange={onOpenChange}>
+        <BundleTrigger>
+          <TimelineTitle>
+            {titleHead(title)}
+            <TitleTail>
+              {titleLast(title)}
+              <Icon icon={ChevronDown} size={ACTIVITY_ICON} />
+            </TitleTail>
+          </TimelineTitle>
+          <BundleDate>{rangeLabel(rows[rows.length - 1].at, rows[0].at)}</BundleDate>
+        </BundleTrigger>
+        <CollapsibleContent>
+          <NestedTimeline>
+            {rows.map((r) => (
+              <ActivityRow key={r.id} item={r} onEditPayment={onEditPayment} lab={lab} loadedEmails={loadedEmails} onEmailLoaded={onEmailLoaded} />
+            ))}
+          </NestedTimeline>
+        </CollapsibleContent>
+      </EmailCollapsible>
     </TimelineItem>
   );
 }
