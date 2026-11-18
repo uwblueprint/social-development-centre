@@ -23,12 +23,10 @@ import { cancelCopy as copy } from "./copy";
 
 /*
  * The cancel-membership flow, its own path. Footer link 2 in every SDC email ("Pause or cancel
- * membership") opens the first step; "Cancel membership" on the unsubscribed page opens "Before you go".
+ * membership") and "Cancel membership" on the unsubscribed page both open "Before you go": one click
+ * from either. Pausing is one of its offers.
  *
- *   Pause or cancel ─► Pause ─► Paused (end)
- *         │              ▲
- *         ▼              │
- *   Before you go ──────┤ (break, or too expensive → pause)
+ *   Before you go ─► (break, or too expensive) Pause ─► Paused (end)
  *     ├─ too many emails → Unsubscribed, membership kept (end)
  *     ├─ too expensive   → Switched to a lower tier (end)
  *     └─ Continue to cancel ─► Cancel your membership? ─► We're sorry to see you go (end)
@@ -39,7 +37,7 @@ import { cancelCopy as copy } from "./copy";
  * tab now". Built from the email flow's parts (../unsubscribe/parts.tsx). Client state only.
  */
 
-export const CANCEL_STEPS = ["choose", "pause", "paused", "reasons", "switched", "unsubscribed", "confirm", "kept", "cancelled"] as const;
+export const CANCEL_STEPS = ["reasons", "pause", "paused", "switched", "unsubscribed", "confirm", "kept", "cancelled"] as const;
 export type CancelStep = (typeof CANCEL_STEPS)[number];
 
 export interface CancelFlowStart {
@@ -55,7 +53,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
   const router = useRouter();
   const params = useSearchParams();
   const urlStep = params.get("step");
-  const step: CancelStep = isStep(urlStep) ? urlStep : "choose";
+  const step: CancelStep = isStep(urlStep) ? urlStep : "reasons";
 
   const tier = tierById(start.tierId);
   const nextPayment = demoMember.nextPaymentDate;
@@ -90,25 +88,6 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
   const switched = tierById(switchedTo);
 
   switch (step) {
-    case "choose":
-      return (
-        <Template
-          screenKey={step}
-          heading={copy.choose.heading}
-          line={copy.choose.summary(tier.name, formatMoney(tier.monthlyPrice), formatDate(nextPayment))}
-          actions={
-            <>
-              <Button type="button" $size="lg" onClick={() => go("pause")}>
-                {copy.pause.pause}
-              </Button>
-              <Button type="button" $variant="danger-outline" $size="lg" onClick={() => go("reasons")}>
-                {shared.cancelMembership}
-              </Button>
-            </>
-          }
-        />
-      );
-
     case "pause":
       return (
         <Template
@@ -119,7 +98,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
               <Button type="button" $size="lg" onClick={() => go("paused")}>
                 {copy.pause.pause}
               </Button>
-              <Button type="button" $variant="outline" $size="lg" onClick={() => back("choose")}>
+              <Button type="button" $variant="outline" $size="lg" onClick={() => back("reasons")}>
                 {copy.back}
               </Button>
             </>

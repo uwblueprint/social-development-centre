@@ -1,25 +1,21 @@
 # Cancel membership (design)
 
-Its own flow. Footer link 2 in every SDC email ("Pause or cancel membership") opens the first step; "Cancel membership" on the unsubscribed page (`/design/unsubscribe`) opens "Before you go", because that person already chose to cancel. Open at `/design/cancel-membership`; `page.tsx` lists the query parameters for every state. Built from the email flow's parts (`../unsubscribe/parts.tsx`), so it follows the same three patterns; see [the unsubscribe README](../unsubscribe/README.md). Demo data is shared (`../unsubscribe/data.ts`). What the backend needs is in `docs/backend/unsubscribe.md`.
+Its own flow. Footer link 2 in every SDC email ("Pause or cancel membership") and "Cancel membership" on the unsubscribed page (`/design/unsubscribe`) both open "Before you go": one click from either. Pausing is one of its offers. Open at `/design/cancel-membership`; `page.tsx` lists the query parameters for every state. Built from the email flow's parts (`../unsubscribe/parts.tsx`), so it follows the same three patterns; see [the unsubscribe README](../unsubscribe/README.md). Demo data is shared (`../unsubscribe/data.ts`). What the backend needs is in `docs/backend/unsubscribe.md`.
 
 Follows the [Unsub flow FigJam board](https://www.figma.com/board/jvbGjJ6Wb3CZIOjTB6x81Z/Unsub-flow), with a survey before cancelling and a lower-tier offer (references: Uber's and Hinge's cancel surveys, Spotify's cheaper plans, Disney+'s pause with a live resume date), in our design system.
 
 ## Steps
 
 ```
-Pause or cancel ─► Pause ─► Paused (end)
-      │              ▲
-      ▼              │
-Before you go ──────┤ (need a break, or too expensive → Pause instead)
+Before you go ─► (need a break, or too expensive → Pause instead) Pause ─► Paused (end)
   ├─ too many emails → Unsubscribed, membership kept (end)
   ├─ too expensive   → Switched to a lower tier (end)
   └─ Continue to cancel ─► Cancel your membership? ─► We're sorry to see you go (end)
                                      └─ Keep my membership ─► Your membership is active again (end)
 ```
 
-- **Pause or cancel your membership** (`?step=choose`, default). What the email link promised: the membership in one line (tier · price · next payment), then Pause membership or Cancel membership.
 - **Pause your membership** (`?step=pause`). 1, 2 or 3 months as one list (the copy doc's maximum), the restart date in bold, updating as they choose (after Disney+), what pausing means, then Pause membership or Back.
-- **Before you go** (`?step=reasons`). "What's the main reason you're cancelling?" (optional, one answer). Each answer opens one line and its buttons, never a nested form:
+- **Before you go** (`?step=reasons`, default). "What's the main reason you're cancelling?" (optional, one answer). Each answer opens one line and its buttons, never a nested form:
   - Too many emails → Unsubscribe from emails instead.
   - It's too expensive right now → "Switch to [tier] · $[price] a month" for each lower tier (starts on the next payment), and Pause instead. A Friend has no lower tier, so only Pause instead.
   - I need a break → Pause instead.

@@ -13,12 +13,6 @@ export const cancelCopy = {
   pageTitle: "Pause or cancel your membership", // Not in doc.
   back: "Back", // Not in doc.
 
-  /* The first step: what footer link 2 promises. */
-  choose: {
-    heading: "Pause or cancel your membership", // The doc's B1 heading.
-    summary: (tier: string, amount: string, date: string) => `${tier} · ${amount} a month · next payment ${date}`,
-  },
-
   /* Pause: presets and a live restart date (after Disney+). */
   pause: {
     heading: "Pause your membership", // Not in doc.

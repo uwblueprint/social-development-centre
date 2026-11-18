@@ -12,7 +12,7 @@ const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v
  * membership") or "Cancel membership" on the unsubscribed page. Member facing, so no sidebar. Every
  * state opens directly:
  *
- * - `?step=` choose (default) | pause | paused | reasons ("Before you go") | switched | unsubscribed |
+ * - `?step=` reasons ("Before you go", default) | pause | paused | switched | unsubscribed |
  *   confirm | kept ("Keep my membership") | cancelled. The flow reads the step from the URL itself, so back and forward work.
  * - `?reason=emails|budget|break|done` opens "Before you go" with that answer chosen.
  * - `?subscribed=false` for someone who no longer gets emails: no email question after cancelling.
