@@ -29,7 +29,7 @@ export function safeAdminPath(path: string | null | undefined): string | undefin
 const PUBLIC_ASSETS = ["/brand/", "/illustrations/"];
 
 /**
- * Every page needs a session except the sign-in pages, /auth, /goodbye, public assets and the intake form,
+ * Every page needs a session except the sign-in pages, /auth, /goodbye, /refer, public assets and the intake form,
  * which is deliberately open to anyone with the link (docs/decisions/intake-form.md).
  */
 export function signInPathFor(pathname: string): string | null {
@@ -39,6 +39,8 @@ export function signInPathFor(pathname: string): string | null {
   if (pathname === "/api/automatic-emails/run") return null;
   // The goodbye screen is shown to someone who has just left and is signed out.
   if (pathname === "/goodbye") return null;
+  // A member's referral link from an email: the token in the URL is the proof (docs/backend/referrals.md).
+  if (pathname.startsWith("/refer/")) return null;
   if (PUBLIC_ASSETS.some((prefix) => pathname.startsWith(prefix))) return null;
   if (pathname === "/admin" || pathname.startsWith("/admin/")) return portals.admin.signInPath;
   return portals.member.signInPath;

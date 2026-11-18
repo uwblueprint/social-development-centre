@@ -534,6 +534,31 @@ globalStyle`
     font-family: var(--font-mono);
   }
 
+  /*
+   * Overlay motion (overlayMotion.ts). Global because next-yak copies a shared css mixin into each
+   * component but not the keyframes it uses: without these, closed overlays waited forever for an
+   * exit animation that never ran and stayed on screen.
+   */
+  @keyframes overlay-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes overlay-fade-in-below {
+    from { opacity: 0; transform: translateY(calc(var(--space-1) * -1)); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes overlay-fade-in-above {
+    from { opacity: 0; transform: translateY(var(--space-1)); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes overlay-fade-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: 0.01ms !important;

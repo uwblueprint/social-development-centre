@@ -9,7 +9,7 @@ Two things on the page work against the database. Everything else in the design 
 - Table `people`: `first_name`, `last_name` (`full_name` is generated from them).
 - Read: `getAccount()` (`src/features/account/queries.ts`) reads the signed-in admin's names.
 - Write: server action `updateName` (`src/features/account/actions.ts`) → database function `update_own_name(p_first_name, p_last_name)` (`supabase/migrations/20261110000000_update_own_name.sql`).
-  - Both names are required, trimmed, and at most 100 characters. The action checks first and returns `fieldErrors.firstName` / `fieldErrors.lastName`; the function raises `22023` for the same cases and `42501` when there is no signed-in person, so a bad call can't blank a name.
+  - First name is required; last name is optional (one-word names are stored with `last_name` null, and an empty one is saved as null). Both are trimmed and at most 100 characters. The action checks first and returns `fieldErrors.firstName` / `fieldErrors.lastName`; the function raises `22023` for the same cases and `42501` when there is no signed-in person, so a bad call can't blank a name.
   - It only ever changes the caller's own row.
   - Revalidates `/admin` so the sidebar and Admins list show the new name.
 

@@ -346,7 +346,8 @@ function contactErrorsIn(
   return errors;
 }
 
-export function IntakeForm({ source }: { source: IntakeFormSource }) {
+/** `referralId` comes from a friend's referral link (`?r=`), so joining later credits that referral. */
+export function IntakeForm({ source, referralId }: { source: IntakeFormSource; referralId?: string }) {
   const copy = intakeForms[source];
   const [step, setStep] = useState<Step>("envelope");
   const [answers, setAnswers] = useState<IntakeAnswers>(emptyAnswers);
@@ -508,7 +509,7 @@ export function IntakeForm({ source }: { source: IntakeFormSource }) {
     setSaveError(null);
     let result: { status: string; message?: string };
     try {
-      result = await submitIntake(toSubmission(submissionId, source, answers));
+      result = await submitIntake({ ...toSubmission(submissionId, source, answers), referralId });
     } catch {
       result = { status: "error" };
     }
