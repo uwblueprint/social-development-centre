@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { keyframes, styled } from "next-yak";
-import { ChevronDown, Columns3, Copy, Download, ListChecks, Plus, Tag as TagIcon, Trash2, UsersRound, X } from "lucide-react";
+import { Check, ChevronDown, Columns3, Copy, Download, ListChecks, Plus, Tag as TagIcon, Trash2, UsersRound, X } from "lucide-react";
 import { ListEmptyState, ListPage, ListPageHeader } from "@/components/patterns/ListPage";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -21,7 +21,6 @@ import { SearchField } from "@/components/ui/SearchField";
 import { Pagination } from "@/components/ui/Pagination";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
 import { RadioGroup, RadioGroupOption } from "@/components/ui/RadioGroup";
-import { Select } from "@/components/ui/Select";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { Table, type TableColumn, type TableSort } from "@/components/ui/Table";
 import { MarqueeOverlay } from "./MarqueeOverlay";
@@ -87,13 +86,31 @@ const Toolbar = styled.div`
   }
 `;
 
+/* The search takes all the room the filters leave; its field is already the control height. */
 const SearchBox = styled.div`
-  flex: 0 0 var(--search-width);
-  min-width: 0;
+  flex: 1 1 var(--search-width);
+  min-width: calc(var(--space-8) * 3);
 
   @container (max-width: 640px) {
-    flex-basis: auto;
+    flex: none;
+    min-width: 0;
   }
+`;
+
+/* A filter button at the same height as the search field (the kit's sm and default buttons are shorter). */
+const FilterButton = styled(Button)`
+  &&& {
+    height: var(--control-height);
+  }
+`;
+
+/* The applied filters, one chip each, under the search row. */
+const AppliedRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
 `;
 
 /* "People" with the count beside it, smaller and muted. */
@@ -112,7 +129,7 @@ const FilterRow = styled.div`
   flex-wrap: nowrap;
   align-items: center;
   gap: var(--space-2);
-  flex: 1 1 0;
+  flex: 0 1 auto;
   min-width: 0;
   margin: calc(var(--space-1) * -1);
   padding: var(--space-1);
@@ -128,17 +145,15 @@ const FilterRow = styled.div`
   }
 `;
 
-/* One filter: its button, plus a × beside it once it has a value. An active filter gets a fill and an outline as well as its value text. */
+/* One applied filter: its words, plus a × beside them. Filled and outlined so it reads as chosen. */
 const FilterGroup = styled.span`
   display: inline-flex;
   align-items: center;
   border-radius: var(--radius-md);
 
-  &[data-active] {
-    background: var(--color-secondary);
-    outline: 1px solid var(--color-border-strong);
-    outline-offset: -1px;
-  }
+  background: var(--color-secondary);
+  outline: 1px solid var(--color-border-strong);
+  outline-offset: -1px;
 `;
 
 /* "12 people match these filters" with its clear button. The wrapper is the one polite announcer for settled results, so it stays mounted (and empty) when nothing is active. */
@@ -471,7 +486,8 @@ const Flags = styled.div`
 
 /* ---------- filters ---------- */
 
-type TagMode = "any" | "all" | "none";
+/** "any": has at least one of the chosen tags. "all": has every one of them. */
+type TagMode = "any" | "all";
 
 type JoinedPreset = "" | "30d" | "3m" | "year" | "before" | "custom";
 
@@ -479,6 +495,8 @@ interface Filters {
   joined: { preset: JoinedPreset; from: string; to: string };
   tags: string[];
   tagMode: TagMode;
+  /** People who have none of these tags. */
+  notTags: string[];
   status: MemberStatus[];
   emails: "" | "on" | "off";
   /** The intake-form filters match anyone who has any of the chosen values. */
@@ -520,6 +538,7 @@ type FilterKey = Exclude<keyof Filters, "tagMode">;
 /** The filter buttons, in row order. The intake-form filters come last, behind More. */
 const filterLabels: Record<FilterKey, string> = {
   tags: "Tags",
+  notTags: "Not tagged",
   status: "Status",
   emails: "Emails",
   joined: "Joined",
@@ -531,11 +550,14 @@ const filterLabels: Record<FilterKey, string> = {
 
 const quickFilters: FilterKey[] = ["tags", "status", "emails", "joined"];
 const intakeFilters: FilterKey[] = ["interests", "ways", "location", "time"];
+/** Everything behind More: leaving a tag out, then the intake-form filters. */
+const moreFilters: FilterKey[] = ["notTags", ...intakeFilters];
 
 const noFilters: Filters = {
   joined: { preset: "", from: "", to: "" },
   tags: [],
-  tagMode: "all",
+  tagMode: "any",
+  notTags: [],
   status: [],
   emails: "",
   interests: [],
@@ -543,12 +565,6 @@ const noFilters: Filters = {
   location: [],
   time: [],
 };
-
-const tagModeOptions: { value: TagMode; label: string }[] = [
-  { value: "any", label: "Has any" },
-  { value: "all", label: "Has all" },
-  { value: "none", label: "Doesn't have" },
-];
 
 /** Free-text "Other: ..." answers all count as one value, so they don't each become an option. */
 const OTHER = "Other";
@@ -591,8 +607,8 @@ function matches(m: Member, f: Filters, q: string) {
     const hasTag = (t: string) => m.tags.some((x) => x.toLowerCase() === t.toLowerCase());
     if (f.tagMode === "all" && !f.tags.every(hasTag)) return false;
     if (f.tagMode === "any" && !f.tags.some(hasTag)) return false;
-    if (f.tagMode === "none" && f.tags.some(hasTag)) return false;
   }
+  if (f.notTags.length && f.notTags.some((t) => m.tags.some((x) => x.toLowerCase() === t.toLowerCase()))) return false;
   if (!joinedMatches(f.joined, m.joinedAt)) return false;
   if (f.emails === "on" && !m.subscribed) return false;
   if (f.emails === "off" && m.subscribed) return false;
@@ -604,7 +620,7 @@ function matches(m: Member, f: Filters, q: string) {
 }
 
 const filterCount = (f: Filters) =>
-  [f.joined.preset, f.emails].filter(Boolean).length + [f.status, f.interests, f.ways, f.location, f.time].filter((v) => v.length).length + (f.tags.length ? 1 : 0);
+  [f.joined.preset, f.emails].filter(Boolean).length + [f.status, f.interests, f.ways, f.location, f.time].filter((v) => v.length).length + [f.tags, f.notTags].filter((v) => v.length).length;
 
 /**
  * A checkbox list. Changes apply at once. Each count is how many people have that value among those who match the search and the
@@ -1280,7 +1296,7 @@ function Directory() {
   function refocus(key: FilterKey | null) {
     window.setTimeout(() => {
       if (document.activeElement && document.activeElement !== document.body) return;
-      const fallback = key && !intakeFilters.includes(key) ? triggers.current[key] : moreButton.current;
+      const fallback = key && !moreFilters.includes(key) ? triggers.current[key] : moreButton.current;
       (fallback ?? triggers.current.tags)?.focus();
     }, 0);
   }
@@ -1289,7 +1305,7 @@ function Directory() {
     setPinned((list) => list.filter((k) => k !== key));
     setOpenFilter(null);
     setFilter(key, noFilters[key]);
-    if (key === "tags") setFilter("tagMode", "all");
+    if (key === "tags") setFilter("tagMode", "any");
     refocus(key);
   }
 
@@ -1304,7 +1320,7 @@ function Directory() {
   /** A popover opens or closes. An intake filter closed with nothing chosen drops back behind More. */
   function changeOpen(key: FilterKey, open: boolean) {
     setOpenFilter((cur) => (open ? key : cur === key ? null : cur));
-    if (!open && intakeFilters.includes(key) && !filters[key as "interests"].length) {
+    if (!open && moreFilters.includes(key) && !filters[key as "interests"].length) {
       setPinned((list) => list.filter((k) => k !== key));
       refocus(key);
     }
@@ -1323,8 +1339,23 @@ function Directory() {
           <TagsFailed onRetry={() => setRetried((r) => ({ ...r, tags: true }))} />
         ) : (
           <>
-            <Select aria-label="Tag match" options={tagModeOptions} value={filters.tagMode} onValueChange={(v) => setFilter("tagMode", v as TagMode)} />
+            <OptionsNote>{filters.tagMode === "all" ? "Show people who have all of these tags." : "Show people who have any of these tags."}</OptionsNote>
             <TagPicker aria-label="Tags" value={filters.tags} options={allTags} colors={tagColors} onValueChange={(tags) => setFilter("tags", tags)} />
+            {filters.tags.length > 1 && (
+              <Checkbox label="Must have all of them" checked={filters.tagMode === "all"} onCheckedChange={(on) => setFilter("tagMode", on === true ? "all" : "any")} />
+            )}
+          </>
+        )}
+      </FilterEditor>
+    ),
+    notTags: (
+      <FilterEditor>
+        {tagsFailed ? (
+          <TagsFailed onRetry={() => setRetried((r) => ({ ...r, tags: true }))} />
+        ) : (
+          <>
+            <OptionsNote>Hide people who have any of these tags.</OptionsNote>
+            <TagPicker aria-label="Not tagged" value={filters.notTags} options={allTags} colors={tagColors} onValueChange={(tags) => setFilter("notTags", tags)} />
           </>
         )}
       </FilterEditor>
@@ -1373,39 +1404,41 @@ function Directory() {
     time: checkList("time", "Availability", fromData(intakeOptions.time)),
   };
 
-  /** What a chip says after its name: the choice in a few words, "Housing +2" when there are more than two. */
-  const list = (values: string[]) => (values.length <= 2 ? values.join(", ") : `${values[0]} +${values.length - 1}`);
-  /** Everything a chip chose, in full: it is the button's accessible name, since the visible text is cut with an ellipsis. */
-  const fullSummary = (key: FilterKey): string => {
-    switch (key) {
-      case "tags":
-        return `${filters.tagMode === "none" ? "not " : filters.tagMode === "any" ? "any of " : "all of "}${filters.tags.join(", ")}`;
-      case "status":
-        return filters.status.map((v) => statusLabel[v]).join(", ");
-      case "emails":
-      case "joined":
-        return filterSummary(key);
-      default:
-        return filters[key].join(", ");
-    }
-  };
+  /** "A", "A or B", "A, B or C": the choices in plain words. */
+  const joinWords = (values: string[], word: "or" | "and") => (values.length < 2 ? values.join("") : `${values.slice(0, -1).join(", ")} ${word} ${values[values.length - 1]}`);
+  /** What an applied filter says, in full and in plain words, e.g. "Tagged Board or Volunteer". Empty when the filter is not applied. */
   const filterSummary = (key: FilterKey): string => {
     switch (key) {
       case "tags":
-        return filters.tags.length ? `${filters.tagMode === "none" ? "not " : filters.tagMode === "any" && filters.tags.length > 1 ? "any of " : ""}${list(filters.tags)}` : "";
+        return filters.tags.length ? `Tagged ${joinWords(filters.tags, filters.tagMode === "all" ? "and" : "or")}` : "";
+      case "notTags":
+        return filters.notTags.length ? `Not tagged ${joinWords(filters.notTags, "or")}` : "";
       case "status":
-        return list(filters.status.map((v) => statusLabel[v]));
+        return filters.status.length ? `Status: ${joinWords(filters.status.map((v) => statusLabel[v]), "or")}` : "";
       case "emails":
-        return filters.emails === "on" ? "On" : filters.emails === "off" ? "Off" : "";
+        return filters.emails === "on" ? "Emails on" : filters.emails === "off" ? "Emails off" : "";
       case "joined": {
         const j = filters.joined;
-        if (j.preset === "custom") return j.from || j.to ? `${j.from ? formatDate(j.from) : "…"} to ${j.to ? formatDate(j.to) : "…"}` : "Custom range";
-        return joinedPresets.find((o) => o.value === j.preset)?.label ?? "";
+        if (j.preset === "custom") {
+          if (j.from && j.to) return `Joined ${formatDate(j.from)} to ${formatDate(j.to)}`;
+          if (j.from) return `Joined from ${formatDate(j.from)}`;
+          if (j.to) return `Joined up to ${formatDate(j.to)}`;
+          return "Joined in a custom range";
+        }
+        const phrase: Record<Exclude<JoinedPreset, "" | "custom">, string> = {
+          "30d": "in the last 30 days",
+          "3m": "in the last 3 months",
+          year: "this year",
+          before: "before this year",
+        };
+        return j.preset ? `Joined ${phrase[j.preset]}` : "";
       }
       default:
-        return list(filters[key]);
+        return filters[key].length ? `${filterLabels[key]}: ${joinWords(filters[key], "or")}` : "";
     }
   };
+  /** The filters with a value, in row order: each gets a chip under the search. */
+  const appliedKeys = [...quickFilters, ...moreFilters].filter((key) => filterSummary(key));
 
   const columns: TableColumn<Member>[] = [
     {
@@ -1714,32 +1747,25 @@ function Directory() {
         </SearchBox>
       {showList && (
         <FilterRow role="group" aria-label="Filters">
-          {[...quickFilters, ...intakeFilters.filter((key) => filterSummary(key) || pinned.includes(key))].map((key) => {
+          {[...quickFilters, ...moreFilters.filter((key) => filterSummary(key) || pinned.includes(key))].map((key) => {
             const summary = filterSummary(key);
             const active = summary !== "";
             return (
               <Popover key={key} open={openFilter === key} onOpenChange={(o) => changeOpen(key, o)}>
-                <FilterGroup data-filter={key} data-active={active ? "" : undefined}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      ref={(el) => {
-                        triggers.current[key] = el;
-                      }}
-                      type="button"
-                      $variant={active ? "ghost" : "outline"}
-                      $size="sm"
-                      aria-label={active ? `${filterLabels[key]}: ${fullSummary(key)}` : undefined}
-                    >
-                      <ChipLabel>{active ? `${filterLabels[key]}: ${summary}` : filterLabels[key]}</ChipLabel>
-                      <Icon icon={ChevronDown} size={14} />
-                    </Button>
-                  </PopoverTrigger>
-                  {active && (
-                    <ChipRemove type="button" $variant="ghost" $size="sm" aria-label={`Remove ${filterLabels[key]} filter`} onClick={() => removeFilter(key)}>
-                      <Icon icon={X} size={14} />
-                    </ChipRemove>
-                  )}
-                </FilterGroup>
+                <PopoverTrigger asChild>
+                  <FilterButton
+                    ref={(el) => {
+                      triggers.current[key] = el;
+                    }}
+                    type="button"
+                    $variant={active ? "secondary" : "outline"}
+                    aria-label={active ? `${filterLabels[key]}, applied: ${summary}` : undefined}
+                  >
+                    {active && <Icon icon={Check} size={14} />}
+                    {filterLabels[key]}
+                    <Icon icon={ChevronDown} size={14} />
+                  </FilterButton>
+                </PopoverTrigger>
                 {intakeFilters.includes(key) ? (
                   <WidePopover align="start" showClose={false} aria-label={filterLabels[key]}>
                     <FilterOptionsLoader slow={lab.slowLoading}>{filterEditor[key]}</FilterOptionsLoader>
@@ -1752,13 +1778,13 @@ function Directory() {
               </Popover>
             );
           })}
-          {intakeFilters.some((key) => !filterSummary(key) && !pinned.includes(key)) && (
+          {moreFilters.some((key) => !filterSummary(key) && !pinned.includes(key)) && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button ref={moreButton} type="button" $variant="outline" $size="sm">
+                <FilterButton ref={moreButton} type="button" $variant="outline">
                   More
                   <Icon icon={ChevronDown} size={14} />
-                </Button>
+                </FilterButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="start"
@@ -1770,7 +1796,7 @@ function Directory() {
                   justPicked.current = null;
                 }}
               >
-                {intakeFilters
+                {moreFilters
                   .filter((key) => !filterSummary(key) && !pinned.includes(key))
                   .map((key) => (
                     <DropdownMenuItem
@@ -1790,6 +1816,21 @@ function Directory() {
       )}
       </Toolbar>
       </ToolbarBox>
+
+      {showList && appliedKeys.length > 0 && (
+        <AppliedRow role="group" aria-label="Applied filters">
+          {appliedKeys.map((key) => (
+            <FilterGroup key={key} data-filter={key}>
+              <Button type="button" $variant="ghost" $size="sm" onClick={() => setOpenFilter(key)} aria-label={`Change filter: ${filterSummary(key)}`}>
+                <ChipLabel>{filterSummary(key)}</ChipLabel>
+              </Button>
+              <ChipRemove type="button" $variant="ghost" $size="sm" aria-label={`Remove filter: ${filterSummary(key)}`} onClick={() => removeFilter(key)}>
+                <Icon icon={X} size={14} />
+              </ChipRemove>
+            </FilterGroup>
+          ))}
+        </AppliedRow>
+      )}
 
       {showList && (
         <ResultsLine role="status" aria-live="polite" aria-atomic="true">
