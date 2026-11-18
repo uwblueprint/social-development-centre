@@ -68,11 +68,13 @@ export const cancelCopy = {
     emailsBody: "You can stop getting emails and keep your membership.", // Not in doc.
     emailsAction: "Unsubscribe from emails instead", // Not in doc.
 
-    // The offers under the answers, always showing: a lower tier, or a pause (FigJam: "Pause / discontinue completely").
+    // Too expensive → a lower tier, or a pause (FigJam: "Pause / discontinue completely").
     lowerTierBody: (date: string) => `Pay less from your next payment on ${date}, or take a break.`, // Not in doc.
     noLowerTierBody: "You can take a break instead. You won't be charged while paused.", // Not in doc.
     switchTo: (tier: string, amount: string) => `Switch to ${tier} · ${amount} a month`, // The doc's "Switch to [lower tier]", with the price.
 
+    // Need a break → pause.
+    breakBody: "Pause for up to 3 months instead. You won't be charged while paused.", // Not in doc.
     pauseInstead: "Pause instead", // Not in doc.
 
     continueToCancel: "Continue to cancel", // Not in doc.

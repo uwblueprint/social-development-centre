@@ -28,9 +28,9 @@ import { cancelCopy as copy } from "./copy";
  *   Pause or cancel ─► Pause ─► Paused (end)
  *         │              ▲
  *         ▼              │
- *   Before you go ──────┤ (Pause instead, always showing)
+ *   Before you go ──────┤ (break, or too expensive → pause)
  *     ├─ too many emails → Unsubscribed, membership kept (end)
- *     ├─ Switch to a lower tier (always showing) → Switched (end)
+ *     ├─ too expensive   → Switched to a lower tier (end)
  *     └─ Continue to cancel ─► Cancel your membership? ─► We're sorry to see you go (end)
  *                                        └─ Keep my membership ─► Your membership is active again (end)
  *
@@ -176,8 +176,8 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
             question={copy.reasons.question}
             value={reason}
             onChange={setReason}
-            // Only "too many emails" opens a line: its alternative (keep the membership, drop the emails)
-            // isn't among the offers below.
+            // One line and the buttons for one alternative per answer; no nesting. "No longer
+            // involved" has nothing to offer, so it just leaves Continue to cancel.
             options={membershipReasons.map((r) => ({
               value: r,
               label: copy.reasons.options[r],
@@ -197,30 +197,39 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
                       {copy.reasons.emailsAction}
                     </Button>
                   </>
+                ) : r === "budget" ? (
+                  <>
+                    <Body>
+                      {lowerTiers.length > 0 ? copy.reasons.lowerTierBody(formatDate(nextPayment)) : copy.reasons.noLowerTierBody}
+                    </Body>
+                    {lowerTiers.map((t) => (
+                      <Button
+                        key={t.id}
+                        type="button"
+                        $variant="outline"
+                        $size="lg"
+                        onClick={() => {
+                          setSwitchedTo(t.id);
+                          go("switched");
+                        }}
+                      >
+                        {copy.reasons.switchTo(t.name, formatMoney(t.monthlyPrice))}
+                      </Button>
+                    ))}
+                    <Button type="button" $variant="outline" $size="lg" onClick={() => go("pause")}>
+                      {copy.reasons.pauseInstead}
+                    </Button>
+                  </>
+                ) : r === "break" ? (
+                  <>
+                    <Body>{copy.reasons.breakBody}</Body>
+                    <Button type="button" $variant="outline" $size="lg" onClick={() => go("pause")}>
+                      {copy.reasons.pauseInstead}
+                    </Button>
+                  </>
                 ) : undefined,
             }))}
           />
-          {/* The offers show from the start, whatever they answer (or if they skip the question). */}
-          <Stack>
-            <Note>{lowerTiers.length > 0 ? copy.reasons.lowerTierBody(formatDate(nextPayment)) : copy.reasons.noLowerTierBody}</Note>
-            {lowerTiers.map((t) => (
-              <Button
-                key={t.id}
-                type="button"
-                $variant="outline"
-                $size="lg"
-                onClick={() => {
-                  setSwitchedTo(t.id);
-                  go("switched");
-                }}
-              >
-                {copy.reasons.switchTo(t.name, formatMoney(t.monthlyPrice))}
-              </Button>
-            ))}
-            <Button type="button" $variant="outline" $size="lg" onClick={() => go("pause")}>
-              {copy.reasons.pauseInstead}
-            </Button>
-          </Stack>
         </Template>
       );
 

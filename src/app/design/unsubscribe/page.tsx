@@ -15,7 +15,7 @@ const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v
  * - `?reason=too-many|not-relevant|no-more` opens with that answer chosen.
  * - `?state=saved|unsubscribed|resubscribed` opens just after that action (saved goes with too-many).
  * - `?member=false` shows the page for someone who only subscribes (default: a member).
- * - `?tier=friend|supporter|sustainer` sets the demo member's tier.
+ * - `?tier=friend|supporter|sustainer` sets the demo member's tier (default sustainer).
  */
 export default async function UnsubscribeDesign({ searchParams }: PageProps<"/design/unsubscribe">) {
   const params = await searchParams;

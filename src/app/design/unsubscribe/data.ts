@@ -41,7 +41,7 @@ export interface DemoMember {
 export const demoMember: DemoMember = {
   firstName: "Priya",
   email: "priya.shah@example.com",
-  tierId: "supporter",
+  tierId: "sustainer",
   nextPaymentDate: "2026-12-01",
   memberSince: "2023-04-15",
 };

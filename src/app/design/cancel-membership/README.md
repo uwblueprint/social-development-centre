@@ -10,19 +10,23 @@ Follows the [Unsub flow FigJam board](https://www.figma.com/board/jvbGjJ6Wb3CZIO
 Pause or cancel ─► Pause ─► Paused (end)
       │              ▲
       ▼              │
-Before you go ──────┤ (Pause instead, always showing)
+Before you go ──────┤ (need a break, or too expensive → Pause instead)
   ├─ too many emails → Unsubscribed, membership kept (end)
-  ├─ Switch to [tier] (always showing) → Switched to a lower tier (end)
+  ├─ too expensive   → Switched to a lower tier (end)
   └─ Continue to cancel ─► Cancel your membership? ─► We're sorry to see you go (end)
                                      └─ Keep my membership ─► Your membership is active again (end)
 ```
 
 - **Pause or cancel your membership** (`?step=choose`, default). What the email link promised: the membership in one line (tier · price · next payment), then Pause membership or Cancel membership.
 - **Pause your membership** (`?step=pause`). 1, 2 or 3 months as one list (the copy doc's maximum), the restart date in bold, updating as they choose (after Disney+), what pausing means, then Pause membership or Back.
-- **Before you go** (`?step=reasons`). "What's the main reason you're cancelling?" (optional, one answer). Under it, always showing whatever they answer: "Pay less from your next payment on [date], or take a break.", a "Switch to [tier] · $[price] a month" button for each lower tier (starts on the next payment), and Pause instead. A Friend has no lower tier, so only Pause instead. Of the answers, only "I get too many emails" opens a line, with Unsubscribe from emails instead.
+- **Before you go** (`?step=reasons`). "What's the main reason you're cancelling?" (optional, one answer). Each answer opens one line and its buttons, never a nested form:
+  - Too many emails → Unsubscribe from emails instead.
+  - It's too expensive right now → "Switch to [tier] · $[price] a month" for each lower tier (starts on the next payment), and Pause instead. A Friend has no lower tier, so only Pause instead.
+  - I need a break → Pause instead.
+  - I don't want to be involved with SDC anymore → nothing: Continue to cancel is right there.
 
   "Continue to cancel" is always visible: the question never stands between someone and cancelling.
-- **End screens for each alternative** (`?step=paused|switched|unsubscribed`). Saying yes to an alternative ends the flow on its own screen: the outcome as the heading, the details with dates and amounts in bold, and a muted undo line ("Switched" also says "Awesome! You can close this tab now."). Undoing changes the heading ("Your membership is active again" with "Thank you for your support.", "You'll stay a Supporter member", "You're subscribed again") and moves focus to it.
+- **End screens for each alternative** (`?step=paused|switched|unsubscribed`). Saying yes to an alternative ends the flow on its own screen: the outcome as the heading, the details with dates and amounts in bold, and a muted undo line ("Switched" also says "Awesome! You can close this tab now."). Undoing changes the heading ("Your membership is active again" with "Thank you for your support.", "You'll stay a Sustainer member", "You're subscribed again") and moves focus to it.
 - **Cancel your membership?** (`?step=confirm`). "Your voting rights and member benefits end at the end of the month, and you won't be charged again.", then, in small grey text, how to ask for a refund (email admin@sdc.com). Keep my membership (filled, first) or Cancel membership (red outline, second).
 - **Your membership is active again** (`?step=kept`). After Keep my membership: "Thank you for your support." Nothing else to do.
 - **We're sorry to see you go** (`?step=cancelled`). Thanks (the "supporter since" line lives only here), then small print: the confirmation email and, if they still get emails, "If you would no longer like to hear from SDC, you can unsubscribe here" ("unsubscribe here" links to the email flow). No buttons.
