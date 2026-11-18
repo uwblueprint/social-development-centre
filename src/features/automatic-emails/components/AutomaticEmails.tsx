@@ -30,7 +30,6 @@ import {
   type Recipient,
   type TagNames,
   type TagOption,
-  EVERYONE,
   audienceSentence,
   displayName,
   effectiveAudience,
@@ -112,25 +111,6 @@ export function AutomaticEmailsList({ emails, tags }: { emails: AutomaticEmail[]
 // ---------- one email ----------
 
 /** A new email the admin hasn't changed yet. It's created in the database on its first change. */
-export function blankEmail(): AutomaticEmail {
-  return {
-    id: "",
-    name: "",
-    trigger: "join_any",
-    tag: null,
-    delay: "same",
-    days: "30",
-    unit: "days",
-    audience: EVERYONE,
-    mode: "auto",
-    state: "draft",
-    subject: "",
-    edited: 0,
-    approved: 0,
-    waiting: 0,
-  };
-}
-
 export function AutomaticEmailScreen({
   email: initial,
   tags,

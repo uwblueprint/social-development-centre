@@ -65,6 +65,26 @@ export interface AutomaticEmail {
   wasPublished?: boolean;
 }
 
+/** A new email before its first save. A plain function (not in the client component) so the server page can call it. */
+export function blankEmail(): AutomaticEmail {
+  return {
+    id: "",
+    name: "",
+    trigger: "join_any",
+    tag: null,
+    delay: "same",
+    days: "30",
+    unit: "days",
+    audience: EVERYONE,
+    mode: "auto",
+    state: "draft",
+    subject: "",
+    edited: 0,
+    approved: 0,
+    waiting: 0,
+  };
+}
+
 export interface TagOption {
   id: string;
   name: string;

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { requireAdmin } from "@/features/auth/session";
-import { AutomaticEmailScreen, blankEmail } from "@/features/automatic-emails/components/AutomaticEmails";
+import { AutomaticEmailScreen } from "@/features/automatic-emails/components/AutomaticEmails";
+import { blankEmail } from "@/features/automatic-emails/model";
 import { getFallbacks, listTagOptions } from "@/features/automatic-emails/queries";
 
 export const metadata: Metadata = { title: "New automatic email" };
