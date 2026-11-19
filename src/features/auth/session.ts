@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createSecretClient } from "@/lib/supabase/secret";
 import { portals } from "./portals";
 
 export interface Person {
@@ -41,8 +42,21 @@ export const getSignedInPerson = cache(async (): Promise<Person | null> => {
 
 export async function requireAdmin(): Promise<Person> {
   const person = await getSignedInPerson();
-  if (!person?.isAdmin) redirect(portals.admin.signInPath);
-  return person;
+  if (person?.isAdmin) return person;
+  // Signed in and still on the admin list, but not an admin right now: the 7-day admin session ran
+  // out. Say so on the sign-in page instead of showing it as if they'd never signed in.
+  if (person && (await isOnAdminList(person.email))) redirect(`${portals.admin.signInPath}?reason=expired`);
+  redirect(portals.admin.signInPath);
+}
+
+async function isOnAdminList(email: string): Promise<boolean> {
+  const db = createSecretClient() ?? (await createClient());
+  const { data, error } = await db.rpc("can_sign_in", {
+    p_email: email,
+    p_portal: "admin",
+  });
+  if (error) console.error("can_sign_in failed:", error.message);
+  return data === true;
 }
 
 export async function requireMember(): Promise<Person> {
