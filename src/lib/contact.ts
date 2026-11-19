@@ -8,9 +8,9 @@ export const SDC_CONTACT_EMAIL = "{SDC contact email}";
 /**
  * Where admins escalate a problem that keeps happening (the team that maintains the platform), e.g. a page
  * that won't load after Try again. Partners never see this: they tell an SDC admin instead.
- * TODO: replace with the real BSF address. Import this constant; never hard-code the address elsewhere.
+ * Import this constant; never hard-code the address elsewhere.
  */
-export const BSF_SUPPORT_EMAIL = "{BSF email}";
+export const BSF_SUPPORT_EMAIL = "info@blueprintsoftware.org";
 
 /**
  * Where "Become a member" goes on the member sign-in page (SDC's membership page).
