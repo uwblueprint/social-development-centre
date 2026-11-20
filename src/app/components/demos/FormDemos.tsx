@@ -109,7 +109,7 @@ export function SearchFieldDemo() {
       <SearchResults aria-live="polite">
         {matches.length ? matches.join(", ") : `No matches for "${query}"`}
       </SearchResults>
-      <SearchField aria-label="Search opportunities" placeholder="Loading state" defaultValue="food bank" onSearch={() => {}} pending />
+      <SearchField aria-label="Search opportunities" placeholder="Loading state (spinner on the right)" defaultValue="food bank" onSearch={() => {}} pending />
     </Section>
   );
 }

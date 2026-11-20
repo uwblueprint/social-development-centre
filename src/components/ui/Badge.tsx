@@ -1,6 +1,6 @@
 import { css, styled } from "next-yak";
 
-type Variant = "neutral" | "primary" | "success" | "warning" | "danger" | "info" | "outline";
+type Variant = "neutral" | "primary" | "success" | "warning" | "danger" | "info" | "outline" | "count";
 /** Non-status colors for kinds of thing (e.g. opportunity types). Overrides `$variant`'s colors. */
 export type BadgeCategory = 1 | 2 | 3 | 4 | 5;
 
@@ -70,6 +70,20 @@ export const Badge = styled.span<{ $variant?: Variant; $category?: BadgeCategory
     $variant === "outline" &&
     css`
       color: var(--color-text);
+    `}
+  /* A notification-style count: solid red, a circle for one digit, a pill for more. Never status text. */
+  ${({ $variant }) =>
+    $variant === "count" &&
+    css`
+      justify-content: center;
+      min-width: calc(var(--space-4) + var(--space-1));
+      padding: 0 var(--space-1);
+      border: 0;
+      border-radius: var(--radius-full);
+      background: var(--color-danger);
+      color: var(--color-on-danger);
+      font-weight: var(--weight-medium);
+      font-variant-numeric: tabular-nums;
     `}
   /* Categories come last so they win over any $variant. */
   ${({ $category }) =>
