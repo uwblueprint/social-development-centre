@@ -18,7 +18,8 @@ export async function GET(request: NextRequest) {
   if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
-  if (request.nextUrl.searchParams.get("force") !== "1" && torontoHour() !== 10) {
+  const forced = request.nextUrl.searchParams.get("force") === "1";
+  if (!forced && torontoHour() !== 10) {
     return Response.json({ skipped: "Not 10 am in Toronto" });
   }
 
@@ -27,6 +28,11 @@ export async function GET(request: NextRequest) {
     console.error("[automatic-emails] SUPABASE_SECRET_KEY is not set");
     return Response.json({ error: "Not configured" }, { status: 500 });
   }
+  // The Outbox reads this to know whether today's emails have gone out. Not being able to record it
+  // shouldn't stop the sending.
+  const run = await supabase.rpc("start_email_run", { p_forced: forced });
+  if (run.error) console.error("[automatic-emails] start_email_run failed:", run.error.message);
+
   const prepared = await supabase.rpc("prepare_due_sends");
   if (prepared.error) {
     console.error("[automatic-emails] prepare_due_sends failed:", prepared.error.message);
@@ -64,6 +70,16 @@ export async function GET(request: NextRequest) {
     }
     if (result.ok) sent++;
     else failed++;
+  }
+
+  if (run.data != null) {
+    const finished = await supabase.rpc("finish_email_run", {
+      p_id: run.data,
+      p_ready: prepared.data,
+      p_sent: sent,
+      p_failed: failed,
+    });
+    if (finished.error) console.error("[automatic-emails] finish_email_run failed:", finished.error.message);
   }
 
   return Response.json({ ready: prepared.data, sent, failed, left: deliveries.data.length - sent - failed });

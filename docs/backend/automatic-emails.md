@@ -116,9 +116,12 @@ A row exists only once something is decided for one person:
 | `pending` | An admin approved and/or edited it in the Outbox (`approved_at`, `subject_override`, `body_override`). |
 | `sending` | The daily run took it; the sender hasn't confirmed yet. |
 | `sent` | Confirmed (`sent_at`, `provider_message_id`). |
-| `not_sent` | `not_a_member` (removed before send day), `no_longer_matched`, `unsubscribed`, `bounced`, `trashed`, or `failed` (three attempts). |
+| `not_sent` | `not_a_member` (removed before send day), `no_longer_matched`, `unsubscribed`, `bounced`, `trashed`, `failed` (three attempts), or `removed` (an admin took this member out of this send in the Outbox). |
 
-**Access:** admins can read all three tables (RLS). Writes go through the functions below.
+### `email_runs`
+One row per daily run: `run_on`, `forced`, `started_at`, `finished_at`, and how many were `ready`, `sent` and `failed`. The run route writes it; the Outbox reads it to know whether today's emails have gone out. A run that stopped early has no `finished_at`.
+
+**Access:** admins can read all four tables (RLS). Writes go through the functions below.
 `email_candidate_state`, the internal view that pairs each occurrence with its member's current state, isn't
 readable by `anon` or `authenticated`, because it sees every member's tags.
 
@@ -145,25 +148,36 @@ All admin functions raise `42501` for non-admins and `55000` when the email is i
 - Rejoining is a new join: a member who's removed and added again gets the join emails again.
 
 ### Outbox (admin)
+What the Outbox page reads and does. Every subject and body is the one that will go out: the Outbox edit if there is one, else the template's. `subject` is plain text; `subject_doc` is the template's Email Editor subject when there's no edit, else `{}`.
+
 | Function | Returns |
 |---|---|
-| `outbox_upcoming(days = 30)` | One row per occurrence due in the next `days`, for people who match now and can be emailed. `status`: `scheduled` (sends on its own), `waiting_review`, `approved`, `past_due` (needed review and its day passed). Also `missed`, `subject` (with any override) and `edited`. |
+| `outbox_upcoming(days = 30)` | One row per occurrence due in the next `days`, for people who match now and can be emailed. `status`: `scheduled` (sends on its own), `waiting_review`, `approved`, `past_due` (needed review and its day passed). Also the email's name, the member's names, email and `tags` (`[{id, name}]`), `missed`, `subject`, `subject_doc`, `body` and `edited`. |
+| `outbox_not_sent(days = 30)` | The Couldn't send tab: sends from the last `days` that didn't go out and need someone, with `reason` `failed` (three attempts) or `bounced`, `failed_at`, `attempts` and `last_error`. Past-due sends are in `outbox_upcoming`. Other reasons need no one, so they aren't here. |
+| `outbox_calendar(from, to)` | Per day in Waterloo Region, up to a year: how many were `sent` and how many couldn't send (`not_sent`: failed or bounced). Whether today's run has happened is in `email_runs`. |
+| `outbox_member(occurrence_id, person_id)` | The member panel: who they are (`joined_at`, `tags`), the email's rule as it is now (`trigger`, trigger tag, delay, `mode`, `conditions`), `event_at` (when the trigger happened for them), `matched_tags` (`{only, require, never}`: which of their tags meet each condition) and `other_sends` (their other emails from 30 days back to 30 days ahead, nearest first, with `status`). Works for a send that already left the Outbox. |
 | `automatic_email_eligible(id)` | The editor's "N members currently eligible": every member the conditions match right now. |
-| `approve_send(occurrence_id, person_id)` | Approves one send. Raises `55000` if it's no longer in the Outbox. |
+| `approve_send(occurrence_id, person_id)` | Approves one send. Raises `55000` if it's no longer in the Outbox. Approving a past-due send schedules it for the next run. |
 | `edit_send(occurrence_id, person_id, subject, body)` | Overrides one send's subject and/or body (null = use the template's). |
+| `remove_send(occurrence_id, person_id)` | Takes one member out of one send: Not sent, `removed`. The automatic email is untouched. Also clears a send off the Couldn't send tab (its error is kept). Raises `55000` if it's gone. |
+| `approve_sends(items)`, `remove_sends(items)` | Bulk versions. `items` is `[{occurrence_id, person_id}]`; each is tried on its own and comes back `done`, or `gone` if it had already left the Outbox. |
+
+Undo is held in the browser (design decision, Nov 2026), so nothing here undoes an action.
 
 ### Daily run (service role)
 | Function | Effect |
 |---|---|
 | `prepare_due_sends(today = toronto_today())` → ready count | For each occurrence due on or before today, checks its member again: if they match and can be emailed it becomes `sending` (in review mode, only once approved); otherwise it's recorded `not_sent` with a reason. An occurrence resolves unless it's waiting for approval. Running it twice does nothing new. |
 | `email_deliveries()` | For each `sending` row of a published email: address, first name, subject and body (with overrides), unsubscribe token. |
+| `start_email_run(forced)` → id, `finish_email_run(id, ready, sent, failed)` | Record the run in `email_runs`. |
 | `record_send_result(send_id, provider_message_id, error)` | `error` null = `sent`. Otherwise it counts the attempt, and the third failure is `not_sent` / `failed`. |
 
 ## Sending
 
 **The daily run:** `src/app/api/automatic-emails/run/route.ts`, at **10:30 am in Waterloo Region** (PM,
-3 Nov 2026). It runs `prepare_due_sends()`, sends each `email_deliveries()` row one at a time, and
-reports back with `record_send_result()`.
+3 Nov 2026). It records the run (`start_email_run`), runs `prepare_due_sends()`, sends each
+`email_deliveries()` row one at a time, reports back with `record_send_result()`, and finishes the run
+record (`finish_email_run`).
 - **Cron:** `vercel.json` calls it at 14:30 and 15:30 UTC, because 10:30 Toronto is one or the other
   depending on daylight saving time. The call outside the 10 o'clock Toronto hour does nothing. On
   Vercel's Hobby plan a cron can start anywhere in its hour, so "10:30" can be 10:00–10:59.
@@ -206,7 +220,7 @@ addresses by hand.
    `resubscribe_by_token`. Every email links to it already, so it has to exist before production
    sending.
 2. **Review alerts** (`alert_when`), sent from the same run.
-3. **The admin UI:** the automatic emails list and editor, and the Outbox page (`outbox_upcoming`).
+3. **The Outbox page** (`/admin/outbox`), from the design in #64, on the functions above.
 
 ## Open questions
 - **Roles as a condition:** mentioned in discussion, not in the conditions prototype.

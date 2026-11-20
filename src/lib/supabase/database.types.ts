@@ -217,6 +217,39 @@ export type Database = {
           },
         ]
       }
+      email_runs: {
+        Row: {
+          failed: number | null
+          finished_at: string | null
+          forced: boolean
+          id: number
+          ready: number | null
+          run_on: string
+          sent: number | null
+          started_at: string
+        }
+        Insert: {
+          failed?: number | null
+          finished_at?: string | null
+          forced?: boolean
+          id?: never
+          ready?: number | null
+          run_on?: string
+          sent?: number | null
+          started_at?: string
+        }
+        Update: {
+          failed?: number | null
+          finished_at?: string | null
+          forced?: boolean
+          id?: never
+          ready?: number | null
+          run_on?: string
+          sent?: number | null
+          started_at?: string
+        }
+        Relationships: []
+      }
       email_sends: {
         Row: {
           approved_at: string | null
@@ -1012,6 +1045,10 @@ export type Database = {
         Args: { p_occurrence_id: string; p_person_id: string }
         Returns: undefined
       }
+      approve_sends: {
+        Args: { p_items: Json }
+        Returns: { occurrence_id: string; person_id: string; result: string }[]
+      }
       assert_in_outbox: {
         Args: { p_occurrence_id: string; p_person_id: string }
         Returns: undefined
@@ -1061,22 +1098,90 @@ export type Database = {
         Returns: boolean
       }
       email_personalized_ids: { Args: { p_doc: Json }; Returns: string[] }
+      finish_email_run: {
+        Args: { p_failed: number; p_id: number; p_ready: number; p_sent: number }
+        Returns: undefined
+      }
+      outbox_calendar: {
+        Args: { p_from: string; p_to: string }
+        Returns: { day: string; not_sent: number; sent: number }[]
+      }
+      outbox_member: {
+        Args: { p_occurrence_id: string; p_person_id: string }
+        Returns: {
+          automatic_email_id: string
+          conditions: Json
+          delay_amount: number
+          delay_unit: string
+          due_on: string
+          email: string
+          email_name: string
+          event_at: string
+          first_name: string | null
+          full_name: string
+          joined_at: string | null
+          last_name: string | null
+          matched_tags: { never: string[]; only: string[]; require: string[] }
+          mode: string
+          other_sends: {
+            automatic_email_id: string
+            email_name: string
+            occurrence_id: string
+            on: string
+            status: string
+          }[]
+          person_id: string
+          tags: { id: string; name: string }[]
+          trigger: string
+          trigger_tag_id: string | null
+          trigger_tag_name: string | null
+        }[]
+      }
+      outbox_not_sent: {
+        Args: { p_days?: number }
+        Returns: {
+          automatic_email_id: string
+          email: string
+          email_name: string
+          first_name: string | null
+          full_name: string
+          last_name: string | null
+          person_id: string
+          subject: string
+          subject_doc: Json
+          body: Json
+          tags: { id: string; name: string }[]
+          attempts: number
+          due_on: string
+          failed_at: string
+          last_error: string | null
+          occurrence_id: string
+          reason: string
+          send_id: string
+        }[]
+      }
       outbox_upcoming: {
         Args: { p_days?: number }
         Returns: {
           automatic_email_id: string
-          due_on: string
-          edited: boolean
           email: string
           email_name: string
+          first_name: string | null
           full_name: string
+          last_name: string | null
+          person_id: string
+          subject: string
+          subject_doc: Json
+          body: Json
+          tags: { id: string; name: string }[]
+          due_on: string
+          edited: boolean
           missed: boolean
           occurrence_id: string
-          person_id: string
           status: string
-          subject: string
         }[]
       }
+      person_tags: { Args: { p_person_id: string }; Returns: Json }
       prepare_due_sends: { Args: { p_today?: string }; Returns: number }
       publish_automatic_email: { Args: { p_id: string }; Returns: string[] }
       queue_occurrences: {
@@ -1098,6 +1203,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      remove_send: {
+        Args: { p_occurrence_id: string; p_person_id: string }
+        Returns: undefined
+      }
+      remove_sends: {
+        Args: { p_items: Json }
+        Returns: { occurrence_id: string; person_id: string; result: string }[]
+      }
       restore_automatic_email: { Args: { p_id: string }; Returns: undefined }
       save_automatic_email: {
         Args: { p_id: string; p_patch: Json }
@@ -1107,6 +1220,7 @@ export type Database = {
         Args: { p_field: string; p_value: string }
         Returns: undefined
       }
+      start_email_run: { Args: { p_forced: boolean }; Returns: number }
       toronto_today: { Args: never; Returns: string }
       trash_automatic_email: { Args: { p_id: string }; Returns: undefined }
       unpublish_automatic_email: { Args: { p_id: string }; Returns: undefined }
