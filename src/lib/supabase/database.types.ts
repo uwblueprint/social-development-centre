@@ -634,6 +634,93 @@ export type Database = {
           },
         ]
       }
+      payments: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          currency: string
+          fee_cents: number | null
+          id: string
+          kind: string
+          paid_at: string
+          payer_email: string | null
+          paypal_transaction_id: string
+          person_id: string | null
+          subscription_id: string | null
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          currency: string
+          fee_cents?: number | null
+          id?: string
+          kind?: string
+          paid_at: string
+          payer_email?: string | null
+          paypal_transaction_id: string
+          person_id?: string | null
+          subscription_id?: string | null
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          currency?: string
+          fee_cents?: number | null
+          id?: string
+          kind?: string
+          paid_at?: string
+          payer_email?: string | null
+          paypal_transaction_id?: string
+          person_id?: string | null
+          subscription_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      paypal_events: {
+        Row: {
+          error: string | null
+          event_type: string
+          id: string
+          payload: Json
+          processed_at: string | null
+          received_at: string
+          resource_id: string | null
+        }
+        Insert: {
+          error?: string | null
+          event_type: string
+          id: string
+          payload: Json
+          processed_at?: string | null
+          received_at?: string
+          resource_id?: string | null
+        }
+        Update: {
+          error?: string | null
+          event_type?: string
+          id?: string
+          payload?: Json
+          processed_at?: string | null
+          received_at?: string
+          resource_id?: string | null
+        }
+        Relationships: []
+      }
       people: {
         Row: {
           bounce_detail: string | null
@@ -727,6 +814,66 @@ export type Database = {
           {
             foreignKeyName: "referrals_referrer_id_fkey"
             columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          cancelled_at: string | null
+          cancelled_by: string | null
+          created_at: string
+          failed_attempts: number
+          id: string
+          last_failed_at: string | null
+          next_billing_at: string | null
+          paypal_plan_id: string
+          paypal_subscription_id: string
+          person_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          created_at?: string
+          failed_attempts?: number
+          id?: string
+          last_failed_at?: string | null
+          next_billing_at?: string | null
+          paypal_plan_id: string
+          paypal_subscription_id: string
+          person_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          created_at?: string
+          failed_attempts?: number
+          id?: string
+          last_failed_at?: string | null
+          next_billing_at?: string | null
+          paypal_plan_id?: string
+          paypal_subscription_id?: string
+          person_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_person_id_fkey"
+            columns: ["person_id"]
             isOneToOne: false
             referencedRelation: "people"
             referencedColumns: ["id"]
@@ -1006,6 +1153,14 @@ export type Database = {
       }
       update_own_name: {
         Args: { p_first_name: string; p_last_name: string }
+        Returns: undefined
+      }
+      assign_payment: {
+        Args: { p_payment_id: string; p_person_id: string }
+        Returns: undefined
+      }
+      end_paid_membership: {
+        Args: { p_cancelled_by?: string; p_subscription_id: string }
         Returns: undefined
       }
       approve_send: {

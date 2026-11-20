@@ -3,6 +3,9 @@ import { Button } from "@/components/ui/Button";
 import { signOut } from "@/features/auth/actions";
 import { AuthActions, AuthColumn, AuthHeading, AuthScreen, SdcLogo } from "@/features/auth/AuthScreen";
 import { getSignedInPerson, requireMember } from "@/features/auth/session";
+import { paypalManagePaymentsUrl } from "@/features/payments/config";
+import { MembershipCard } from "@/features/payments/MembershipCard";
+import { getMyMembership, planOptions } from "@/features/payments/queries";
 
 /**
  * The front door. Admins go to the admin portal, where everything they do lives. Members get the
@@ -17,6 +20,7 @@ export default async function Home() {
   if (process.env.NODE_ENV !== "production" && !process.env.NEXT_PUBLIC_SUPABASE_URL) redirect("/admin");
   if ((await getSignedInPerson())?.isAdmin) redirect("/admin");
   const member = await requireMember();
+  const [membership, plans] = await Promise.all([getMyMembership(member.id), planOptions()]);
 
   return (
     <AuthScreen>
@@ -26,6 +30,7 @@ export default async function Home() {
           title="You’re signed in"
           description={`The members-only opportunities feed is coming soon.\nSigned in as ${member.email}.`}
         />
+        <MembershipCard membership={membership} plans={plans} managePaymentsUrl={paypalManagePaymentsUrl()} />
         <AuthActions>
           <form action={signOut.bind(null, "member")}>
             <Button type="submit" $variant="outline" $size="lg">
