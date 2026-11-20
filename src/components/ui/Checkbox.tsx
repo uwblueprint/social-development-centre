@@ -17,8 +17,9 @@ import { Label } from "./Label";
  */
 
 /*
- * The border is drawn inside the box (an inset box-shadow in --checkbox-border), so the box is exactly
- * 20px in every state and checking never shifts the label.
+ * A real 1px border in --checkbox-border, inside the 20px box (border-box), so the box is exactly 20px in
+ * every state and checking never shifts the label. Not an inset box-shadow: browsers snap borders to
+ * device pixels but not shadows, so a box at a fractional y (common in lists) drew a blurry, thicker edge.
  */
 const Root = styled(CheckboxPrimitive.Root)`
   all: unset;
@@ -32,11 +33,11 @@ const Root = styled(CheckboxPrimitive.Root)`
   height: 20px;
   border-radius: var(--radius-sm);
   background: var(--color-bg);
-  box-shadow: inset 0 0 0 1px var(--checkbox-border);
+  border: 1px solid var(--checkbox-border);
   cursor: pointer;
   transition:
     background-color var(--duration-fast) var(--ease-out),
-    box-shadow var(--duration-fast) var(--ease-out);
+    border-color var(--duration-fast) var(--ease-out);
 
   &:hover:not([data-disabled]):not([data-readonly]) {
     --checkbox-border: var(--color-text-muted);
@@ -49,9 +50,7 @@ const Root = styled(CheckboxPrimitive.Root)`
   }
 
   &:focus-visible {
-    box-shadow:
-      inset 0 0 0 1px var(--checkbox-border),
-      var(--focus-ring);
+    box-shadow: var(--focus-ring);
   }
 
   &[aria-invalid="true"] {

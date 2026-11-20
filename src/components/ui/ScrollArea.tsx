@@ -4,13 +4,17 @@ import { styled } from "next-yak";
 import { ScrollArea as ScrollAreaPrimitive } from "radix-ui";
 import type { ReactNode } from "react";
 
+/* The viewport clips, so it reserves the focus ring's reach (4px) as padding and the root gives it back as negative margin. */
 const Root = styled(ScrollAreaPrimitive.Root)`
   overflow: hidden;
+  margin: calc(var(--space-1) * -1);
 `;
 
 const Viewport = styled(ScrollAreaPrimitive.Viewport)`
   width: 100%;
   height: 100%;
+  box-sizing: border-box;
+  padding: var(--space-1);
 
   & > div {
     display: block !important;
