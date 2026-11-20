@@ -411,6 +411,8 @@ export type Database = {
           referral_id: string | null
           tag_id: string | null
           tag_name: string | null
+          tier_id: string | null
+          tier_name: string | null
         }
         Insert: {
           at: string
@@ -422,6 +424,8 @@ export type Database = {
           referral_id?: string | null
           tag_id?: string | null
           tag_name?: string | null
+          tier_id?: string | null
+          tier_name?: string | null
         }
         Update: {
           at?: string
@@ -433,6 +437,8 @@ export type Database = {
           referral_id?: string | null
           tag_id?: string | null
           tag_name?: string | null
+          tier_id?: string | null
+          tier_name?: string | null
         }
         Relationships: [
           {
@@ -611,18 +617,24 @@ export type Database = {
           join_emails: boolean
           joined_at: string
           person_id: string
+          tier_chosen_at: string | null
+          tier_id: string | null
         }
         Insert: {
           created_at?: string
           join_emails?: boolean
           joined_at?: string
           person_id: string
+          tier_chosen_at?: string | null
+          tier_id?: string | null
         }
         Update: {
           created_at?: string
           join_emails?: boolean
           joined_at?: string
           person_id?: string
+          tier_chosen_at?: string | null
+          tier_id?: string | null
         }
         Relationships: [
           {
@@ -630,6 +642,13 @@ export type Database = {
             columns: ["person_id"]
             isOneToOne: true
             referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "memberships_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "tiers"
             referencedColumns: ["id"]
           },
         ]
@@ -902,8 +921,66 @@ export type Database = {
         }
         Relationships: []
       }
+      tiers: {
+        Row: {
+          archived_at: string | null
+          archived_by: string | null
+          created_at: string
+          id: string
+          name: string
+          position: number
+          price_cad: number
+        }
+        Insert: {
+          archived_at?: string | null
+          archived_by?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          position: number
+          price_cad: number
+        }
+        Update: {
+          archived_at?: string | null
+          archived_by?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          position?: number
+          price_cad?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tiers_archived_by_fkey"
+            columns: ["archived_by"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      add_tier: {
+        Args: { p_name: string; p_price_cad: number }
+        Returns: string
+      }
+      archive_tier: { Args: { p_tier_id: string }; Returns: undefined }
+      choose_tier: { Args: { p_tier_id: string }; Returns: string }
+      list_offered_tiers: {
+        Args: never
+        Returns: { id: string; name: string; price_cad: number }[]
+      }
+      my_tier_id: { Args: never; Returns: string }
+      reorder_tiers: { Args: { p_ids: string[] }; Returns: undefined }
+      tier_members: {
+        Args: { p_tier_id: string }
+        Returns: { email: string; full_name: string; person_id: string }[]
+      }
+      update_tier: {
+        Args: { p_name: string; p_price_cad: number; p_tier_id: string }
+        Returns: string
+      }
       add_admin: {
         Args: { p_email: string; p_full_name: string }
         Returns: boolean
