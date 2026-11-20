@@ -145,7 +145,7 @@ const Box = styled.div`
 
   &:focus-within {
     border-color: var(--color-focus);
-    box-shadow: var(--focus-ring);
+    box-shadow: var(--focus-field);
   }
 
   &[data-readonly] {

@@ -377,6 +377,7 @@ function ListEmptyStateDemo() {
 
 export function DisplayDemos() {
   const [showMore, setShowMore] = useState(false);
+  const [tabsLoading, setTabsLoading] = useState(false);
   const [selectedTopics, setSelectedTopics] = useState<string[]>(["Literacy", "Mentorship"]);
 
   const toggleTopic = (topic: string) => {
@@ -430,8 +431,11 @@ export function DisplayDemos() {
             <CardDescription>Browse information for the current cohort.</CardDescription>
           </CardHeader>
           <CardContent>
+            <Button $variant="outline" onClick={() => setTabsLoading((v) => !v)} aria-pressed={tabsLoading}>
+              {tabsLoading ? "Stop loading" : "Show loading"}
+            </Button>
             <Tabs defaultValue="overview">
-              <TabsList aria-label="Session sections">
+              <TabsList aria-label="Session sections" loading={tabsLoading} loadingLabel="Loading session details">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="schedule">Schedule</TabsTrigger>
                 <TabsTrigger value="resources">Resources</TabsTrigger>
@@ -468,6 +472,11 @@ export function DisplayDemos() {
         <Badge $variant="info">Draft</Badge>
         <Badge>Volunteer</Badge>
         <Badge $variant="outline">11 members</Badge>
+      </BadgeRow>
+      <BadgeRow aria-label="Count badges">
+        <Badge $variant="count">3</Badge>
+        <Badge $variant="count">12</Badge>
+        <Badge $variant="count">128</Badge>
       </BadgeRow>
       <BadgeRow aria-label="Badge categories">
         <Badge $category={1}><Icon icon={CalendarDays} size={12} />Event</Badge>
