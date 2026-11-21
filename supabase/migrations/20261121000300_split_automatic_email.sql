@@ -1,5 +1,5 @@
 -- Split an automatic email by a tag: a copy for people with the tag, so it can be written just for them
--- ("Welcome pack" → "Welcome pack: $1,000+"), while nobody gets both.
+-- ("Welcome pack" → "Welcome pack ($1,000+)"), while nobody gets both.
 --
 -- 1. split_automatic_email(email, tag) makes a draft copy with the same rule plus "must have the tag",
 --    and remembers where it came from.
@@ -52,7 +52,7 @@ begin
     name, description, trigger, trigger_tag_id, delay_amount, delay_unit, conditions, mode, send_to_unsubscribed,
     alert_enabled, alert_to, alert_when, subject, subject_doc, body, created_by, split_from_id, split_tag_id
   )
-  select left(name || ': ' || tag_name, 200), description, trigger, trigger_tag_id, delay_amount, delay_unit,
+  select left(name || ' (' || tag_name || ')', 200), description, trigger, trigger_tag_id, delay_amount, delay_unit,
          new_conditions, mode, send_to_unsubscribed, alert_enabled, alert_to, alert_when, subject, subject_doc, body,
          public.current_person_id(), p_id, p_tag_id
   from public.automatic_emails where id = p_id
