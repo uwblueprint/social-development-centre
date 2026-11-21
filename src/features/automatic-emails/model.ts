@@ -56,6 +56,8 @@ export interface AutomaticEmail {
   mode: Mode;
   /** Also send to members who unsubscribed: only for emails SDC is legally required to send. Bounced addresses never get it. */
   sendToUnsubscribed?: boolean;
+  /** Made by splitting another email by a tag (an id). Publishing it makes the original skip that tag. */
+  splitFrom?: { id: string; tag: string };
   state: EmailState;
   /** The subject as plain text ("Welcome, [First name]"), for the list and checks. Mirrors subjectDoc. */
   subject: string;
