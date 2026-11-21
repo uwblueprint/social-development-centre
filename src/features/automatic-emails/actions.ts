@@ -45,6 +45,11 @@ export async function publishAutomaticEmail(id: string): Promise<{ ok: true; blo
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("publish_automatic_email", { p_id: id });
   if (error) return failed("publish_automatic_email", error);
+  // A split copy that just went live hands its tag over: the original stops going to people with it.
+  if (data.length === 0) {
+    const { error: splitError } = await supabase.rpc("finish_split", { p_id: id });
+    if (splitError) console.error("finish_split failed:", splitError.message);
+  }
   revalidatePath(LIST);
   return { ok: true, blockers: data };
 }
@@ -72,6 +77,16 @@ export async function duplicateAutomaticEmail(id: string): Promise<{ ok: true; i
 }
 
 /** The backup text for one personalized field, shared by every email not yet sent. */
+/** A draft copy for people with the tag ("Welcome pack: $1,000+"). Returns its id. */
+export async function splitAutomaticEmail(id: string, tagId: string): Promise<{ ok: true; id: string } | { ok: false }> {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("split_automatic_email", { p_id: id, p_tag_id: tagId });
+  if (error) return failed("split_automatic_email", error);
+  revalidatePath(LIST);
+  return { ok: true, id: data };
+}
+
 export async function setEmailFallback(field: string, value: string): Promise<Result> {
   await requireAdmin();
   const supabase = await createClient();

@@ -15,6 +15,8 @@ export interface AutomaticEmailRow {
   conditions: Json;
   mode: string;
   send_to_unsubscribed: boolean;
+  split_from_id: string | null;
+  split_tag_id: string | null;
   subject: string;
   subject_doc: Json;
   body: Json;
@@ -22,7 +24,7 @@ export interface AutomaticEmailRow {
 }
 
 export const AUTOMATIC_EMAIL_COLUMNS =
-  "id, name, description, state, trigger, trigger_tag_id, delay_amount, delay_unit, conditions, mode, send_to_unsubscribed, subject, subject_doc, body, published_at";
+  "id, name, description, state, trigger, trigger_tag_id, delay_amount, delay_unit, conditions, mode, send_to_unsubscribed, split_from_id, split_tag_id, subject, subject_doc, body, published_at";
 
 type Counts = Pick<AutomaticEmail, "edited" | "approved" | "waiting">;
 const NO_COUNTS: Counts = { edited: 0, approved: 0, waiting: 0 };
@@ -61,6 +63,7 @@ export function emailFromRow(row: AutomaticEmailRow, counts: Counts = NO_COUNTS)
     audience: row.conditions ? audienceFrom(row.conditions) : EVERYONE,
     mode: row.mode === "review" ? "review" : "auto",
     sendToUnsubscribed: row.send_to_unsubscribed,
+    splitFrom: row.split_from_id && row.split_tag_id ? { id: row.split_from_id, tag: row.split_tag_id } : undefined,
     state: row.state === "published" || row.state === "trash" ? row.state : "draft",
     subject: row.subject,
     subjectDoc: isDoc(row.subject_doc) ? row.subject_doc : undefined,
