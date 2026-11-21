@@ -95,6 +95,7 @@ Stored on `automatic_emails.conditions` and validated on save (`22023` if malfor
 | `delay_amount`, `delay_unit` | `days` ≤ 365, `weeks` ≤ 52, `months` ≤ 24, `years` ≤ 5. Calendar months and years: 31 Jan + 1 month = 28 Feb. |
 | `conditions` | See above. |
 | `mode` | `auto`, or `review` (each send waits in the Outbox for approval). |
+| `send_to_unsubscribed` | Off by default. On, the email also reaches members who unsubscribed (they're still members), for emails SDC is legally required to send. Bounced addresses are still skipped. `email_candidate_state.emailable` applies it, so the Outbox, approving and the daily run all agree (`20261121000200_send_to_unsubscribed.sql`). |
 | `alert_enabled`, `alert_to`, `alert_when` | Review mode only. `alert_to` defaults to suhanya@waterlooregion.org (PM, 3 Nov 2026). `alert_when`: `waiting`, `due_soon`, `past_due`. |
 | `body` | Opaque JSON from the Email Editor (its own PRD). |
 

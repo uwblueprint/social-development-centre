@@ -63,6 +63,7 @@ export type Database = {
           mode: string
           name: string
           published_at: string | null
+          send_to_unsubscribed: boolean
           state: string
           subject: string
           subject_doc: Json
@@ -85,6 +86,7 @@ export type Database = {
           mode?: string
           name?: string
           published_at?: string | null
+          send_to_unsubscribed?: boolean
           state?: string
           subject?: string
           subject_doc?: Json
@@ -107,6 +109,7 @@ export type Database = {
           mode?: string
           name?: string
           published_at?: string | null
+          send_to_unsubscribed?: boolean
           state?: string
           subject?: string
           subject_doc?: Json
