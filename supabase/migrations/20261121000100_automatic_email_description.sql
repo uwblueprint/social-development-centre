@@ -6,7 +6,7 @@
 
 alter table public.automatic_emails
   add column description text not null default ''
-  check (length(description) <= 140);
+  check (length(description) <= 80);
 
 -- save_automatic_email: as in 20261112000000_automatic_emails_editor.sql, plus 'description'.
 create or replace function public.save_automatic_email(p_id uuid, p_patch jsonb)
