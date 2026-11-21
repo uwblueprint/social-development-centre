@@ -6,6 +6,7 @@ import { DELAY_MAX, EVERYONE, type Audience, type AutomaticEmail, type CondKind,
 export interface AutomaticEmailRow {
   id: string;
   name: string;
+  description: string;
   state: string;
   trigger: string;
   trigger_tag_id: string | null;
@@ -20,7 +21,7 @@ export interface AutomaticEmailRow {
 }
 
 export const AUTOMATIC_EMAIL_COLUMNS =
-  "id, name, state, trigger, trigger_tag_id, delay_amount, delay_unit, conditions, mode, subject, subject_doc, body, published_at";
+  "id, name, description, state, trigger, trigger_tag_id, delay_amount, delay_unit, conditions, mode, subject, subject_doc, body, published_at";
 
 type Counts = Pick<AutomaticEmail, "edited" | "approved" | "waiting">;
 const NO_COUNTS: Counts = { edited: 0, approved: 0, waiting: 0 };
@@ -49,6 +50,7 @@ export function emailFromRow(row: AutomaticEmailRow, counts: Counts = NO_COUNTS)
   return {
     id: row.id,
     name: row.name,
+    description: row.description,
     trigger: row.trigger as Trigger,
     tag: row.trigger_tag_id,
     delay: same ? "same" : "days",
@@ -73,6 +75,7 @@ export function patchFromEmail(e: AutomaticEmail): Record<string, Json> {
   const { op, from, to } = e.audience.joined;
   return {
     name: e.name,
+    description: e.description ?? "",
     trigger: e.trigger,
     trigger_tag_id: e.trigger === "tag_added" ? e.tag : null,
     ...(amount !== null && { delay_amount: amount, delay_unit: e.unit satisfies Unit }),

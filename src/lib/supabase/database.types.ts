@@ -58,6 +58,7 @@ export type Database = {
           created_by: string | null
           delay_amount: number
           delay_unit: string
+          description: string
           id: string
           mode: string
           name: string
@@ -79,6 +80,7 @@ export type Database = {
           created_by?: string | null
           delay_amount?: number
           delay_unit?: string
+          description?: string
           id?: string
           mode?: string
           name?: string
@@ -100,6 +102,7 @@ export type Database = {
           created_by?: string | null
           delay_amount?: number
           delay_unit?: string
+          description?: string
           id?: string
           mode?: string
           name?: string
