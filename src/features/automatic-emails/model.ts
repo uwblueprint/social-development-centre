@@ -54,6 +54,8 @@ export interface AutomaticEmail {
   daysEdited?: boolean;
   audience: Audience;
   mode: Mode;
+  /** Also send to members who unsubscribed: only for emails SDC is legally required to send. Bounced addresses never get it. */
+  sendToUnsubscribed?: boolean;
   state: EmailState;
   /** The subject as plain text ("Welcome, [First name]"), for the list and checks. Mirrors subjectDoc. */
   subject: string;
