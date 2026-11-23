@@ -21,6 +21,8 @@ import { Input } from "@/components/ui/Input";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { useToast } from "@/components/ui/Toast";
 import { FormError } from "@/features/auth/AuthScreen";
+import { TiersSection } from "@/features/tiers/TiersSection";
+import type { Tier } from "@/features/tiers/types";
 import { fieldError, idleState, type ActionState } from "@/lib/forms";
 import { deleteAccount, updateName, type NameValues } from "./actions";
 import { Cell, Column, FormColumn, Row, RowLabel, Section, SectionTitle, Sections } from "./layout";
@@ -33,12 +35,13 @@ const PageColumn = styled(Column)`
   gap: var(--space-7);
 `;
 
-export function AccountSettings({ account }: { account: Account }) {
+export function AccountSettings({ account, tiers }: { account: Account; tiers: Tier[] }) {
   return (
     <ListPage>
       <PageColumn>
         <NameForm initial={{ firstName: account.firstName, lastName: account.lastName }} />
         <Sections>
+          <TiersSection tiers={tiers} />
           <DeleteAccount onlyAdmin={account.onlyAdmin} />
         </Sections>
       </PageColumn>
