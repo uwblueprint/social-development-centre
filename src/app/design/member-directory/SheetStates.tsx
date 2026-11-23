@@ -82,12 +82,19 @@ const Alert = styled.div<{ $tone: "danger" | "warning" | "info" }>`
   font-size: var(--text-sm);
   line-height: var(--leading-body);
   overflow-wrap: anywhere;
+
+  /* The title reads at the kit's heading weight; nothing is bolder than medium. */
+  & strong {
+    font-weight: var(--weight-medium);
+  }
 `;
 
+/* One line tall, so the icon centres on the message's first line. */
 const AlertIcon = styled.span<{ $tone: "danger" | "warning" | "info" }>`
   flex: none;
   display: inline-flex;
-  padding-top: var(--space-1);
+  align-items: center;
+  height: 1lh;
   color: ${({ $tone }) => `var(--color-${$tone})`};
 `;
 
@@ -128,7 +135,7 @@ export function InlineAlert({
   return (
     <Alert $tone={tone} role={tone === "danger" ? "alert" : "status"}>
       <AlertIcon $tone={tone}>
-        <Icon icon={icon ?? (tone === "danger" ? CircleAlert : TriangleAlert)} size={16} />
+        <Icon icon={icon ?? (tone === "danger" ? CircleAlert : TriangleAlert)} />
       </AlertIcon>
       <AlertBody>
         <div>
@@ -138,7 +145,8 @@ export function InlineAlert({
         {actions && (
           <AlertActions>
             {actions.map((a) => (
-              <Button key={a.label} type="button" $variant="secondary" $size="sm" onClick={a.onClick}>
+              /* Outline on red: a grey secondary fill lacks contrast against the danger background. */
+              <Button key={a.label} type="button" $variant={tone === "danger" ? "outline" : "secondary"} $size="sm" onClick={a.onClick}>
                 {a.label}
               </Button>
             ))}
@@ -176,16 +184,16 @@ export function ConnectionBanner({ offline, reconnecting, sessionExpired }: { of
   return (
     <div role="status">
       {sessionExpired ? (
-        <InlineAlert tone="warning" title="You've been signed out.">
-          Sign in again to save changes. What you&apos;ve typed here is kept.
+        <InlineAlert tone="warning" title="You've been signed out">
+          Sign in again to save. Your changes are still here.
         </InlineAlert>
       ) : offline ? (
         <InlineAlert tone="info" icon={WifiOff}>
-          You&apos;re offline. You can still read this member, but you&apos;ll need to reconnect to make changes.
+          You&apos;re offline. You can look around, but you&apos;ll need to reconnect to make changes.
         </InlineAlert>
       ) : reconnecting ? (
         <InlineAlert tone="info" icon={RefreshCw}>
-          Back online. Catching up on changes…
+          Reconnecting. Loading the latest changes…
         </InlineAlert>
       ) : null}
     </div>

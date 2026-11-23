@@ -33,12 +33,18 @@ const List = styled.div`
   overflow-y: auto;
 `;
 
+/*
+ * Two columns shared with the search field above: its magnifier (16px, --space-3 in from the field's edge) and its typed
+ * text (--space-3 + 16px + --space-2 in, plus the field's 1px border). The 20px checkbox centres on the magnifier
+ * (--space-1 / 2 further left); the Create row's 16px plus sits exactly on it. The pill and the Create label start on
+ * the text column; TextColumn adds the field's 1px border, so it snaps to the same device pixel as the field's.
+ */
 const Row = styled.div`
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: calc(var(--space-2) - var(--space-1) / 2);
   min-height: var(--space-6);
-  padding: var(--space-1) var(--space-2);
+  padding: var(--space-1) var(--space-2) var(--space-1) calc(var(--space-3) - var(--space-1) / 2);
   border-radius: var(--radius-md);
   cursor: pointer;
 
@@ -48,14 +54,32 @@ const Row = styled.div`
   }
 `;
 
+/* A row like the tag rows: highlighted on hover and when ArrowDown reaches it (the inset ring can't be clipped by the list). */
 const CreateRow = styled(Button)`
   &&& {
     justify-content: flex-start;
+    gap: var(--space-2);
     width: 100%;
+    height: auto;
+    min-height: var(--space-6);
+    padding: var(--space-1) var(--space-2) var(--space-1) var(--space-3);
+    border-width: 0;
     overflow-wrap: anywhere;
     text-align: left;
     white-space: normal;
+    line-height: var(--leading-ui);
+
+    &:focus-visible {
+      background: var(--color-bg-hover);
+      box-shadow: var(--focus-ring-inset);
+    }
   }
+`;
+
+const TextColumn = styled.span`
+  display: flex;
+  min-width: 0;
+  border-left: 1px solid transparent;
 `;
 
 /* A long tag name wraps instead of widening the popover. */
@@ -77,9 +101,9 @@ const Note = styled.p`
 const SkeletonRow = styled.div`
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: calc(var(--space-2) - var(--space-1) / 2);
   min-height: var(--space-6);
-  padding: var(--space-1) var(--space-2);
+  padding: var(--space-1) var(--space-2) var(--space-1) calc(var(--space-3) - var(--space-1) / 2);
 `;
 
 const Gap = styled.div`
@@ -232,16 +256,19 @@ export function BulkTagsPopover({
                     }
                   }}
                 />
-                <Pill id={labelId} color={tagColors[tag]}>
-                  {tag}
-                </Pill>
+                <TextColumn>
+                  <Pill id={labelId} color={tagColors[tag]}>
+                    {tag}
+                  </Pill>
+                </TextColumn>
               </Row>
             );
           })}
-          {!loadingTags && !shown.length && !canCreate && <Note>{allTags.length ? "No tags match." : "No tags yet. Type a name to create one."}</Note>}
+          {!loadingTags && !shown.length && !canCreate && <Note>{allTags.length ? "No tags match" : "No tags yet. Type a name to create one."}</Note>}
           {!loadingTags && canCreate && (
             <CreateRow data-tag-row="" tabIndex={-1} type="button" $variant="ghost" onClick={create}>
-              <Icon icon={Plus} size={14} /> {`Create “${name}”`}
+              <Icon icon={Plus} size={16} />
+              <TextColumn>{`Create “${name}”`}</TextColumn>
             </CreateRow>
           )}
         </List>

@@ -68,7 +68,8 @@ const PlusMinus = styled.svg`
   rect:last-child {
   }
 
-  [data-state="open"] & rect:last-child {
+  /* Only the trigger's own state: a Dialog or Popover around the accordion is also data-state="open". */
+  [data-state="open"] > & rect:last-child {
     opacity: 0;
   }
 `;

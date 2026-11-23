@@ -1,19 +1,21 @@
 "use client";
 
 import * as React from "react";
-import { styled } from "next-yak";
-import { Check, CircleAlert, Download, FileUp, Minus } from "lucide-react";
+import { keyframes, styled } from "next-yak";
+import { CircleAlert, Download, FileSpreadsheet, FileUp, LoaderCircle, X } from "lucide-react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/Accordion";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
-import { Dialog, DialogActions, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/Dialog";
+import { Dialog, DialogActions, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/Dialog";
 import { DisabledReason } from "@/components/ui/DisabledReason";
 import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
-import { TODAY, addMonths, plural, type MembershipKind } from "./data";
+import { Tag, TagList } from "@/components/ui/Tag";
+import { TODAY, plural } from "./data";
 import { useStateLab } from "../_state-lab/useStateLab";
-import { DIALOG_NOT_APPLICABLE, Lock, NO_CONFLICT, NO_ITEMS, SubmitActions, SubmitNote, useSubmit } from "./DialogStates";
+import { DIALOG_NOT_APPLICABLE, Lock, NO_CONFLICT, NO_ITEMS, SubmitNote, useSubmit } from "./DialogStates";
 import {
   MAX_IMPORT_ROWS,
   TEMPLATE_CSV,
@@ -33,10 +35,7 @@ export interface NewMember {
   lastName: string;
   email: string;
   tags: string[];
-  status: "member";
-  kind: MembershipKind;
   joinedAt: string;
-  endsAt: string;
   howJoined: string;
 }
 
@@ -70,30 +69,17 @@ const Body = styled.div`
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  margin-top: var(--space-4);
 `;
 
 const Form = styled.form`
   display: contents;
 `;
 
-const DropZone = styled.div<{ $over: boolean }>`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-6) var(--space-4);
-  border: 1px dashed ${({ $over }) => ($over ? "var(--color-focus)" : "var(--color-border-strong)")};
-  border-radius: var(--radius-md);
-  background: ${({ $over }) => ($over ? "var(--color-bg-hover)" : "var(--color-surface)")};
-  text-align: center;
+const Text = styled.p`
+  margin: 0;
   font-size: var(--text-sm);
-  color: var(--color-text-muted);
-`;
-
-/* The real file input lives in the kit Input, hidden: the Button next to it opens it (see ImportBody). */
-const HiddenInput = styled(Input)`
-  display: none;
+  line-height: var(--leading-body);
+  color: var(--color-text);
 `;
 
 const Hint = styled.p`
@@ -101,6 +87,115 @@ const Hint = styled.p`
   font-size: var(--text-sm);
   line-height: var(--leading-body);
   color: var(--color-text-muted);
+`;
+
+const Start = styled.div`
+  display: flex;
+`;
+
+/* Step 2: a real file picker. Dashed 1px border with the field radius; while dragging it highlights and the copy changes. */
+const DropZone = styled.div<{ $over: boolean }>`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
+  border: 1px dashed ${({ $over }) => ($over ? "var(--color-focus)" : "var(--color-border-strong)")};
+  border-radius: var(--radius-md);
+  background: ${({ $over }) => ($over ? "var(--color-bg-hover)" : "transparent")};
+  text-align: center;
+  font-size: var(--text-sm);
+  line-height: var(--leading-body);
+  color: var(--color-text);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
+
+  & > svg {
+    color: var(--color-text-muted);
+  }
+`;
+
+const Small = styled.span`
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+`;
+
+/* The kit has no link button: a ghost Button stripped to inline underlined text. Still a real button with the kit focus ring. */
+const InlineAction = styled(Button)`
+  && {
+    display: inline;
+    height: auto;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-sm);
+    font-size: inherit;
+    line-height: inherit;
+    vertical-align: baseline;
+    color: var(--color-text);
+    text-decoration: underline;
+    background: transparent;
+  }
+  &&:hover:not(:disabled) {
+    background: transparent;
+    text-decoration-thickness: 2px;
+  }
+`;
+
+/* The real file input lives in the kit Input, hidden: the Upload button opens it. */
+const HiddenInput = styled(Input)`
+  display: none;
+`;
+
+const FileRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  line-height: var(--leading-body);
+
+  & > svg {
+    flex: none;
+    color: var(--color-text-muted);
+  }
+`;
+
+const FileName = styled.span`
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+`;
+
+const FileSize = styled.span`
+  flex: none;
+  color: var(--color-text-muted);
+`;
+
+/* Square icon-only button, as wide as it is tall. */
+const IconButton = styled(Button)`
+  flex: none;
+  aspect-ratio: 1;
+  padding: 0;
+`;
+
+const Problem = styled.p`
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-body);
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+
+  & svg {
+    flex: none;
+    margin-top: 2px;
+    color: var(--color-danger);
+  }
 `;
 
 const Mapping = styled.div`
@@ -113,30 +208,59 @@ const Mapping = styled.div`
   }
 `;
 
-const Summary = styled.p`
+const Lead = styled.p`
   margin: 0;
-  font-size: var(--text-sm);
+  font-size: var(--text-md);
   line-height: var(--leading-body);
   font-weight: var(--weight-medium);
+  color: var(--color-text);
 `;
 
-const Preview = styled.ul`
+const NewTags = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+`;
+
+const Groups = styled.div``;
+
+const Section = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+`;
+
+/* A capped, scrollable list. Focusable so keyboard users can scroll it; the ring is drawn inside. */
+const Scroll = styled.div`
+  align-self: stretch;
+  max-height: 40vh;
+  overflow-y: auto;
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring-inset);
+  }
+`;
+
+const Rows = styled.ul`
   list-style: none;
   margin: 0;
   padding: 0;
-  max-height: 40vh;
-  overflow-y: auto;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
 `;
 
-const PreviewRow = styled.li`
+const Row = styled.li`
   display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  padding: var(--space-2) var(--space-3);
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-2) 0;
   font-size: var(--text-sm);
   line-height: var(--leading-body);
+  color: var(--color-text);
   overflow-wrap: anywhere;
 
   & + & {
@@ -144,32 +268,32 @@ const PreviewRow = styled.li`
   }
 `;
 
-const Result = styled.span<{ $tone: "ok" | "skip" | "error" }>`
-  display: inline-flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-
-  & svg {
-    flex: none;
-    margin-top: 2px;
-    color: ${({ $tone }) => ($tone === "ok" ? "var(--color-success)" : $tone === "error" ? "var(--color-danger)" : "var(--color-text-muted)")};
-  }
+const Who = styled.span`
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 14rem;
+  min-width: 0;
 `;
 
 const Muted = styled.span`
   color: var(--color-text-muted);
 `;
 
-const Problem = styled.p`
-  display: flex;
+const RowNumber = styled.span`
+  flex: none;
+  min-width: 4rem;
+  color: var(--color-text-muted);
+`;
+
+const Value = styled.span`
+  flex: 1 1 10rem;
+  min-width: 0;
+`;
+
+const Reason = styled.span`
+  display: inline-flex;
   align-items: flex-start;
   gap: var(--space-2);
-  margin: 0;
-  font-size: var(--text-sm);
-  line-height: var(--leading-body);
-  overflow-wrap: anywhere;
 
   & svg {
     flex: none;
@@ -178,10 +302,18 @@ const Problem = styled.p`
   }
 `;
 
-const Spread = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
+const spin = keyframes`
+  to {
+    transform: rotate(360deg);
+  }
+`;
+
+const Spinning = styled.span`
+  display: inline-flex;
+
+  & svg {
+    animation: ${spin} 0.8s linear infinite;
+  }
 `;
 
 /* ---------- copy ---------- */
@@ -196,21 +328,38 @@ const FIELD_OPTIONS = [
 
 const ISSUE_TEXT: Record<RowIssue, string> = {
   missing: "No email",
-  invalid: "Not a valid email",
+  invalid: "Check the email address",
   duplicate: "Repeats an earlier row in this file",
-  existing: "Already in the directory",
+  existing: "Already added",
 };
 
-const STEPS = ["Choose a file", "Match columns", "Review"];
+const STEPS = ["Download a template", "Upload your spreadsheet", "Match columns", "Review"];
+
+/** Rows shown per section; the rest are counted ("and 230 more"). */
+const SHOW_ROWS = 50;
 
 const isError = (r: CheckedRow) => r.issue === "missing" || r.issue === "invalid" || r.issue === "duplicate";
+const fullName = (r: CheckedRow) => [r.firstName, r.lastName].filter(Boolean).join(" ");
+const count = (n: number) => n.toLocaleString("en-CA");
+
+function fileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} bytes`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 /* ---------- component ---------- */
 
 export function ImportMembersDialog({ open, onOpenChange, ...rest }: ImportMembersDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <WideContent>
+      <WideContent
+        onOpenAutoFocus={(event) => {
+          // Open on the dialog itself, not a button, so nothing looks pre-chosen. Tab reaches the first control.
+          event.preventDefault();
+          (event.currentTarget as HTMLElement).focus();
+        }}
+      >
         {/* Mounted only while open, so closing the dialog resets every step. */}
         <ImportBody onOpenChange={onOpenChange} {...rest} />
       </WideContent>
@@ -225,7 +374,7 @@ function ImportBody({
   onImport,
 }: Omit<ImportMembersDialogProps, "open">) {
   const [step, setStep] = React.useState(0);
-  const [fileName, setFileName] = React.useState("");
+  const [file, setFile] = React.useState<{ name: string; size: number }>();
   const [headers, setHeaders] = React.useState<string[]>([]);
   const [data, setData] = React.useState<string[][]>([]);
   const [fields, setFields] = React.useState<ImportField[]>([]);
@@ -234,9 +383,19 @@ function ImportBody({
   const [over, setOver] = React.useState(false);
   const [addTags, setAddTags] = React.useState(false);
   const picker = React.useRef<HTMLInputElement>(null);
+  const uploadButton = React.useRef<HTMLButtonElement>(null);
+  const removeButton = React.useRef<HTMLButtonElement>(null);
+  // Where focus goes once the drop zone and the file row swap, so it never falls back to the page.
+  const focusNext = React.useRef<"upload" | "remove" | undefined>(undefined);
 
   const lab = useStateLab({ notApplicable: [...DIALOG_NOT_APPLICABLE, ...NO_ITEMS, ...NO_CONFLICT] });
   const sub = useSubmit(lab);
+
+  React.useEffect(() => {
+    if (focusNext.current === "upload") uploadButton.current?.focus();
+    if (focusNext.current === "remove") removeButton.current?.focus();
+    focusNext.current = undefined;
+  }, [file]);
 
   const tagsMapped = fields.includes("tags");
   const rows = React.useMemo(() => checkRows(data, fields, existingEmails, knownTags), [data, fields, existingEmails, knownTags]);
@@ -248,31 +407,39 @@ function ImportBody({
     (t) => !knownTags.some((k) => k.toLowerCase() === t.toLowerCase()),
   );
 
-  async function readFile(file: File | undefined) {
-    if (!file) return;
+  async function readFile(picked: File | undefined) {
+    if (!picked) return;
     setFileError(undefined);
     let parsed: string[][];
     try {
-      parsed = parseCsv(await file.text());
+      parsed = parseCsv(await picked.text());
     } catch {
       parsed = [];
     }
     if (parsed.length < 2) {
-      setFileError("We couldn't find any people in that file. Check it's a CSV with a header row and at least one row of data, then choose it again.");
+      setFileError("We couldn't find any people in that file. Check it has a header row and at least one person, then choose it again.");
       return;
     }
     if (parsed.length - 1 > MAX_IMPORT_ROWS) {
-      setFileError(`That file has ${(parsed.length - 1).toLocaleString("en-CA")} rows. Import up to ${MAX_IMPORT_ROWS.toLocaleString("en-CA")} at a time: split the file and import it in parts.`);
+      setFileError(`That file has ${count(parsed.length - 1)} rows. You can import up to ${count(MAX_IMPORT_ROWS)} at a time, so split it into smaller files.`);
       return;
     }
     const [head, ...body] = parsed;
-    setFileName(file.name);
+    focusNext.current = "remove";
+    setFile({ name: picked.name, size: picked.size });
     setHeaders(head.map((h) => h.trim()));
     setData(body);
     setFields(detectFields(head));
     setMapError(undefined);
     setAddTags(false);
-    setStep(1);
+  }
+
+  function removeFile() {
+    focusNext.current = "upload";
+    setFile(undefined);
+    setHeaders([]);
+    setData([]);
+    setFields([]);
   }
 
   function setField(index: number, value: ImportField) {
@@ -281,16 +448,21 @@ function ImportBody({
     setFields((cur) => cur.map((f, i) => (i === index ? value : value !== "skip" && f === value ? "skip" : f)));
   }
 
-  function toReview() {
-    if (!fields.includes("email")) {
+  /** Continue on steps 1 to 3, Add on step 4, so Enter in a field does what the primary button does. */
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (step === 1 && !file) {
+      setFileError("Choose a spreadsheet to upload");
+      return;
+    }
+    if (step === 2 && !fields.includes("email")) {
       setMapError("Choose which column has email addresses. Every person needs one.");
       return;
     }
-    setStep(2);
-  }
-
-  function submit(e: React.FormEvent) {
-    e.preventDefault();
+    if (step < 3) {
+      setStep(step + 1);
+      return;
+    }
     if (sub.busy || !ready.length) return;
     sub.run(() => {
       const people: NewMember[] = ready.map((r) => ({
@@ -298,11 +470,7 @@ function ImportBody({
         lastName: r.lastName,
         email: r.email,
         tags: r.tags,
-        status: "member",
-        // TODO(PM): decide the membership type for imported people. Complimentary for now; the file could also carry it.
-        kind: "complimentary",
         joinedAt: TODAY,
-        endsAt: addMonths(TODAY, 12),
         howJoined: "Added by an admin",
       }));
       onImport(
@@ -315,182 +483,264 @@ function ImportBody({
 
   function downloadErrors() {
     const out = [[...headers, "Issue"], ...errors.map((r) => [...r.raw, ISSUE_TEXT[r.issue as RowIssue]])];
-    downloadCsv(`${fileName.replace(/\.csv$/i, "") || "import"}-errors.csv`, toCsv(out));
+    downloadCsv(`${file?.name.replace(/\.csv$/i, "") || "import"}-errors.csv`, toCsv(out));
   }
 
-  const back = (
-    <Button type="button" $variant="ghost" onClick={() => setStep(step - 1)}>
-      Back
-    </Button>
+  const more = (n: number) =>
+    n > SHOW_ROWS ? (
+      <Row>
+        <Muted>and {count(n - SHOW_ROWS)} more</Muted>
+      </Row>
+    ) : null;
+
+  const who = (r: CheckedRow) => (
+    <Who>
+      {fullName(r) && <span>{fullName(r)}</span>}
+      <Muted>{r.email}</Muted>
+    </Who>
   );
 
   return (
     <>
-      <DialogTitle>Import members from CSV</DialogTitle>
+      <DialogTitle>Import people from a spreadsheet</DialogTitle>
       <DialogDescription>
         Step {step + 1} of {STEPS.length}: {STEPS[step]}
       </DialogDescription>
 
-      {step === 0 && (
+      <Form onSubmit={submit} noValidate>
         <Body>
-          <DropZone
-            $over={over}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setOver(true);
-            }}
-            onDragLeave={() => setOver(false)}
-            onDrop={(e) => {
-              e.preventDefault();
-              setOver(false);
-              void readFile(e.dataTransfer.files[0]);
-            }}
-          >
-            <Icon icon={FileUp} size={24} />
-            <span>Drop a CSV file here</span>
-            {/* The kit has no file picker, so this is the kit Input (type="file"), hidden and opened by the visible Button. */}
-            <HiddenInput
-              ref={picker}
-              type="file"
-              accept=".csv,text/csv"
-              tabIndex={-1}
-              aria-hidden="true"
-              onChange={(e) => {
-                void readFile(e.target.files?.[0]);
-                e.target.value = "";
-              }}
-            />
-            <Button type="button" $variant="outline" onClick={() => picker.current?.click()}>
-              Choose CSV file
-            </Button>
-          </DropZone>
-          {fileError && (
-            <Problem role="alert">
-              <Icon icon={CircleAlert} size={16} />
-              <span>{fileError}</span>
-            </Problem>
+          {step === 0 && (
+            <>
+              <Text>Start from our template, or skip this step if your spreadsheet is ready.</Text>
+              <Start>
+                <Button type="button" $variant="secondary" onClick={() => downloadCsv("people-template.csv", TEMPLATE_CSV)}>
+                  <Icon icon={Download} size={16} />
+                  Download a template
+                </Button>
+              </Start>
+            </>
           )}
-          <Hint>Needs a column with email. First name, last name and tags are optional.</Hint>
-          <Spread>
-            <Button type="button" $variant="ghost" $size="sm" onClick={() => downloadCsv("members-template.csv", TEMPLATE_CSV)}>
-              <Icon icon={Download} size={16} />
-              Download a template
-            </Button>
-          </Spread>
-          <DialogActions>
-            <DialogClose asChild>
-              <Button type="button" $variant="secondary">
-                Cancel
-              </Button>
-            </DialogClose>
-          </DialogActions>
-        </Body>
-      )}
 
-      {step === 1 && (
-        <Body>
-          <Hint>
-            We found {plural(data.length, "row")} in {fileName}. Check what each column holds.
-          </Hint>
-          <Mapping>
-            {headers.map((h, i) => (
-              <Field key={i} label={h || `Column ${i + 1}`} hint={data[0]?.[i] ? `For example: ${data[0][i]}` : undefined}>
-                {(props) => (
-                  <Select {...props} options={FIELD_OPTIONS} value={fields[i]} onValueChange={(v) => setField(i, v as ImportField)} />
-                )}
-              </Field>
-            ))}
-          </Mapping>
-          <Hint>Separate several tags in one cell with ; or |.</Hint>
-          {mapError && (
-            <Problem role="alert">
-              <Icon icon={CircleAlert} size={16} />
-              <span>{mapError}</span>
-            </Problem>
-          )}
-          <DialogActions>
-            {back}
-            <DialogClose asChild>
-              <Button type="button" $variant="secondary">
-                Cancel
-              </Button>
-            </DialogClose>
-            <Button type="button" onClick={toReview}>
-              Continue
-            </Button>
-          </DialogActions>
-        </Body>
-      )}
-
-      {step === 2 && (
-        <Form onSubmit={submit}>
-          <Body>
-            <Lock disabled={sub.busy}>
-              <Summary aria-live="polite">
-                {plural(ready.length, "person", "people")} ready to add
-                {existing.length > 0 && ` · ${existing.length} already in the directory`}
-                {errors.length > 0 && ` · ${errors.length} with ${errors.length === 1 ? "an error" : "errors"}`}
-              </Summary>
-              {newTags.length > 0 && <Hint>New tags will be created: {newTags.join(", ")}.</Hint>}
-              <Preview aria-label="Preview of the file">
-                {rows.slice(0, 50).map((r) => {
-                  const tone = !r.issue ? "ok" : isError(r) ? "error" : "skip";
-                  const text = r.issue
-                    ? ISSUE_TEXT[r.issue] + (r.issue === "existing" && tagUpdates.includes(r) ? ". Their tags will be added." : ". Skipped.")
-                    : "Ready to add";
-                  return (
-                    <PreviewRow key={r.line}>
-                      <span>
-                        {[r.firstName, r.lastName].filter(Boolean).join(" ") || r.email || <Muted>No name or email</Muted>}
-                        {(r.firstName || r.lastName) && r.email ? <Muted> · {r.email}</Muted> : null}
-                      </span>
-                      {r.tags.length > 0 && <Muted>Tags: {r.tags.join(", ")}</Muted>}
-                      <Result $tone={tone}>
-                        <Icon icon={tone === "ok" ? Check : tone === "error" ? CircleAlert : Minus} size={14} />
-                        <span>
-                          Row {r.line}: {text}
-                        </span>
-                      </Result>
-                    </PreviewRow>
-                  );
-                })}
-              </Preview>
-              {rows.length > 50 && <Hint>Showing the first 50 of {rows.length.toLocaleString("en-CA")} rows.</Hint>}
-              {existing.length > 0 && <Hint>People already in the directory are skipped.</Hint>}
-              {tagsMapped && existing.length > 0 && (
-                <Checkbox label="Add their tags to the existing people" checked={addTags} onCheckedChange={(v) => setAddTags(v === true)} />
-              )}
-              {errors.length > 0 && (
-                <Spread>
-                  <Button type="button" $variant="outline" $size="sm" onClick={downloadErrors}>
-                    <Icon icon={Download} size={16} />
-                    Download rows with errors
-                  </Button>
-                </Spread>
-              )}
-            </Lock>
-            <SubmitNote submit={sub} />
-            {ready.length > 0 ? (
-              <SubmitActions submit={`Add ${plural(ready.length, "person", "people")}`} state={sub} leading={back} />
+          {step === 1 &&
+            (file ? (
+              <FileRow>
+                <Icon icon={FileSpreadsheet} size={20} />
+                <FileName>{file.name}</FileName>
+                <FileSize>{fileSize(file.size)}</FileSize>
+                <IconButton ref={removeButton} type="button" $variant="ghost" aria-label={`Remove ${file.name}`} onClick={removeFile}>
+                  <Icon icon={X} size={16} />
+                </IconButton>
+              </FileRow>
             ) : (
-              <DialogActions>
-                {back}
-                <DialogClose asChild>
-                  <Button type="button" $variant="secondary">
-                    Cancel
-                  </Button>
-                </DialogClose>
-                {/* NEEDS APPROVAL: reason copy is a proposal. */}
-                <DisabledReason reason="Nobody in this file can be added yet. Go back to match the columns, or choose another file.">
-                  <Button type="button" disabled>
-                    Add 0 people
-                  </Button>
-                </DisabledReason>
-              </DialogActions>
-            )}
-          </Body>
-        </Form>
-      )}
+              <>
+                <DropZone
+                  $over={over}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setOver(true);
+                  }}
+                  onDragLeave={(e) => {
+                    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOver(false);
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setOver(false);
+                    void readFile(e.dataTransfer.files[0]);
+                  }}
+                >
+                  <Icon icon={FileUp} size={24} />
+                  {over ? (
+                    <span>Drop the spreadsheet to upload it</span>
+                  ) : (
+                    <span>
+                      <InlineAction ref={uploadButton} type="button" $variant="ghost" onClick={() => picker.current?.click()}>
+                        Upload
+                      </InlineAction>{" "}
+                      or drag and drop a spreadsheet here
+                    </span>
+                  )}
+                  <Small>.csv, up to {count(MAX_IMPORT_ROWS)} people</Small>
+                  {/* The kit has no file picker, so this is the kit Input (type="file"), hidden and opened by Upload. */}
+                  <HiddenInput
+                    ref={picker}
+                    type="file"
+                    accept=".csv,text/csv"
+                    tabIndex={-1}
+                    aria-hidden="true"
+                    onChange={(e) => {
+                      void readFile(e.target.files?.[0]);
+                      e.target.value = "";
+                    }}
+                  />
+                </DropZone>
+                {fileError && (
+                  <Problem role="alert">
+                    <Icon icon={CircleAlert} size={16} />
+                    <span>{fileError}</span>
+                  </Problem>
+                )}
+              </>
+            ))}
+
+          {step === 2 && (
+            <>
+              <Hint>
+                We found {plural(data.length, "row")} in {file?.name}. Check what each column holds.
+              </Hint>
+              <Mapping>
+                {headers.map((h, i) => (
+                  <Field key={i} label={h || `Column ${i + 1}`} hint={data[0]?.[i] ? `For example: ${data[0][i]}` : undefined}>
+                    {(props) => (
+                      <Select {...props} options={FIELD_OPTIONS} value={fields[i]} onValueChange={(v) => setField(i, v as ImportField)} />
+                    )}
+                  </Field>
+                ))}
+              </Mapping>
+              <Hint>Separate several tags in one cell with ; or |</Hint>
+              {mapError && (
+                <Problem role="alert">
+                  <Icon icon={CircleAlert} size={16} />
+                  <span>{mapError}</span>
+                </Problem>
+              )}
+            </>
+          )}
+
+          {step === 3 && (
+            <Lock disabled={sub.busy}>
+              <Lead>
+                {ready.length ? `${plural(ready.length, "person", "people")} will be added` : "Nobody in this file can be added yet"}
+              </Lead>
+              {newTags.length > 0 && (
+                <NewTags>
+                  <span>New tags:</span>
+                  {newTags.map((t) => (
+                    <Tag key={t}>{t}</Tag>
+                  ))}
+                </NewTags>
+              )}
+              <Groups>
+              <Accordion type="multiple" defaultValue={ready.length ? ["ready"] : errors.length ? ["errors"] : []}>
+                {ready.length > 0 && (
+                  <AccordionItem value="ready">
+                    <AccordionTrigger>Ready to add ({count(ready.length)})</AccordionTrigger>
+                    <AccordionContent>
+                      <Scroll role="region" aria-label="People ready to add" tabIndex={0}>
+                        <Rows>
+                          {ready.slice(0, SHOW_ROWS).map((r) => (
+                            <Row key={r.line}>
+                              {who(r)}
+                              {r.tags.length > 0 && (
+                                <TagList>
+                                  {r.tags.map((t) => (
+                                    <Tag key={t}>{t}</Tag>
+                                  ))}
+                                </TagList>
+                              )}
+                            </Row>
+                          ))}
+                          {more(ready.length)}
+                        </Rows>
+                      </Scroll>
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
+
+                {existing.length > 0 && (
+                  <AccordionItem value="existing">
+                    <AccordionTrigger>Already added ({count(existing.length)})</AccordionTrigger>
+                    <AccordionContent>
+                      <Section>
+                        <Hint>
+                          {tagUpdates.length
+                            ? "They aren't added again. Their tags from this file are added to them."
+                            : "They're already in the list, so they're skipped."}
+                        </Hint>
+                        <Scroll role="region" aria-label="People already added" tabIndex={0}>
+                          <Rows>
+                            {existing.slice(0, SHOW_ROWS).map((r) => (
+                              <Row key={r.line}>{who(r)}</Row>
+                            ))}
+                            {more(existing.length)}
+                          </Rows>
+                        </Scroll>
+                        {tagsMapped && (
+                          <Checkbox
+                            label="Add their tags to the people already added"
+                            checked={addTags}
+                            onCheckedChange={(v) => setAddTags(v === true)}
+                          />
+                        )}
+                      </Section>
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
+
+                {errors.length > 0 && (
+                  <AccordionItem value="errors">
+                    <AccordionTrigger>Can&apos;t be added ({count(errors.length)})</AccordionTrigger>
+                    <AccordionContent>
+                      <Section>
+                        <Scroll role="region" aria-label="Rows that can't be added" tabIndex={0}>
+                          <Rows>
+                            {errors.slice(0, SHOW_ROWS).map((r) => (
+                              <Row key={r.line}>
+                                <RowNumber>Row {r.line}</RowNumber>
+                                <Value>{r.email || fullName(r) || <Muted>Blank</Muted>}</Value>
+                                <Reason>
+                                  <Icon icon={CircleAlert} size={16} />
+                                  {ISSUE_TEXT[r.issue as RowIssue]}
+                                </Reason>
+                              </Row>
+                            ))}
+                            {more(errors.length)}
+                          </Rows>
+                        </Scroll>
+                        <Button type="button" $variant="secondary" $size="sm" onClick={downloadErrors}>
+                          <Icon icon={Download} size={16} />
+                          Download these rows
+                        </Button>
+                      </Section>
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
+              </Accordion>
+              </Groups>
+            </Lock>
+          )}
+
+          {step === 3 && <SubmitNote submit={sub} />}
+        </Body>
+
+        <DialogActions>
+          {step > 0 && (
+            <Button type="button" $variant="secondary" data-back="" disabled={sub.busy} onClick={() => setStep(step - 1)}>
+              Back
+            </Button>
+          )}
+          {step < 3 ? (
+            <Button type="submit">Continue</Button>
+          ) : ready.length > 0 ? (
+            <Button type="submit" aria-disabled={sub.busy || undefined} aria-busy={sub.busy || undefined}>
+              {sub.busy ? (
+                <Spinning>
+                  <Icon icon={LoaderCircle} size={16} />
+                </Spinning>
+              ) : (
+                <Icon icon={FileUp} size={16} />
+              )}
+              Add {plural(ready.length, "person", "people")}
+            </Button>
+          ) : (
+            /* NEEDS APPROVAL: reason copy is a proposal. */
+            <DisabledReason reason="Nobody in this file can be added yet. Go back to match the columns, or choose another file.">
+              <Button type="button" disabled>
+                Add 0 people
+              </Button>
+            </DisabledReason>
+          )}
+        </DialogActions>
+      </Form>
     </>
   );
 }

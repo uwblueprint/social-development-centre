@@ -2,12 +2,13 @@
 
 import * as React from "react";
 import { keyframes, styled } from "next-yak";
-import { Check, ChevronDown, Columns3, Copy, Download, ListChecks, Plus, Tag as TagIcon, Trash2, UsersRound, X } from "lucide-react";
+import { ChevronDown, Columns3, Copy, Download, FileUp, Link2, ListChecks, Plus, Tag as TagIcon, Tags, Trash2, UsersRound, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { ListEmptyState, ListPage, ListPageHeader } from "@/components/patterns/ListPage";
 import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
+import { DateRuleEditor, formatDateRule, type DateRule } from "@/components/ui/DateRulePicker";
+import { Button, CancelButton } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
-import { DatePicker } from "@/components/ui/DatePicker";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -15,12 +16,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/DropdownMenu";
-import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
 import { SearchField } from "@/components/ui/SearchField";
 import { Pagination } from "@/components/ui/Pagination";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
-import { RadioGroup, RadioGroupOption } from "@/components/ui/RadioGroup";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { Table, type TableColumn, type TableSort } from "@/components/ui/Table";
 import { MarqueeOverlay } from "./MarqueeOverlay";
@@ -29,19 +28,16 @@ import { touches, useMarquee } from "./useMarquee";
 import { AppToastProvider, useToast } from "@/components/ui/Toast";
 import {
   TODAY,
-  addDays,
-  addMonths,
   demoMembers,
   demoTags,
-  endNotice,
   formatDate,
+  formatMoney,
   fullName,
   joinedTitle,
   plural,
-  statusLabel,
   tagsByRecency,
+  totalPaid,
   type Member,
-  type MemberStatus,
   type Payment,
   type TagColor,
 } from "./data";
@@ -49,20 +45,19 @@ import { INTAKE_TIMES, PLACES } from "./demoHistory";
 import { snapshotOf, useUndoableUpdate } from "./undo";
 import { MemberSheet } from "./MemberSheet";
 import { ImportMembersDialog, type NewMember, type TagUpdate } from "./ImportMembersDialog";
-import { TagPicker } from "./TagPicker";
 import { BulkTagsPopover } from "./BulkTagsPopover";
-import { RemovableTag, Tag } from "@/components/ui/Tag";
+import { TagManager, type TagRow } from "./TagManager";
+import { TAG_COLORS, Tag } from "@/components/ui/Tag";
 import { SEARCH_FOR, SLOW_SEARCH_FOR, useLabDeferred, useLabLoad, useStateLab } from "../_state-lab/useStateLab";
 import { VisuallyHidden } from "./SheetStates";
 import { AccessState, FilterOptionsLoader, ListFailed, ListLoading, StatusBanner, TagsFailed } from "./ListStates";
 import {
   AddMemberDialog,
-  ChangeMembershipDialog,
   ConfirmDialog,
+  DeletePeopleDialog,
+  isPaying,
   EditDetailsDialog,
-  NoteDialog,
   PaymentDialog,
-  defaultEnd,
 } from "./dialogs";
 
 /* ---------- layout ---------- */
@@ -99,19 +94,21 @@ const SearchBox = styled.div`
 `;
 
 /* A filter button at the same height as the search field (the kit's sm and default buttons are shorter). */
+/* Same height as the search box, and the kit's body-size text (--text-sm) like the search, table and results line. */
 const FilterButton = styled(Button)`
   &&& {
     height: var(--control-height);
+    padding: 0 var(--space-3);
   }
-`;
-
-/* The applied mark always takes its room, so a trigger is the same width applied or not; it only shows when the filter is applied. */
-const AppliedMark = styled.span`
-  display: inline-flex;
-  flex: none;
-
-  &[data-on="false"] {
-    visibility: hidden;
+  /* Open: a light fill, so it's clear which filter the popover below belongs to. */
+  &&&[data-state="open"] {
+    background: var(--color-bg-hover);
+    border-color: var(--color-border-strong);
+  }
+  /* Applied: a light green fill and a primary outline, so the page reads as filtered at a glance (the count says how much). */
+  &&&[data-applied] {
+    background: var(--color-primary-subtle);
+    border-color: var(--color-primary);
   }
 `;
 
@@ -120,58 +117,40 @@ const FilterArea = styled.div`
   display: flex;
   flex-direction: column;
   min-width: 0;
-  margin-bottom: calc(var(--space-1) * -1);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
 `;
 
-/* Chips on the left, the results line on the right; they share a line when both are short and stack when not. The empty results line (the live region) takes no room. */
-const SummaryRow = styled.div`
-  position: relative;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  min-width: 0;
-
-  &:has(> :not(:empty)) {
-    margin-top: var(--space-2);
-  }
+/* Header icon buttons are square: as wide as they are tall. */
+const HeaderIconButton = styled(Button)`
+  aspect-ratio: 1;
+  padding: 0;
 `;
 
-/* The applied filters, one chip each, under the search row. */
-const AppliedRow = styled.div`
-  display: flex;
-  flex: 1 1 auto;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-  min-width: 0;
-`;
-
-/* One applied tag filter: a tiny label, then each tag as its own pill. */
-const TagChipGroup = styled.span`
+/* "Add member" with its menu arrow joined on the right, a thin line between them. */
+const SplitButton = styled.div`
   display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-  min-width: 0;
-`;
-
-const ChipLead = styled.span`
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-`;
-
-/* Keeps the "Must have all of them" row in the Tags editor in its place before it applies, so the popover doesn't change height when the second tag lands. */
-const Reserved = styled.div`
-  &[data-hidden="true"] {
-    visibility: hidden;
+  & > button:first-child {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+  & > button:last-child {
+    aspect-ratio: 1;
+    padding: 0;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-left: 1px solid color-mix(in srgb, var(--color-on-primary) 35%, transparent);
   }
 `;
 
-/* "People" with the count beside it, smaller and muted. */
+/* "People" with the count beside it in brackets, smaller and muted, sitting on the title's baseline. */
+const TitleRow = styled.span`
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-1);
+`;
+
 const TitleCount = styled.span`
-  margin-left: var(--space-2);
   font-size: var(--text-sm);
   font-weight: var(--weight-regular);
   color: var(--color-text-muted);
@@ -197,60 +176,6 @@ const FilterRow = styled.div`
   }
 `;
 
-/* One applied filter: its words, plus a × beside them. Filled and outlined so it reads as chosen. */
-const FilterGroup = styled.span`
-  display: inline-flex;
-  align-items: center;
-  height: var(--pill-height);
-  border-radius: var(--radius-md);
-
-  background: var(--color-secondary);
-  outline: 1px solid var(--color-border-strong);
-  outline-offset: -1px;
-`;
-
-/* "12 people match these filters" with its clear button. The wrapper is the one polite announcer for settled results, so it stays mounted (and empty) when nothing is active. */
-const ResultsLine = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-
-  /* Beside the chips it sits at the right; alone it starts at the left. */
-  &:not(:first-child) {
-    margin-left: auto;
-  }
-
-  &:empty {
-    position: absolute;
-  }
-`;
-
-const ChipLabel = styled.span`
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: calc(var(--space-8) * 4);
-`;
-
-/* Chip buttons at the pill height, smaller than the triggers. */
-const ChipButton = styled(Button)`
-  &&& {
-    height: var(--pill-height);
-    padding: 0 var(--space-2);
-  }
-`;
-
-const ChipRemove = styled(Button)`
-  &&& {
-    width: var(--pill-height);
-    height: var(--pill-height);
-    padding: 0;
-  }
-`;
-
 /* The editor inside a filter's popover: only that filter's control. */
 const FilterEditor = styled.div`
   display: flex;
@@ -269,17 +194,25 @@ const OptionList = styled(MenuList)`
   flex-direction: column;
   max-height: calc(var(--menu-row-height) * 7.5);
   overflow-y: auto;
+  /* The wheel scrolls the list, and never hands the scroll on to the page at the list's ends. */
+  overscroll-behavior: contain;
+
+  /* Rows keep their height (long answers wrap to two lines) instead of being squeezed into the list's max height. */
+  & > * {
+    flex: none;
+  }
 `;
 
 /* Rows grow with their text: long answers wrap, and the checkbox and the count stay level with the first line. */
 const OptionRow = styled.div`
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
   min-height: var(--menu-row-height);
-  padding: var(--space-2);
-  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-3);
+  /* The whole row ticks its box (see toggleFromRow). Its hover fill runs edge to edge, square. */
+  cursor: pointer;
 
   &:hover {
     background: var(--color-bg-hover);
@@ -291,9 +224,14 @@ const OptionCheck = styled.span`
   flex: 1 1 auto;
   min-width: 0;
 
+  /* Box centred on the row, tag pills and wrapped answers alike. */
   & > span {
     display: flex;
+    align-items: center;
     max-width: 100%;
+  }
+  & > span > button {
+    margin-top: 0;
   }
   & label {
     min-width: 0;
@@ -310,6 +248,58 @@ const OptionCount = styled.span`
   font-variant-numeric: tabular-nums;
 `;
 
+/* The tag list under its search: rows run edge to edge like a menu, scrolling inside the one popover. */
+const TagOptionList = styled(OptionList)`
+  /* Rows run to the popover's edges, so the hover fill does too, and down to the footer's line, so a scrolled row
+     disappears under the line instead of being cut off short of it. */
+  margin: 0 calc(var(--space-3) * -1) calc(var(--space-3) * -1);
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
+
+  /* With a scrollbar, it sits in its own gutter with room before the counts, like the kit's column filter. */
+  &[data-scrolls] {
+    scrollbar-gutter: stable;
+    padding-right: var(--space-1);
+  }
+`;
+
+/* How many values an applied filter has, in a small circle after its name. A number, so it isn't carried by the fill alone. */
+const AppliedCount = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--space-4);
+  height: var(--space-4);
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+`;
+
+/* Cancel and Apply at the foot of a staged filter, with Reset on the left when there is something to reset. */
+const FilterActions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  /* A divider and a soft shadow cast up over the list, so the list reads as scrolling under the footer. */
+  margin: 0 calc(var(--space-3) * -1);
+  padding: var(--space-3) var(--space-3) 0;
+  border-top: 1px solid var(--color-border);
+
+  &[data-over-scroll] {
+    box-shadow: var(--shadow-up);
+  }
+  clip-path: inset(calc(var(--space-3) * -1) 0 0 0);
+
+  /* Cancel on the far left, as in the kit's footers. */
+  & > [data-cancel] {
+    margin-right: auto;
+  }
+`;
+
 const OptionsNote = styled.p`
   margin: 0;
   font-size: var(--text-xs);
@@ -317,30 +307,18 @@ const OptionsNote = styled.p`
 `;
 
 /* Long answers need room: about 360px on desktop, the screen width minus the page gutters on phones. */
-const WidePopover = styled(PopoverContent)`
+/* The Joined filter: as wide as its calendar, like DateRulePicker's own popover. */
+const DatePopover = styled(PopoverContent)`
   &&& {
-    width: min(calc(var(--space-8) * 5.5), calc(100vw - var(--space-4) * 2));
+    width: auto;
     max-width: calc(100vw - var(--space-4) * 2);
   }
 `;
 
-/* Radio lists: same rows as the checkbox lists. */
-const RadioList = styled(MenuList)`
-  & [role="radio"] ~ label,
-  & label {
-    cursor: pointer;
-  }
-  & > * {
-    gap: 0;
-  }
-  & > * > * {
-    min-height: var(--menu-row-height);
-    padding: 0 var(--space-2);
-    border-radius: var(--radius-sm);
-    align-items: center;
-  }
-  & > * > *:hover {
-    background: var(--color-bg-hover);
+const WidePopover = styled(PopoverContent)`
+  &&& {
+    width: min(calc(var(--space-8) * 5.5), calc(100vw - var(--space-4) * 2));
+    max-width: calc(100vw - var(--space-4) * 2);
   }
 `;
 
@@ -355,15 +333,6 @@ const NameStack = styled.span`
   display: flex;
   flex-direction: column;
   min-width: 0;
-`;
-
-/* Below 640px the Email and Status columns are hidden (see ListWrap); their content shows in the Name cell instead. */
-const MobileBadge = styled.span`
-  display: none;
-
-  @media (max-width: 639px) {
-    display: inline-flex;
-  }
 `;
 
 const MobileEmail = styled.span`
@@ -417,17 +386,28 @@ const SelectionBar = styled.div`
 `;
 
 const BarCount = styled.span`
+  flex: none;
   padding: 0 var(--space-2);
+
+  @media (max-width: 479px) {
+    padding: 0 var(--space-1);
+  }
   font-weight: var(--weight-medium);
   white-space: nowrap;
 `;
 
 const BarDivider = styled.span`
+  flex: none;
   align-self: stretch;
   width: 1px;
   margin: var(--space-1);
   background: var(--color-on-primary-deep);
   opacity: 0.3;
+
+  /* On a phone the bar needs every pixel for its buttons: the dividers lose their side margin. */
+  @media (max-width: 479px) {
+    margin-inline: 0;
+  }
 `;
 
 /* Ghost buttons on the dark surface: inverse text, a visible hover fill, and a focus ring in the inverse colour (the usual one is the primary colour, invisible here). */
@@ -443,19 +423,41 @@ const BarButton = styled(Button)`
   }
 `;
 
-/* Square, icon-only. */
+/* Square, icon-only. Never squeezed: the bar is sized to fit them at 360px. */
 const BarIconButton = styled(BarButton)`
   &&& {
+    flex: none;
     width: var(--space-6);
+    height: var(--space-6);
     padding: 0;
+  }
+`;
+
+
+/* Select all: words where there's room; on a phone the bar is too narrow, so it becomes an icon with a tooltip. */
+const WideOnly = styled(BarButton)`
+  &&& {
+    flex: none;
+  }
+  @media (max-width: 479px) {
+    &&& {
+      display: none;
+    }
+  }
+`;
+const NarrowOnly = styled(BarIconButton)`
+  @media (min-width: 480px) {
+    &&& {
+      display: none;
+    }
   }
 `;
 
 /* The bar's one Tags button. It is the popover's trigger, so it takes the trigger's props and ref. */
 const BarTagsButton = React.forwardRef<HTMLButtonElement, React.ComponentProps<typeof BarIconButton>>(function BarTagsButton(props, ref) {
   return (
-    <Tooltip content="Tags">
-      <BarIconButton ref={ref} type="button" $variant="ghost" aria-label="Tags" {...props}>
+    <Tooltip content="Add or remove tags">
+      <BarIconButton ref={ref} type="button" $variant="ghost" aria-label="Add or remove tags" {...props}>
         <Icon icon={TagIcon} size={16} />
       </BarIconButton>
     </Tooltip>
@@ -467,25 +469,40 @@ const PageBar = styled.div`
 `;
 
 /*
- * Selected rows: the same fill as the kit's hover (one step stronger, so a hovered selected row never looks lighter),
- * as one band: the divider between two selected rows is hidden.
- * Done from here because the kit Table has no selected-row prop; a row counts as selected when its checkbox is checked.
+ * Selected rows: the kit's light hover fill (the darker --color-bg-selected fought with the row lines), as one band with
+ * rounded corners: the divider between two selected rows is hidden, and each run of selected rows rounds its outer corners
+ * like a hovered row. Done from here because the kit Table has no selected-row prop; a row counts as selected when its
+ * checkbox is checked.
  */
 const ListWrap = styled.div`
   &&& tbody tr:has([data-member-id] [data-state="checked"]) > td {
-    background: var(--color-bg-selected);
+    background: var(--color-bg-hover);
   }
   &&& tbody tr:has([data-member-id] [data-state="checked"]) + tr:has([data-member-id] [data-state="checked"]) > td::before {
     background: transparent;
   }
+  /* First row of a run: round the top corners. */
+  &&& tbody tr:has([data-member-id] [data-state="checked"]):not(tr:has([data-member-id] [data-state="checked"]) + tr) > td:first-child {
+    border-top-left-radius: var(--radius-sm);
+  }
+  &&& tbody tr:has([data-member-id] [data-state="checked"]):not(tr:has([data-member-id] [data-state="checked"]) + tr) > td:last-child {
+    border-top-right-radius: var(--radius-sm);
+  }
+  /* Last row of a run: round the bottom corners. */
+  &&& tbody tr:has([data-member-id] [data-state="checked"]):not(:has(+ tr [data-member-id] [data-state="checked"])) > td:first-child {
+    border-bottom-left-radius: var(--radius-sm);
+  }
+  &&& tbody tr:has([data-member-id] [data-state="checked"]):not(:has(+ tr [data-member-id] [data-state="checked"])) > td:last-child {
+    border-bottom-right-radius: var(--radius-sm);
+  }
 
-  /* Phones: the kit Table has no column visibility, so Email, Status, Ends and Tags (columns 3 to 6) are hidden here and the
+  /* Phones: the kit Table has no column visibility, so every column after Name except the columns menu are hidden here and the
      table drops its minimum width, so it fits the screen instead of scrolling. The select column stays. */
   @media (max-width: 639px) {
     &&& table {
       min-width: 0;
     }
-    &&& :is(th, td):nth-child(n + 3):nth-child(-n + 6) {
+    &&& :is(th, td):nth-child(n + 3):not(:last-child) {
       display: none;
     }
   }
@@ -499,6 +516,35 @@ const BarSpace = styled.div`
 /* Long names and emails wrap inside their column instead of widening the table. */
 const Wrap = styled.span`
   overflow-wrap: anywhere;
+`;
+
+/* The copy icon after an email: only while the email is hovered or focused, and always taking its room so nothing shifts. */
+const CopyHint = styled.span`
+  display: inline-flex;
+  flex: none;
+  color: var(--color-text-muted);
+  opacity: 0;
+`;
+
+/* An email that copies on click: reads as plain text in the row, with the ghost button's hover fill and focus ring. */
+const EmailCopy = styled(Button)`
+  &&& {
+    height: auto;
+    min-height: var(--pill-height);
+    margin: 0 calc(var(--space-2) * -1);
+    padding: 0 var(--space-2);
+    justify-content: flex-start;
+    gap: var(--space-1);
+    font-size: inherit;
+    color: inherit;
+    text-align: left;
+    /* An address reads as one unit: never broken across lines. When the table runs out of room it scrolls
+       sideways, with the name column frozen, instead of squeezing the email. */
+    white-space: nowrap;
+  }
+  &:is(:hover, :focus-visible) > ${CopyHint} {
+    opacity: 1;
+  }
 `;
 
 const Ends = styled.span`
@@ -525,16 +571,20 @@ const SelectBox = styled.span`
 `;
 
 /* The Tags column: the two newest tags, then how many more. */
+/* One line: the newest tags, then "+N" for the rest. A long tag is cut short rather than wrapping. */
 const TagsCell = styled.div`
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: var(--space-1);
+  min-width: 0;
 `;
 
 /* A long tag name is cut short in the table; the full name is in the member sheet. */
 const CellTag = styled(Tag)`
   &&& {
+    flex: 0 1 auto;
+    min-width: 0;
     max-width: calc(var(--space-8) * 3);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -543,34 +593,26 @@ const CellTag = styled(Tag)`
 `;
 
 const More = styled.span`
+  flex: none;
   color: var(--color-text-muted);
   font-size: var(--text-sm);
+  white-space: nowrap;
 `;
-
-/* The Flags column: membership ending soon or ended. */
-const Flags = styled.div`
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-`;
-
 
 /* ---------- filters ---------- */
 
 /** "any": has at least one of the chosen tags. "all": has every one of them. */
 type TagMode = "any" | "all";
 
-type JoinedPreset = "" | "30d" | "3m" | "year" | "before" | "custom";
-
 interface Filters {
-  joined: { preset: JoinedPreset; from: string; to: string };
+  /** Before / After / Between, as on automatic emails. Applied once it has a date. */
+  joined: DateRule;
   tags: string[];
   tagMode: TagMode;
   /** People who have none of these tags. */
   notTags: string[];
-  status: MemberStatus[];
-  /** "on" (subscribed only) is the default view, not an applied filter. */
-  emails: "on" | "any" | "off";
+  /** Which people show. Subscribed and unsubscribed (everyone but people who cancelled) is the default view, not an applied filter. */
+  membership: Membership[];
   /** The intake-form filters match anyone who has any of the chosen values. */
   interests: string[];
   ways: string[];
@@ -578,32 +620,31 @@ interface Filters {
   time: string[];
 }
 
-const joinedPresets: { value: Exclude<JoinedPreset, "">; label: string }[] = [
-  { value: "30d", label: "Last 30 days" },
-  { value: "3m", label: "Last 3 months" },
-  { value: "year", label: "This year" },
-  { value: "before", label: "Before this year" },
-  { value: "custom", label: "Custom range" },
-];
-
-/** True when a join date falls inside the joined filter. Presets are relative to today. */
+/** True when a join date fits the rule. A rule with no dates yet matches everyone. */
 function joinedMatches(j: Filters["joined"], joinedAt: string) {
-  const yearStart = `${TODAY.slice(0, 4)}-01-01`;
-  switch (j.preset) {
-    case "30d":
-      return joinedAt >= addDays(TODAY, -30);
-    case "3m":
-      return joinedAt >= addMonths(TODAY, -3);
-    case "year":
-      return joinedAt >= yearStart;
-    case "before":
-      return joinedAt < yearStart;
-    case "custom":
-      return (!j.from || joinedAt >= j.from) && (!j.to || joinedAt <= j.to);
-    default:
-      return true;
-  }
+  if (!j.from && !j.to) return true;
+  if (j.op === "before") return joinedAt < j.from;
+  if (j.op === "after") return joinedAt > j.from;
+  const [a, b] = j.from && j.to && j.from > j.to ? [j.to, j.from] : [j.from, j.to];
+  return (!a || joinedAt >= a) && (!b || joinedAt <= b);
 }
+
+/** Where someone stands. Someone who cancelled counts as cancelled, whether or not they were subscribed. */
+type Membership = "subscribed" | "unsubscribed" | "cancelled";
+
+const membershipLabels: Record<Membership, string> = {
+  subscribed: "Subscribed",
+  unsubscribed: "Unsubscribed",
+  cancelled: "Cancelled",
+};
+
+const membershipOf = (m: Member): Membership => (m.cancelledAt ? "cancelled" : m.subscribed ? "subscribed" : "unsubscribed");
+
+/* The default view is subscribed members only (owner, Nov 2026): unsubscribed and cancelled people are a tick away. */
+const DEFAULT_MEMBERSHIP: Membership[] = ["subscribed"];
+
+/** True when the membership filter is still the default view. Ticking nothing also means the default. */
+const isDefaultMembership = (v: Membership[]) => !v.length || (v.length === DEFAULT_MEMBERSHIP.length && DEFAULT_MEMBERSHIP.every((x) => v.includes(x)));
 
 type FilterKey = Exclude<keyof Filters, "tagMode">;
 
@@ -611,8 +652,7 @@ type FilterKey = Exclude<keyof Filters, "tagMode">;
 const filterLabels: Record<FilterKey, string> = {
   tags: "Tags",
   notTags: "Not tagged",
-  status: "Status",
-  emails: "Emails",
+  membership: "Membership",
   joined: "Joined",
   interests: "Interests",
   ways: "Ways to help",
@@ -620,18 +660,17 @@ const filterLabels: Record<FilterKey, string> = {
   time: "Availability",
 };
 
-const quickFilters: FilterKey[] = ["tags", "status", "emails", "joined"];
+const quickFilters: FilterKey[] = ["tags", "joined", "membership"];
 const intakeFilters: FilterKey[] = ["interests", "ways", "location", "time"];
 /** Everything behind More: leaving a tag out, then the intake-form filters. */
 const moreFilters: FilterKey[] = ["notTags", ...intakeFilters];
 
 const noFilters: Filters = {
-  joined: { preset: "", from: "", to: "" },
+  joined: { op: "between", from: "", to: "" },
   tags: [],
   tagMode: "any",
   notTags: [],
-  status: [],
-  emails: "on",
+  membership: DEFAULT_MEMBERSHIP,
   interests: [],
   ways: [],
   location: [],
@@ -642,11 +681,11 @@ const noFilters: Filters = {
 const OTHER = "Other";
 const answersOf = (m: Member, key: "interests" | "ways") => (m.intake?.[key] ?? []).map((v) => (v.startsWith("Other:") ? OTHER : v));
 
-type CheckKey = "status" | "interests" | "ways" | "location" | "time";
+type CheckKey = "membership" | "interests" | "ways" | "location" | "time";
 
 /** The values one person has for a checkbox filter. */
 function valuesOf(m: Member, key: CheckKey): string[] {
-  if (key === "status") return [m.status];
+  if (key === "membership") return [membershipOf(m)];
   if (key === "interests" || key === "ways") return answersOf(m, key);
   const v = m.intake?.[key];
   return v ? [v] : [];
@@ -658,7 +697,7 @@ const formOrder: Partial<Record<CheckKey, string[]>> = { location: PLACES.map((p
  * The values present in the list. Location and Availability keep the form's own order; Interests and Ways to help go by how many
  * people chose each (the whole list, so rows don't jump as you tick), with Other last.
  */
-function optionValues(pool: Member[], key: Exclude<CheckKey, "status">): string[] {
+function optionValues(pool: Member[], key: Exclude<CheckKey, "membership">): string[] {
   const totals = new Map<string, number>();
   for (const m of pool) for (const v of new Set(valuesOf(m, key))) totals.set(v, (totals.get(v) ?? 0) + 1);
   const order = formOrder[key];
@@ -674,7 +713,7 @@ const has = (value: string, query: string) => value.toLowerCase().includes(query
 
 function matches(m: Member, f: Filters, q: string) {
   if (q.trim() && !has(`${fullName(m)} ${m.email} ${m.tags.join(" ")}`, q)) return false;
-  if (f.status.length && !f.status.includes(m.status)) return false;
+  if (!(f.membership.length ? f.membership : DEFAULT_MEMBERSHIP).includes(membershipOf(m))) return false;
   if (f.tags.length) {
     const hasTag = (t: string) => m.tags.some((x) => x.toLowerCase() === t.toLowerCase());
     if (f.tagMode === "all" && !f.tags.every(hasTag)) return false;
@@ -682,8 +721,6 @@ function matches(m: Member, f: Filters, q: string) {
   }
   if (f.notTags.length && f.notTags.some((t) => m.tags.some((x) => x.toLowerCase() === t.toLowerCase()))) return false;
   if (!joinedMatches(f.joined, m.joinedAt)) return false;
-  if (f.emails === "on" && !m.subscribed) return false;
-  if (f.emails === "off" && m.subscribed) return false;
   if (f.interests.length && !f.interests.some((v) => answersOf(m, "interests").includes(v))) return false;
   if (f.ways.length && !f.ways.some((v) => answersOf(m, "ways").includes(v))) return false;
   if (f.location.length && !(m.intake?.location && f.location.includes(m.intake.location))) return false;
@@ -691,8 +728,15 @@ function matches(m: Member, f: Filters, q: string) {
   return true;
 }
 
+/** True when one filter differs from the default view. */
+function isApplied(key: FilterKey, f: Filters) {
+  if (key === "joined") return Boolean(f.joined.from || f.joined.to);
+  if (key === "membership") return !isDefaultMembership(f.membership);
+  return f[key].length > 0;
+}
+
 const filterCount = (f: Filters) =>
-  [f.joined.preset, f.emails !== noFilters.emails].filter(Boolean).length +[f.status, f.interests, f.ways, f.location, f.time].filter((v) => v.length).length + [f.tags, f.notTags].filter((v) => v.length).length;
+  [f.joined.from || f.joined.to, !isDefaultMembership(f.membership)].filter(Boolean).length + [f.interests, f.ways, f.location, f.time].filter((v) => v.length).length + [f.tags, f.notTags].filter((v) => v.length).length;
 
 /**
  * A checkbox list. Changes apply at once. Each count is how many people have that value among those who match the search and the
@@ -705,7 +749,9 @@ function CheckList({
   pool,
   filters,
   q,
-  onChange,
+  onApply,
+  onCancel,
+  onReset,
 }: {
   fieldKey: CheckKey;
   label: string;
@@ -713,11 +759,16 @@ function CheckList({
   pool: Member[];
   filters: Filters;
   q: string;
-  onChange: (values: string[]) => void;
+  onApply: (values: string[]) => void;
+  onCancel: () => void;
+  onReset?: ResetAction;
 }) {
-  const chosenValues = filters[fieldKey] as string[];
+  const [listRef, scrolls] = useScrolls<HTMLDivElement>();
+  /* Ticking changes a draft; Apply commits it. */
+  const [chosenValues, setChosenValues] = React.useState(filters[fieldKey] as string[]);
   const counts = React.useMemo(() => {
-    const rest = { ...filters, [fieldKey]: [] };
+    /* Leave this filter out. For Membership that means everyone, since an empty Membership is the default view. */
+    const rest = { ...filters, [fieldKey]: fieldKey === "membership" ? Object.keys(membershipLabels) : [] };
     const out = new Map<string, number>();
     for (const m of pool) {
       if (!matches(m, rest, q)) continue;
@@ -727,37 +778,263 @@ function CheckList({
   }, [pool, filters, fieldKey, q]);
   return (
     <FilterEditor role="group" aria-label={label}>
-      <OptionList>
+      <TagOptionList ref={listRef} data-scrolls={scrolls ? "" : undefined}>
         {options.map((o) => (
-          <OptionRow key={o.value}>
+          <OptionRow key={o.value} onClick={toggleFromRow}>
             <OptionCheck>
               <Checkbox
                 label={o.label}
                 checked={chosenValues.includes(o.value)}
-                onCheckedChange={(on) => onChange(on === true ? [...chosenValues, o.value] : chosenValues.filter((v) => v !== o.value))}
+                onCheckedChange={(on) => setChosenValues((cur) => (on === true ? [...cur.filter((v) => v !== o.value), o.value] : cur.filter((v) => v !== o.value)))}
               />
             </OptionCheck>
             <OptionCount>{counts.get(o.value) ?? 0}</OptionCount>
           </OptionRow>
         ))}
-        {!options.length && <OptionsNote>No values yet</OptionsNote>}
-      </OptionList>
-      {options.length > 0 && <OptionsNote>Counts follow the search and your other filters.</OptionsNote>}
+        {!options.length && <OptionsNote>No answers yet</OptionsNote>}
+      </TagOptionList>
+      <StagedActions onReset={onReset} onCancel={onCancel} onApply={() => onApply(chosenValues)} overScroll={scrolls} />
     </FilterEditor>
   );
 }
 
+/**
+ * Tags as a checkbox list in the filter's own popover: a search box (focused on open), then every tag in its colour with a count,
+ * scrolling when long. Staged like the kit's column filter: ticking changes a draft; Apply commits it and closes, Cancel drops it.
+ * Counts are people who match the search and the other filters, leaving this one out.
+ */
+function TagCheckList({
+  fieldKey,
+  label,
+  options,
+  colors,
+  pool,
+  filters,
+  q,
+  onApply,
+  onCancel,
+  onReset,
+}: {
+  fieldKey: "tags" | "notTags";
+  label: string;
+  options: string[];
+  colors: Record<string, TagColor>;
+  pool: Member[];
+  filters: Filters;
+  q: string;
+  onApply: (tags: string[]) => void;
+  onCancel: () => void;
+  /** Back to the default; only offered while the filter is applied or was added from More. */
+  onReset?: ResetAction;
+}) {
+  const [query, setQuery] = React.useState("");
+  const [listRef, scrolls] = useScrolls<HTMLDivElement>();
+  const [chosenTags, setChosenTags] = React.useState(filters[fieldKey]);
+  const counts = React.useMemo(() => {
+    const rest = { ...filters, [fieldKey]: [] };
+    const out = new Map<string, number>();
+    for (const m of pool) {
+      if (!matches(m, rest, q)) continue;
+      for (const t of m.tags) out.set(t, (out.get(t) ?? 0) + 1);
+    }
+    return out;
+  }, [pool, filters, fieldKey, q]);
+  /* The tags applied when the popover opened go first (fixed at open, so rows don't jump as you tick), then the rest by colour. */
+  const [applied] = React.useState(() => new Set(filters[fieldKey]));
+  const ordered = React.useMemo(
+    () => [...options].sort((a, b) => Number(applied.has(b)) - Number(applied.has(a)) || byColourThenName(a, b, colors)),
+    [options, applied, colors],
+  );
+  const needle = query.trim().toLowerCase();
+  const shown = needle ? ordered.filter((t) => t.toLowerCase().includes(needle)) : ordered;
+  const apply = () => onApply(chosenTags);
+  /* Enter ticks the first match; Enter again (or with nothing new to tick) applies. */
+  const onSearchKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    const first = needle ? shown[0] : undefined;
+    if (first && !chosenTags.includes(first)) setChosenTags((cur) => [...cur, first]);
+    else apply();
+  };
+  return (
+    <>
+      <SearchField
+        aria-label="Search tags"
+        placeholder="Search tags"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onSearch={setQuery}
+        onKeyDown={onSearchKey}
+        autoFocus
+      />
+      <TagOptionList ref={listRef} role="group" aria-label={label} data-scrolls={scrolls ? "" : undefined}>
+        {shown.map((t) => (
+          <OptionRow key={t} onClick={toggleFromRow}>
+            <OptionCheck>
+              <Checkbox
+                label={<Tag color={colors[t]}>{t}</Tag>}
+                checked={chosenTags.includes(t)}
+                onCheckedChange={(on) => setChosenTags((cur) => (on === true ? [...cur.filter((x) => x !== t), t] : cur.filter((x) => x !== t)))}
+              />
+            </OptionCheck>
+            <OptionCount>{counts.get(t) ?? 0}</OptionCount>
+          </OptionRow>
+        ))}
+        {!shown.length && <OptionsNote role="status">{options.length ? "No tags match" : "No tags yet"}</OptionsNote>}
+      </TagOptionList>
+      <StagedActions onReset={onReset} onCancel={onCancel} onApply={apply} overScroll={scrolls} />
+    </>
+  );
+}
+
+type ResetAction = { label: string; run: () => void };
+
+/**
+ * Whether a list is taller than its box (so it scrolls): measured, since long answers wrap and a row count can't tell.
+ * Re-checks when the box resizes or its rows change (a search narrows the list).
+ */
+function useScrolls<T extends HTMLElement>(): [(el: T | null) => (() => void) | undefined, boolean] {
+  const [scrolls, setScrolls] = React.useState(false);
+  const ref = React.useCallback((el: T | null) => {
+    if (!el) return undefined;
+    const check = () => setScrolls(el.scrollHeight > el.clientHeight + 1);
+    check();
+    const resize = new ResizeObserver(check);
+    resize.observe(el);
+    const rows = new MutationObserver(check);
+    rows.observe(el, { childList: true, subtree: true });
+    return () => {
+      resize.disconnect();
+      rows.disconnect();
+    };
+  }, []);
+  return [ref, scrolls];
+}
+
+/** The foot of every filter popover: Cancel on the far left; Reset (when there's something to reset) and Apply on the right. */
+function StagedActions({
+  onReset,
+  onCancel,
+  onApply,
+  overScroll = false,
+}: {
+  onReset?: ResetAction;
+  onCancel: () => void;
+  onApply: () => void;
+  /** The list above scrolls: lift the footer with a shadow. Lists that fit, and the date picker, get none. */
+  overScroll?: boolean;
+}) {
+  return (
+    <FilterActions data-over-scroll={overScroll ? "" : undefined}>
+      <CancelButton $size="sm" onClick={onCancel} />
+      {onReset && (
+        <Button type="button" $variant="secondary" $size="sm" onClick={onReset.run}>
+          {onReset.label}
+        </Button>
+      )}
+      <Button type="button" $size="sm" onClick={onApply}>
+        Apply
+      </Button>
+    </FilterActions>
+  );
+}
+
+/** The Joined filter, staged like the tag filters: the button only changes when Apply is pressed. */
+function JoinedEditor({
+  initial,
+  onApply,
+  onCancel,
+  onReset,
+}: {
+  initial: DateRule;
+  onApply: (rule: DateRule) => void;
+  onCancel: () => void;
+  onReset?: ResetAction;
+}) {
+  const [rule, setRule] = React.useState(initial);
+  return (
+    <>
+      <DateRuleEditor label="Joined" value={rule} onValueChange={setRule} />
+      <StagedActions onReset={onReset} onCancel={onCancel} onApply={() => onApply(rule)} />
+    </>
+  );
+}
+
+/** Tags grouped by colour (the kit's colour order, grey last), then A to Z within a colour. */
+function byColourThenName(a: string, b: string, colors: Record<string, TagColor>) {
+  const rank = (t: string) => {
+    const c = colors[t];
+    return c ? TAG_COLORS.indexOf(c) : TAG_COLORS.length;
+  };
+  return rank(a) - rank(b) || a.localeCompare(b);
+}
+
+/** A click anywhere on an option row ticks its box. Clicks on the box or its label already do, so they're left alone. */
+function toggleFromRow(e: React.MouseEvent<HTMLElement>) {
+  const target = e.target as HTMLElement;
+  if (target.closest("button, label")) return;
+  e.currentTarget.querySelector<HTMLButtonElement>('button[role="checkbox"]')?.click();
+}
+
 /* ---------- columns ---------- */
 
-/** The columns the Columns menu can show or hide. Name, Email, Status, Ends and Tags are always there. */
-type OptionalColumn = "joined" | "location" | "referred" | "emails";
+/** The columns the Columns menu can show or hide, in table order. Only Name is always there. */
+type OptionalColumn = "email" | "tags" | "value" | "joined" | "location" | "referred";
 
 const optionalColumns: [OptionalColumn, string][] = [
+  ["email", "Email"],
+  ["tags", "Tags"],
+  ["value", "Lifetime value"],
   ["joined", "Joined"],
   ["location", "Location"],
   ["referred", "Referred by"],
-  ["emails", "Emails on/off"],
 ];
+
+const DEFAULT_COLUMNS: OptionalColumn[] = ["email", "tags", "value"];
+/** This browser's column choice. Saved per browser only; the page works the same without it. */
+const COLUMNS_KEY = "sdc.memberDirectory.columns";
+
+const COLUMNS_EVENT = "sdc-columns-change";
+
+/** The saved choice as stored text, or null. Server render and first paint read null, so they match. */
+function readColumnsRaw(): string | null {
+  try {
+    return window.localStorage.getItem(COLUMNS_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function parseColumns(raw: string | null): Set<OptionalColumn> {
+  if (!raw) return new Set(DEFAULT_COLUMNS);
+  try {
+    const keys = optionalColumns.map(([k]) => k);
+    const parsed = JSON.parse(raw) as unknown[] | { v: 2; columns: unknown[] };
+    /* A list saved before Email could be hidden is the old format: Email was always shown then, so keep it. */
+    const list = Array.isArray(parsed) ? [...parsed, "email"] : parsed.columns;
+    return new Set(list.filter((k): k is OptionalColumn => keys.includes(k as OptionalColumn)));
+  } catch {
+    return new Set(DEFAULT_COLUMNS);
+  }
+}
+
+function subscribeColumns(onChange: () => void) {
+  window.addEventListener("storage", onChange);
+  window.addEventListener(COLUMNS_EVENT, onChange);
+  return () => {
+    window.removeEventListener("storage", onChange);
+    window.removeEventListener(COLUMNS_EVENT, onChange);
+  };
+}
+
+function saveColumns(shown: Set<OptionalColumn>) {
+  try {
+    window.localStorage.setItem(COLUMNS_KEY, JSON.stringify({ v: 2, columns: [...shown] }));
+  } catch {
+    /* Storage blocked or full: the choice just isn't remembered. */
+  }
+  window.dispatchEvent(new Event(COLUMNS_EVENT));
+}
 
 /** What a column sorts by. Blank values always sort last. */
 function sortValue(m: Member, key: string): string | number {
@@ -766,34 +1043,32 @@ function sortValue(m: Member, key: string): string | number {
       return fullName(m).toLowerCase();
     case "email":
       return m.email.toLowerCase();
-    case "status":
-      return `${statusLabel[m.status]}${m.endsAt}`;
+    case "value":
+      return totalPaid(m);
     case "joined":
       return m.joinedAt;
     case "location":
       return (m.intake?.location ?? "").toLowerCase();
     case "referred":
       return (m.referredBy ?? "").toLowerCase();
-    case "emails":
-      return m.subscribed ? 0 : 1;
     default:
-      return m.endsAt;
+      return fullName(m).toLowerCase();
   }
 }
 
-/** The CSV columns for the table as shown, then Emails on/off. */
+/** The CSV columns for the table as shown, then whether they are subscribed and when they cancelled. */
 function csvColumns(shown: Set<OptionalColumn>): { label: string; value: (m: Member) => string }[] {
   return [
     { label: "First name", value: (m) => m.firstName },
     { label: "Last name", value: (m) => m.lastName },
     { label: "Email", value: (m) => m.email },
-    { label: "Status", value: (m) => statusLabel[m.status] },
-    { label: "Ends", value: (m) => m.endsAt },
-    { label: "Tags", value: (m) => tagsByRecency(m).join("; ") },
+    ...(shown.has("tags") ? [{ label: "Tags", value: (m: Member) => tagsByRecency(m).join("; ") }] : []),
+    ...(shown.has("value") ? [{ label: "Lifetime value", value: (m: Member) => String(totalPaid(m)) }] : []),
     ...(shown.has("joined") ? [{ label: "Joined", value: (m: Member) => m.joinedAt }] : []),
     ...(shown.has("location") ? [{ label: "Location", value: (m: Member) => m.intake?.location ?? "" }] : []),
     ...(shown.has("referred") ? [{ label: "Referred by", value: (m: Member) => m.referredBy ?? "" }] : []),
-    { label: "Emails on/off", value: (m) => (m.subscribed ? "On" : "Off") },
+    { label: "Subscribed", value: (m) => (m.subscribed ? "Yes" : "No") },
+    { label: "Cancelled", value: (m) => m.cancelledAt ?? "" },
   ];
 }
 
@@ -803,13 +1078,14 @@ function toCsv(rows: Member[], shown: Set<OptionalColumn>) {
   return [cols.map((c) => cell(c.label)).join(","), ...rows.map((m) => cols.map((c) => cell(c.value(m))).join(","))].join("\n");
 }
 
-/** "Dan Petrov, Kira Sandhu and 3 more": who a confirmation is about. */
-function nameList(people: Member[]) {
-  const names = people.slice(0, 5).map(fullName);
-  const rest = people.length - names.length;
-  if (rest > 0) return `${names.join(", ")} and ${rest} more`;
-  return names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}` : (names[0] ?? "");
-}
+/** Who a toast names: their full name, or their email when the name is missing. */
+const nameOf = (m: Member) => fullName(m) || m.email || "1 person";
+
+/** One person by name, several by count: "Priya Shah", "4 people". */
+const whom = (people: Member[]) => (people.length === 1 ? nameOf(people[0]) : plural(people.length, "person", "people"));
+
+/** An amount in Canadian dollars with cents, as the toasts and payment confirmation show it: "$25.00". */
+const cad = (n: number) => new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" }).format(n);
 
 function download(name: string, text: string) {
   const url = URL.createObjectURL(new Blob([text], { type: "text/csv" }));
@@ -863,9 +1139,7 @@ const FILTER_APPLY_FOR = 1200;
 type DialogState =
   | { kind: "add" }
   | { kind: "import" }
-  | { kind: "note" }
   | { kind: "details" }
-  | { kind: "membership" }
   | { kind: "payment"; payment?: Payment }
   | { kind: "deletePayment"; payment: Payment }
   | { kind: "deletePerson" }
@@ -893,9 +1167,11 @@ function Directory() {
         description: "The Tags filter can't load its options. Show the error in place of the picker; the other filters work.",
       },
     ],
-    notApplicable: ["readOnly", "staleData"],
+    /* Not found: the app's own 404 page covers it. */
+    notApplicable: ["readOnly", "staleData", "notFound"],
   });
   const load = useLabLoad(lab);
+  const router = useRouter();
   const [members, setMembers] = React.useState<Member[]>(demoMembers);
   const undoable = useUndoableUpdate(setMembers, lab.undoExpired);
   const [tagColors, setTagColors] = React.useState<Record<string, TagColor>>(() => Object.fromEntries(demoTags.map((t) => [t.name, t.color])));
@@ -915,7 +1191,7 @@ function Directory() {
   const [openFilter, setOpenFilter] = React.useState<FilterKey | null>(null);
   const justPicked = React.useRef<FilterKey | null>(null);
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
-  const [sort, setSort] = React.useState<TableSort>({ key: "ends", direction: "asc" });
+  const [sort, setSort] = React.useState<TableSort>({ key: "name", direction: "asc" });
   const [openId, setOpenId] = React.useState<string | null>(null);
   const membersRef = React.useRef(members);
   React.useEffect(() => {
@@ -929,7 +1205,7 @@ function Directory() {
     if (!session) return;
     const now = membersRef.current.find((m) => m.id === session.id);
     if (!now || now.tags.join("\n") === session.before.tags.join("\n")) return;
-    undoable("Tags updated", { before: [{ member: session.before, index: membersRef.current.indexOf(now) }] }, "Change undone");
+    undoable(`Updated ${nameOf(session.before)}'s tags`, { before: [{ member: session.before, index: membersRef.current.indexOf(now) }] }, `Restored ${nameOf(session.before)}'s tags`);
   };
   const flushTags = React.useRef(flushTagSession);
   React.useEffect(() => {
@@ -937,8 +1213,10 @@ function Directory() {
   });
   React.useEffect(() => () => flushTags.current(), [openId]);
   const [dialog, setDialog] = React.useState<DialogState>(null);
+  const [tagsOpen, setTagsOpen] = React.useState(false);
   /** The optional columns on show. Kept for the session. */
-  const [shown, setShown] = React.useState<Set<OptionalColumn>>(new Set());
+  const columnsRaw = React.useSyncExternalStore(subscribeColumns, readColumnsRaw, () => null);
+  const shown = React.useMemo(() => parseColumns(columnsRaw), [columnsRaw]);
 
   /* Retry can only hide a lab error locally (the flags live in the URL). Switching a flag off starts it over. */
   const [retried, setRetried] = React.useState({ list: false, tags: false, signedIn: false });
@@ -954,7 +1232,7 @@ function Directory() {
 
   const wasReconnecting = React.useRef(false);
   React.useEffect(() => {
-    if (wasReconnecting.current && !lab.reconnecting) toast({ title: "You're up to date." });
+    if (wasReconnecting.current && !lab.reconnecting) toast({ title: "Back online" });
     wasReconnecting.current = lab.reconnecting;
   }, [lab.reconnecting, toast]);
 
@@ -969,6 +1247,8 @@ function Directory() {
     return list;
   }, [members, lab.empty, lab.partialData, lab.longText, lab.manyItems, lab.singleItem]);
   const noPeople = pool.length === 0;
+  /** The title counts the default view: subscribed members. Unsubscribed and cancelled people are not counted. */
+  const memberCount = React.useMemo(() => pool.filter((m) => membershipOf(m) === "subscribed").length, [pool]);
   const intakeOptions = React.useMemo(
     () => ({
       interests: optionValues(pool, "interests"),
@@ -1038,6 +1318,7 @@ function Directory() {
 
   const chosen = pool.filter((m) => selected.has(m.id));
   const target = chosen.length ? chosen : rows;
+  const copyLabel = chosen.length ? `Copy email addresses of ${plural(chosen.length, "selected person", "selected people")}` : `Copy ${plural(rows.length, "email address", "email addresses")}`;
 
   const update = (id: string, change: (m: Member) => Member) => setMembers((list) => list.map((m) => (m.id === id ? change(m) : m)));
   const emailTaken = (email: string, except?: string) => members.some((m) => m.id !== except && m.email.toLowerCase() === email.trim().toLowerCase());
@@ -1060,14 +1341,14 @@ function Directory() {
 
   /** Adds every tag in one go per person, so each person's tags are only set once. */
   function tagPeople(tags: string[], people: Member[]) {
-    const ids: string[] = [];
+    const changed: Member[] = [];
     people.forEach((p) => {
       const missing = tags.filter((t) => !p.tags.includes(t));
       if (!missing.length) return;
-      ids.push(p.id);
+      changed.push(p);
       setTags(p.id, [...p.tags, ...missing]);
     });
-    undoable(`Added ${tags.join(", ")} to ${plural(ids.length, "person", "people")}`, snapshotOf(members, ids), `Restored ${plural(ids.length, "person", "people")}`);
+    undoable(`Tagged ${whom(changed)} ${tags.join(", ")}`, snapshotOf(members, changed.map((p) => p.id)), `Removed ${tags.join(", ")} from ${whom(changed)}`);
   }
 
   /** The CSV import: new people and tag additions to people already here, as one change with one Undo. */
@@ -1079,10 +1360,7 @@ function Directory() {
       firstName: d.firstName,
       lastName: d.lastName,
       email: d.email,
-      status: d.status,
-      kind: d.kind,
       joinedAt: d.joinedAt,
-      endsAt: d.endsAt,
       subscribed: true,
       tags: d.tags,
       payments: [],
@@ -1109,13 +1387,79 @@ function Directory() {
       }),
     ]);
     close();
-    undoable(`Added ${plural(created.length, "person", "people")}`, snap, "Change undone");
+    undoable(`Added ${whom(created)}`, snap, `Removed ${whom(created)}`);
+  }
+
+  /* ---------- managing tags (the Tags panel) ---------- */
+
+  /** Every tag with how many people have it, in the filters' order (colour, then A to Z). */
+  /* While the Tags panel is open, rows keep the order they opened in: recolouring doesn't move a tag until the panel closes. */
+  const [orderColors, setOrderColors] = React.useState<Record<string, TagColor> | null>(null);
+  if (tagsOpen && !orderColors) setOrderColors({ ...tagColors });
+  if (!tagsOpen && orderColors) setOrderColors(null);
+  const tagRows: TagRow[] = React.useMemo(() => {
+    const counts = new Map<string, number>(Object.keys(tagColors).map((t) => [t, 0]));
+    pool.forEach((m) => m.tags.forEach((t) => counts.set(t, (counts.get(t) ?? 0) + 1)));
+    const sortBy = { ...tagColors, ...(orderColors ?? {}) };
+    return [...counts.keys()].sort((a, b) => byColourThenName(a, b, sortBy)).map((name) => ({ name, color: tagColors[name], count: counts.get(name) ?? 0 }));
+  }, [pool, tagColors, orderColors]);
+
+  const sameTag = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
+  const swapTag = (list: string[], from: string, to: string) => list.map((t) => (sameTag(t, from) ? to : t));
+  function renameKey<T>(record: Record<string, T>, from: string, to: string): Record<string, T> {
+    return Object.fromEntries(Object.entries(record).map(([k, v]) => [k === from ? to : k, v]));
+  }
+  function withoutKey<T>(record: Record<string, T>, key: string): Record<string, T> {
+    return Object.fromEntries(Object.entries(record).filter(([k]) => k !== key));
+  }
+
+  /** Renames a tag everywhere: on every person who has it, its colour, and any filter using it. One Undo. */
+  function renameTag(from: string, to: string) {
+    /* The renamed tag keeps its place in the open Tags panel. */
+    setOrderColors((f) => f && renameKey(f, from, to));
+    const snap = snapshotOf(members, members.filter((m) => m.tags.includes(from)).map((m) => m.id));
+    setMembers((list) =>
+      list.map((m) =>
+        m.tags.includes(from)
+          ? { ...m, tags: m.tags.map((t) => (t === from ? to : t)), tagAddedAt: m.tagAddedAt && renameKey(m.tagAddedAt, from, to) }
+          : m,
+      ),
+    );
+    setTagColors((c) => renameKey(c, from, to));
+    setFilters((f) => ({ ...f, tags: swapTag(f.tags, from, to), notTags: swapTag(f.notTags, from, to) }));
+    undoable(`Renamed ${from} to ${to}`, snap, `Renamed ${to} back to ${from}`, () => {
+      setTagColors((c) => renameKey(c, to, from));
+      setFilters((f) => ({ ...f, tags: swapTag(f.tags, to, from), notTags: swapTag(f.notTags, to, from) }));
+    });
+  }
+
+  function recolorTag(name: string, color: TagColor) {
+    setTagColors((c) => ({ ...c, [name]: color }));
+  }
+
+  /** Deletes a tag: off every person, out of the colours and out of any filter. One Undo puts it all back. */
+  function deleteTag(name: string) {
+    const snap = snapshotOf(members, members.filter((m) => m.tags.includes(name)).map((m) => m.id));
+    const color = tagColors[name];
+    const inTags = filters.tags.some((t) => sameTag(t, name));
+    const inNotTags = filters.notTags.some((t) => sameTag(t, name));
+    setMembers((list) =>
+      list.map((m) =>
+        m.tags.includes(name) ? { ...m, tags: m.tags.filter((t) => t !== name), tagAddedAt: m.tagAddedAt && withoutKey(m.tagAddedAt, name) } : m,
+      ),
+    );
+    setTagColors((c) => withoutKey(c, name));
+    setFilters((f) => ({ ...f, tags: f.tags.filter((t) => !sameTag(t, name)), notTags: f.notTags.filter((t) => !sameTag(t, name)) }));
+    undoable(`Deleted the ${name} tag`, snap, `Restored the ${name} tag`, () => {
+      setTagColors((c) => ({ ...c, [name]: color }));
+      setFilters((f) => ({ ...f, tags: inTags ? [...f.tags, name] : f.tags, notTags: inNotTags ? [...f.notTags, name] : f.notTags }));
+    });
   }
 
   function copy(text: string, message: string) {
     navigator.clipboard?.writeText(text).then(
       () => toast({ title: message }),
-      () => toast({ title: "Couldn't copy", description: text }),
+      () => toast({ title: "Couldn't copy. Select it below to copy it yourself", description: text }),
     );
   }
 
@@ -1125,9 +1469,6 @@ function Directory() {
     if (next) setOpenId(next.id);
   }
 
-  const openIndex = rows.findIndex((m) => m.id === openId);
-  const hasPrev = openIndex > 0;
-  const hasNext = openIndex >= 0 && openIndex < rows.length - 1;
 
   /* ---------- keyboard and mouse on the list ---------- */
 
@@ -1380,6 +1721,13 @@ function Directory() {
     }, 0);
   }
 
+  /** Reset for a filter's popover: back to the default, or out of the row for one added from More with nothing chosen. */
+  function resetOf(key: FilterKey) {
+    if (isApplied(key, filters)) return { label: key === "joined" ? "Clear dates" : key === "membership" ? "Show subscribed only" : "Clear filter", run: () => removeFilter(key) };
+    if (moreFilters.includes(key)) return { label: "Remove filter", run: () => removeFilter(key) };
+    return undefined;
+  }
+
   function removeFilter(key: FilterKey) {
     setPinned((list) => list.filter((k) => k !== key));
     setOpenFilter(null);
@@ -1396,18 +1744,27 @@ function Directory() {
     refocus(null);
   }
 
-  /** A popover opens or closes. An intake filter closed with nothing chosen drops back behind More. */
+  /** A popover opens or closes. A filter added from More stays in the row, even empty, until its × removes it. */
   function changeOpen(key: FilterKey, open: boolean) {
     setOpenFilter((cur) => (open ? key : cur === key ? null : cur));
-    if (!open && moreFilters.includes(key) && !filters[key as "interests"].length) {
-      setPinned((list) => list.filter((k) => k !== key));
-      refocus(key);
-    }
   }
 
   /** A checkbox list for one filter. */
   const checkList = (key: CheckKey, label: string, options: { value: string; label: string }[]) => (
-    <CheckList fieldKey={key} label={label} options={options} pool={pool} filters={filters} q={sq} onChange={(values) => setFilter(key, values as never)} />
+    <CheckList
+      fieldKey={key}
+      label={label}
+      options={options}
+      pool={pool}
+      filters={filters}
+      q={sq}
+      onApply={(values) => {
+        setFilter(key, values as never);
+        changeOpen(key, false);
+      }}
+      onCancel={() => changeOpen(key, false)}
+      onReset={resetOf(key)}
+    />
   );
   const fromData = (values: string[]) => values.map((v) => ({ value: v, label: v }));
 
@@ -1418,15 +1775,22 @@ function Directory() {
           <TagsFailed onRetry={() => setRetried((r) => ({ ...r, tags: true }))} />
         ) : (
           <>
-            <OptionsNote>{filters.tagMode === "all" ? "Show people who have all of these tags." : "Show people who have any of these tags."}</OptionsNote>
-            <TagPicker aria-label="Tags" value={filters.tags} options={allTags} colors={tagColors} onValueChange={(tags) => setFilter("tags", tags)} />
-            <Reserved data-hidden={filters.tags.length < 2} aria-hidden={filters.tags.length < 2 ? true : undefined}>
-              <Checkbox
-                label="Must have all of them"
-                checked={filters.tagMode === "all"}
-                onCheckedChange={(on) => setFilter("tagMode", on === true ? "all" : "any")}
-              />
-            </Reserved>
+            <TagCheckList
+              fieldKey="tags"
+              label="Tags"
+              options={allTags}
+              colors={tagColors}
+              pool={pool}
+              filters={filters}
+              q={sq}
+              onApply={(tags) => {
+                setFilter("tags", tags);
+                setFilter("tagMode", "any");
+                changeOpen("tags", false);
+              }}
+              onCancel={() => changeOpen("tags", false)}
+              onReset={resetOf("tags")}
+            />
           </>
         )}
       </FilterEditor>
@@ -1437,48 +1801,41 @@ function Directory() {
           <TagsFailed onRetry={() => setRetried((r) => ({ ...r, tags: true }))} />
         ) : (
           <>
-            <OptionsNote>Hide people who have any of these tags.</OptionsNote>
-            <TagPicker aria-label="Not tagged" value={filters.notTags} options={allTags} colors={tagColors} onValueChange={(tags) => setFilter("notTags", tags)} />
+            <TagCheckList
+              fieldKey="notTags"
+              label="Not tagged"
+              options={allTags}
+              colors={tagColors}
+              pool={pool}
+              filters={filters}
+              q={sq}
+              onApply={(tags) => {
+                setFilter("notTags", tags);
+                changeOpen("notTags", false);
+              }}
+              onCancel={() => changeOpen("notTags", false)}
+              onReset={resetOf("notTags")}
+            />
           </>
         )}
       </FilterEditor>
     ),
-    status: checkList("status", "Status", (Object.keys(statusLabel) as MemberStatus[]).map((v) => ({ value: v, label: statusLabel[v] }))),
-    emails: (
-      <FilterEditor>
-        <RadioList>
-          <RadioGroup aria-label="Emails" value={filters.emails} onValueChange={(v) => setFilter("emails", v as Filters["emails"])}>
-            <RadioGroupOption value="on" label="Subscribed only" />
-            <RadioGroupOption value="any" label="Everyone" />
-            <RadioGroupOption value="off" label="Unsubscribed only" />
-          </RadioGroup>
-        </RadioList>
-      </FilterEditor>
+    membership: checkList(
+      "membership",
+      "Membership",
+      (Object.keys(membershipLabels) as Membership[]).map((v) => ({ value: v, label: membershipLabels[v] })),
     ),
     joined: (
       <FilterEditor>
-        <RadioList>
-        <RadioGroup
-          aria-label="Joined"
-          value={filters.joined.preset || "any"}
-          onValueChange={(v) => setFilter("joined", { ...filters.joined, preset: (v === "any" ? "" : v) as JoinedPreset })}
-        >
-          <RadioGroupOption value="any" label="Any time" />
-          {joinedPresets.map((o) => (
-            <RadioGroupOption key={o.value} value={o.value} label={o.label} />
-          ))}
-        </RadioGroup>
-        </RadioList>
-        {filters.joined.preset === "custom" && (
-          <>
-            <Field label="From">
-              {(props) => <DatePicker {...props} value={filters.joined.from} max={filters.joined.to || undefined} onValueChange={(v) => setFilter("joined", { ...filters.joined, from: v })} />}
-            </Field>
-            <Field label="To">
-              {(props) => <DatePicker {...props} value={filters.joined.to} min={filters.joined.from || undefined} onValueChange={(v) => setFilter("joined", { ...filters.joined, to: v })} />}
-            </Field>
-          </>
-        )}
+        <JoinedEditor
+          initial={filters.joined}
+          onApply={(rule) => {
+            setFilter("joined", rule);
+            changeOpen("joined", false);
+          }}
+          onCancel={() => changeOpen("joined", false)}
+          onReset={resetOf("joined")}
+        />
       </FilterEditor>
     ),
     interests: checkList("interests", "Interests", fromData(intakeOptions.interests)),
@@ -1496,60 +1853,29 @@ function Directory() {
         return filters.tags.length ? `Tagged ${joinWords(filters.tags, filters.tagMode === "all" ? "and" : "or")}` : "";
       case "notTags":
         return filters.notTags.length ? `Not tagged ${joinWords(filters.notTags, "or")}` : "";
-      case "status":
-        return filters.status.length ? `Status: ${joinWords(filters.status.map((v) => statusLabel[v]), "or")}` : "";
-      case "emails":
-        return filters.emails === "any" ? "Emails: everyone" : filters.emails === "off" ? "Emails off" : "";
+      case "membership":
+        return isDefaultMembership(filters.membership) ? "" : joinWords(filters.membership.map((v) => membershipLabels[v]), "or");
       case "joined": {
         const j = filters.joined;
-        if (j.preset === "custom") {
-          if (j.from && j.to) return `Joined ${formatDate(j.from)} to ${formatDate(j.to)}`;
-          if (j.from) return `Joined from ${formatDate(j.from)}`;
-          if (j.to) return `Joined up to ${formatDate(j.to)}`;
-          return "Joined in a custom range";
-        }
-        const phrase: Record<Exclude<JoinedPreset, "" | "custom">, string> = {
-          "30d": "in the last 30 days",
-          "3m": "in the last 3 months",
-          year: "this year",
-          before: "before this year",
-        };
-        return j.preset ? `Joined ${phrase[j.preset]}` : "";
+        if (!j.from && !j.to) return "";
+        const rule = formatDateRule(j);
+        return `Joined ${rule[0].toLowerCase()}${rule.slice(1)}`;
       }
       default:
         return filters[key].length ? `${filterLabels[key]}: ${joinWords(filters[key], "or")}` : "";
     }
   };
   const filterSummary = (key: FilterKey) => summaryOf(key, filters);
-  /** The chips and the results line follow the filters as they stood when the last editor closed, so nothing above the table moves while a popover is open. */
-  const settledSummary = (key: FilterKey) => summaryOf(key, settled.filters);
-  /** The filters with a value, in row order: each gets a chip under the search. */
-  const appliedKeys = [...quickFilters, ...moreFilters].filter((key) => settledSummary(key));
+  /** How many values an applied filter has: the number in its button's circle. A date rule counts as one. */
+  const appliedCount = (key: FilterKey) => (key === "joined" ? 1 : filters[key].length);
 
-  /** One tag pill per chosen tag, in its own colour, each with its own ×. */
-  const tagChips = (key: "tags" | "notTags") => {
-    const f = settled.filters;
-    const lead = key === "notTags" ? "Not tagged" : f.tagMode === "all" ? "Tagged all of" : "Tagged";
-    return (
-      <TagChipGroup key={key} role="group" aria-label={lead} data-filter={key}>
-        <ChipLead aria-hidden="true">{lead}</ChipLead>
-        {f[key].map((t) => (
-          <RemovableTag
-            key={t}
-            color={tagColors[t]}
-            onRemove={() => {
-              const left = filters[key].filter((x) => x !== t);
-              setFilter(key, left);
-              if (key === "tags" && !left.length) setFilter("tagMode", "any");
-              setOpenFilter(null);
-            }}
-          >
-            {t}
-          </RemovableTag>
-        ))}
-      </TagChipGroup>
-    );
-  };
+
+  /** How many people in the directory have each tag, for the Tags column filter. */
+  const tagCounts = React.useMemo(() => {
+    const out = new Map<string, number>();
+    for (const m of pool) for (const t of m.tags) out.set(t, (out.get(t) ?? 0) + 1);
+    return out;
+  }, [pool]);
 
   const columns: TableColumn<Member>[] = [
     {
@@ -1590,64 +1916,14 @@ function Directory() {
       header: "Name",
       sortKey: "name",
       render: (m) => {
-        const needle = sq.trim().toLowerCase();
-        const hits = needle ? m.tags.filter((t) => t.toLowerCase().includes(needle)) : [];
-        const notice = endNotice(m.endsAt);
         return (
           <NameStack>
             <NameCell>
               <Wrap>{fullName(m) || "No name"}</Wrap>
-              {hits.map((t) => (
-                <Tag key={t} color={tagColors[t]}>
-                  {t}
-                </Tag>
-              ))}
-              {notice && (
-                <MobileBadge>
-                  <Badge $variant={notice.tone}>{notice.text}</Badge>
-                </MobileBadge>
-              )}
+              {m.cancelledAt ? <Badge>Cancelled</Badge> : !m.subscribed && <Badge>Unsubscribed</Badge>}
             </NameCell>
             <MobileEmail>{m.email || "No email"}</MobileEmail>
           </NameStack>
-        );
-      },
-    },
-    { key: "email", header: "Email", sortKey: "email", render: (m) => <Wrap>{m.email || "No email"}</Wrap> },
-    {
-      key: "flags",
-      header: "Status",
-      sortKey: "status",
-      render: (m) => {
-        const notice = endNotice(m.endsAt);
-        return (
-          <Flags>
-            {notice && <Badge $variant={notice.tone}>{notice.text}</Badge>}
-          </Flags>
-        );
-      },
-    },
-    {
-      key: "ends",
-      header: "Ends",
-      sortKey: "ends",
-      render: (m) => <Ends>{formatDate(m.endsAt)}</Ends>,
-    },
-    {
-      key: "tags",
-      header: "Tags",
-      render: (m) => {
-        const newest = tagsByRecency(m);
-        const rest = newest.length - 2;
-        return (
-          <TagsCell>
-            {newest.slice(0, 2).map((t) => (
-              <CellTag key={t} color={tagColors[t]}>
-                {t}
-              </CellTag>
-            ))}
-            {rest > 0 && <More>+{rest}</More>}
-          </TagsCell>
         );
       },
     },
@@ -1656,14 +1932,71 @@ function Directory() {
       .map(([key, label]): TableColumn<Member> => {
         const blank = "—";
         switch (key) {
+          case "email":
+            return {
+              key,
+              header: label,
+              sortKey: key,
+              /* Clicking an email copies it (the rest of the row still opens the person). */
+              render: (m) =>
+                m.email ? (
+                  <EmailCopy
+                    type="button"
+                    $variant="ghost"
+                    $size="sm"
+                    aria-label={`Copy ${m.email}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      copy(m.email, `Copied ${m.email}`);
+                    }}
+                    onKeyDown={(e) => e.stopPropagation()}
+                  >
+                    <span>{m.email}</span>
+                    <CopyHint aria-hidden="true">
+                      <Icon icon={Copy} size={14} />
+                    </CopyHint>
+                  </EmailCopy>
+                ) : (
+                  <Wrap>No email</Wrap>
+                ),
+            };
+          case "tags":
+            return {
+              key: "tags",
+              header: "Tags",
+              /* The same filter as the Tags button above the table: picking tags here sets it, "any of them" by default. */
+              filter: {
+                label: "Tag",
+                options: [...allTags].sort((a, b) => byColourThenName(a, b, tagColors)).map((t) => ({ value: t, label: t, count: tagCounts.get(t) ?? 0, display: <Tag color={tagColors[t]}>{t}</Tag> })),
+                selected: filters.tags,
+                onChange: (tags) => {
+                  setFilter("tags", tags);
+                  if (tags.length < 2) setFilter("tagMode", "any");
+                },
+              },
+              render: (m) => {
+                const newest = tagsByRecency(m);
+                const rest = newest.length - 2;
+                return (
+                  <TagsCell>
+                    {newest.slice(0, 2).map((t) => (
+                      <CellTag key={t} color={tagColors[t]}>
+                        {t}
+                      </CellTag>
+                    ))}
+                    {rest > 0 && <More>+{rest}</More>}
+                  </TagsCell>
+                );
+              },
+            };
+          case "value":
+            return { key, header: label, sortKey: key, align: "right", defaultSortDirection: "desc", render: (m) => <Ends>{formatMoney(totalPaid(m))}</Ends> };
           case "joined":
             return { key, header: label, sortKey: key, defaultSortDirection: "desc", render: (m) => <Ends>{formatDate(m.joinedAt)}</Ends> };
           case "location":
             return { key, header: label, sortKey: key, render: (m) => <Wrap>{m.intake?.location || blank}</Wrap> };
           case "referred":
             return { key, header: label, sortKey: key, render: (m) => <Wrap>{m.referredBy || blank}</Wrap> };
-          case "emails":
-            return { key, header: label, sortKey: key, render: (m) => (m.subscribed ? "On" : "Off") };
         }
       }),
     {
@@ -1681,6 +2014,10 @@ function Directory() {
             </DropdownMenuTrigger>
           </Tooltip>
           <DropdownMenuContent align="end">
+            {/* Name is always shown: it's how you tell people apart. */}
+            <DropdownMenuCheckboxItem checked disabled>
+              Name
+            </DropdownMenuCheckboxItem>
             {optionalColumns.map(([key, label]) => (
               <DropdownMenuCheckboxItem
                 key={key}
@@ -1699,26 +2036,26 @@ function Directory() {
   ];
 
   function exportCsv(people: Member[]) {
-    if (!people.length) return toast({ title: "No one to export" });
-    download("sdc-members.csv", toCsv(people, shown));
-    toast({ title: `Exported ${plural(people.length, "person", "people")}` });
+    if (!people.length) return toast({ title: "No people to download" });
+    download("sdc-people.csv", toCsv(people, shown));
+    toast({ title: `Downloaded a spreadsheet of ${plural(people.length, "person", "people")}` });
   }
 
   function copyEmails(people: Member[]) {
     const emails = people.map((p) => p.email.trim()).filter(Boolean);
-    if (!emails.length) return toast({ title: "No emails to copy" });
-    copy(emails.join(", "), `Copied ${plural(emails.length, "email")}`);
+    if (!emails.length) return toast({ title: "No email addresses to copy" });
+    copy(emails.join(", "), `Copied ${plural(emails.length, "email address", "email addresses")}`);
   }
 
   /** Removes the tags from everyone who has any of them. */
   function removeTags(tags: string[], people: Member[]) {
-    const ids: string[] = [];
+    const changed: Member[] = [];
     people.forEach((p) => {
       if (!p.tags.some((t) => tags.includes(t))) return;
-      ids.push(p.id);
+      changed.push(p);
       setTags(p.id, p.tags.filter((t) => !tags.includes(t)));
     });
-    undoable(`Removed ${tags.join(", ")} from ${plural(ids.length, "person", "people")}`, snapshotOf(members, ids), `Restored ${plural(ids.length, "person", "people")}`);
+    undoable(`Removed ${tags.join(", ")} from ${whom(changed)}`, snapshotOf(members, changed.map((p) => p.id)), `${tags.join(", ")} put back on ${whom(changed)}`);
   }
 
   /** Permanent: the people leave the directory, the selection and, if open, the sheet. */
@@ -1728,17 +2065,17 @@ function Directory() {
     setMembers((list) => list.filter((m) => !ids.has(m.id)));
     setSelected((s) => new Set([...s].filter((id) => !ids.has(id))));
     if (openId && ids.has(openId)) setOpenId(null);
-    undoable(`Deleted ${plural(people.length, "person", "people")}`, snap, `Restored ${plural(people.length, "person", "people")}`);
+    // Stopping someone's payments can't be taken back, so a delete that includes anyone who pays has no Undo.
+    if (people.some(isPaying)) toast({ title: `Deleted ${whom(people)}` });
+    else undoable(`Deleted ${whom(people)}`, snap, `Restored ${whom(people)}`);
   }
 
   function toggleColumn(key: OptionalColumn, on: boolean) {
-    setShown((s) => {
-      const next = new Set(s);
-      if (on) next.add(key);
-      else next.delete(key);
-      return next;
-    });
-    if (!on && sort.key === key) setSort({ key: "ends", direction: "asc" });
+    const next = new Set(shown);
+    if (on) next.add(key);
+    else next.delete(key);
+    saveColumns(next);
+    if (!on && sort.key === key) setSort({ key: "name", direction: "asc" });
   }
 
   /* The floating bar stays mounted for the length of its exit animation. */
@@ -1767,7 +2104,7 @@ function Directory() {
      selection; Shift, Ctrl or Cmd adds to it. It never starts on buttons, links, column headings or checkboxes. */
   const boxBase = React.useRef<Set<string>>(new Set());
   const marqueeBox = useMarquee({
-    enabled: !lab.notFound && !lab.noPermission && !load.loading && !(lab.loadFailed && !retried.list) && !listFailed && rows.length > 0,
+    enabled: !lab.noPermission && !load.loading && !(lab.loadFailed && !retried.list) && !listFailed && rows.length > 0,
     canStart: (target) => !target.closest("button, a, th, [role='checkbox']"),
     onStart: (e) => {
       boxBase.current = e.shiftKey || e.ctrlKey || e.metaKey ? new Set(selected) : new Set();
@@ -1782,8 +2119,7 @@ function Directory() {
     },
   });
 
-  if (lab.notFound) return <AccessState kind="not-found" />;
-  if (lab.noPermission) return <AccessState kind="no-permission" />;
+  if (lab.noPermission) return <AccessState />;
 
   const loading = load.loading;
   const pageFailed = lab.loadFailed && !retried.list;
@@ -1805,35 +2141,57 @@ function Directory() {
           loading || pageFailed || listFailed ? (
             "People"
           ) : (
-            <>
+            <TitleRow>
               People
-              <TitleCount aria-hidden="true">{pool.length}</TitleCount>
-              <VisuallyHidden>{`, ${plural(pool.length, "person", "people")}`}</VisuallyHidden>
-            </>
+              <TitleCount aria-hidden="true">({memberCount})</TitleCount>
+              <VisuallyHidden>{`, ${memberCount} subscribed`}</VisuallyHidden>
+            </TitleRow>
           )
         }
         actions={
           <>
             {showList && (
-              <Tooltip content="Export CSV">
-                <Button type="button" $variant="secondary" aria-label="Export CSV" onClick={() => exportCsv(chosen.length ? chosen : rows)}>
-                  <Icon icon={Download} size={16} />
-                </Button>
+              <Tooltip content={copyLabel}>
+                <HeaderIconButton type="button" $variant="secondary" aria-label={copyLabel} onClick={() => copyEmails(target)}>
+                  <Icon icon={Copy} size={16} />
+                </HeaderIconButton>
               </Tooltip>
             )}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button type="button">
-                  <Icon icon={Plus} size={16} />
-                  Add member
-                  <Icon icon={ChevronDown} size={14} />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={() => setDialog({ kind: "add" })}>Add one member</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => setDialog({ kind: "import" })}>Import from CSV</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {showList && (
+              <Tooltip content="Download as spreadsheet">
+                <HeaderIconButton type="button" $variant="secondary" aria-label="Download as spreadsheet" onClick={() => exportCsv(target)}>
+                  <Icon icon={Download} size={16} />
+                </HeaderIconButton>
+              </Tooltip>
+            )}
+            <Tooltip content="Manage tags">
+              <HeaderIconButton type="button" $variant="secondary" aria-label="Manage tags" onClick={() => setTagsOpen(true)}>
+                <Icon icon={Tags} size={16} />
+              </HeaderIconButton>
+            </Tooltip>
+            <SplitButton>
+              <Button type="button" onClick={() => setDialog({ kind: "add" })}>
+                <Icon icon={Plus} size={16} />
+                Add person
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button type="button" aria-label="More ways to add people">
+                    <Icon icon={ChevronDown} size={16} />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onSelect={() => setDialog({ kind: "import" })}>
+                    <Icon icon={FileUp} size={16} />
+                    Import from a spreadsheet
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => router.push("/design/signup-links")}>
+                    <Icon icon={Link2} size={16} />
+                    Create sign-up link
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </SplitButton>
           </>
         }
       />
@@ -1842,12 +2200,14 @@ function Directory() {
       {!loading && (pageFailed || listFailed) && <ListFailed onRetry={() => setRetried((r) => ({ ...r, list: true }))} />}
 
       <FilterArea>
+      {/* Nothing to search or filter when the list couldn't load. */}
+      {!(pageFailed || listFailed) && (
       <ToolbarBox>
       <Toolbar>
         <SearchBox>
           <SearchField
-            aria-label="Search by name, email or tag"
-            placeholder="Search name, email or tag"
+            aria-label="Search names, emails and tags"
+            placeholder="Search names, emails and tags"
             value={q}
             pending={search.pending}
             onChange={(e) => {
@@ -1862,6 +2222,7 @@ function Directory() {
           {[...quickFilters, ...moreFilters.filter((key) => filterSummary(key) || pinned.includes(key))].map((key) => {
             const summary = filterSummary(key);
             const active = summary !== "";
+            /* Added from More: it stays in the row, applied or not, until Remove filter in its popover takes it away. */
             return (
               <Popover key={key} open={openFilter === key} onOpenChange={(o) => changeOpen(key, o)}>
                 <PopoverTrigger asChild>
@@ -1870,23 +2231,25 @@ function Directory() {
                       triggers.current[key] = el;
                     }}
                     type="button"
-                    $variant={active ? "secondary" : "outline"}
-                    $size="sm"
+                    $variant="outline"
+                    data-applied={active ? "" : undefined}
                     aria-label={active ? `${filterLabels[key]}, applied: ${summary}` : undefined}
                   >
-                    <AppliedMark data-on={active} aria-hidden="true">
-                      <Icon icon={Check} size={14} />
-                    </AppliedMark>
                     {filterLabels[key]}
+                    {active && <AppliedCount aria-hidden="true">{appliedCount(key)}</AppliedCount>}
                     <Icon icon={ChevronDown} size={14} />
                   </FilterButton>
                 </PopoverTrigger>
-                {intakeFilters.includes(key) || key === "tags" || key === "notTags" ? (
-                  <WidePopover side="bottom" align="start" collisionPadding={16} showClose={false} aria-label={filterLabels[key]}>
+                {key === "joined" ? (
+                  <DatePopover side="bottom" align="start" sideOffset={4} collisionPadding={16} showClose={false} showArrow={false} aria-label={filterLabels[key]}>
+                    <FilterOptionsLoader slow={lab.slowLoading}>{filterEditor[key]}</FilterOptionsLoader>
+                  </DatePopover>
+                ) : intakeFilters.includes(key) || key === "tags" || key === "notTags" ? (
+                  <WidePopover side="bottom" align="start" sideOffset={4} collisionPadding={16} showClose={false} showArrow={false} aria-label={filterLabels[key]}>
                     <FilterOptionsLoader slow={lab.slowLoading}>{filterEditor[key]}</FilterOptionsLoader>
                   </WidePopover>
                 ) : (
-                  <PopoverContent side="bottom" align="start" collisionPadding={16} showClose={false} aria-label={filterLabels[key]}>
+                  <PopoverContent side="bottom" align="start" sideOffset={4} collisionPadding={16} showClose={false} showArrow={false} aria-label={filterLabels[key]}>
                     <FilterOptionsLoader slow={lab.slowLoading}>{filterEditor[key]}</FilterOptionsLoader>
                   </PopoverContent>
                 )}
@@ -1896,8 +2259,8 @@ function Directory() {
           {moreFilters.some((key) => !filterSummary(key) && !pinned.includes(key)) && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <FilterButton ref={moreButton} type="button" $variant="outline" $size="sm">
-                  More
+                <FilterButton ref={moreButton} type="button" $variant="outline">
+                  More filters
                   <Icon icon={ChevronDown} size={14} />
                 </FilterButton>
               </DropdownMenuTrigger>
@@ -1931,68 +2294,13 @@ function Directory() {
       )}
       </Toolbar>
       </ToolbarBox>
+      )}
 
       {showList && (
-        <SummaryRow>
-          {appliedKeys.length > 0 && (
-            <AppliedRow role="group" aria-label="Applied filters">
-              {appliedKeys.map((key) =>
-                key === "tags" || key === "notTags" ? (
-                  tagChips(key)
-                ) : (
-                  <FilterGroup key={key} data-filter={key}>
-                    <ChipButton type="button" $variant="ghost" $size="sm" onClick={() => setOpenFilter(key)} aria-label={`Change filter: ${settledSummary(key)}`}>
-                      <ChipLabel>{settledSummary(key)}</ChipLabel>
-                    </ChipButton>
-                    <ChipRemove type="button" $variant="ghost" $size="sm" aria-label={`Remove filter: ${settledSummary(key)}`} onClick={() => removeFilter(key)}>
-                      <Icon icon={X} size={14} />
-                    </ChipRemove>
-                  </FilterGroup>
-                ),
-              )}
-            </AppliedRow>
-          )}
-          <ResultsLine role="status" aria-live="polite" aria-atomic="true">
-            {(() => {
-              const term = settled.term;
-              const nFilters = filterCount(settled.applied);
-              if (!term && !nFilters) {
-                /* The default view: unsubscribed people stay out of the list until asked for. */
-                if (settled.filters.emails !== "on") return null;
-                return (
-                  <>
-                    <span>Unsubscribed people are hidden.</span>
-                    <Button type="button" $variant="ghost" $size="sm" onClick={() => setFilter("emails", "any")}>
-                      Show them
-                    </Button>
-                  </>
-                );
-              }
-              const n = settled.n;
-              const noun = n === 1 ? "person" : "people";
-              const verb = n === 1 ? "matches" : "match";
-              const what = term && nFilters ? `“${term}” and these filters` : term ? `“${term}”` : "these filters";
-              const clear = term && nFilters ? "Clear all" : term ? "Clear search" : "Clear filters";
-              return (
-                <>
-                  <span>{`${n} ${noun} ${verb} ${what}`}</span>
-                  <Button
-                    type="button"
-                    $variant="ghost"
-                    $size="sm"
-                    onClick={() => {
-                      if (term) setQ("");
-                      if (nFilters) clearFilters();
-                      else setSelected(new Set());
-                    }}
-                  >
-                    {clear}
-                  </Button>
-                </>
-              );
-            })()}
-          </ResultsLine>
-        </SummaryRow>
+        /* The visible results line is gone (the filter buttons already show what's applied); screen readers still hear the count. */
+        <VisuallyHidden role="status" aria-live="polite" aria-atomic="true">
+          {settled.term || filterCount(settled.applied) ? `${plural(settled.n, "person", "people")} ${settled.n === 1 ? "matches" : "match"}` : ""}
+        </VisuallyHidden>
       )}
       </FilterArea>
 
@@ -2001,6 +2309,7 @@ function Directory() {
       <VisuallyHidden role="status">{pageLoading || filterPending ? "Updating results" : ""}</VisuallyHidden>
       <Table
         aria-label="People"
+        stickyColumns={2}
         columns={columns}
         rows={pageRows}
         busy={pageLoading || filterPending}
@@ -2024,22 +2333,22 @@ function Directory() {
               !noPeople
                 ? {
                     icon: UsersRound,
-                    title: "No subscribed people",
-                    description: "Unsubscribed people are hidden.",
+                    title: "No one is subscribed",
+                    description: "Unsubscribed and cancelled people are hidden",
                     action: (
-                      <Button type="button" $variant="secondary" onClick={() => setFilter("emails", "any")}>
-                        Show them
+                      <Button type="button" $variant="secondary" onClick={() => setFilter("membership", ["subscribed", "unsubscribed", "cancelled"])}>
+                        Show everyone
                       </Button>
                     ),
                   }
                 : {
                     icon: UsersRound,
-                    title: "No one here yet",
-                    description: "Add a member, or import the people who already pay.",
+                    title: "No people yet",
+                    description: "Add a person, or import people from a spreadsheet",
                     action: (
                       <Button type="button" onClick={() => setDialog({ kind: "add" })}>
                         <Icon icon={Plus} size={16} />
-                        Add member
+                        Add person
                       </Button>
                     ),
                   }
@@ -2080,14 +2389,21 @@ function Directory() {
           <BarCount role="status" aria-live="polite">
             {lastCount.current} selected
           </BarCount>
-          <BarDivider aria-hidden="true" />
+          {/* Order: who's selected, then what to do with them (most used first), then the one destructive action on its
+              own, then dismiss. Dividers split the groups. Select all is words, not an icon: it widens the selection. */}
           {chosen.length < rows.length && (
-            <Tooltip content={`Select all ${rows.length}`}>
-              <BarIconButton type="button" $variant="ghost" aria-label={`Select all ${rows.length}`} onClick={() => setSelected(new Set(rows.map((m) => m.id)))}>
-                <Icon icon={ListChecks} size={16} />
-              </BarIconButton>
-            </Tooltip>
+            <>
+              <WideOnly type="button" $variant="ghost" $size="sm" onClick={() => setSelected(new Set(rows.map((m) => m.id)))}>
+                Select all {rows.length}
+              </WideOnly>
+              <Tooltip content={`Select all ${rows.length}`}>
+                <NarrowOnly type="button" $variant="ghost" aria-label={`Select all ${rows.length}`} onClick={() => setSelected(new Set(rows.map((m) => m.id)))}>
+                  <Icon icon={ListChecks} size={16} />
+                </NarrowOnly>
+              </Tooltip>
+            </>
           )}
+          <BarDivider aria-hidden="true" />
           <BulkTagsPopover
             people={target}
             allTags={allTags}
@@ -2097,11 +2413,17 @@ function Directory() {
           >
             <BarTagsButton />
           </BulkTagsPopover>
-          <Tooltip content="Copy emails">
-            <BarIconButton type="button" $variant="ghost" aria-label="Copy emails" onClick={() => copyEmails(target)}>
+          <Tooltip content="Copy email addresses">
+            <BarIconButton type="button" $variant="ghost" aria-label="Copy email addresses" onClick={() => copyEmails(target)}>
               <Icon icon={Copy} size={16} />
             </BarIconButton>
           </Tooltip>
+          <Tooltip content="Download as spreadsheet">
+            <BarIconButton type="button" $variant="ghost" aria-label="Download as spreadsheet" onClick={() => exportCsv(target)}>
+              <Icon icon={Download} size={16} />
+            </BarIconButton>
+          </Tooltip>
+          <BarDivider aria-hidden="true" />
           <Tooltip content="Delete">
             <BarIconButton type="button" $variant="ghost" aria-label="Delete" onClick={() => setDialog({ kind: "deleteMany", people: target })}>
               <Icon icon={Trash2} size={16} />
@@ -2116,19 +2438,23 @@ function Directory() {
         </SelectionBar>
       )}
 
+      <TagManager open={tagsOpen} onOpenChange={setTagsOpen} tags={tagRows} onRename={renameTag} onRecolor={recolorTag} onDelete={deleteTag} />
+
       <MemberSheet
         member={open}
         open={Boolean(open)}
         onOpenChange={(o) => !o && setOpenId(null)}
-        hasPrev={hasPrev}
-        hasNext={hasNext}
         tagColors={tagColors}
         allTags={allTags}
         onStep={step}
         actions={{
-          onEditNote: () => setDialog({ kind: "note" }),
+          onSaveNote: (text) => {
+            if (!open) return;
+            if (text === (open.note?.text ?? "")) return;
+            /* No toast: the note is edited in place, so the saved text on screen is the confirmation. */
+            update(open.id, (m) => ({ ...m, note: text ? { text, updatedAt: TODAY, by: "Suhanya" } : undefined }));
+          },
           onEditDetails: () => setDialog({ kind: "details" }),
-          onChangeMembership: () => setDialog({ kind: "membership" }),
           onRecordPayment: () => setDialog({ kind: "payment" }),
           onEditPayment: (payment) => setDialog({ kind: "payment", payment }),
           onDelete: () => setDialog({ kind: "deletePerson" }),
@@ -2154,14 +2480,10 @@ function Directory() {
               firstName: d.firstName,
               lastName: d.lastName,
               email: d.email,
-              status: d.kind === "paid" ? "waiting" : "member",
-              kind: d.kind,
-              amount: d.amount,
               joinedAt: d.joinedAt,
-              endsAt: defaultEnd(d.joinedAt),
               subscribed: true,
               tags: [],
-              payments: [],
+              payments: d.amount ? [{ id: newId("p"), amount: d.amount, date: d.joinedAt, method: d.method }] : [],
               activity: [{ id: newId("a"), kind: "joined", title: joinedTitle("Added by an admin"), at: d.joinedAt }],
               howJoined: "Added by an admin",
               referrals: [],
@@ -2169,7 +2491,7 @@ function Directory() {
             setMembers((list) => [m, ...list]);
             close();
             setOpenId(m.id);
-            undoable(`Added ${d.firstName}`, { before: [], created: [m.id] }, "Change undone", () => setOpenId((id) => (id === m.id ? null : id)));
+            undoable(`Added ${nameOf(m)}`, { before: [], created: [m.id] }, `Removed ${nameOf(m)}`, () => setOpenId((id) => (id === m.id ? null : id)));
           }}
         />
       )}
@@ -2184,20 +2506,6 @@ function Directory() {
         />
       )}
 
-      {open && dialog?.kind === "note" && (
-        <NoteDialog
-          open
-          onOpenChange={close}
-          initial={open.note?.text}
-          onSave={(text) => {
-            const snap = snapshotOf(members, [open.id]);
-            update(open.id, (m) => ({ ...m, note: text ? { text, updatedAt: TODAY, by: "Suhanya" } : undefined }));
-            close();
-            undoable(text ? "Note saved" : "Note cleared", snap, "Change undone");
-          }}
-        />
-      )}
-
       {open && dialog?.kind === "details" && (
         <EditDetailsDialog
           open
@@ -2208,21 +2516,7 @@ function Directory() {
             const snap = snapshotOf(members, [open.id]);
             update(open.id, (m) => ({ ...m, ...d }));
             close();
-            undoable("Details saved", snap, "Change undone");
-          }}
-        />
-      )}
-
-      {open && dialog?.kind === "membership" && (
-        <ChangeMembershipDialog
-          open
-          onOpenChange={close}
-          member={open}
-          onSave={(d) => {
-            const snap = snapshotOf(members, [open.id]);
-            update(open.id, (m) => ({ ...m, kind: d.kind, amount: d.amount, endsAt: d.endsAt, status: d.endsAt < TODAY ? "ended" : m.status === "ended" ? "member" : m.status }));
-            close();
-            undoable("Membership changed", snap, "Change undone");
+            undoable(`Updated ${nameOf(open)}'s details`, snap, `Restored ${nameOf(open)}'s previous details`);
           }}
         />
       )}
@@ -2240,12 +2534,12 @@ function Directory() {
             const snap = snapshotOf(members, [open.id]);
             if (editing) {
               update(open.id, (m) => ({ ...m, payments: m.payments.map((p) => (p.id === editing.id ? { ...p, amount: d.amount, date: d.date, method: d.method, note: d.note || undefined } : p)) }));
-              undoable("Payment updated", snap, "Change undone");
+              undoable(`Updated ${nameOf(open)}'s payment`, snap, `Restored the ${cad(editing.amount)} payment`);
             } else {
               const forName = d.forId ? fullName(members.find((x) => x.id === d.forId) ?? open) : undefined;
               const payment: Payment = { id: newId("p"), amount: d.amount, date: d.date, method: d.method, note: d.note || undefined, giftFor: forName };
-              update(open.id, (m) => ({ ...m, payments: [payment, ...m.payments], status: forName ? m.status : "member" }));
-              undoable(`Recorded ${new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" }).format(d.amount)}`, snap, "Change undone");
+              update(open.id, (m) => ({ ...m, payments: [payment, ...m.payments] }));
+              undoable(`Recorded ${cad(d.amount)}`, snap, `Removed the ${cad(d.amount)} payment`);
             }
             close();
           }}
@@ -2256,42 +2550,35 @@ function Directory() {
         <ConfirmDialog
           open
           onOpenChange={close}
-          title="Delete this payment?"
-          description={`It's removed from ${fullName(open)}'s payments and their total.`}
+          title={`Delete the ${cad(dialog.payment.amount)} payment?`}
+          description={`${nameOf(open)}'s lifetime value goes down by ${cad(dialog.payment.amount)}`}
           confirm="Delete payment"
           onConfirm={() => {
             const snap = snapshotOf(members, [open.id]);
             update(open.id, (m) => ({ ...m, payments: m.payments.filter((p) => p.id !== dialog.payment.id) }));
             close();
-            undoable("Payment deleted", snap, "Change undone");
+            undoable(`Deleted the ${cad(dialog.payment.amount)} payment`, snap, `Restored the ${cad(dialog.payment.amount)} payment`);
           }}
         />
       )}
 
       {open && dialog?.kind === "deletePerson" && (
-        <ConfirmDialog
+        <DeletePeopleDialog
           open
           onOpenChange={close}
-          title={`Delete ${fullName(open)}?`}
-          description="They will be deleted from the directory, along with their history."
-          confirm="Delete person"
+          people={[open]}
           onConfirm={() => {
-            const snap = snapshotOf(members, [open.id]);
-            setMembers((list) => list.filter((m) => m.id !== open.id));
-            setOpenId(null);
+            deletePeople([open]);
             close();
-            undoable(`Deleted ${fullName(open)}`, snap, "Restored 1 person");
           }}
         />
       )}
 
       {dialog?.kind === "deleteMany" && (
-        <ConfirmDialog
+        <DeletePeopleDialog
           open
           onOpenChange={close}
-          title={dialog.people.length === 1 ? `Delete ${fullName(dialog.people[0])}?` : `Delete ${dialog.people.length} people?`}
-          description={`${nameList(dialog.people)} will be deleted from the directory, along with their history.`}
-          confirm={dialog.people.length === 1 ? "Delete person" : `Delete ${dialog.people.length} people`}
+          people={dialog.people}
           onConfirm={() => {
             deletePeople(dialog.people);
             close();

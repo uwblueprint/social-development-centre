@@ -38,7 +38,8 @@ Check `git config user.name` and work in that person's folder:
    - If they decline, don't know, or say it's not needed, pass `disabledReason={null}` and move on.
 6. **Never convey state with color alone.** Errors pair color with an icon and a message; selected items pair fill with a check or position; statuses pair color with a text label.
 7. **Accessibility is WCAG 2.2 AA:** 4.5:1 text contrast in every state (including hover, selected and disabled text you expect people to read), 3:1 for control borders and icons, visible focus, full keyboard support, and a pointer/touch path for anything keyboard-first.
-8. `pnpm check` (typecheck, lint, axe accessibility test) must pass before you push. CI runs the same checks.
+8. **Text fields tell active from focused.** A click or tap into a text field shows the active state (darker 1px border, no ring); arriving by keyboard shows the kit focus ring. Use the kit's text controls, which do this; never write `:focus` or `:focus-visible` styles for a text input, and never remove the ring for keyboard users.
+9. `pnpm check` (typecheck, lint, axe accessibility test) must pass before you push. CI runs the same checks.
 
 ## How to build a flow
 

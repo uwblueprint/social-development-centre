@@ -71,13 +71,6 @@ export function DateRulePicker({ value, onValueChange, label, disabled, onOpenCh
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openRequest]);
 
-  // Switching rule keeps the first date; Between fills the end with the end of that month.
-  function setOp(next: RangeCalendarMode) {
-    if (next === value.op) return;
-    const from = value.from || monthOf(new Date()).from;
-    onValueChange(next === "between" ? { op: next, from, to: value.to || monthOf(dateOf(from)).to } : { op: next, from, to: "" });
-  }
-
   const text = formatDateRule(value);
   return (
     <Box ref={boxRef}>
@@ -93,22 +86,41 @@ export function DateRulePicker({ value, onValueChange, label, disabled, onOpenCh
           </Trigger>
         </PopoverTrigger>
         <Content align="start" showClose={false}>
-          <Switcher>
-            <ToggleGroup type="single" value={value.op} onValueChange={(v) => v && setOp(v as RangeCalendarMode)} aria-label={`${label} rule`}>
-              <ToggleGroupItem value="before">Before</ToggleGroupItem>
-              <ToggleGroupItem value="after">After</ToggleGroupItem>
-              <ToggleGroupItem value="between">Between</ToggleGroupItem>
-            </ToggleGroup>
-          </Switcher>
-          <RangeCalendar
-            mode={value.op}
-            value={{ from: value.from, to: value.to }}
-            onValueChange={(v) => onValueChange({ ...value, from: v.from ?? "", to: v.to ?? "" })}
-            aria-label={label}
-          />
+          <DateRuleEditor value={value} onValueChange={onValueChange} label={label} />
         </Content>
       </Popover>
     </Box>
+  );
+}
+
+/**
+ * What DateRulePicker's popover holds: Before / After / Between above a RangeCalendar. Use it on its own inside a popover
+ * you already have (e.g. a filter button's), so the rule isn't a second popover inside the first.
+ */
+export function DateRuleEditor({ value, onValueChange, label }: Pick<DateRulePickerProps, "value" | "onValueChange" | "label">) {
+  // Switching rule keeps the first date; Between fills the end with the end of that month.
+  function setOp(next: RangeCalendarMode) {
+    if (next === value.op) return;
+    const from = value.from || monthOf(new Date()).from;
+    onValueChange(next === "between" ? { op: next, from, to: value.to || monthOf(dateOf(from)).to } : { op: next, from, to: "" });
+  }
+
+  return (
+    <Editor>
+      <Switcher>
+        <ToggleGroup type="single" value={value.op} onValueChange={(v) => v && setOp(v as RangeCalendarMode)} aria-label={`${label} rule`}>
+          <ToggleGroupItem value="between">Between</ToggleGroupItem>
+          <ToggleGroupItem value="before">Before</ToggleGroupItem>
+          <ToggleGroupItem value="after">After</ToggleGroupItem>
+        </ToggleGroup>
+      </Switcher>
+      <RangeCalendar
+        mode={value.op}
+        value={{ from: value.from, to: value.to }}
+        onValueChange={(v) => onValueChange({ ...value, from: v.from ?? "", to: v.to ?? "" })}
+        aria-label={label}
+      />
+    </Editor>
   );
 }
 
@@ -153,10 +165,13 @@ const Trigger = styled.button`
 const Content = styled(PopoverContent)`
   && {
     width: auto;
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-3);
   }
+`;
+
+const Editor = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 `;
 
 /* Before / After / Between share the calendar's width equally. */

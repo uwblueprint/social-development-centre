@@ -41,6 +41,8 @@ globalStyle`
     /* SDC green as the primary colour (owner). To revert: --taupe-900 / --taupe-800 / --taupe-50. */
     --color-primary: var(--color-brand-heading);
     --color-primary-hover: #043a34;
+    /* A light tint of the primary green for "something is on" fills, e.g. an applied filter button (owner, Nov 2026). Text stays --color-text. */
+    --color-primary-subtle: #e6f2ef;
     --color-on-primary: #ffffff;
     /* Dark overlay surface for toasts and the floating selection bar (owner, Nov 2026): the deepest brand green step, darker than --color-primary. */
     --color-primary-deep: var(--sdc-950);
@@ -114,6 +116,21 @@ globalStyle`
     --tag-rose-bg: #fff1f2;
     --tag-rose-bg-strong: #ffe4e6;
     --tag-rose-text: #9f1239;
+    --tag-pink-bg: #fdf2f8;
+    --tag-pink-bg-strong: #fce7f3;
+    --tag-pink-text: #9d174d;
+    --tag-orange-bg: #fff7ed;
+    --tag-orange-bg-strong: #ffedd5;
+    --tag-orange-text: #9a3412;
+    --tag-teal-bg: #f0fdfa;
+    --tag-teal-bg-strong: #ccfbf1;
+    --tag-teal-text: #115e59;
+    --tag-indigo-bg: #eef2ff;
+    --tag-indigo-bg-strong: #e0e7ff;
+    --tag-indigo-text: #3730a3;
+    --tag-violet-bg: #f5f3ff;
+    --tag-violet-bg-strong: #ede9fe;
+    --tag-violet-text: #5b21b6;
 
     /* Eventbrite's brand orange, only for recognizing an Eventbrite link (owner). Not for text: 3.3:1. */
     --color-eventbrite: #f05537;
@@ -194,6 +211,9 @@ globalStyle`
     --radius-lg: 8px;
     --radius-full: 999px;
 
+    /* Toasts are as wide as their message needs, between these two, so a short one never wraps (owner, Nov 2026). */
+    --toast-width: 340px;
+    --toast-width-max: 600px;
     --space-1: 4px;
     --space-2: 8px;
     --space-3: 12px;
@@ -229,6 +249,8 @@ globalStyle`
     --shadow-lg: 0 16px 40px rgb(29 24 22 / 0.14);
     /* A soft shadow cast to the right by frozen table columns while the table is scrolled sideways. */
     --shadow-edge: 6px 0 8px -6px rgb(29 24 22 / 0.16);
+    /* A soft shadow cast upward by a footer that a scrolling list passes under (e.g. a filter popover's Cancel / Apply). */
+    --shadow-up: 0 -4px 6px -4px rgb(29 24 22 / 0.06);
 
     /* Height of a one-line form control (Input, Select, tag boxes) and of controls that sit beside them. */
     --control-height: 40px;
@@ -266,9 +288,11 @@ globalStyle`
     --dashed-border-repeat: repeat-x, repeat-x, repeat-y, repeat-y;
 
     --focus-ring: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-focus);
+    /* Text-entry controls only (input, textarea, tag fields): the ring for keyboard arrival, none for a click.
+       The pointer swap is below, keyed off <html data-input-modality>. See docs/design/principles.md. */
+    --focus-ring-text: var(--focus-ring);
+    --focus-ring-text-invalid: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-danger);
     --focus-ring-inset: inset 0 0 0 2px var(--color-focus); /* the ring for controls that fill a clipping container edge to edge (table rows, list rows, calendar cells): drawn inside, so nothing clips it */
-    --focus-field: inset 0 0 0 1px var(--color-focus); /* typed fields (input, textarea, search): a 2px border while you type, not the outer ring, which is for keyboard focus on buttons and links */
-    --focus-field-invalid: inset 0 0 0 2px var(--color-danger); /* the same for a field with an error: its 2px danger border thickens to 3px */
     /* Motion is calm and rare. See docs/design/motion.md. Nothing overshoots, springs or slides a pill. */
     --duration-fast: 100ms; /* colour fades on hover, press and state change (borders, fills, text) */
     --duration: 160ms; /* overlays in (menu, select, popover, tooltip, dialog), switch thumb, toast */
@@ -313,6 +337,13 @@ globalStyle`
     color: inherit;
   }
 
+  /* Active vs focused: a click or tap into a text field shows the quiet active border (--color-focus, 1px), no ring.
+     The ring stays for keyboard arrival. src/components/ui/inputModality.ts sets the attribute. */
+  html[data-input-modality="pointer"] {
+    --focus-ring-text: 0 0 0 0 transparent;
+    --focus-ring-text-invalid: 0 0 0 0 transparent;
+  }
+
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       color-scheme: dark;
@@ -328,6 +359,7 @@ globalStyle`
       --color-primary: #8fd3c4;
       --color-selection: var(--sdc-800);
       --color-primary-hover: #b5e3d8;
+      --color-primary-subtle: rgb(143 211 196 / 0.14);
       --color-on-primary: #052e29;
       /* Dark overlay surface for toasts and the selection bar: a deep green that still reads as green on the dark page, one step lighter than light mode so it separates from the background. */
       --color-primary-deep: var(--sdc-900);
@@ -402,6 +434,21 @@ globalStyle`
       --tag-rose-bg: color-mix(in srgb, #881337 50%, var(--color-bg));
       --tag-rose-bg-strong: color-mix(in srgb, #881337 75%, var(--color-bg));
       --tag-rose-text: #fecdd3;
+      --tag-pink-bg: color-mix(in srgb, #831843 50%, var(--color-bg));
+      --tag-pink-bg-strong: color-mix(in srgb, #831843 75%, var(--color-bg));
+      --tag-pink-text: #fbcfe8;
+      --tag-orange-bg: color-mix(in srgb, #7c2d12 50%, var(--color-bg));
+      --tag-orange-bg-strong: color-mix(in srgb, #7c2d12 75%, var(--color-bg));
+      --tag-orange-text: #fed7aa;
+      --tag-teal-bg: color-mix(in srgb, #134e4a 50%, var(--color-bg));
+      --tag-teal-bg-strong: color-mix(in srgb, #134e4a 75%, var(--color-bg));
+      --tag-teal-text: #99f6e4;
+      --tag-indigo-bg: color-mix(in srgb, #312e81 50%, var(--color-bg));
+      --tag-indigo-bg-strong: color-mix(in srgb, #312e81 75%, var(--color-bg));
+      --tag-indigo-text: #c7d2fe;
+      --tag-violet-bg: color-mix(in srgb, #4c1d95 50%, var(--color-bg));
+      --tag-violet-bg-strong: color-mix(in srgb, #4c1d95 75%, var(--color-bg));
+      --tag-violet-text: #ddd6fe;
 
       --color-focus: var(--color-primary);
     --illustration-page-bg: var(--taupe-900);
@@ -423,6 +470,7 @@ globalStyle`
       --shadow-md: 0 4px 16px rgb(0 0 0 / 0.5), 0 1px 2px rgb(0 0 0 / 0.4);
       --shadow-lg: 0 16px 40px rgb(0 0 0 / 0.6);
       --shadow-edge: 6px 0 8px -6px rgb(0 0 0 / 0.6);
+      --shadow-up: 0 -4px 6px -4px rgb(0 0 0 / 0.3);
     }
   }
   :root[data-theme="dark"] {
@@ -439,6 +487,7 @@ globalStyle`
     --color-primary: #8fd3c4;
     --color-selection: var(--sdc-800);
     --color-primary-hover: #b5e3d8;
+    --color-primary-subtle: rgb(143 211 196 / 0.14);
     --color-on-primary: #052e29;
     /* Dark overlay surface for toasts and the selection bar: a deep green that still reads as green on the dark page, one step lighter than light mode so it separates from the background. */
     --color-primary-deep: var(--sdc-900);
@@ -513,6 +562,21 @@ globalStyle`
     --tag-rose-bg: color-mix(in srgb, #881337 50%, var(--color-bg));
     --tag-rose-bg-strong: color-mix(in srgb, #881337 75%, var(--color-bg));
     --tag-rose-text: #fecdd3;
+    --tag-pink-bg: color-mix(in srgb, #831843 50%, var(--color-bg));
+    --tag-pink-bg-strong: color-mix(in srgb, #831843 75%, var(--color-bg));
+    --tag-pink-text: #fbcfe8;
+    --tag-orange-bg: color-mix(in srgb, #7c2d12 50%, var(--color-bg));
+    --tag-orange-bg-strong: color-mix(in srgb, #7c2d12 75%, var(--color-bg));
+    --tag-orange-text: #fed7aa;
+    --tag-teal-bg: color-mix(in srgb, #134e4a 50%, var(--color-bg));
+    --tag-teal-bg-strong: color-mix(in srgb, #134e4a 75%, var(--color-bg));
+    --tag-teal-text: #99f6e4;
+    --tag-indigo-bg: color-mix(in srgb, #312e81 50%, var(--color-bg));
+    --tag-indigo-bg-strong: color-mix(in srgb, #312e81 75%, var(--color-bg));
+    --tag-indigo-text: #c7d2fe;
+    --tag-violet-bg: color-mix(in srgb, #4c1d95 50%, var(--color-bg));
+    --tag-violet-bg-strong: color-mix(in srgb, #4c1d95 75%, var(--color-bg));
+    --tag-violet-text: #ddd6fe;
 
     --color-focus: var(--color-primary);
     --illustration-page-bg: var(--taupe-900);
@@ -534,6 +598,7 @@ globalStyle`
     --shadow-md: 0 4px 16px rgb(0 0 0 / 0.5), 0 1px 2px rgb(0 0 0 / 0.4);
     --shadow-lg: 0 16px 40px rgb(0 0 0 / 0.6);
     --shadow-edge: 6px 0 8px -6px rgb(0 0 0 / 0.6);
+    --shadow-up: 0 -4px 6px -4px rgb(0 0 0 / 0.3);
   }
 
   *, *::before, *::after { box-sizing: border-box; }
@@ -550,6 +615,12 @@ globalStyle`
 
   kbd {
     font-family: var(--font-mono);
+  }
+
+  /* Thin scrollbars everywhere (owner, Nov 2026): a quiet thumb on a clear track, in both themes. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border-strong) transparent;
   }
 
   @media (prefers-reduced-motion: reduce) {

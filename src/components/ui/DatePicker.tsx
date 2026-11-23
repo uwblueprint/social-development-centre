@@ -122,7 +122,7 @@ const TextField = styled.input<{ $invalid?: boolean }>`
   &:focus {
     outline: none;
     border-color: var(--color-focus);
-    box-shadow: var(--focus-field);
+    box-shadow: var(--focus-ring-text);
   }
 
   &[aria-invalid="true"] {
@@ -131,7 +131,9 @@ const TextField = styled.input<{ $invalid?: boolean }>`
 
     &:focus-visible,
     &:focus {
-      box-shadow: var(--focus-field-invalid);
+      box-shadow:
+        inset 0 0 0 1px var(--color-danger),
+        var(--focus-ring-text-invalid);
     }
   }
 

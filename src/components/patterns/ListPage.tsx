@@ -24,7 +24,7 @@ export const listEmptyCopy = {
   clearSearch: "Clear search",
   /** Filters hide everything: the title is "No " + the caller's description of the filtered items. */
   filtersTitle: (filtered: string) => `No ${filtered}`,
-  filtersBody: "Nothing matches these filters.",
+  filtersBody: "Clear a filter to see more",
   clearFilters: "Clear filters",
   /** Search plus filters. */
   searchAndFiltersBody: (fields: string) => `Searched ${fields} with these filters on. Check the spelling, or clear the search and filters.`,

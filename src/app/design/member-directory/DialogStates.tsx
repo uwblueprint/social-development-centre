@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { keyframes, styled } from "next-yak";
-import { CircleAlert, LoaderCircle, TriangleAlert } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import { CircleAlert, LoaderCircle, TriangleAlert, type LucideIcon } from "lucide-react";
+import { Button, CancelButton } from "@/components/ui/Button";
 import { DialogActions, DialogClose } from "@/components/ui/Dialog";
 import { Icon } from "@/components/ui/Icon";
 import { SAVING_FOR, type StateLab } from "../_state-lab/useStateLab";
@@ -63,9 +63,9 @@ export interface Submit {
   useTheirs: () => void;
 }
 
-const SAVE_FAILED = "Couldn't save. Something went wrong on our side. Your changes are still here, so try again.";
-const SESSION_EXPIRED = "You've been signed out. Sign in again in another tab, then come back and try again. Your changes are still here.";
-const OFFLINE = "You're offline. Check your connection, then try again. Your changes are still here.";
+const SAVE_FAILED = "Couldn't save. Your changes are still here. Try again in a moment.";
+const SESSION_EXPIRED = "You've been signed out. Sign in again in another tab, then try again. Your changes are still here.";
+const OFFLINE = "You're offline. Reconnect, then try again. Your changes are still here.";
 
 /**
  * Drives a dialog's submit through the State lab: Saving, Save failed, Session expired, Offline and
@@ -149,7 +149,11 @@ const Relative = styled(Button)`
   position: relative;
 `;
 
+/* Holds the icon and the text, spaced like the button's own children. */
 const Label = styled.span<{ $hidden: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  gap: inherit;
   visibility: ${({ $hidden }) => ($hidden ? "hidden" : "visible")};
 `;
 
@@ -165,17 +169,22 @@ const Spinner = styled.span`
   }
 `;
 
-/** A button that shows a spinner at the same width while `busy`, and ignores clicks. */
+/**
+ * A button that shows a spinner at the same width while `busy`, and ignores clicks. `icon` repeats the icon of the
+ * button that opened the dialog; the spinner takes its place while busy.
+ */
 export function BusyButton({
   busy,
   $variant,
   type = "submit",
+  icon,
   onClick,
   children,
 }: {
   busy: boolean;
   $variant?: React.ComponentProps<typeof Button>["$variant"];
   type?: "submit" | "button";
+  icon?: LucideIcon;
   onClick?: () => void;
   children: React.ReactNode;
 }) {
@@ -190,7 +199,10 @@ export function BusyButton({
         else onClick?.();
       }}
     >
-      <Label $hidden={busy}>{children}</Label>
+      <Label $hidden={busy}>
+        {icon && <Icon icon={icon} size={16} />}
+        {children}
+      </Label>
       {busy && (
         <Spinner aria-hidden="true">
           <Icon icon={LoaderCircle} size={16} />
@@ -260,38 +272,43 @@ export function SubmitNote({ submit }: { submit: Submit }) {
   return null;
 }
 
-const SplitActions = styled(DialogActions)`
-  & > :first-child {
-    margin-right: auto;
-  }
-`;
-
 /**
- * Cancel and the submit button. While saving the submit button shows progress; on a conflict the
- * buttons become Use theirs and Keep mine. `leading` is a destructive action pinned to the left.
+ * Cancel (far left) and the submit button. While saving the submit button shows progress; on a conflict the
+ * buttons become Use their version and Keep my version. `beforeSubmit` is a secondary action (e.g. Delete payment)
+ * placed just before the submit button.
  */
-export function SubmitActions({ submit, state, leading }: { submit: string; state: Submit; leading?: React.ReactNode }) {
-  const Row = leading ? SplitActions : DialogActions;
+export function SubmitActions({
+  submit,
+  state,
+  icon,
+  beforeSubmit,
+}: {
+  submit: string;
+  state: Submit;
+  icon?: LucideIcon;
+  beforeSubmit?: React.ReactNode;
+}) {
   return (
-    <Row>
-      {leading}
+    <DialogActions>
       <DialogClose asChild>
-        <Button type="button" $variant="secondary">
-          Cancel
-        </Button>
+        <CancelButton />
       </DialogClose>
+      {/* While resolving a conflict, only the two versions are on offer. */}
+      {state.phase !== "conflict" && beforeSubmit}
       {state.phase === "conflict" ? (
         <>
-          <Button type="button" $variant="outline" onClick={state.useTheirs}>
-            Use theirs
+          <Button type="button" $variant="secondary" onClick={state.useTheirs}>
+            Use their version
           </Button>
           <Button type="button" onClick={state.keepMine}>
-            Keep mine
+            Keep my version
           </Button>
         </>
       ) : (
-        <BusyButton busy={state.busy}>{submit}</BusyButton>
+        <BusyButton busy={state.busy} icon={icon}>
+          {submit}
+        </BusyButton>
       )}
-    </Row>
+    </DialogActions>
   );
 }

@@ -36,8 +36,8 @@ import {
   type Mail,
 } from "./demoHistory";
 
-export type MembershipKind = "paid" | "complimentary" | "gifted" | "sponsored";
-export type MemberStatus = "member" | "waiting" | "ended";
+/** How someone first joined: only the demo generator uses it, to decide who pays. */
+type MembershipKind = "paid" | "complimentary" | "gifted" | "sponsored";
 export type PaymentMethod = "etransfer" | "cash" | "online";
 /** The kit's tag colours; `undefined` is the neutral grey tag. */
 export type TagColor = KitTagColor | undefined;
@@ -59,7 +59,7 @@ export interface Payment {
   giftFor?: string;
 }
 
-export type ActivityKind = "email" | "referral" | "event" | "joined" | "tag" | "ended" | "status";
+export type ActivityKind = "email" | "referral" | "event" | "joined" | "tag" | "cancelled" | "status";
 
 export interface ActivityItem {
   id: string;
@@ -78,12 +78,11 @@ export interface Member {
   firstName: string;
   lastName: string;
   email: string;
-  status: MemberStatus;
-  kind: MembershipKind;
-  /** Yearly amount for paid memberships. */
-  amount?: number;
+  /** When they started. Memberships renew on their own, so there is no end date. */
   joinedAt: string;
-  endsAt: string;
+  /** Set when they cancelled: they leave the members list but stay findable. */
+  cancelledAt?: string;
+  /** False once they unsubscribe from member emails. They are still a member. */
   subscribed: boolean;
   tags: string[];
   /** When each tag was added (ISO date), by tag name. Optional: without it, the tag activity and then array order decide. */
@@ -108,18 +107,6 @@ export const methodLabel: Record<PaymentMethod, string> = {
   online: "Online",
 };
 
-export const kindLabel: Record<MembershipKind, string> = {
-  paid: "Paid",
-  complimentary: "Complimentary",
-  gifted: "Gifted",
-  sponsored: "Sponsored",
-};
-
-export const statusLabel: Record<MemberStatus, string> = {
-  member: "Member",
-  waiting: "Waiting for payment",
-  ended: "Membership ended",
-};
 
 /* ---------- dates and money ---------- */
 
@@ -164,23 +151,6 @@ export const fullName = (m: Pick<Member, "firstName" | "lastName" | "email">) =>
 
 export const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
-/** The end date only needs a word when it's close (30 days) or past. */
-export function endNotice(endsAt: string): { text: string; tone: "warning" | "danger" } | null {
-  if (!endsAt) return null;
-  const n = diffDays(TODAY, endsAt);
-  if (n < 0) return { text: `Ended ${plural(-n, "day")} ago`, tone: "danger" };
-  if (n === 0) return { text: "Ends today", tone: "warning" };
-  if (n <= 30) return { text: `Ends in ${plural(n, "day")}`, tone: "warning" };
-  return null;
-}
-
-/** The panel's membership headline: how long is left, or that it has ended. */
-export function endHeadline(endsAt: string): string {
-  const n = diffDays(TODAY, endsAt);
-  if (n < 0) return "Ended";
-  if (n === 0) return "Ends today";
-  return `Ends in ${plural(n, "day")}`;
-}
 
 /**
  * A member's tags, newest first. A tag's added date is the latest of its `tagAddedAt` entry and its "Tagged X" activity;
@@ -198,7 +168,11 @@ export function tagsByRecency(m: Pick<Member, "tags" | "tagAddedAt" | "activity"
     .map((x) => x.t);
 }
 
-export const totalPaid = (m: Member) => m.payments.reduce((sum, p) => sum + p.amount, 0);
+/** Lifetime value: everything they have paid, gifts for other people included. */
+export const totalPaid = (m: Pick<Member, "payments">) => m.payments.reduce((sum, p) => sum + p.amount, 0);
+
+/** The payments that covered someone else's membership. */
+export const giftsGiven = (m: Pick<Member, "payments">) => m.payments.filter((p) => p.giftFor);
 
 /** The "Joined" activity title, from how they joined: "Joined via Website", "Joined with a gift from Helen Brooks". */
 export function joinedTitle(howJoined: string): string {
@@ -307,8 +281,7 @@ interface Spec {
   /** Yearly amount for each year of paid membership; the last one repeats. */
   amounts?: number[];
   joinedAt: string;
-  status?: MemberStatus;
-  /** Years the membership ran before it ended. */
+  /** Years the membership ran before they cancelled. */
   years?: number;
   /** Left after `years`, then came back on `rejoinedAt`. */
   lapse?: { years: number; rejoinedAt: string };
@@ -347,7 +320,7 @@ function build(s: Spec): Member {
       ]
     : [{ start: joinedAt, end: s.years !== undefined ? addMonths(joinedAt, 12 * s.years) : activeEnd(joinedAt) }];
   const endsAt = periods[periods.length - 1].end;
-  const status: MemberStatus = s.status ?? (endsAt < TODAY ? "ended" : "member");
+  const cancelled = endsAt < TODAY;
   const density = s.density ?? 0.8;
   const engage = s.engage ?? 0.25;
   const volunteer = Boolean(s.tags && "Volunteer" in s.tags);
@@ -365,18 +338,17 @@ function build(s: Spec): Member {
     items.push(item);
   };
   const mail = (m: Mail, at: string, o: { detail?: string; drop?: boolean } = {}) => add("email", m.title, at, { body: m.body, template: m.template, ...o });
-  const paying = kind === "paid" && status !== "waiting";
+  const paying = kind === "paid";
   let yearIndex = 0;
 
   periods.forEach((p, pi) => {
     const last = pi === periods.length - 1;
-    const ended = !last || status === "ended";
+    const ended = !last || cancelled;
     const wEnd = minD(p.end, TODAY);
 
     if (pi === 0) {
       mail(welcomeMail(first, int(0, 2)), p.start);
       add("joined", joinedTitle(s.howJoined ?? "Website"), p.start);
-      if (status === "waiting") add("status", "Waiting for payment", p.start);
     } else {
       add("status", "Rejoined SDC", p.start);
       mail(welcomeBackMail(first), p.start);
@@ -432,7 +404,7 @@ function build(s: Spec): Member {
     }
 
     if (ended && p.end <= TODAY) {
-      add("ended", "Membership ended", p.end);
+      add("cancelled", "Cancelled membership", p.end);
       mail(endedMail(first, formatDate(p.end)), p.end, { drop: true });
       if (chance(0.5)) mail(comeBackMail(first), addDays(p.end, 45), { drop: true });
     }
@@ -448,7 +420,7 @@ function build(s: Spec): Member {
     tagAddedAt[name] = date;
     add("tag", `Tagged ${name}`, date);
   }
-  if (s.mutedAt) add("status", "Unsubscribed from member emails", s.mutedAt);
+  if (s.mutedAt) add("status", "Unsubscribed from emails", s.mutedAt);
   for (const x of s.extra ?? []) add(x.kind, x.title, x.at, { detail: x.detail, body: x.body });
 
   return {
@@ -456,11 +428,8 @@ function build(s: Spec): Member {
     firstName: first,
     lastName: s.last,
     email: s.email ?? `${first}.${s.last}`.toLowerCase().replace(/[^a-z.]/g, "") + "@example.com",
-    status,
-    kind,
-    amount: kind === "paid" ? amounts[Math.min(Math.max(yearIndex - 1, 0), amounts.length - 1)] : undefined,
     joinedAt,
-    endsAt,
+    cancelledAt: cancelled ? endsAt : undefined,
     subscribed: !s.mutedAt,
     tags: Object.keys(s.tags ?? {}),
     tagAddedAt: Object.keys(tagAddedAt).length ? tagAddedAt : undefined,
@@ -489,7 +458,7 @@ function wireReferral(referrer: Member, referred: Member) {
 
 /** `giver` paid for `receiver`'s membership. */
 function wireGift(giver: Member, receiver: Member) {
-  giver.payments.push({ id: nid("p"), amount: giver.amount ?? 50, date: receiver.joinedAt, method: "online", note: "Gift membership", giftFor: fullName(receiver) });
+  giver.payments.push({ id: nid("p"), amount: giver.payments[giver.payments.length - 1]?.amount ?? 50, date: receiver.joinedAt, method: "online", note: "Gift membership", giftFor: fullName(receiver) });
   giver.payments.sort((a, b) => byNewest({ at: a.date }, { at: b.date }));
   giver.activity.push({ id: nid("a"), kind: "status", title: `Gave a membership to ${fullName(receiver)}`, at: receiver.joinedAt });
 }
@@ -590,7 +559,7 @@ const specs: Spec[] = [
     personal: 6,
   },
   { first: "Priya", last: "Raman", joinedAt: ago(6), amounts: [25], howJoined: "Fall workshop" },
-  { first: "Jordan", last: "Lee", joinedAt: ago(1), amounts: [25], status: "waiting" },
+  { first: "Jordan", last: "Lee", joinedAt: ago(1), amounts: [25] },
   { first: "Quinn", last: "Harlow", kind: "sponsored", joinedAt: ago(90), howJoined: "Added by an admin", engage: 0.5 },
   { first: "Noah", last: "Brandt", joinedAt: ago(21), amounts: [10], firstMethod: "cash", howJoined: "Community lunch" },
   {
@@ -612,8 +581,8 @@ const specs: Spec[] = [
     note: { text: "Took time off after her second baby was born. Asked us to hold her place and rejoined in February.", updatedAt: "2026-02-14", by: "Suhanya" },
     personal: 2,
   },
-  { first: "Tara", last: "Novak", joinedAt: ago(3), amounts: [25], howJoined: "Member invite", intake: makeIntake(ago(3)) },
-  { first: "Sam", last: "Whitby", joinedAt: ago(12), amounts: [50], howJoined: "Member invite", intake: makeIntake(ago(12)) },
+  { first: "Tara", last: "Novak", joinedAt: ago(3), amounts: [25], howJoined: "Referral", intake: makeIntake(ago(3)) },
+  { first: "Sam", last: "Whitby", joinedAt: ago(12), amounts: [50], howJoined: "Referral", intake: makeIntake(ago(12)) },
 ];
 
 export const demoMembers: Member[] = specs.map(build);
@@ -643,21 +612,17 @@ function generate(): Member {
   for (let n = 2; usedEmails.has(email); n++) email = `${first}.${last}${n}`.toLowerCase().replace(/[^a-z0-9.]/g, "") + "@example.com";
   usedEmails.add(email);
 
-  const cls = weighted([["member", 83], ["waiting", 5], ["ended", 12]] as const);
-  let kind: MembershipKind = cls === "waiting" ? "paid" : weighted([["paid", 81], ["complimentary", 8], ["gifted", 5], ["sponsored", 6]] as const);
+  const cls = weighted([["member", 88], ["ended", 12]] as const);
+  let kind: MembershipKind = weighted([["paid", 81], ["complimentary", 8], ["gifted", 5], ["sponsored", 6]] as const);
 
   let joinedAt: string;
   let years: number | undefined;
-  let status: MemberStatus | undefined;
   if (kind === "complimentary") {
     joinedAt = pick(["2025-10-18", "2026-10-18"]);
     years = 1;
   } else if (kind !== "paid") {
     joinedAt = ago(int(5, 700));
     years = 1;
-  } else if (cls === "waiting") {
-    joinedAt = ago(int(1, 25));
-    status = "waiting";
   } else if (cls === "ended") {
     const days = int(430, 1700);
     joinedAt = ago(days);
@@ -671,7 +636,7 @@ function generate(): Member {
   const base = weighted(TIERS);
   const amounts = chance(0.12) && base <= 50 ? [base, base * 2] : [base];
 
-  const eligible = (m: Member) => m.kind === "paid" && m.status === "member" && m.joinedAt < addDays(joinedAt, -30);
+  const eligible = (m: Member) => m.payments.length > 0 && !m.cancelledAt && m.joinedAt < addDays(joinedAt, -30);
   let howJoined: string;
   let referrer: Member | undefined;
   let giver: Member | undefined;
@@ -687,9 +652,9 @@ function generate(): Member {
       howJoined = `Gift from ${fullName(giver)}`;
     }
   } else {
-    howJoined = weighted([["Website", 42], ["Community lunch", 12], ["Fall workshop", 7], ["Existing list", 9], ["Member invite", 14], ["Added by an admin", 6], ["Tenant rights workshop", 6]] as const);
-    if (howJoined === "Member invite") {
-      const refs = demoMembers.filter((m) => m.status === "member" && m.kind === "paid" && m.joinedAt < addDays(joinedAt, -5));
+    howJoined = weighted([["Website", 42], ["Community lunch", 12], ["Fall workshop", 7], ["Existing list", 9], ["Referral", 14], ["Added by an admin", 6], ["Tenant rights workshop", 6]] as const);
+    if (howJoined === "Referral") {
+      const refs = demoMembers.filter((m) => !m.cancelledAt && m.payments.length > 0 && m.joinedAt < addDays(joinedAt, -5));
       if (refs.length === 0) howJoined = "Website";
       else referrer = pick(refs);
     }
@@ -699,7 +664,7 @@ function generate(): Member {
   const tagDate = () => clamp(addDays(joinedAt, int(0, Math.min(tenure, 300))));
   let mutedAt: string | undefined;
   if (kind === "complimentary") tags["Ride for Refuge"] = joinedAt;
-  if (kind === "paid" && status !== "waiting") {
+  if (kind === "paid") {
     if (chance(0.13)) tags.Volunteer = tagDate();
     if (chance(0.015)) tags.Board = tagDate();
     if (amounts[amounts.length - 1] >= 100 && chance(0.2)) tags["Leadership donor"] = tagDate();
@@ -721,7 +686,6 @@ function generate(): Member {
     amounts,
     joinedAt,
     years,
-    status,
     howJoined,
     tags,
     mutedAt,

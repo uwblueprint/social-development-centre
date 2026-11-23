@@ -29,6 +29,7 @@ Hint should mention the expected format and that the calendar is optional, e.g. 
 
 ## Accessibility
 The calendar opens from its own labeled button without stealing focus from the text field, then focuses the roving-tabindex day, not "previous month". Out-of-range days are muted and marked `disabled`, never color alone.
+- Active versus focused is built in: a click or tap shows a darker 1px border with no ring, and arriving by keyboard (Tab) shows the focus ring. Don't style `:focus` yourself.
 
 ## Don't
 1. Using a native `<input type="date">` instead of this component.

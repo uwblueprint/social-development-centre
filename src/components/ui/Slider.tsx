@@ -146,7 +146,7 @@ const CompactInput = styled.input`
 
   &:focus-visible {
     border-color: var(--color-focus);
-    box-shadow: var(--focus-ring);
+    box-shadow: var(--focus-ring-text);
   }
 
   &:disabled {

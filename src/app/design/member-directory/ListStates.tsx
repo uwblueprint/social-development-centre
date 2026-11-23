@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { styled } from "next-yak";
-import { CircleAlert, FileQuestion, Lock, RefreshCw, RotateCw, WifiOff } from "lucide-react";
+import { CircleAlert, Lock, RefreshCw, RotateCw, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Icon } from "@/components/ui/Icon";
@@ -58,22 +58,22 @@ export function StatusBanner({
           <BannerIcon>
             <Icon icon={WifiOff} size={16} />
           </BannerIcon>
-          <BannerText>You&apos;re offline. You can still look around, but you&apos;ll need to reconnect to make changes.</BannerText>
+          <BannerText>You&apos;re offline. You can look around, but you&apos;ll need to reconnect to make changes.</BannerText>
         </Banner>
       ) : reconnecting ? (
         <Banner>
           <BannerIcon>
             <Icon icon={RefreshCw} size={16} />
           </BannerIcon>
-          <BannerText>Back online. Catching up on changes…</BannerText>
+          <BannerText>Reconnecting. Loading the latest changes…</BannerText>
         </Banner>
       ) : signedOut ? (
         <Banner>
           <BannerIcon>
             <Icon icon={Lock} size={16} />
           </BannerIcon>
-          <BannerText>You&apos;ve been signed out. Sign in again to keep working. Nothing you&apos;ve entered is lost.</BannerText>
-          <Button type="button" $variant="secondary" $size="sm" onClick={onSignIn}>
+          <BannerText>You&apos;ve been signed out. Sign in again to keep working. Your changes are still here.</BannerText>
+          <Button type="button" $variant="outline" $size="sm" onClick={onSignIn}>
             Sign in again
           </Button>
         </Banner>
@@ -144,7 +144,7 @@ export function ListLoading({ takingLonger }: { takingLonger: boolean }) {
   );
 }
 
-/* ---------- failed, not found, no permission ---------- */
+/* ---------- failed, no permission ---------- */
 
 const Alert = styled.div`
   display: contents;
@@ -157,7 +157,7 @@ export function ListFailed({ onRetry }: { onRetry: () => void }) {
       <EmptyState
         icon={CircleAlert}
         title="Couldn't load people"
-        description="No changes were made. Try again, and if it keeps happening, tell an SDC admin."
+        description="Try again in a moment. If it keeps happening, tell an SDC admin."
         action={
           <Button type="button" $variant="secondary" onClick={onRetry}>
             <Icon icon={RotateCw} size={16} />
@@ -177,22 +177,15 @@ const Access = styled.main`
   padding: var(--space-7) var(--space-5);
 `;
 
-export function AccessState({ kind }: { kind: "not-found" | "no-permission" }) {
+/** No permission. (Not found is the app's own 404 page, not a state of this page.) */
+export function AccessState() {
   return (
     <Access>
-      {kind === "not-found" ? (
-        <EmptyState
-          icon={FileQuestion}
-          title="Page not found"
-          description="This page doesn't exist or has moved. Use the sidebar to find what you need."
-        />
-      ) : (
-        <EmptyState
-          icon={Lock}
-          title="You don't have access to People"
-          description="Ask an SDC admin to give you access, then try again."
-        />
-      )}
+      <EmptyState
+        icon={Lock}
+        title="You don't have access to the People tab"
+        description="Ask an SDC admin to give you access, then try again"
+      />
     </Access>
   );
 }
@@ -212,8 +205,8 @@ export function TagsFailed({ onRetry }: { onRetry: () => void }) {
   return (
     <TagFailed role="alert">
       <Icon icon={CircleAlert} size={16} />
-      <span>Couldn&apos;t load tags.</span>
-      <Button type="button" $variant="ghost" $size="sm" onClick={onRetry}>
+      <span>Couldn&apos;t load tags</span>
+      <Button type="button" $variant="outline" $size="sm" onClick={onRetry}>
         Try again
       </Button>
     </TagFailed>

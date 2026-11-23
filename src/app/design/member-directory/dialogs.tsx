@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { styled } from "next-yak";
-import { Button } from "@/components/ui/Button";
+import { Button, CancelButton } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/Dialog";
@@ -14,13 +14,15 @@ import {
   AlertDialogDescription,
   AlertDialogTitle,
 } from "@/components/ui/AlertDialog";
+import { BellOff, CreditCard, MailX, Pencil, Plus, Trash2, type LucideIcon } from "lucide-react";
 import { Field } from "@/components/ui/Field";
+import { Icon } from "@/components/ui/Icon";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
-import { RadioGroup, RadioGroupOption } from "@/components/ui/RadioGroup";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/RadioGroup";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
-import { TODAY, addMonths, fullName, methodLabel, type Member, type MembershipKind, type PaymentMethod } from "./data";
+import { TODAY, fullName, methodLabel, type Member, type PaymentMethod } from "./data";
 import { useStateLab } from "../_state-lab/useStateLab";
 import {
   BusyButton,
@@ -36,15 +38,15 @@ import {
   useSubmit,
   useWhenOn,
 } from "./DialogStates";
+import { InlineAlert } from "./SheetStates";
 
 /* ---------- shared layout ---------- */
 
-/* 16px under the popup title. It collapses with the title's own 4px margin rather than adding to it. */
+/* The kit title already sets 16px to the body. */
 const Form = styled.form`
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  margin-top: var(--space-4);
 `;
 
 const Row = styled.div`
@@ -63,11 +65,32 @@ const Stack = styled.div`
   gap: var(--space-2);
 `;
 
-/* Keeps a dialog the same size while its toggle switches: hidden fields keep their space. */
-const Reserve = styled.div<{ $shown: boolean }>`
-  visibility: ${({ $shown }) => ($shown ? "visible" : "hidden")};
+/* Plain radio buttons, flush with the other fields: a circle and its label, no row padding or hover box. */
+const Radios = styled(RadioGroup)`
+  gap: var(--space-2);
 `;
 
+const RadioRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+
+  & > label {
+    margin-bottom: 0;
+  }
+`;
+
+function PlainRadio({ value, label }: { value: string; label: string }) {
+  const id = React.useId();
+  return (
+    <RadioRow>
+      <RadioGroupItem id={id} value={value} />
+      <Label htmlFor={id}>{label}</Label>
+    </RadioRow>
+  );
+}
+
+/* Keeps a dialog the same size while its toggle switches: hidden fields keep their space. */
 const methodOptions = (Object.keys(methodLabel) as PaymentMethod[]).map((k) => ({ value: k, label: methodLabel[k] }));
 
 const validEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s.trim());
@@ -115,85 +138,7 @@ export function NoteDialog({ open, onOpenChange, initial, onSave }: DialogBase &
             </Field>
           </Lock>
           <SubmitNote submit={sub} />
-          <SubmitActions submit={initial ? "Save note" : "Add note"} state={sub} />
-        </Form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-/* ---------- membership ---------- */
-
-const kindToggle: [Exclude<MembershipKind, "gifted">, string][] = [
-  ["paid", "Paid"],
-  ["complimentary", "Complimentary"],
-  ["sponsored", "Sponsored"],
-];
-
-/** Membership type: one visible choice among a few, so radios under a visible label. */
-function KindChoice({ value, onChange }: { value: MembershipKind; onChange: (kind: MembershipKind) => void }) {
-  const labelId = React.useId();
-  return (
-    <Stack>
-      <Label id={labelId}>Membership type</Label>
-      <RadioGroup value={value} onValueChange={(v) => onChange(v as MembershipKind)} aria-labelledby={labelId}>
-        {kindToggle.map(([kind, label]) => (
-          <RadioGroupOption key={kind} value={kind} label={label} />
-        ))}
-      </RadioGroup>
-    </Stack>
-  );
-}
-
-export function ChangeMembershipDialog({
-  open,
-  onOpenChange,
-  member,
-  onSave,
-}: DialogBase & { member: Member; onSave: (next: { kind: MembershipKind; amount?: number; endsAt: string }) => void }) {
-  const [kind, setKind] = React.useState<MembershipKind>(member.kind === "gifted" ? "paid" : member.kind);
-  const [amount, setAmount] = React.useState(member.amount ? String(member.amount) : "");
-  const [method, setMethod] = React.useState<PaymentMethod>("etransfer");
-  const [endsAt, setEndsAt] = React.useState(member.endsAt);
-  const [error, setError] = React.useState<string>();
-  const lab = useStateLab({ notApplicable: [...DIALOG_NOT_APPLICABLE, ...NO_ITEMS] });
-  const sub = useSubmit(lab, {
-    message: "Another admin switched this membership to complimentary while you were editing.",
-    useTheirs: () => {
-      setKind("complimentary");
-      setError(undefined);
-    },
-  });
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogTitle>Change membership</DialogTitle>
-        <Form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (sub.busy) return;
-            if (kind === "paid" && !(Number(amount) > 0)) return setError("Enter the yearly amount, for example 25.");
-            if (kind === "paid" && lab.validationError) return setError("We couldn't accept this amount. Check it and try again.");
-            setError(undefined);
-            sub.run(() => onSave({ kind, amount: kind === "paid" ? Number(amount) : undefined, endsAt }));
-          }}
-        >
-          <Lock disabled={sub.busy}>
-          <KindChoice value={kind} onChange={setKind} />
-          <Field label="Ends">{(props) => <DatePicker {...props} value={endsAt} onValueChange={setEndsAt} />}</Field>
-          {kind === "paid" && (
-            <Row>
-              <Field label="Amount" error={error}>
-                {(props) => <Input {...props} inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />}
-              </Field>
-              <Field label="Paid by">
-                {(props) => <Select {...props} options={methodOptions} value={method} onValueChange={(v) => setMethod(v as PaymentMethod)} />}
-              </Field>
-            </Row>
-          )}
-          </Lock>
-          <SubmitNote submit={sub} />
-          <SubmitActions submit="Save changes" state={sub} />
+          <SubmitActions submit={initial ? "Save note" : "Add note"} icon={initial ? Pencil : Plus} state={sub} />
         </Form>
       </DialogContent>
     </Dialog>
@@ -226,7 +171,7 @@ export function PaymentDialog({
   onDelete?: () => void;
 }) {
   const editing = Boolean(initial);
-  const [amount, setAmount] = React.useState(initial ? String(initial.amount) : member.amount ? String(member.amount) : "");
+  const [amount, setAmount] = React.useState(initial ? String(initial.amount) : member.payments[0] ? String(member.payments[0].amount) : "");
   const [date, setDate] = React.useState(initial?.date ?? TODAY);
   const [method, setMethod] = React.useState<PaymentMethod>(initial?.method ?? "etransfer");
   const [note, setNote] = React.useState(initial?.note ?? "");
@@ -238,7 +183,7 @@ export function PaymentDialog({
     lab,
     editing
       ? {
-          message: "Another admin changed this payment's amount to 30 while you were editing.",
+          message: "Another admin changed this payment's amount to 30 while you were editing",
           useTheirs: () => {
             setAmount("30");
             setErrors({});
@@ -257,9 +202,9 @@ export function PaymentDialog({
             e.preventDefault();
             if (sub.busy) return;
             const next: typeof errors = {};
-            if (!(Number(amount) > 0)) next.amount = "Enter an amount, for example 25.";
-            if (!date || date > TODAY) next.date = "Choose today or an earlier date.";
-            if (!editing && forWhom === "other" && !forId) next.forId = "Choose who this payment is for.";
+            if (!(Number(amount) > 0)) next.amount = "Enter an amount, for example 25";
+            if (!date || date > TODAY) next.date = "Choose today or an earlier date";
+            if (!editing && forWhom === "other" && !forId) next.forId = "Choose who this payment is for";
             if (!Object.keys(next).length && lab.validationError) next.amount = "We couldn't accept this amount. Check it and try again.";
             setErrors(next);
             if (Object.keys(next).length) return;
@@ -277,19 +222,19 @@ export function PaymentDialog({
           </Row>
           <Stack>
             <Label id="payment-method">Method</Label>
-            <RadioGroup value={method} onValueChange={(v) => setMethod(v as PaymentMethod)} aria-labelledby="payment-method">
+            <Radios value={method} onValueChange={(v) => setMethod(v as PaymentMethod)} aria-labelledby="payment-method">
               {methodOptions.map((o) => (
-                <RadioGroupOption key={o.value} value={o.value} label={o.label} />
+                <PlainRadio key={o.value} value={o.value} label={o.label} />
               ))}
-            </RadioGroup>
+            </Radios>
           </Stack>
           {!editing && (
             <Stack>
               <Label id="pays-for">This pays for</Label>
-              <RadioGroup value={forWhom} onValueChange={(v) => setForWhom(v as "own" | "other")} aria-labelledby="pays-for">
-                <RadioGroupOption value="own" label="Their own membership" />
-                <RadioGroupOption value="other" label="Someone else's" />
-              </RadioGroup>
+              <Radios value={forWhom} onValueChange={(v) => setForWhom(v as "own" | "other")} aria-labelledby="pays-for">
+                <PlainRadio value="own" label="Their own membership" />
+                <PlainRadio value="other" label="Someone else's (gifted membership)" />
+              </Radios>
             </Stack>
           )}
           {!editing && forWhom === "other" && (
@@ -303,15 +248,17 @@ export function PaymentDialog({
           {editing ? (
             <SubmitActions
               submit="Save changes"
+              icon={Pencil}
               state={sub}
-              leading={
-                <Button type="button" $variant="ghost" onClick={sub.busy ? undefined : onDelete}>
+              beforeSubmit={
+                <Button type="button" $variant="danger-secondary" onClick={sub.busy ? undefined : onDelete}>
+                  <Icon icon={Trash2} size={16} />
                   Delete payment
                 </Button>
               }
             />
           ) : (
-            <SubmitActions submit="Record payment" state={sub} />
+            <SubmitActions submit="Record payment" icon={Plus} state={sub} />
           )}
         </Form>
       </DialogContent>
@@ -342,7 +289,7 @@ export function EditDetailsDialog({
     actions: [{ id: "duplicate-email", label: "Email already in use", description: "The server says someone else has this email." }],
   });
   const sub = useSubmit(lab, {
-    message: "Another admin changed this person's email to updated.contact@example.org while you were editing.",
+    message: "Another admin changed this person's email to updated.contact@example.org while you were editing",
     useTheirs: () => {
       setD((cur) => ({ ...cur, email: "updated.contact@example.org" }));
       setErrors({});
@@ -352,15 +299,15 @@ export function EditDetailsDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
-        <DialogTitle>Edit details</DialogTitle>
+        <DialogTitle>Edit person</DialogTitle>
         <Form
           onSubmit={(e) => {
             e.preventDefault();
             if (sub.busy) return;
             const next: typeof errors = {};
-            if (!d.firstName.trim()) next.firstName = "Enter a first name.";
-            if (!validEmail(d.email)) next.email = "Enter an email like name@example.com.";
-            else if (emailTaken(d.email) || lab.is("duplicate-email")) next.email = "Someone else in the directory uses this email.";
+            if (!d.firstName.trim()) next.firstName = "Enter a first name";
+            if (!validEmail(d.email)) next.email = "Enter an email like name@example.com";
+            else if (emailTaken(d.email) || lab.is("duplicate-email")) next.email = "Someone else already uses this email";
             else if (lab.validationError) next.email = "We couldn't accept this email. Check it and try again.";
             setErrors(next);
             if (!Object.keys(next).length)
@@ -375,7 +322,7 @@ export function EditDetailsDialog({
             <Field label="Email" error={errors.email}>{(props) => <Input {...props} type="email" value={d.email} onChange={set("email")} />}</Field>
           </Lock>
           <SubmitNote submit={sub} />
-          <SubmitActions submit="Save changes" state={sub} />
+          <SubmitActions submit="Save changes" icon={Pencil} state={sub} />
         </Form>
       </DialogContent>
     </Dialog>
@@ -383,7 +330,7 @@ export function EditDetailsDialog({
 }
 
 export interface NewMemberDraft extends PersonDraft {
-  kind: MembershipKind;
+  /** A first payment to record, if there is one. */
   amount?: number;
   method: PaymentMethod;
   joinedAt: string;
@@ -395,18 +342,17 @@ export function AddMemberDialog({
   onOpenChange,
   emailTaken,
   onSave,
-  title = "Add member",
-  submit = "Add member",
+  title = "Add person",
+  submit = "Add person",
 }: DialogBase & { emailTaken: (email: string) => boolean; onSave: (draft: NewMemberDraft) => void; title?: string; submit?: string }) {
-  const gift = title !== "Add member";
-  const [d, setD] = React.useState({ firstName: "", lastName: "", email: "", amount: "25" });
-  const [kind, setKind] = React.useState<MembershipKind>("paid");
+  const gift = title !== "Add person";
+  const [d, setD] = React.useState({ firstName: "", lastName: "", email: "", amount: gift ? "25" : "" });
   const [method, setMethod] = React.useState<PaymentMethod>("etransfer");
   const [joinedAt, setJoinedAt] = React.useState(TODAY);
   const [joinEmails, setJoinEmails] = React.useState(true);
   const [errors, setErrors] = React.useState<{ firstName?: string; email?: string; amount?: string }>({});
   const set = (k: keyof typeof d) => (e: React.ChangeEvent<HTMLInputElement>) => setD({ ...d, [k]: e.target.value });
-  const paid = gift || kind === "paid";
+  const paid = gift || d.amount.trim() !== "";
   const lab = useStateLab({
     notApplicable: [...DIALOG_NOT_APPLICABLE, ...NO_ITEMS, ...NO_CONFLICT],
     actions: [{ id: "duplicate-email", label: "Email already in use", description: "The server says this person is already in the directory." }],
@@ -422,11 +368,11 @@ export function AddMemberDialog({
             e.preventDefault();
             if (sub.busy) return;
             const next: typeof errors = {};
-            if (!d.firstName.trim()) next.firstName = "Enter a first name.";
-            if (!validEmail(d.email)) next.email = "Enter an email like name@example.com.";
-            else if (emailTaken(d.email) || lab.is("duplicate-email")) next.email = "This person is already in the directory.";
+            if (!d.firstName.trim()) next.firstName = "Enter a first name";
+            if (!validEmail(d.email)) next.email = "Enter an email like name@example.com";
+            else if (emailTaken(d.email) || lab.is("duplicate-email")) next.email = "This person is already added";
             else if (lab.validationError) next.email = "We couldn't accept this email. Check it and try again.";
-            if (paid && !(Number(d.amount) > 0)) next.amount = "Enter an amount, for example 25.";
+            if (paid && !(Number(d.amount) > 0)) next.amount = gift ? "Enter an amount, for example 25" : "Enter an amount, for example 25, or leave it blank";
             setErrors(next);
             if (Object.keys(next).length) return;
             sub.run(() =>
@@ -434,7 +380,6 @@ export function AddMemberDialog({
               firstName: d.firstName.trim(),
               lastName: d.lastName.trim(),
               email: d.email.trim(),
-              kind: gift ? "gifted" : kind,
               amount: paid ? Number(d.amount) : undefined,
               method,
               joinedAt,
@@ -449,19 +394,14 @@ export function AddMemberDialog({
             <Field label="Last name">{(props) => <Input {...props} value={d.lastName} onChange={set("lastName")} />}</Field>
           </Row>
           <Field label="Email" error={errors.email}>{(props) => <Input {...props} type="email" value={d.email} onChange={set("email")} />}</Field>
-          {!gift && (
-            <KindChoice value={kind} onChange={setKind} />
-          )}
-          <Reserve $shown={paid} inert={!paid}>
-            <Row>
-              <Field label="Amount" error={errors.amount}>
+          <Row>
+              <Field label={gift ? "Amount" : "First payment"} hint={gift ? undefined : "Optional"} error={errors.amount}>
                 {(props) => <Input {...props} inputMode="decimal" value={d.amount} onChange={set("amount")} />}
               </Field>
               <Field label="Paid by">
                 {(props) => <Select {...props} options={methodOptions} value={method} onValueChange={(v) => setMethod(v as PaymentMethod)} />}
               </Field>
-            </Row>
-          </Reserve>
+          </Row>
           {!gift && (
             <Field label="Join date">
               {(props) => <DatePicker {...props} value={joinedAt} max={TODAY} onValueChange={setJoinedAt} />}
@@ -470,15 +410,12 @@ export function AddMemberDialog({
           <Checkbox label="Send join emails" checked={joinEmails} onCheckedChange={(v) => setJoinEmails(v === true)} />
           </Lock>
           <SubmitNote submit={sub} />
-          <SubmitActions submit={submit} state={sub} />
+          <SubmitActions submit={submit} icon={Plus} state={sub} />
         </Form>
       </DialogContent>
     </Dialog>
   );
 }
-
-/** Ends 12 months after the join date. */
-export const defaultEnd = (joinedAt: string) => addMonths(joinedAt, 12);
 
 /* ---------- confirmations ---------- */
 
@@ -500,17 +437,26 @@ export function ConfirmDialog({
   title,
   description,
   confirm,
+  icon = Trash2,
   onConfirm,
-}: DialogBase & { title: string; description: string; confirm: string; onConfirm: () => void }) {
+}: DialogBase & {
+  title: string;
+  description: string;
+  confirm: string;
+  /** The icon of the button that asked for this; every Delete confirm carries Trash2. */
+  icon?: LucideIcon;
+  onConfirm: () => void;
+}) {
   const lab = useStateLab({ notApplicable: [...DIALOG_NOT_APPLICABLE, ...NO_ITEMS, ...NO_CONFLICT, "validationError"] });
   const sub = useSubmit(lab);
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent
         onOpenAutoFocus={(event) => {
-          // A delete confirmation opens on Cancel, so Enter can never delete by accident.
+          // Focus the dialog itself, not a button: nothing looks pre-chosen and Enter can't delete by accident.
+          // Tab reaches Cancel first; Escape closes.
           event.preventDefault();
-          (event.currentTarget as HTMLElement).querySelector<HTMLElement>("[data-confirm-cancel]")?.focus();
+          (event.currentTarget as HTMLElement).focus();
         }}
       >
         <WrapTitle>{title}</WrapTitle>
@@ -522,14 +468,154 @@ export function ConfirmDialog({
         )}
         <AlertDialogActions>
           <AlertDialogCancel asChild>
-            <Button type="button" $variant="secondary" data-confirm-cancel="">
-              Cancel
-            </Button>
+            <CancelButton />
           </AlertDialogCancel>
-          <BusyButton type="button" $variant="danger" busy={sub.busy} onClick={() => sub.run(onConfirm)}>
+          <BusyButton type="button" $variant="danger" icon={icon} busy={sub.busy} onClick={() => sub.run(onConfirm)}>
             {confirm}
           </BusyButton>
         </AlertDialogActions>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+/* ---------- deleting people ---------- */
+
+/** Someone with a membership they pay for: recorded payments from them, and not cancelled. Deleting them stops those payments. */
+export const isPaying = (m: Member) => !m.cancelledAt && m.payments.length > 0;
+
+/* The words typed to delete anyone who pays. Compared without case or outer spaces. */
+const ACK = "I understand";
+
+const Consequences = styled.ul`
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-sm);
+  line-height: var(--leading-body);
+  color: var(--color-text-muted);
+
+  & > li {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+  & > li > svg {
+    flex: none;
+    margin-top: calc((1lh - 16px) / 2);
+  }
+`;
+
+const DeleteBody = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+`;
+
+/**
+ * Deleting people says what else happens: their emails stop and nobody tells them. When anyone being deleted pays for a
+ * membership, a warning names them, their payments stop for good (no Undo), and the delete needs "I understand" typed.
+ */
+export function DeletePeopleDialog({
+  open,
+  onOpenChange,
+  people,
+  onConfirm,
+}: DialogBase & { people: Member[]; onConfirm: () => void }) {
+  const lab = useStateLab({ notApplicable: [...DIALOG_NOT_APPLICABLE, ...NO_ITEMS, ...NO_CONFLICT] });
+  const sub = useSubmit(lab);
+  const [typed, setTyped] = React.useState("");
+  const [missed, setMissed] = React.useState(false);
+  const one = people.length === 1;
+  const paying = people.filter(isPaying);
+  const needsAck = paying.length > 0;
+  const acked = typed.trim().toLowerCase() === ACK.toLowerCase();
+
+  /* "Abdi Kalinowski, Abdi Sahota and 4 more": up to three names, enough to recognise the group. */
+  const listOf = (list: Member[]) => {
+    const shown = list.slice(0, 3).map(fullName);
+    const rest = list.length - shown.length;
+    if (rest > 0) return `${shown.join(", ")} and ${rest} more`;
+    return shown.length > 1 ? `${shown.slice(0, -1).join(", ")} and ${shown[shown.length - 1]}` : shown[0];
+  };
+  const whoPays = one
+    ? `${fullName(people[0])} pays`
+    : paying.length === people.length
+      ? paying.length === 2
+        ? "Both pay"
+        : `All ${paying.length} pay`
+      : `${listOf(paying)} ${paying.length === 1 ? "pays" : "pay"}`;
+  const payingText = `${whoPays} for a membership. Their payments will be cancelled for good, so you won't receive any more from them.`;
+
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent
+        onOpenAutoFocus={(event) => {
+          // The dialog itself takes focus, not a button, so nothing looks pre-chosen. Tab reaches the first control.
+          event.preventDefault();
+          (event.currentTarget as HTMLElement).focus();
+        }}
+      >
+        <WrapTitle>{one ? `Delete ${fullName(people[0])}?` : `Delete ${people.length} people?`}</WrapTitle>
+        <WrapDescription>
+          {one ? "Their payments, note and activity will be deleted too" : `${listOf(people)} will be deleted with their payments, notes and activity`}
+        </WrapDescription>
+        <Consequences>
+          <li>
+            <Icon icon={MailX} size={16} />
+            <span>Emails to them stop, including automatic ones</span>
+          </li>
+          <li>
+            <Icon icon={BellOff} size={16} />
+            <span>They aren&apos;t notified, so tell them yourself if needed</span>
+          </li>
+        </Consequences>
+        <DeleteBody
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (needsAck && !acked) {
+              setMissed(true);
+              return;
+            }
+            sub.run(onConfirm);
+          }}
+        >
+          {needsAck && (
+            <>
+              <InlineAlert tone="danger" icon={CreditCard}>
+                {payingText}
+              </InlineAlert>
+              <Field label={`To confirm, type "${ACK}"`} error={missed && !acked ? `Type "${ACK}" to delete` : undefined}>
+                {(props) => (
+                <Input
+                  {...props}
+                  value={typed}
+                  placeholder={ACK}
+                  autoComplete="off"
+                  spellCheck={false}
+                  onChange={(e) => {
+                    setTyped(e.target.value);
+                    if (missed) setMissed(false);
+                  }}
+                />
+                )}
+              </Field>
+            </>
+          )}
+          {sub.phase === "error" && <SubmitNote submit={sub} />}
+          <AlertDialogActions>
+            <AlertDialogCancel asChild>
+              <CancelButton />
+            </AlertDialogCancel>
+            <BusyButton type="submit" $variant="danger" icon={Trash2} busy={sub.busy}>
+              {one ? "Delete person" : `Delete ${people.length} people`}
+            </BusyButton>
+          </AlertDialogActions>
+        </DeleteBody>
       </AlertDialogContent>
     </AlertDialog>
   );
