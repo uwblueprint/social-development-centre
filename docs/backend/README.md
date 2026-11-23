@@ -43,6 +43,7 @@ No backend work. When there's no connection, what's on screen stays readable; su
 - [Settings](./settings.md) (your name and delete account are connected; the rest of the design has no backend yet)
 - [Notifications](./notifications.md) (the bell: storage, writers, seen and done, paging; payments and email alerts still to come)
 - [Signup links](./signup-links.md)
+- [Payments](./payments.md) and [Payments insights](./payments-insights.md) (design only)
 
 ## Support address
 `BSF_SUPPORT_EMAIL` (`src/lib/contact.ts`) is where admins escalate a page that keeps failing to load. It is still the placeholder `{BSF email}`; set the real address there, and the load-error page turns it into a mailto link automatically.
