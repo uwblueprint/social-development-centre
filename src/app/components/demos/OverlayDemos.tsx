@@ -2,9 +2,9 @@
 
 import { styled } from "next-yak";
 import { useState } from "react";
-import { Copy, ExternalLink, Info, MoreHorizontal, Trash2 } from "lucide-react";
+import { Check, Copy, ExternalLink, Info, MoreHorizontal, Trash2 } from "lucide-react";
 import { Icon } from "@/components/ui/Icon";
-import { Button } from "@/components/ui/Button";
+import { Button, CancelButton } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import {
@@ -110,11 +110,12 @@ function DialogDemo() {
           </Field>
           <DialogActions>
             <DialogClose asChild>
-              <Button type="button" $variant="secondary">
-                Cancel
-              </Button>
+              <CancelButton />
             </DialogClose>
-            <Button type="submit">Save changes</Button>
+            <Button type="submit">
+              <Icon icon={Check} size={16} />
+              Save changes
+            </Button>
           </DialogActions>
         </form>
       </DialogContent>
@@ -135,10 +136,13 @@ function AlertDialogDemo() {
         </AlertDialogDescription>
         <AlertDialogActions>
           <AlertDialogCancel asChild>
-            <Button $variant="secondary">Cancel</Button>
+            <CancelButton />
           </AlertDialogCancel>
           <AlertDialogAction asChild>
-            <Button $variant="danger">Yes, delete</Button>
+            <Button $variant="danger">
+              <Icon icon={Trash2} size={16} />
+              Delete project
+            </Button>
           </AlertDialogAction>
         </AlertDialogActions>
       </AlertDialogContent>
@@ -337,19 +341,25 @@ function WideSheetDemo() {
 function ToastDemo() {
   const { toast } = useToast();
   return (
-    <Button
-      $variant="secondary"
-      onClick={() =>
-        toast({
-          title: "Changes saved",
-          description: "Your profile has been updated successfully.",
-          actionLabel: "Undo",
-          onAction: () => {},
-        })
-      }
-    >
-      Show toast
-    </Button>
+    <>
+      <Button $variant="secondary" onClick={() => toast({ title: "Saved your changes" })}>
+        Show toast
+      </Button>
+      <Button
+        $variant="secondary"
+        onClick={() => toast({ title: "Deleted Jane Doe", actionLabel: "Undo", onAction: () => {} })}
+      >
+        Show toast with Undo
+      </Button>
+      <Button
+        $variant="secondary"
+        onClick={() =>
+          toast({ title: "Couldn't delete the project", tone: "danger", actionLabel: "Try again", onAction: () => {} })
+        }
+      >
+        Show failed toast
+      </Button>
+    </>
   );
 }
 

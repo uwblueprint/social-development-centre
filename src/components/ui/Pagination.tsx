@@ -25,6 +25,26 @@ const Controls = styled.div`
   gap: var(--space-1);
 `;
 
+const Pages = styled.div`
+  display: contents;
+
+  @media (max-width: 767px) {
+    display: none;
+  }
+`;
+
+const PageStatus = styled.span`
+  display: none;
+  padding: 0 var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+
+  @media (max-width: 767px) {
+    display: inline;
+  }
+`;
+
 const PageButton = styled.button<{ $active?: boolean }>`
   all: unset;
   box-sizing: border-box;
@@ -115,6 +135,10 @@ export function Pagination({ page, pageCount, pageSize, total, onPageChange }: P
           <Icon icon={ChevronLeft} size={14} />
           Previous
         </Button>
+        <PageStatus>
+          Page {page} of {pageCount}
+        </PageStatus>
+        <Pages>
         {pageWindow(page, pageCount).map((p, i) =>
           p === "ellipsis" ? (
             <Ellipsis key={`ellipsis-${i}`} aria-hidden="true">
@@ -133,6 +157,7 @@ export function Pagination({ page, pageCount, pageSize, total, onPageChange }: P
             </PageButton>
           ),
         )}
+        </Pages>
         <Button
           type="button"
           $variant="secondary"

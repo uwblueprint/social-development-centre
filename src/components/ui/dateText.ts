@@ -1,4 +1,10 @@
-import { parseISODate } from "./DatePicker";
+/*
+ * Date helpers shared by DatePicker, RangeCalendar and DateRulePicker.
+ * ISO ("YYYY-MM-DD") values use local time throughout, so a value round-trips exactly through the text
+ * field, the calendar and form submission without timezone drift.
+ */
+
+const ISO_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
 
@@ -8,11 +14,37 @@ function buildDate(year: number, month: number, day: number) {
   return valid ? date : undefined;
 }
 
+/** "2026-11-05" to a local Date, or undefined when it isn't a real ISO date. */
+export function parseISODate(value: string | undefined): Date | undefined {
+  if (!value) return undefined;
+  const match = ISO_PATTERN.exec(value.trim());
+  if (!match) return undefined;
+  return buildDate(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+}
+
+/** A local Date to "2026-11-05". */
+export function formatISODate(date: Date): string {
+  const y = String(date.getFullYear()).padStart(4, "0");
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/** The 1st of the month a date falls in. */
+export function monthStart(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+/** The last day of the month a date falls in. */
+export function monthEnd(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0);
+}
+
 /** Month index (0-11) from a full or 3+ letter name ("nov", "sept", "November"), or -1. */
 export function monthFromName(name: string) {
   const n = name.toLowerCase().replace(/\.$/, "");
   if (n.length < 3) return -1;
-  return MONTHS.findIndex((m) => m.startsWith(n));
+  return MONTHS.findIndex((m) => m.startsWith(n) || (n === "sept" && m === "september"));
 }
 
 /**
@@ -35,12 +67,13 @@ export function parseTypedDate(
     if (mo) {
       const month = monthFromName(mo[1]);
       const year = yearOf(mo[2]);
-      return month < 0 ? undefined : buildDate(year, month, 1);
+      return month < 0 || year === undefined ? undefined : buildDate(year, month, 1);
     }
   }
   let m = /^(\d{1,2})[/.-](\d{1,2})(?:[/.-](\d{4}))?$/.exec(t);
   if (m) {
     const year = yearOf(m[3]);
+    if (year === undefined) return undefined;
     let month = Number(m[1]);
     let day = Number(m[2]);
     if (month > 12 && day <= 12) [month, day] = [day, month];
@@ -50,13 +83,13 @@ export function parseTypedDate(
   if (m) {
     const month = monthFromName(m[1]);
     const year = yearOf(m[3]);
-    return month < 0 ? undefined : buildDate(year, month, Number(m[2]));
+    return month < 0 || year === undefined ? undefined : buildDate(year, month, Number(m[2]));
   }
   m = /^(\d{1,2})(?:st|nd|rd|th)?(?: of)? ([A-Za-z]+)\.?(?:,? ?(\d{4}))?$/.exec(t);
   if (m) {
     const month = monthFromName(m[2]);
     const year = yearOf(m[3]);
-    return month < 0 ? undefined : buildDate(year, month, Number(m[1]));
+    return month < 0 || year === undefined ? undefined : buildDate(year, month, Number(m[1]));
   }
   return undefined;
 }

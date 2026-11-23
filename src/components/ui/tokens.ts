@@ -5,7 +5,7 @@ globalStyle`
   :root {
     --font-sans: "Switzer", "Geist Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
     --font-display: var(--font-sans);
-    --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; /* system mono (owner, 23 Nov 2026): SF Mono on Mac, Consolas on Windows */
 
     --weight-regular: 400;
     --weight-medium: 500;
@@ -41,7 +41,13 @@ globalStyle`
     /* SDC green as the primary colour (owner). To revert: --taupe-900 / --taupe-800 / --taupe-50. */
     --color-primary: var(--color-brand-heading);
     --color-primary-hover: #043a34;
+    /* A light tint of the primary green for "something is on" fills, e.g. an applied filter button (owner, Nov 2026). Text stays --color-text. */
+    --color-primary-subtle: #e6f2ef;
     --color-on-primary: #ffffff;
+    /* Dark overlay surface for toasts and the floating selection bar (owner, Nov 2026): the deepest brand green step, darker than --color-primary. */
+    --color-primary-deep: var(--sdc-950);
+    /* Text and icons on --color-primary-deep: white, 14.8:1. */
+    --color-on-primary-deep: #ffffff;
     --color-secondary: var(--taupe-100);
     --color-secondary-hover: var(--taupe-200);
     --color-disabled-bg: var(--taupe-100);
@@ -94,6 +100,10 @@ globalStyle`
     --color-category-5-subtle: #f7fee7;
     --color-category-5-border: #d9f99d;
     --color-category-5-line: #65a30d;
+    /* Chart marks (Payments overview). Neutral is the default bar: taupe-500, 4.95:1 on white (taupe-400 fails 3:1). */
+    --chart-neutral: var(--taupe-500);
+    /* The one bar to notice (the period still filling up): SDC green, so it reads as ours. */
+    --chart-highlight: var(--color-primary);
     /* Member tag colours: five calm Tailwind hues. bg = 50, bg-strong = 100 (selected), text = 800 (4.5:1 or better on both). */
     --tag-stone-bg: #fafaf9;
     --tag-stone-bg-strong: #f5f5f4;
@@ -110,6 +120,21 @@ globalStyle`
     --tag-rose-bg: #fff1f2;
     --tag-rose-bg-strong: #ffe4e6;
     --tag-rose-text: #9f1239;
+    --tag-pink-bg: #fdf2f8;
+    --tag-pink-bg-strong: #fce7f3;
+    --tag-pink-text: #9d174d;
+    --tag-orange-bg: #fff7ed;
+    --tag-orange-bg-strong: #ffedd5;
+    --tag-orange-text: #9a3412;
+    --tag-teal-bg: #f0fdfa;
+    --tag-teal-bg-strong: #ccfbf1;
+    --tag-teal-text: #115e59;
+    --tag-indigo-bg: #eef2ff;
+    --tag-indigo-bg-strong: #e0e7ff;
+    --tag-indigo-text: #3730a3;
+    --tag-violet-bg: #f5f3ff;
+    --tag-violet-bg-strong: #ede9fe;
+    --tag-violet-text: #5b21b6;
 
     /* Eventbrite's brand orange, only for recognizing an Eventbrite link (owner). Not for text: 3.3:1. */
     --color-eventbrite: #f05537;
@@ -179,8 +204,6 @@ globalStyle`
     --color-mention-hover: var(--sdc-100);
     /* The range band in the date calendar: a light green so the span reads as part of the brand, calm behind day numbers. */
     --color-range-band: var(--sdc-50);
-    /* Outline buttons hover to a light green fill instead of grey. */
-    --color-outline-hover: var(--sdc-50);
 
     --color-focus: var(--color-primary); /* keyboard focus ring and typed-field border: the brand primary in both themes */
     --color-overlay: rgb(29 24 22 / 0.4);
@@ -208,6 +231,8 @@ globalStyle`
     --tracking-tight: -0.02em;
     /* Long-form reading (Documentation): slightly open tracking. */
     --tracking-prose: 0.01em;
+    /* Keyboard chips (Esc): system mono letters sit wide apart; pulled in so the key reads as one word (owner). */
+    --tracking-mono: -0.06em;
 
     /* Body 1.5 (WCAG 1.4.12 baseline); small UI text 1.4; headings tighten as size grows. */
     --leading-none: 1;
@@ -215,6 +240,8 @@ globalStyle`
     --leading-heading: 1.2;
     --leading-ui: 1.4;
     --leading-body: 1.5;
+    /* Several typed lines in one field (the email footer editor): looser than one-line UI text, set by Gaurav. */
+    --leading-editor: 1.6;
     /* Long-form reading (Documentation): extra air for scanning long guides. */
     --leading-prose: 1.7;
     /* The email footer (sender, unsubscribe, address): airy small print, set by Gaurav. */
@@ -225,6 +252,8 @@ globalStyle`
     --shadow-lg: 0 16px 40px rgb(29 24 22 / 0.14);
     /* A soft shadow cast to the right by frozen table columns while the table is scrolled sideways. */
     --shadow-edge: 6px 0 8px -6px rgb(29 24 22 / 0.16);
+    /* A soft shadow cast upward by a footer that a scrolling list passes under (e.g. a filter popover's Cancel / Apply). */
+    --shadow-up: 0 -4px 6px -4px rgb(29 24 22 / 0.06);
 
     /* Height of a one-line form control (Input, Select, tag boxes) and of controls that sit beside them. */
     --control-height: 40px;
@@ -236,16 +265,19 @@ globalStyle`
     --menu-row-height: 34px;
     /* List page search in the header row: wide enough for a name or email, narrow enough to leave room for actions. */
     --search-width: 280px;
+    /* The list column beside a detail or calendar view (Outbox recipients): fits a checkbox, a name and a one-line subject. */
+    --list-pane-width: 360px;
+    /* A month-calendar day cell's minimum height: room for the date and three or four email entries; rows grow to fill the page. */
+    --calendar-day-min-height: 120px;
+    /* Toasts fit their message: never narrower than this, never wider than the max (owner, 21 Nov 2026). */
+    --toast-width: 340px;
+    --toast-width-max: 600px;
     /* The desktop sidebar's width; the design zone's nav placeholder uses it too, so swapping in the real sidebar doesn't shift screens. */
     --sidebar-width: 264px;
     /* Narrow dialogs (a signup link's QR code and actions): a phone-sized column, so the code scans at a glance. */
     --dialog-width-narrow: 364px;
     /* Full-page flows (an email, a form): one readable column, matching the People page (owner). */
     --flow-width: 720px;
-    /* The list column beside a detail or calendar view (Outbox recipients): fits a checkbox, a name and a one-line subject. */
-    --list-pane-width: 360px;
-    /* A month-calendar day cell's minimum height: room for the date and three or four email entries; rows grow to fill the page. */
-    --calendar-day-min-height: 120px;
 
     /*
      * Dashed borders (disabled controls, drop targets): drawn as 4px dashes with 4px gaps, because the
@@ -292,8 +324,7 @@ globalStyle`
     --z-tooltip: 70; /* tooltips and hover cards, above the control they describe */
     --z-toast: 80; /* toasts confirm actions taken anywhere, including inside a modal */
 
-    /* Dialogs soften what's behind them so the decision in front reads first. Sheets don't blur:
-       the list behind a sheet is context people keep reading. */
+    /* Dialogs and sheets soften what's behind them (PM request, Nov 2026) so the panel in front reads first. */
     --overlay-blur: 2px;
   }
 
@@ -334,7 +365,12 @@ globalStyle`
       --color-primary: #8fd3c4;
       --color-selection: var(--sdc-800);
       --color-primary-hover: #b5e3d8;
+      --color-primary-subtle: rgb(143 211 196 / 0.14);
       --color-on-primary: #052e29;
+      /* Dark overlay surface for toasts and the selection bar: a deep green that still reads as green on the dark page, one step lighter than light mode so it separates from the background. */
+      --color-primary-deep: var(--sdc-900);
+      /* Text and icons on --color-primary-deep: --sdc-50, 9.3:1. */
+      --color-on-primary-deep: var(--sdc-50);
       --color-secondary: #3a3230;
       --color-secondary-hover: #4a403d;
       --color-disabled-bg: #2b2422;
@@ -344,7 +380,6 @@ globalStyle`
       --color-mention-subtle: color-mix(in oklch, var(--sdc-900) 55%, var(--color-bg));
       --color-mention-hover: var(--sdc-800);
       --color-range-band: color-mix(in oklch, var(--sdc-900) 60%, var(--color-bg));
-      --color-outline-hover: color-mix(in oklch, var(--sdc-900) 60%, var(--color-bg));
 
       --color-accent: #fb923c;
       --color-accent-hover: #fdba74;
@@ -388,6 +423,9 @@ globalStyle`
       --color-category-5-subtle: #1c2410;
       --color-category-5-border: #3f6212;
       --color-category-5-line: #84cc16;
+      /* Dark chart marks: neutral is the dark subtle text, 4.5:1 on --color-surface-raised. */
+      --chart-neutral: #8e817c;
+      --chart-highlight: var(--color-primary);
       /* Dark tag colours: the 900 mixed into the page background; text = 200 (4.5:1 or better on both fills). */
       --tag-stone-bg: color-mix(in srgb, #1c1917 50%, var(--color-bg));
       --tag-stone-bg-strong: color-mix(in srgb, #1c1917 75%, var(--color-bg));
@@ -404,6 +442,21 @@ globalStyle`
       --tag-rose-bg: color-mix(in srgb, #881337 50%, var(--color-bg));
       --tag-rose-bg-strong: color-mix(in srgb, #881337 75%, var(--color-bg));
       --tag-rose-text: #fecdd3;
+      --tag-pink-bg: color-mix(in srgb, #831843 50%, var(--color-bg));
+      --tag-pink-bg-strong: color-mix(in srgb, #831843 75%, var(--color-bg));
+      --tag-pink-text: #fbcfe8;
+      --tag-orange-bg: color-mix(in srgb, #7c2d12 50%, var(--color-bg));
+      --tag-orange-bg-strong: color-mix(in srgb, #7c2d12 75%, var(--color-bg));
+      --tag-orange-text: #fed7aa;
+      --tag-teal-bg: color-mix(in srgb, #134e4a 50%, var(--color-bg));
+      --tag-teal-bg-strong: color-mix(in srgb, #134e4a 75%, var(--color-bg));
+      --tag-teal-text: #99f6e4;
+      --tag-indigo-bg: color-mix(in srgb, #312e81 50%, var(--color-bg));
+      --tag-indigo-bg-strong: color-mix(in srgb, #312e81 75%, var(--color-bg));
+      --tag-indigo-text: #c7d2fe;
+      --tag-violet-bg: color-mix(in srgb, #4c1d95 50%, var(--color-bg));
+      --tag-violet-bg-strong: color-mix(in srgb, #4c1d95 75%, var(--color-bg));
+      --tag-violet-text: #ddd6fe;
 
       --color-focus: var(--color-primary);
     --illustration-page-bg: var(--taupe-900);
@@ -425,6 +478,7 @@ globalStyle`
       --shadow-md: 0 4px 16px rgb(0 0 0 / 0.5), 0 1px 2px rgb(0 0 0 / 0.4);
       --shadow-lg: 0 16px 40px rgb(0 0 0 / 0.6);
       --shadow-edge: 6px 0 8px -6px rgb(0 0 0 / 0.6);
+      --shadow-up: 0 -4px 6px -4px rgb(0 0 0 / 0.3);
     }
   }
   :root[data-theme="dark"] {
@@ -441,6 +495,7 @@ globalStyle`
     --color-primary: #8fd3c4;
     --color-selection: var(--sdc-800);
     --color-primary-hover: #b5e3d8;
+    --color-primary-subtle: rgb(143 211 196 / 0.14);
     --color-on-primary: #052e29;
     --color-secondary: #3a3230;
     --color-secondary-hover: #4a403d;
@@ -451,7 +506,6 @@ globalStyle`
     --color-mention-subtle: color-mix(in oklch, var(--sdc-900) 55%, var(--color-bg));
     --color-mention-hover: var(--sdc-800);
     --color-range-band: color-mix(in oklch, var(--sdc-900) 60%, var(--color-bg));
-    --color-outline-hover: color-mix(in oklch, var(--sdc-900) 60%, var(--color-bg));
 
     --color-accent: #fb923c;
     --color-accent-hover: #fdba74;
@@ -495,6 +549,9 @@ globalStyle`
     --color-category-5-subtle: #1c2410;
     --color-category-5-border: #3f6212;
     --color-category-5-line: #84cc16;
+    /* Dark chart marks: see the media-query block above. */
+    --chart-neutral: #8e817c;
+    --chart-highlight: var(--color-primary);
     /* Dark tag colours: the 900 mixed into the page background; text = 200 (4.5:1 or better on both fills). */
     --tag-stone-bg: color-mix(in srgb, #1c1917 50%, var(--color-bg));
     --tag-stone-bg-strong: color-mix(in srgb, #1c1917 75%, var(--color-bg));
@@ -511,6 +568,21 @@ globalStyle`
     --tag-rose-bg: color-mix(in srgb, #881337 50%, var(--color-bg));
     --tag-rose-bg-strong: color-mix(in srgb, #881337 75%, var(--color-bg));
     --tag-rose-text: #fecdd3;
+    --tag-pink-bg: color-mix(in srgb, #831843 50%, var(--color-bg));
+    --tag-pink-bg-strong: color-mix(in srgb, #831843 75%, var(--color-bg));
+    --tag-pink-text: #fbcfe8;
+    --tag-orange-bg: color-mix(in srgb, #7c2d12 50%, var(--color-bg));
+    --tag-orange-bg-strong: color-mix(in srgb, #7c2d12 75%, var(--color-bg));
+    --tag-orange-text: #fed7aa;
+    --tag-teal-bg: color-mix(in srgb, #134e4a 50%, var(--color-bg));
+    --tag-teal-bg-strong: color-mix(in srgb, #134e4a 75%, var(--color-bg));
+    --tag-teal-text: #99f6e4;
+    --tag-indigo-bg: color-mix(in srgb, #312e81 50%, var(--color-bg));
+    --tag-indigo-bg-strong: color-mix(in srgb, #312e81 75%, var(--color-bg));
+    --tag-indigo-text: #c7d2fe;
+    --tag-violet-bg: color-mix(in srgb, #4c1d95 50%, var(--color-bg));
+    --tag-violet-bg-strong: color-mix(in srgb, #4c1d95 75%, var(--color-bg));
+    --tag-violet-text: #ddd6fe;
 
     --color-focus: var(--color-primary);
     --illustration-page-bg: var(--taupe-900);
@@ -532,6 +604,7 @@ globalStyle`
     --shadow-md: 0 4px 16px rgb(0 0 0 / 0.5), 0 1px 2px rgb(0 0 0 / 0.4);
     --shadow-lg: 0 16px 40px rgb(0 0 0 / 0.6);
     --shadow-edge: 6px 0 8px -6px rgb(0 0 0 / 0.6);
+    --shadow-up: 0 -4px 6px -4px rgb(0 0 0 / 0.4);
   }
 
   *, *::before, *::after { box-sizing: border-box; }
@@ -548,6 +621,25 @@ globalStyle`
 
   kbd {
     font-family: var(--font-mono);
+  }
+
+  /* Thin scrollbars everywhere (owner, Nov 2026): a quiet thumb on a clear track, in both themes. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border-strong) transparent;
+  }
+
+  /* The row a search result led to (src/features/search/targets.ts): focused and tinted, then the tint fades.
+     "html" outranks the row's own background. The kit's focus ring replaces the browser outline. */
+  html [data-search-arrived] {
+    transition: background-color var(--duration-slow) var(--ease-out);
+  }
+  html [data-search-arrived]:focus {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+  html [data-search-arrived="on"] {
+    background-color: var(--color-selection);
   }
 
   @media (prefers-reduced-motion: reduce) {

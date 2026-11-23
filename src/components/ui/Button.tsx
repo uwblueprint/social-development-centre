@@ -1,7 +1,8 @@
+import type { ComponentProps } from "react";
 import { css, styled } from "next-yak";
 
 /** No "link" variant (owner): every action is a box. Text-like actions use `ghost`. */
-type Variant = "primary" | "secondary" | "outline" | "ghost" | "danger" | "danger-outline";
+type Variant = "primary" | "secondary" | "outline" | "ghost" | "danger" | "danger-outline" | "danger-secondary";
 type Size = "sm" | "md" | "lg";
 
 export const Button = styled.button<{ $variant?: Variant; $size?: Size }>`
@@ -16,6 +17,12 @@ export const Button = styled.button<{ $variant?: Variant; $size?: Size }>`
   line-height: 1;
   white-space: nowrap;
   cursor: pointer;
+
+  /* An icon keeps its size whatever the padding: it never shrinks to fit a tight or icon-only button. */
+  & > svg {
+    flex-shrink: 0;
+  }
+
   transition:
     background-color var(--duration-fast) var(--ease-out),
     border-color var(--duration-fast) var(--ease-out),
@@ -60,9 +67,12 @@ export const Button = styled.button<{ $variant?: Variant; $size?: Size }>`
     css`
       background: var(--color-bg);
       color: var(--color-text);
-      border-color: var(--color-border-strong);
+      /* A light outline (owner, Nov 2026): the label identifies a button, so WCAG 1.4.11's 3:1 doesn't apply to its border.
+         Inputs keep --color-border-strong, since their border is what shows where to type. Darkens on hover. */
+      border-color: var(--taupe-400);
       &:hover:not(:disabled):not([aria-disabled="true"]) {
         background: var(--color-bg-hover);
+        border-color: var(--color-border-strong);
       }
     `}
   ${({ $variant }) =>
@@ -83,6 +93,16 @@ export const Button = styled.button<{ $variant?: Variant; $size?: Size }>`
       border-color: var(--color-danger);
       &:hover:not(:disabled):not([aria-disabled="true"]) {
         background: var(--color-danger-subtle);
+      }
+    `}
+  /* Delete as a secondary action: light red fill, red label (owner, Nov 2026). Use it instead of an icon-only trash button. */
+  ${({ $variant }) =>
+    $variant === "danger-secondary" &&
+    css`
+      background: var(--color-danger-subtle);
+      color: var(--color-danger);
+      &:hover:not(:disabled):not([aria-disabled="true"]) {
+        background: color-mix(in oklch, var(--color-danger) 10%, var(--color-danger-subtle));
       }
     `}
   ${({ $variant }) =>
@@ -109,3 +129,16 @@ export const Button = styled.button<{ $variant?: Variant; $size?: Size }>`
     cursor: not-allowed;
   }
 `;
+
+/**
+ * The dismiss button in a dialog or popover footer: always secondary, always "Cancel" unless told otherwise.
+ * Footers (DialogActions, AlertDialogActions, PopoverActions) pin it to the far left, away from the action.
+ * Wrap it in DialogClose / AlertDialogCancel / PopoverClose with asChild.
+ */
+export function CancelButton({ children = "Cancel", ...props }: ComponentProps<typeof Button>) {
+  return (
+    <Button type="button" $variant="secondary" data-cancel="" {...props}>
+      {children}
+    </Button>
+  );
+}

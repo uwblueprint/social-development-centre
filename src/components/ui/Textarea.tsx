@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { css, styled } from "next-yak";
+import { isInvalid, VisuallyHidden } from "./internal";
 import { characterCountText, ErrorIcon, useFieldCounter } from "./Field";
 
 const Wrapper = styled.span`
@@ -97,22 +98,6 @@ const Counter = styled.span<{ $warning?: boolean }>`
       font-weight: var(--weight-medium);
     `}
 `;
-
-const VisuallyHidden = styled.span`
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-`;
-
-function isInvalid(value: unknown) {
-  return value === true || value === "true";
-}
 
 export type TextareaProps = React.ComponentPropsWithoutRef<"textarea">;
 

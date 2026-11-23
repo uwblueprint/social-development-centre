@@ -2,7 +2,7 @@
 
 A modal panel anchored to the right edge of the screen, full height, for viewing and editing a record without leaving the list behind it.
 
-Header, body and footer share one horizontal inset that matches the `ListPage` gutter (`--space-6`, `--space-4` below 768px), so a sheet lines up with the page behind it. The overlay dims but never blurs: the list behind a sheet is context people keep reading (dialogs blur).
+Header, body and footer share one horizontal inset that matches the `ListPage` gutter (`--space-6`, `--space-4` below 768px), so a sheet lines up with the page behind it. The overlay dims and slightly blurs the page behind (`--overlay-blur`, the same scrim and blur as dialogs).
 
 ## Use when / Don't use when
 - Inspecting or editing one record from a list (a partner, a person) while keeping the list's context and scroll position.

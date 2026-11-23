@@ -1,7 +1,9 @@
 "use client";
 
 import { styled } from "next-yak";
+import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { Icon } from "@/components/ui/Icon";
 import { DisabledReason } from "@/components/ui/DisabledReason";
 
 const Row = styled.div`
@@ -27,6 +29,10 @@ export function ButtonDemos() {
         <Button $variant="ghost">Ghost</Button>
         <Button $variant="danger">Delete</Button>
         <Button $variant="danger-outline">Move to trash</Button>
+        <Button $variant="danger-secondary">
+          <Icon icon={Trash2} size={16} />
+          Delete
+        </Button>
       </Row>
       <Row>
         <Button $size="sm">Small</Button>

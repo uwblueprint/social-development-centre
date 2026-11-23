@@ -19,7 +19,8 @@ import {
 - `Dialog` (Root): `open`/`onOpenChange`.
 - `DialogTrigger asChild` — wrap your own `Button`.
 - `DialogContent` — the overlay, panel, and a built-in labeled close (×) button.
-- `DialogTitle` (required), `DialogDescription` (optional), `DialogActions` — right-aligned action row, separated from the body by spacing.
+- `DialogTitle` (required), `DialogDescription` (optional, only when it adds something), `DialogActions` — the footer. The action sits on the right; a `CancelButton` is pinned to the far left, lined up with the content, so it's hard to hit by mistake.
+- Spacing is built in: 8px from title to description, 16px from title to the body when there's no description.
 
 ## Example
 ```tsx
@@ -30,7 +31,7 @@ import {
     <DialogDescription>Update your display name and bio.</DialogDescription>
     {/* form fields */}
     <DialogActions>
-      <DialogClose asChild><Button variant="secondary">Cancel</Button></DialogClose>
+      <DialogClose asChild><CancelButton /></DialogClose>
       <Button type="submit">Save changes</Button>
     </DialogActions>
   </DialogContent>
@@ -38,7 +39,7 @@ import {
 ```
 
 ## Content rules
-Title is a short noun phrase naming the task ("Edit profile"), not a question. Primary action starts with a verb ("Save changes"); cancel is always "Cancel".
+Title is a short noun phrase naming the task ("Edit profile"), not a question. Primary action starts with a verb ("Save changes") and carries the same icon as the button that opened the dialog (Add person → Plus, Delete → Trash2). Cancel is always "Cancel". Footers use only primary (or `danger` for a destructive confirm) and secondary buttons, never outline or ghost. A multi-step dialog drops Cancel (the × closes it) and uses Back (secondary, left) and Continue (primary, right).
 
 ## Accessibility
 Focus moves into the dialog on open and returns to the trigger on close. Esc and outside-click both dismiss. `DialogTitle` is required as the accessible name — never omit it.

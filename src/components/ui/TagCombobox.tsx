@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { styled } from "next-yak";
-import { overlayMotion } from "./overlayMotion";
+import { overlayMotion, VisuallyHidden } from "./internal";
 import { Popover as PopoverPrimitive } from "radix-ui";
 import { X, type LucideIcon } from "lucide-react";
 import { Icon } from "./Icon";
@@ -28,7 +28,7 @@ export const tagComboboxCopy = {
 export interface TagComboboxOption {
   value: string;
   label: string;
-  /** Short note shown on the right of the option, e.g. "Moves from Has tag". */
+  /** Short note shown on the right of the option, e.g. "Moves from Has tag" or a person's name. Typing matches it too. */
   hint?: string;
 }
 
@@ -133,7 +133,8 @@ const Box = styled.div`
   gap: var(--space-1);
   width: 100%;
   min-height: var(--control-height);
-  padding: var(--space-1);
+  /* One line of tags is exactly control-height tall, and the first line sits there however many lines follow. */
+  padding: calc((var(--control-height) - var(--pill-height)) / 2 - 1px) var(--space-1);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
   background: var(--color-bg);
@@ -230,6 +231,7 @@ const OptionLabel = styled.span`
   align-items: center;
   gap: var(--space-2);
   min-width: 0;
+  overflow-wrap: anywhere;
 `;
 
 const ChipText = styled.span`
@@ -273,6 +275,11 @@ const Draft = styled.input`
     flex: 1 1 auto;
   }
 
+  /* No tags: the placeholder starts where a tag's text would, in line with the text in an Input. */
+  &[data-alone] {
+    padding-left: var(--space-2);
+  }
+
   /* Empty and last: take whatever room is left on the line, however little, instead of wrapping to an empty line of its own. */
   &[data-last][data-empty] {
     flex: 1 1 0;
@@ -302,11 +309,13 @@ const List = styled(PopoverPrimitive.Content)`
 
 const Option = styled.div`
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-2);
+  column-gap: var(--space-2);
   min-height: var(--menu-row-height);
-  padding: 0 var(--space-2);
+  /* Too narrow for the label and the hint side by side: the hint drops to its own line, never over the label. */
+  padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-sm);
   font-size: var(--text-sm);
   color: var(--color-text);
@@ -330,8 +339,10 @@ const Heading = styled.div`
 `;
 
 const Hint = styled.span`
+  margin-left: auto;
   font-size: var(--text-xs);
   color: var(--color-text-muted);
+  white-space: nowrap;
 `;
 
 const Empty = styled.div`
@@ -347,17 +358,6 @@ const MenuAnchor = styled.span`
   width: 0;
   height: 0;
   pointer-events: none;
-`;
-
-const VisuallyHidden = styled.span`
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
 `;
 
 /**
@@ -421,9 +421,12 @@ export function TagCombobox({
   const q = query.trim().toLowerCase();
   const mode = queryMode?.(query) ?? null;
   const modeQ = mode ? mode.filter.trim().toLowerCase() : "";
+  // Typing matches the label or the hint beside it, e.g. an admin's name next to their email.
+  const hits = (o: TagComboboxOption, text: string) =>
+    !text || o.label.toLowerCase().includes(text) || !!o.hint?.toLowerCase().includes(text);
   const matches = mode
-    ? options.filter((o) => !mode.hide?.includes(o.value) && (!modeQ || o.label.toLowerCase().includes(modeQ)))
-    : options.filter((o) => !value.includes(o.value) && (!q || o.label.toLowerCase().includes(q)));
+    ? options.filter((o) => !mode.hide?.includes(o.value) && hits(o, modeQ))
+    : options.filter((o) => !value.includes(o.value) && hits(o, q));
   const leadingOption = !mode && leadingOptionProp && (leadingOptionAlways || query.trim() !== "") ? leadingOptionProp : null;
   const lead = leadingOption ? 1 : 0;
   const count = matches.length + lead;
@@ -712,6 +715,7 @@ export function TagCombobox({
             ref={inputRef}
             data-last={at === visual.length ? "" : undefined}
             data-empty={query === "" ? "" : undefined}
+            data-alone={visual.length === 0 ? "" : undefined}
             id={id}
             role="combobox"
             aria-label={ariaLabel}
@@ -720,6 +724,8 @@ export function TagCombobox({
             aria-expanded={open}
             aria-controls={listId}
             aria-autocomplete="list"
+            // "off", the only valid way to say "no browser suggestions" (WCAG 1.3.5; axe rejects made-up tokens).
+            // Chrome can still lay its saved addresses over the list on fields labelled with "email".
             autoComplete="off"
             aria-activedescendant={open && count ? `${listId}-${activeIndex}` : undefined}
             value={query}
@@ -746,6 +752,8 @@ export function TagCombobox({
             onBlur={() => {
               setPending(null);
               setSel(null);
+              // Leaving the field closes the list. Options keep focus in the field (mousedown is prevented), so picking one doesn't.
+              setOpen(false);
             }}
             onKeyDown={handleKeyDown}
           />
@@ -808,6 +816,8 @@ export function TagCombobox({
           </Tags>
         </Box>
       </PopoverPrimitive.Anchor>
+      {/* Gone the moment it closes (no fade out), so moving to the next field never shows two lists at once. */}
+      {open && !disabled && (
       <PopoverPrimitive.Portal>
         <List
           id={listId}
@@ -869,6 +879,7 @@ export function TagCombobox({
           )}
         </List>
       </PopoverPrimitive.Portal>
+      )}
       <DropdownMenu open={!!menu && menuActions.length > 0} onOpenChange={(next) => !next && setMenu(null)}>
         <DropdownMenuTrigger asChild>
           <MenuAnchor aria-hidden style={{ left: menu?.x ?? 0, top: menu?.y ?? 0 }} />

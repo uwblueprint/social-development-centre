@@ -26,7 +26,7 @@ import type { TableColumn, TableSort } from "@/components/ui/Table";
 - `busy?`: the next rows are loading. See Loading.
 - `sortPending?`: a sort change is in flight; the active sort icon becomes a spinner. See Loading.
 - `stickyColumns?`: `number` — freezes the first N columns while the table scrolls sideways. See Frozen columns.
-- On a column, `filter?`: `{ label, options: { value, label, count? }[], selected, onChange, defaultSelected? }` — a filter in the column header. See Filters.
+- On a column, `filter?`: `{ label, options: { value, label, count?, display? }[], selected, onChange, defaultSelected? }` (`display` shows something other than the label's text in the list, e.g. a `Tag` in its colour for a tags column) — a filter in the column header. See Filters.
 - On a column, `width?`: a fixed CSS width such as `"240px"`. See Row height and widths.
 - On a column, `isEmpty?`: `(row: T) => boolean` — when every row is empty for the column, the column is hidden. See Empty columns.
 - `aria-label?`: accessible name for the table, when no visible heading already names it.
@@ -145,7 +145,8 @@ A list page's search field above a `Table` is one documented exception to "every
 6. Leaving off `getRowId` in favor of array index — breaks focus/selection identity when rows reorder or filter.
 
 ## Column filter with many options
-- More than 8 options: a search box ("Search {label}s") appears at the top and takes focus; the list filters as you type, with "Nothing matches that search." when empty.
+- More than 8 options: a search box ("Search {label}s") appears at the top and takes focus; the list filters as you type, with "Nothing matches that search." when empty. Enter ticks the first match; Enter again (or with nothing new to tick) applies.
+- No visible heading: the popover opens under its column. The legend ("Show {label}") stays for screen readers.
 - Options already selected when the popover opens are pinned to the top (pinned at open, so rows don't jump while you check).
 - One 36px line per option: long labels truncate with the full name on hover; counts sit in a right-aligned column with a gap before the scrollbar.
 - The list shows 6½ rows, so the last row is cut in half and the list reads as scrollable even where scrollbars are hidden. The scrollbar is thin, arrowless and has a reserved gutter.

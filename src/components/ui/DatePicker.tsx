@@ -2,40 +2,15 @@
 
 import * as React from "react";
 import { css, styled } from "next-yak";
-import { overlayMotion } from "./overlayMotion";
+import { isInvalid, overlayMotion } from "./internal";
 import { Popover as PopoverPrimitive } from "radix-ui";
 import { DayPicker, type Matcher } from "react-day-picker";
 import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { Icon } from "./Icon";
 import { ErrorIcon } from "./Field";
+import { formatISODate, monthEnd, monthStart, parseISODate } from "./dateText";
 
-/* ------------------------------------------------------------------ */
-/* ISO ("YYYY-MM-DD") <-> Date helpers. Local time throughout, so the   */
-/* value round-trips exactly through the text field, the calendar and  */
-/* form submission without timezone drift.                             */
-/* ------------------------------------------------------------------ */
-
-const ISO_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
-
-export function parseISODate(value: string | undefined): Date | undefined {
-  if (!value) return undefined;
-  const match = ISO_PATTERN.exec(value.trim());
-  if (!match) return undefined;
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  const day = Number(match[3]);
-  const date = new Date(year, month - 1, day);
-  const valid =
-    date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
-  return valid ? date : undefined;
-}
-
-export function formatISODate(date: Date): string {
-  const y = String(date.getFullYear()).padStart(4, "0");
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
+export { formatISODate, parseISODate } from "./dateText";
 
 /* ------------------------------------------------------------------ */
 /* Month/year range helpers, shared by the day grid's own navigation   */
@@ -44,14 +19,6 @@ export function formatISODate(date: Date): string {
 /* if min/max lands mid-month (or mid-year), that month/year still has */
 /* selectable days, so navigation to it stays enabled.                 */
 /* ------------------------------------------------------------------ */
-
-function monthStart(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), 1);
-}
-
-function monthEnd(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth() + 1, 0);
-}
 
 function addMonths(date: Date, delta: number): Date {
   return new Date(date.getFullYear(), date.getMonth() + delta, 1);
@@ -133,7 +100,7 @@ const TextField = styled.input<{ $invalid?: boolean }>`
     &:focus {
       box-shadow:
         inset 0 0 0 1px var(--color-danger),
-        var(--focus-ring-text-invalid);
+          var(--focus-ring-text-invalid);
     }
   }
 
@@ -747,10 +714,6 @@ export interface DatePickerProps {
   "aria-describedby"?: string;
   "aria-label"?: string;
   "aria-labelledby"?: string;
-}
-
-function isInvalid(value: unknown) {
-  return value === true || value === "true";
 }
 
 /**

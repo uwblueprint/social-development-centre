@@ -14,6 +14,7 @@ import { Tooltip, TooltipProvider } from "@/components/ui/Tooltip";
 - Mount one `TooltipProvider` near the app/demo root (`delayDuration=0`, `skipDelayDuration=300` by default).
 - `Tooltip({ content: ReactNode, children: ReactElement, side?, delayDuration?, pinOnClick? })` — wraps a single focusable child.
 - `delayDuration?: number` — milliseconds to wait on hover **or keyboard focus** before opening. Default `0` (instant). Use ~600 for supplementary descriptions the person didn't ask for, e.g. sidebar items, so sweeping the pointer past doesn't flash them.
+- `TooltipContent` (for custom triggers) takes `motion?: "default" | "none"`. `"none"` drops the fade and slide in and out, so a tooltip that moves between neighbouring targets (chart columns) disappears instantly and never overlaps the next. Default for everything else.
 - `pinOnClick?: boolean` — default `true`: a click/tap toggles a pinned tooltip (for info icons and `DisabledReason`). Pass `false` when the trigger itself acts on click (a nav link, a button): hover and focus still open it, and a click closes it and keeps it closed until the pointer leaves.
 
 ## Example

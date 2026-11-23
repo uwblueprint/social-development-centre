@@ -1,7 +1,7 @@
 "use client";
 
 import { styled } from "next-yak";
-import { overlayMotion } from "./overlayMotion";
+import { overlayMotion } from "./internal";
 import { Popover as PopoverPrimitive } from "radix-ui";
 import { X } from "lucide-react";
 import type { ReactNode } from "react";
@@ -55,19 +55,33 @@ export const PopoverActions = styled.div`
   justify-content: flex-end;
   gap: var(--space-2);
   margin-top: var(--space-4);
+  /* Cancel sits on the far left, lined up with the content, away from the action (owner, Nov 2026). */
+  & > [data-cancel],
+  & > [data-back],
+  & > :has(> [data-cancel], > [data-back]) {
+    order: -1;
+    margin-inline-end: auto;
+  }
 `;
 
 export const Popover = PopoverPrimitive.Root;
 export const PopoverTrigger = PopoverPrimitive.Trigger;
 export const PopoverAnchor = PopoverPrimitive.Anchor;
-export const PopoverClose = CloseButton;
+/** Closes the popover; unstyled, like DialogClose. Wrap a CancelButton in it with asChild. */
+export const PopoverClose = PopoverPrimitive.Close;
 
 export function PopoverContent({
   children,
   sideOffset = 8,
   showClose = true,
+  showArrow = true,
   ...props
-}: PopoverPrimitive.PopoverContentProps & { children: ReactNode; showClose?: boolean }) {
+}: PopoverPrimitive.PopoverContentProps & {
+  children: ReactNode;
+  showClose?: boolean;
+  /** The small arrow pointing at the trigger. Leave it off when the popover sits right under a button (e.g. filters). */
+  showArrow?: boolean;
+}) {
   return (
     <PopoverPrimitive.Portal>
       <Content sideOffset={sideOffset} {...props}>
@@ -77,7 +91,7 @@ export function PopoverContent({
             <Icon icon={X} size={14} />
           </CloseButton>
         )}
-        <Arrow />
+        {showArrow && <Arrow />}
       </Content>
     </PopoverPrimitive.Portal>
   );
