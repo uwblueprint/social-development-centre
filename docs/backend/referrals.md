@@ -135,7 +135,7 @@ so it reads as an invitation, not small print. Three copy options for the PM; th
 | Email the server rejects, or the member's own address | The error under the email field on step 2 (the page stays there) | `refer_friend` (`invalid_email`, `own_email`) |
 | Likely typo (`priya@gmial.com`) | "Did you mean priya@gmail.com?", one click fixes it | Page only |
 | Partly typed domain (`priya@g`) | `mail.com` offered inline; Tab, →, or a click on the Tab key fills it | Page only |
-| Titles and full names ("Dr. Priya Patel", "mrs priya") | Thanked and labelled as "Priya"; "Dr. Patel" stays whole | Page (`firstNameOf`) and `refer_friend` (`split_referred_name`, migration `20261123000000_referral_names`), so the stored first name agrees |
+| Titles and full names ("Dr. Priya Patel", "mrs priya") | Thanked and labelled as "Priya"; "Dr. Patel" stays whole | Page (`firstNameOf`) and `refer_friend` (`split_referred_name`, migration `20261123000100_referral_names`), so the stored first name agrees |
 | Already a member, unsubscribed, bounced, suppressed, or already invited by someone else | Exactly what a new referral shows | `refer_friend`: never emailed, still recorded |
 | This member already referred this address | "You invited Priya on Nov 3, thank you! We only email once…" with their link | `refer_friend` (`message` with `referred_on`) |
 | Send invite fails (connection) | Thank-you screen, then back to step 2 with "We couldn't send that…" | Page |
