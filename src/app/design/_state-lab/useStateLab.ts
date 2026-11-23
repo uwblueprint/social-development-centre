@@ -11,7 +11,7 @@ export interface StateLabConfig<D extends string, A extends string> {
   actions?: readonly { id: A; label: string; description?: string }[];
   /**
    * General states that can't happen on this screen (e.g. `["readOnly"]` when there are no viewer roles).
-   * They stay in the panel, switched off and marked "Doesn't apply to this screen", and their flags are always false.
+   * They're left out of the panel, and their flags are always false.
    */
   notApplicable?: readonly GeneralFlag[];
 }

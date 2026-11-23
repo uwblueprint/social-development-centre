@@ -40,3 +40,6 @@ next-env.d.ts
 # playwright
 /test-results/
 /playwright-report/
+
+# Local UI audit tooling (screenshots, not part of the app)
+ui-audit/
