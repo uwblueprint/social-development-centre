@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { styled } from "next-yak";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/ToggleGroup";
 
@@ -194,7 +195,7 @@ export function FooterDesign() {
         <EmailFooter>
           <ReferLine>
             {option.lead && `${option.lead} `}
-            <a href="/design/referrals">{option.link}</a>
+            <Link href="/design/referrals">{option.link}</Link>
             {option.tail}
           </ReferLine>
           <p>
@@ -202,7 +203,7 @@ export function FooterDesign() {
             Region, 23 Water St N, Kitchener ON.
           </p>
           <p>
-            <a href="/design/referrals">Unsubscribe</a>
+            <Link href="/design/referrals">Unsubscribe</Link>
           </p>
         </EmailFooter>
       </Email>
