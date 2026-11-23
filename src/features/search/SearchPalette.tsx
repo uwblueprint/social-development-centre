@@ -29,6 +29,16 @@ export interface SearchPage {
   keywords?: readonly string[];
 }
 
+/** Something the palette does in place instead of opening a page, e.g. open the bell or sign out. */
+export interface SearchAction {
+  id: string;
+  label: string;
+  icon: LucideIcon;
+  /** Other words that should find it. Never shown. */
+  keywords?: readonly string[];
+  run: () => void;
+}
+
 interface Result {
   kind: ResultKind;
   id: string;
@@ -37,6 +47,8 @@ interface Result {
   href: string;
   icon: LucideIcon;
   range?: Range | null;
+  /** Set for an action: run it instead of opening `href`. */
+  run?: () => void;
 }
 
 
@@ -50,6 +62,7 @@ const PER_GROUP = 5;
 export function SearchPalette({
   from,
   pages,
+  actions = [],
   open,
   onOpenChange,
   onPersonMissing,
@@ -57,6 +70,8 @@ export function SearchPalette({
   /** Which portal's links to use: the built pages, or the design screens. */
   from: "admin" | "design";
   pages: SearchPage[];
+  /** Things to do rather than places to go, found by typing their name (Notifications, Sign out). */
+  actions?: SearchAction[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** Called when a person opened from search isn't on the People page anymore. */
@@ -94,6 +109,15 @@ export function SearchPalette({
     href: p.href,
     icon: p.icon,
     range,
+  });
+  const actionResult = (a: SearchAction, range?: Range | null): Result => ({
+    kind: "action",
+    id: a.id,
+    label: a.label,
+    href: "",
+    icon: a.icon,
+    range,
+    run: a.run,
   });
   const settingResult = (s: (typeof settings)[number], range?: Range | null): Result => ({
     kind: "setting",
@@ -157,6 +181,10 @@ export function SearchPalette({
           results: rank(pages, query, PER_GROUP).map(({ item, range }) => pageResult(item, range)),
         },
         {
+          heading: "Actions",
+          results: rank(actions, query, PER_GROUP).map(({ item, range }) => actionResult(item, range)),
+        },
+        {
           heading: "Settings",
           results: rank(settings, query, PER_GROUP).map(({ item, range }) => settingResult(item, range)),
         },
@@ -196,6 +224,14 @@ export function SearchPalette({
   const empty = query && !hasRows && failed.length === 0;
 
   function go(result: Result) {
+    if (result.run) {
+      // Actions aren't places, so they stay out of Recent. Run once the palette has closed and given focus back.
+      navigated.current = true;
+      onOpenChange(false);
+      const run = result.run;
+      requestAnimationFrame(() => run());
+      return;
+    }
     saveRecent({ kind: result.kind, id: result.id, label: result.label });
     navigated.current = true;
     onOpenChange(false);
@@ -221,7 +257,7 @@ export function SearchPalette({
         // Ctrl+Enter (⌘+Enter on a Mac) opens the result in a new tab and keeps the palette open.
         if (event.key !== "Enter" || !(event.metaKey || event.ctrlKey)) return;
         const hit = all.find((a) => a.value === selected);
-        if (!hit) return;
+        if (!hit || hit.result.run) return;
         event.preventDefault();
         window.open(hit.result.href, "_blank", "noopener");
       }}

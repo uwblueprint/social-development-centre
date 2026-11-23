@@ -263,3 +263,23 @@ for (const query of ["", "a", "zzqx"]) {
     expect(results.violations.map((v) => `${v.id}: ${v.nodes.length} × ${v.help}`)).toEqual([]);
   });
 }
+
+test("Notifications is an action: it opens the bell's panel", async ({ page }) => {
+  await openSettings(page);
+  await openWithShortcut(page);
+  await page.keyboard.type("noti");
+  const action = palette(page).getByRole("group", { name: "Actions" }).getByRole("option", { name: /Notifications/ });
+  await expect(action).toBeVisible();
+  await page.keyboard.press("Enter");
+  await expect(palette(page)).toBeHidden();
+  await expect(page.getByRole("dialog", { name: "Notifications" })).toBeVisible();
+});
+
+test("Sign out is an action, found by its name or 'log out'", async ({ page }) => {
+  await openSettings(page);
+  await openWithShortcut(page);
+  await page.keyboard.type("log out");
+  await expect(palette(page).getByRole("group", { name: "Actions" }).getByRole("option", { name: /Sign out/ })).toBeVisible();
+  await searchBox(page).fill("sign out");
+  await expect(option(page, /Sign out/)).toBeVisible();
+});

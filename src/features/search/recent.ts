@@ -4,7 +4,7 @@
  * simply no recents.
  */
 
-export type ResultKind = "page" | "setting" | "person" | "email";
+export type ResultKind = "page" | "setting" | "person" | "email" | "action";
 
 export interface RecentResult {
   kind: ResultKind;
