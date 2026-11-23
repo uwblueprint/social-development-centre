@@ -174,7 +174,7 @@ do $$ begin
 exception when check_violation then raise notice 'ok  can''t mark sent without a request';
 end $$;
 
--- ---------- names as typed (20261123000000_referral_names) ----------
+-- ---------- names as typed (20261123000100_referral_names) ----------
 set role anon;
 select t.eq('title dropped', (select friend_name from public.refer_friend('10000000-0000-0000-0000-00000000000d', 'Dr. Priya Patel', 'drpriya@example.org', false)), 'Priya');
 select t.eq('title with no full stop, any case', (select friend_name from public.refer_friend('10000000-0000-0000-0000-00000000000d', 'mrs Ana Silva', 'ana@example.org', false)), 'Ana');
