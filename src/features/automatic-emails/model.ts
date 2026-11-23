@@ -88,6 +88,8 @@ export function blankEmail(): AutomaticEmail {
 export interface TagOption {
   id: string;
   name: string;
+  /** One of the kit's tag colours (TAG_COLORS); "stone" until an admin picks one. */
+  color: string;
 }
 /** Tag names by id. A tag that was deleted reads as "a deleted tag". */
 export type TagNames = Map<string, string>;
