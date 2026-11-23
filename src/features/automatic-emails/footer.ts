@@ -1,7 +1,8 @@
 /**
  * The footer on every automatic email, from the design (src/app/design/automatic-emails in #53). The
  * editor shows it under the message, the preview shows it, and the sender appends it with the
- * unsubscribe link.
+ * unsubscribe link. One footer for all of SDC, never per admin. When Settings can edit it, the sender
+ * reads the stored one at send time instead (docs/backend/settings.md).
  */
 export const EMAIL_FOOTER = {
   reason: "You're getting this because you're an SDC member.",

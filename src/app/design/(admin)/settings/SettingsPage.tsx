@@ -3,8 +3,9 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { styled } from "next-yak";
-import { Copy } from "lucide-react";
+import { Check, Copy } from "lucide-react";
 import { ListPage, ListPageHeader } from "@/components/patterns/ListPage";
+import { ThemeChoice } from "@/components/patterns/ThemeSwitcher";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,9 +22,11 @@ import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
 import { Input } from "@/components/ui/Input";
 import { TagCombobox } from "@/components/ui/TagCombobox";
-import { Textarea } from "@/components/ui/Textarea";
-import { useToast } from "@/components/ui/Toast";
-import { ADMINS, ALERTS, ALERT_GROUPS, ALERT_GROUP_TITLES, SEED, isEmail, splitName, type Settings } from "./data";
+import { LazyFooterEditor as FooterEditor } from "@/features/email-footer/LazyFooterEditor";
+import { footerProblem } from "@/features/email-footer/doc";
+import { Toast, ToastAction, ToastTitle, useToast } from "@/components/ui/Toast";
+import { Tooltip } from "@/components/ui/Tooltip";
+import { ADMINS, ALERTS, ALERT_GROUPS, ALERT_GROUP_TITLES, LOGIN_EMAIL, SEED, isEmail, splitName, type Settings } from "./data";
 import { HintedRow } from "./HintedRow";
 import { Cell, Column, Row, RowLabel, Section, SectionTitle, Sections } from "./parts";
 
@@ -34,21 +37,73 @@ const ButtonRow = styled(Row)`
   align-items: center;
 `;
 
-const HelpValue = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  font-size: var(--text-sm);
-  color: var(--color-text);
-`;
-
-/* Last on the page: the button alone, its right edge on the fields' right edge. */
-const DeleteRow = styled.div`
+/* The button on the right, its right edge on the fields' right edge. */
+const EndAligned = styled.div`
   display: flex;
   justify-content: flex-end;
-  padding: var(--space-3) 0;
 `;
+
+/*
+ * A value you can't change: the same outline as a field, so it lines up with them, but a light fill and the
+ * not-allowed cursor so it reads as uneditable (owner). Its text starts on the fields' text column.
+ */
+const ReadOnlyValue = styled.div`
+  display: flex;
+  align-items: center;
+  min-height: var(--control-height);
+  padding-inline: var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  font-size: var(--text-sm);
+  line-height: var(--leading-ui);
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+  cursor: not-allowed;
+`;
+
+/* A read-only field you click to copy. Its status (a copy icon, or a check and "Copied") sits at the right edge. */
+const CopyField = styled.div`
+  position: relative;
+
+  & input {
+    padding-right: calc(var(--space-8) + var(--space-3));
+    cursor: pointer;
+  }
+`;
+
+const CopyStatus = styled.span`
+  position: absolute;
+  top: 50%;
+  right: var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  transform: translateY(-50%);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  pointer-events: none;
+`;
+
+/** Typed to confirm deleting your account (owner's words). Case and surrounding spaces don't matter. */
+const CONFIRM_PHRASE = "I acknowledge";
+
+/** On hover or focus of each alerts heading: who these emails go to. */
+const ALERTS_TIP = "Emails to admins, not members, when one of these happens.";
+
+/* An alerts heading you can hover or focus for the tooltip; it looks like the heading it is. */
+const TitleHint = styled.span`
+  border-radius: var(--radius-sm);
+  cursor: default;
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+`;
+
+/** How long the support field says "Copied" before it goes back. */
+const COPIED_MS = 3500;
 
 type Errors = Partial<Record<"name" | "replyTo" | "footer", string>>;
 
@@ -64,7 +119,8 @@ function validate(s: Settings): Errors {
   if (!s.name.trim()) e.name = "Enter your name.";
   else if (!splitName(s.name)) e.name = "Enter your first and last name.";
   if (!isEmail(s.replyTo)) e.replyTo = "Enter an email address like name@example.org.";
-  if (!s.footer.trim()) e.footer = "Write the sign-off members see at the end of every email.";
+  const footer = footerProblem(s.footer);
+  if (footer) e.footer = footer;
   return e;
 }
 
@@ -82,10 +138,10 @@ function describeChanges(before: Settings, after: Settings): { title: string; de
       name: "Reply-to address",
       text: `Replies to member emails now go to ${after.replyTo}.`,
     });
-  if (before.footer !== after.footer)
+  if (JSON.stringify(before.footer) !== JSON.stringify(after.footer))
     lines.push({
       name: "Email footer",
-      text: "Every email from SDC will now end with the new footer.",
+      text: "Every email from SDC now ends with the new footer, including ones waiting to send.",
     });
   for (const a of ALERTS) {
     const now = after.alerts[a.key];
@@ -114,16 +170,43 @@ function SettingsScreen({ onlyAdmin }: { onlyAdmin: boolean }) {
   // Edits live here only. Leave the page without saving and they are gone; nothing is stored.
   const [draft, setDraft] = React.useState<Settings>(SEED);
   const [errors, setErrors] = React.useState<Errors>({});
+  // The Copy button shows a check and "Copied" for a few seconds, then goes back.
+  const [copied, setCopied] = React.useState(false);
+  // Deleting your account asks you to type the phrase first, so it can't happen by a stray click.
+  const [confirmText, setConfirmText] = React.useState("");
+  const confirmed = confirmText.trim().toLowerCase() === CONFIRM_PHRASE.toLowerCase();
+  React.useEffect(() => {
+    if (!copied) return;
+    const timer = setTimeout(() => setCopied(false), COPIED_MS);
+    return () => clearTimeout(timer);
+  }, [copied]);
+  // Only says "Copied" once it really is; a blocked clipboard says how to get it instead.
+  const copySupport = () =>
+    Promise.resolve(navigator.clipboard?.writeText(SUPPORT_EMAIL) ?? Promise.reject())
+      .then(() => setCopied(true))
+      .catch(() => toast({ title: "Couldn’t copy. Select the address and copy it yourself." }));
 
   const dirty = JSON.stringify(saved) !== JSON.stringify(draft);
-  // Your name and the footer are yours; a reply-to or an alert changes things for every admin.
+  // Your name is yours; a reply-to, the footer or an alert changes things for every admin.
   const sharedChanged =
-    draft.replyTo !== saved.replyTo || JSON.stringify(draft.alerts) !== JSON.stringify(saved.alerts);
+    draft.replyTo !== saved.replyTo ||
+    JSON.stringify(draft.footer) !== JSON.stringify(saved.footer) ||
+    JSON.stringify(draft.alerts) !== JSON.stringify(saved.alerts);
+
+  const saveLabel = sharedChanged ? "Save for all admins" : "Save";
 
   const save = () => {
     const found = validate(draft);
     setErrors(found);
-    if (Object.values(found).some(Boolean)) return;
+    if (Object.values(found).some(Boolean)) {
+      // The toast can be far from the problem: take them to the first field that needs fixing.
+      requestAnimationFrame(() => {
+        const first = document.querySelector<HTMLElement>('form [aria-invalid="true"]');
+        first?.scrollIntoView({ block: "center" });
+        first?.focus();
+      });
+      return;
+    }
     toast(describeChanges(saved, draft));
     setSaved(draft);
   };
@@ -138,13 +221,45 @@ function SettingsScreen({ onlyAdmin }: { onlyAdmin: boolean }) {
         }}
       >
         <Column>
-          <ListPageHeader
-            title="Settings"
-            actions={
-              dirty ? <Button type="submit">{sharedChanged ? "Save for all admins" : "Save"}</Button> : undefined
-            }
-          />
+          <ListPageHeader title="Settings" />
           <Sections>
+            {ALERT_GROUPS.map((g, i) => {
+              // The first alerts section keeps the "alerts" anchor, which the notifications panel's settings link opens.
+              const id = i === 0 ? "alerts" : `alerts-${g.toLowerCase()}`;
+              return (
+                <Section key={g} aria-labelledby={id}>
+                  <SectionTitle id={id}>
+                    <Tooltip content={ALERTS_TIP} side="right" delayDuration={600}>
+                      <TitleHint tabIndex={0}>{ALERT_GROUP_TITLES[g]}</TitleHint>
+                    </Tooltip>
+                  </SectionTitle>
+                  {ALERTS.filter((a) => a.group === g).map((a) => (
+                    <Row key={a.key}>
+                      <RowLabel>{a.label}</RowLabel>
+                      <Cell>
+                        <Field label={`Admins to email when ${a.when}`}>
+                          {(props) => (
+                            <TagCombobox
+                              {...props}
+                              options={ADMIN_OPTIONS}
+                              value={draft.alerts[a.key]}
+                              onValueChange={(next) =>
+                                setDraft((d) => ({
+                                  ...d,
+                                  alerts: { ...d.alerts, [a.key]: next },
+                                }))
+                              }
+                              placeholder="Add an admin"
+                            />
+                          )}
+                        </Field>
+                      </Cell>
+                    </Row>
+                  ))}
+                </Section>
+              );
+            })}
+
             <Section aria-labelledby="sending">
               <SectionTitle id="sending">Email sending</SectionTitle>
               <HintedRow
@@ -165,19 +280,15 @@ function SettingsScreen({ onlyAdmin }: { onlyAdmin: boolean }) {
                   )}
                 </Field>
               </HintedRow>
-              <HintedRow
-                label="Email footer"
-                field="textarea"
-                hint="Ends every email members get from SDC. The unsubscribe link is added below it for you."
-              >
+              <HintedRow label="Email footer" hint="Ends every email members get from SDC, including ones waiting to send.">
                 <Field label="Email footer" error={errors.footer}>
                   {(props) => (
-                    <Textarea
+                    <FooterEditor
                       {...props}
-                      rows={5}
-                      value={draft.footer}
-                      onChange={(e) => {
-                        setDraft((d) => ({ ...d, footer: e.target.value }));
+                      aria-label="Email footer"
+                      initial={SEED.footer}
+                      onChange={(footer) => {
+                        setDraft((d) => ({ ...d, footer }));
                         setErrors((x) => ({ ...x, footer: undefined }));
                       }}
                     />
@@ -185,39 +296,6 @@ function SettingsScreen({ onlyAdmin }: { onlyAdmin: boolean }) {
                 </Field>
               </HintedRow>
             </Section>
-
-            {ALERT_GROUPS.map((g, i) => {
-              // The first alerts section keeps the "alerts" anchor, which the notifications panel links to.
-              const id = i === 0 ? "alerts" : `alerts-${g.toLowerCase()}`;
-              return (
-                <Section key={g} aria-labelledby={id}>
-                  <SectionTitle id={id}>{ALERT_GROUP_TITLES[g]}</SectionTitle>
-                  {ALERTS.filter((a) => a.group === g).map((a) => (
-                    <Row key={a.key}>
-                      <RowLabel>{a.label}</RowLabel>
-                      <Cell>
-                        <Field label={`Admins to email when ${a.when}`}>
-                          {(props) => (
-                            <TagCombobox
-                              {...props}
-                              options={ADMIN_OPTIONS}
-                              value={draft.alerts[a.key]}
-                              onValueChange={(next) =>
-                                setDraft((d) => ({
-                                  ...d,
-                                  alerts: { ...d.alerts, [a.key]: next },
-                                }))
-                              }
-                              placeholder="Off"
-                            />
-                          )}
-                        </Field>
-                      </Cell>
-                    </Row>
-                  ))}
-                </Section>
-              );
-            })}
 
             <Section aria-labelledby="account">
               <SectionTitle id="account">Account</SectionTitle>
@@ -239,64 +317,113 @@ function SettingsScreen({ onlyAdmin }: { onlyAdmin: boolean }) {
                   </Field>
                 </Cell>
               </Row>
-              <ButtonRow>
+              <Row>
+                <RowLabel>Your email</RowLabel>
+                <ReadOnlyValue>{LOGIN_EMAIL}</ReadOnlyValue>
+              </Row>
+              <Row>
+                <RowLabel>Theme</RowLabel>
+                <Cell>
+                  <Field label="Theme">{(props) => <ThemeChoice {...props} />}</Field>
+                </Cell>
+              </Row>
+              <Row>
                 <RowLabel>Support</RowLabel>
-                <HelpValue>
-                  {SUPPORT_EMAIL}
-                  <Button
-                    type="button"
-                    $variant="outline"
-                    $size="sm"
-                    onClick={() => {
-                      void navigator.clipboard?.writeText(SUPPORT_EMAIL);
-                      toast({ title: `Copied ${SUPPORT_EMAIL}` });
-                    }}
-                  >
-                    <Icon icon={Copy} />
-                    Copy
-                  </Button>
-                </HelpValue>
+                <Cell>
+                  <Field label="Support email, press Enter to copy it">
+                    {(props) => (
+                      <CopyField>
+                        <Input
+                          {...props}
+                          type="email"
+                          value={SUPPORT_EMAIL}
+                          readOnly
+                          onClick={copySupport}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              copySupport();
+                            }
+                          }}
+                        />
+                        <CopyStatus aria-live="polite">
+                          <Icon icon={copied ? Check : Copy} size={16} />
+                          {copied && "Copied"}
+                        </CopyStatus>
+                      </CopyField>
+                    )}
+                  </Field>
+                </Cell>
+              </Row>
+              <ButtonRow>
+                <RowLabel>Delete account</RowLabel>
+                <EndAligned>
+                  <AlertDialog onOpenChange={(open) => !open && setConfirmText("")}>
+                    {onlyAdmin ? (
+                      // The reason is the existing rule from docs/decisions/admins.md (decision 2).
+                      <DisabledReason reason="You're the only admin. Add another admin before you leave.">
+                        <Button type="button" $variant="danger" disabled>
+                          Delete
+                        </Button>
+                      </DisabledReason>
+                    ) : (
+                      <AlertDialogTrigger asChild>
+                        <Button type="button" $variant="danger">
+                          Delete
+                        </Button>
+                      </AlertDialogTrigger>
+                    )}
+                    <AlertDialogContent>
+                      <AlertDialogTitle>Delete your account?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        You won&rsquo;t be able to log in anymore. Another admin can invite you back.
+                      </AlertDialogDescription>
+                      <Field label={`Type “${CONFIRM_PHRASE}” to confirm`}>
+                        {(props) => (
+                          <Input
+                            {...props}
+                            autoComplete="off"
+                            placeholder={CONFIRM_PHRASE}
+                            value={confirmText}
+                            onChange={(e) => setConfirmText(e.target.value)}
+                          />
+                        )}
+                      </Field>
+                      <AlertDialogActions>
+                        <AlertDialogCancel asChild>
+                          <Button type="button" $variant="secondary">
+                            Cancel
+                          </Button>
+                        </AlertDialogCancel>
+                        {confirmed ? (
+                          <AlertDialogAction asChild>
+                            <Button type="button" $variant="danger" onClick={() => router.push("/design/goodbye")}>
+                              Delete account
+                            </Button>
+                          </AlertDialogAction>
+                        ) : (
+                          <DisabledReason reason={`Type “${CONFIRM_PHRASE}” to confirm.`}>
+                            <Button type="button" $variant="danger" disabled>
+                              Delete account
+                            </Button>
+                          </DisabledReason>
+                        )}
+                      </AlertDialogActions>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </EndAligned>
               </ButtonRow>
-              <DeleteRow>
-                <AlertDialog>
-                  {onlyAdmin ? (
-                    // The reason is the existing rule from docs/decisions/admins.md (decision 2).
-                    <DisabledReason reason="You're the only admin. Add another admin before you leave.">
-                      <Button type="button" $variant="danger" disabled>
-                        Delete account
-                      </Button>
-                    </DisabledReason>
-                  ) : (
-                    <AlertDialogTrigger asChild>
-                      <Button type="button" $variant="danger">
-                        Delete account
-                      </Button>
-                    </AlertDialogTrigger>
-                  )}
-                  <AlertDialogContent>
-                    <AlertDialogTitle>Delete your account?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      You won&rsquo;t be able to log in anymore. Another admin can invite you back.
-                    </AlertDialogDescription>
-                    <AlertDialogActions>
-                      <AlertDialogCancel asChild>
-                        <Button type="button" $variant="secondary">
-                          Cancel
-                        </Button>
-                      </AlertDialogCancel>
-                      <AlertDialogAction asChild>
-                        <Button type="button" $variant="danger" onClick={() => router.push("/design/goodbye")}>
-                          Delete account
-                        </Button>
-                      </AlertDialogAction>
-                    </AlertDialogActions>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </DeleteRow>
             </Section>
           </Sections>
         </Column>
       </form>
+      {/* Wherever they are on the page, unsaved changes and Save stay in view until saved (owner). */}
+      <Toast persistent open={dirty} onOpenChange={() => {}}>
+        <ToastTitle>You have unsaved changes</ToastTitle>
+        <ToastAction altText={saveLabel} onClick={save}>
+          {saveLabel}
+        </ToastAction>
+      </Toast>
     </ListPage>
   );
 }

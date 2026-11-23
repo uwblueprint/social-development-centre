@@ -197,7 +197,9 @@ sdcentre@uwblueprint.org, the same Gmail account Supabase Auth uses for sign-in 
   this is what keeps them from emailing members.
 - **Rendering** (`render.ts`): until the Email Editor defines the body, a body is `{ "text": "..." }`.
   `[First name]` fills in, or "there" when the member has no first name. Every email gets the
-  prototype's footer, an unsubscribe link and a `List-Unsubscribe` header.
+  prototype's footer, an unsubscribe link and a `List-Unsubscribe` header. The footer is one for all
+  of SDC (not per admin) and is read when each email goes out; when Settings can edit it, read the
+  stored footer here instead of `footer.ts` (see [settings.md](./settings.md)).
 - SMTP has no idempotency key. If the run dies between sending and recording, that one email can
   go again the next day.
 

@@ -21,4 +21,4 @@ Decisions behind `/admin/settings`. Admin access rules are in [admins.md](admins
 
 ## 5. Name edits are explicit
 - **Decision:** the fields are always editable. A **Save** button appears once something changes; leaving the page without saving discards the edit. Nothing autosaves.
-- **Button label:** **Save** for personal changes (name, signature); **Save for all admins** when a change reaches every admin (reply-to, alerts). Only the first exists in the product so far.
+- **Button label:** **Save** for personal changes (your name); **Save for all admins** when a change reaches every admin (reply-to, footer, alerts). Only the first exists in the product so far.

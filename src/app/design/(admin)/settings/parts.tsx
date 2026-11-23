@@ -9,6 +9,8 @@ export const Column = styled.div`
   margin-inline: auto;
   /* Rows stack by the column's own width, not the window's: beside the sidebar the column can be narrow on a wide screen. */
   container: settings / inline-size;
+  /* Room under the last row for the unsaved-changes toast, so it never sits on top of Delete account. */
+  padding-bottom: calc(var(--space-8) + var(--space-5));
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
@@ -73,17 +75,9 @@ export const RowLabel = styled.span`
   line-height: var(--leading-ui);
   color: var(--color-text);
 
-  /* Beside a textarea: its first line starts below its 1px border and --space-3 padding, not centred. */
-  &[data-field="textarea"] {
-    padding-top: calc(var(--space-3) + 1px);
-  }
-
   /* Stacked above its field there is nothing to sit level with, so the label is only as tall as its text. */
   @container settings (max-width: 599px) {
-    &,
-    &[data-field="textarea"] {
-      padding-block: 0;
-    }
+    padding-block: 0;
   }
 `;
 

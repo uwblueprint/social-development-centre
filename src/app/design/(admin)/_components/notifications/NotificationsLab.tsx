@@ -90,7 +90,8 @@ const Floating = styled.div`
   position: fixed;
   right: var(--space-8);
   bottom: var(--space-4);
-  z-index: var(--z-nav);
+  /* Part of the page: under the open sidebar's blur, like everything else. */
+  z-index: calc(var(--z-nav) - 1);
   display: flex;
   max-width: min(360px, calc(100vw - var(--space-6)));
   border: 1px solid var(--color-border-strong);

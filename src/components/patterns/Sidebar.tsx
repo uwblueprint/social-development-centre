@@ -6,9 +6,7 @@ import { usePathname } from "next/navigation";
 import { css, keyframes, styled } from "next-yak";
 import type { LucideIcon } from "lucide-react";
 import { BookOpen, LogOut, Menu, PanelLeftClose, PanelLeftOpen, Pin, X } from "lucide-react";
-import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
-import { ThemeSwitcher } from "./ThemeSwitcher";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { applySidebarCollapsed, readSidebarCollapsed, syncSidebarCollapsed } from "@/lib/sidebar";
 
@@ -87,7 +85,7 @@ const Shell = styled.div`
 `;
 
 // A div, not an aside: below 768px it becomes a modal dialog, a role <aside> can't take. The nav inside is the landmark.
-const Aside = styled.div<{ $mobileOpen: boolean; $peek: boolean }>`
+const Aside = styled.div<{ $mobileOpen: boolean; $overlay: "closed" | "hint" | "open" }>`
   position: sticky;
   top: 0;
   flex-shrink: 0;
@@ -118,9 +116,10 @@ const Aside = styled.div<{ $mobileOpen: boolean; $peek: boolean }>`
       box-shadow: var(--shadow-md);
       transform: translateX(calc(-100% - var(--space-3)));
       visibility: hidden;
+      /* Closing is quick: a hover hint should vanish the moment the pointer leaves the open button. */
       transition:
-        transform var(--duration-slow) var(--ease-out),
-        visibility 0s linear var(--duration-slow);
+        transform var(--duration-fast) var(--ease-out),
+        visibility 0s linear var(--duration-fast);
     }
   }
   /* Tall enough: float it off the bottom edge too, so it reads as a panel over the page. */
@@ -129,8 +128,20 @@ const Aside = styled.div<{ $mobileOpen: boolean; $peek: boolean }>`
       bottom: var(--space-3);
     }
   }
-  ${({ $peek }) =>
-    $peek &&
+  /* Hovering the open button: just the sidebar's edge slides out, a hint that clicking opens it. */
+  ${({ $overlay }) =>
+    $overlay === "hint" &&
+    css`
+      ${NARROW} {
+        ${COLLAPSED} {
+          transform: translateX(calc(-100% + var(--space-4)));
+          visibility: visible;
+          transition: transform var(--duration) var(--ease-out);
+        }
+      }
+    `}
+  ${({ $overlay }) =>
+    $overlay === "open" &&
     css`
       ${NARROW} {
         ${COLLAPSED} {
@@ -183,11 +194,11 @@ const backdropIn = keyframes`
 `;
 
 /**
- * Behind the overlay sidebar: blurs the page (like a dialog, with no dimming) so the sidebar reads first.
- * Clicked open, it also catches the next click outside the sidebar, so that click only closes the sidebar
- * and doesn't press whatever was underneath. While peeking on hover it lets the pointer through.
+ * Behind the clicked-open sidebar: blurs the page (like a dialog, with no dimming) so the sidebar reads
+ * first, and catches the next click outside the sidebar, so that click only closes the sidebar and doesn't
+ * press whatever was underneath. The hover hint has no backdrop.
  */
-const OverlayBackdrop = styled.button<{ $passThrough: boolean }>`
+const OverlayBackdrop = styled.button`
   all: unset;
   display: none;
 
@@ -198,11 +209,6 @@ const OverlayBackdrop = styled.button<{ $passThrough: boolean }>`
     z-index: var(--z-nav);
     backdrop-filter: blur(var(--overlay-blur));
     animation: ${backdropIn} var(--duration) var(--ease-out);
-    ${({ $passThrough }) =>
-      $passThrough &&
-      css`
-        pointer-events: none;
-      `}
   }
 `;
 
@@ -311,21 +317,19 @@ const DockButton = styled.button`
 `;
 
 /**
- * The button that opens a collapsed sidebar: the kit's outline button, square, the height of the page
- * header's other buttons. Only shown while collapsed, between 768px and 1199px.
+ * The button that opens a collapsed sidebar: a quiet icon (hover fill, no border). Pulled left by the
+ * space around its icon (8px of button, 2px of the glyph's own inset), so the drawn icon lines up with the
+ * left edge of the page's content. Only shown while collapsed, between 768px and 1199px.
  */
-const OpenButton = styled(Button)`
+const OpenButton = styled.button`
+  ${iconButton}
   display: none;
-  width: 36px;
-  padding: 0;
-  flex-shrink: 0;
+  margin-left: calc(-1 * (var(--space-2) + var(--space-1) / 2));
 
   ${NARROW} {
     ${COLLAPSED} {
+      /* Under the open sidebar's blurred backdrop like the rest of the page; a click there closes the sidebar. */
       display: inline-flex;
-      /* Above the overlay's blurred backdrop, so the button that toggles it stays sharp. */
-      position: relative;
-      z-index: calc(var(--z-nav) + 1);
     }
   }
 `;
@@ -674,7 +678,6 @@ function SidebarContent({
           <Icon icon={BookOpen} size={16} strokeWidth={NAV_STROKE} />
           Documentation
         </FooterLink>
-        <ThemeSwitcher />
         <SignOutButton type="button" onClick={config.onSignOut}>
           <Icon icon={LogOut} size={16} strokeWidth={NAV_STROKE} />
           Sign out
@@ -705,18 +708,11 @@ function focusHeading(container: HTMLElement | null) {
   requestAnimationFrame(tryFocus);
 }
 
-/*
- * Hover intent for the collapsed sidebar (Notion-style peek). Hovering the open button slides the sidebar in.
- * It stays while the pointer is over it, or heading towards it; otherwise it closes:
+/**
+ * A collapsed sidebar is closed, hinting (the pointer is on the open button: only its edge shows, a cue that
+ * clicking opens it), or pinned (clicked open: the whole sidebar, until dismissed).
  */
-/** Resting on the open button without moving into the sidebar. */
-const PEEK_LINGER_MS = 2500;
-/** Outside both, moving towards the sidebar: time allowed between moves before giving up. */
-const PEEK_APPROACH_MS = 500;
-/** Outside both and not heading towards the sidebar: the intent is elsewhere. */
-const PEEK_LEAVE_MS = 200;
-
-type Peek = "closed" | "hover" | "pinned";
+type Peek = "closed" | "hint" | "pinned";
 
 interface SidebarContextValue {
   collapsed: boolean;
@@ -729,8 +725,10 @@ interface SidebarContextValue {
   hoverLeave: () => void;
   /** An open button was clicked or pressed. */
   togglePinned: (button: HTMLElement) => void;
-  /** Keeps a peeking sidebar open regardless of where the pointer goes (see `useHoldSidebarOpen`). */
+  /** Keeps the sidebar from closing on hover changes (see `useHoldSidebarOpen`). */
   setHeld: (held: boolean) => void;
+  /** Closes a clicked-open sidebar or the phone drawer without moving focus (see `useCloseSidebar`). */
+  close: () => void;
 }
 
 const SidebarContext = React.createContext<SidebarContextValue | null>(null);
@@ -742,10 +740,20 @@ const subscribeCollapsed = (listener: () => void) => {
 };
 
 /**
- * Keeps a peeking (collapsed, hovered-open) sidebar open while `hold` is true, e.g. while a panel that opened
- * from the sidebar is showing beside it. Without it, moving the pointer into that panel counts as leaving the
- * sidebar, which slides away and leaves the panel on its own. Does nothing outside a SidebarLayout.
+ * Keeps a collapsed sidebar from closing on hover changes while `hold` is true, e.g. while a panel that opened
+ * from the sidebar is showing beside it. Does nothing outside a SidebarLayout.
  */
+/**
+ * Closes a clicked-open sidebar (768–1199px) or the phone drawer, for something in the sidebar that takes
+ * you elsewhere without being a sidebar link, e.g. the notifications panel's settings button. Focus isn't
+ * moved back to the open button: the caller decides where it goes. Does nothing outside a SidebarLayout.
+ */
+export function useCloseSidebar(): () => void {
+  return React.useContext(SidebarContext)?.close ?? noop;
+}
+
+const noop = () => {};
+
 export function useHoldSidebarOpen(hold: boolean) {
   const setHeld = React.useContext(SidebarContext)?.setHeld;
   React.useEffect(() => {
@@ -756,7 +764,7 @@ export function useHoldSidebarOpen(hold: boolean) {
 }
 
 /**
- * Opens a collapsed sidebar: hover to peek, click to keep it open. Renders nothing outside a SidebarLayout,
+ * Opens a collapsed sidebar: hover to see its edge (a hint), click to open it. Renders nothing outside a SidebarLayout,
  * and is hidden by CSS unless the sidebar is collapsed (768–1199px). ListPageHeader puts one beside the
  * page title (`slot`); pages without one get it from the layout.
  */
@@ -766,9 +774,8 @@ export function SidebarOpenButton({ slot = false }: { slot?: boolean }) {
   return (
     <OpenButton
       type="button"
-      $variant="outline"
       aria-label="Open sidebar"
-      aria-expanded={sidebar.peek !== "closed"}
+      aria-expanded={sidebar.peek === "pinned"}
       aria-controls={sidebar.asideId}
       data-sidebar-open=""
       {...(slot ? { "data-sidebar-open-slot": "" } : {})}
@@ -782,20 +789,15 @@ export function SidebarOpenButton({ slot = false }: { slot?: boolean }) {
   );
 }
 
-function distanceToRect(x: number, y: number, r: DOMRect) {
-  const dx = Math.max(r.left - x, 0, x - r.right);
-  const dy = Math.max(r.top - y, 0, y - r.bottom);
-  return Math.hypot(dx, dy);
-}
-
 function contains(r: DOMRect, x: number, y: number) {
   return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
 }
 
 /**
  * App layout with a left sidebar. Below 768px it's a modal drawer. From 768px to 1199px it can collapse:
- * hovering the open button peeks it in as an overlay, clicking keeps it open until you click it again, click
- * outside, press Escape or choose a page. From 1200px it's always docked.
+ * hovering the open button slides out just the sidebar's edge, and it goes back the moment the pointer leaves;
+ * clicking opens the whole sidebar over the page until you click the button again, click outside, press
+ * Escape or choose a page. From 1200px it's always docked.
  */
 export function SidebarLayout({
   config,
@@ -813,12 +815,11 @@ export function SidebarLayout({
   const [held, setHeld] = React.useState(false);
   const collapsed = React.useSyncExternalStore(subscribeCollapsed, readSidebarCollapsed, () => false);
   const dockRef = React.useRef<HTMLButtonElement>(null);
-  /** The open button last used, for hover intent and for returning focus. */
+  /** The open button last used, for returning focus. */
   const triggerRef = React.useRef<HTMLElement | null>(null);
-  const peekTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   /**
-   * Set when a click closes the sidebar while the pointer is on the open button: it would otherwise peek
-   * straight back in. Cleared once the pointer leaves the button.
+   * Set when a click closes the sidebar while the pointer is on the open button: it would otherwise hint
+   * straight back. Cleared once the pointer leaves the button.
    */
   const hoverSuppressed = React.useRef(false);
   const asideId = React.useId();
@@ -830,6 +831,8 @@ export function SidebarLayout({
   const wasOpen = React.useRef(false);
   /** Set when a link in the open drawer is chosen: focus then goes to the destination's h1, not the menu button. */
   const pendingHref = React.useRef<string | null>(null);
+  /** Set by `close` (useCloseSidebar): don't hand focus back to the button that opened the sidebar. */
+  const skipFocusReturn = React.useRef(false);
 
   React.useEffect(() => {
     if (!mobileOpen) return;
@@ -861,7 +864,8 @@ export function SidebarLayout({
           pendingHref.current = null;
           focusHeading(mainRef.current);
         }
-      } else if (menuRef.current?.offsetParent) menuRef.current.focus();
+      } else if (!skipFocusReturn.current && menuRef.current?.offsetParent) menuRef.current.focus();
+      skipFocusReturn.current = false;
     }
     wasOpen.current = mobileOpen;
     // pathname is read, not tracked: the route-change effect below handles navigation.
@@ -874,56 +878,7 @@ export function SidebarLayout({
     focusHeading(mainRef.current);
   }, [pathname]);
 
-  const clearPeekTimer = () => {
-    if (peekTimer.current) clearTimeout(peekTimer.current);
-    peekTimer.current = null;
-  };
-  const closePeek = React.useCallback(() => {
-    if (peekTimer.current) clearTimeout(peekTimer.current);
-    peekTimer.current = null;
-    setPeek("closed");
-  }, []);
-  const closePeekIn = (ms: number) => {
-    clearPeekTimer();
-    peekTimer.current = setTimeout(closePeek, ms);
-  };
-
-  // Hover intent while peeking: keep it open over the sidebar, or while heading towards it.
-  React.useEffect(() => {
-    if (peek !== "hover" || held) return;
-    let lastDistance = Infinity;
-    const onMove = (e: PointerEvent) => {
-      if (e.pointerType !== "mouse") return;
-      const aside = asideRef.current?.getBoundingClientRect();
-      const button = triggerRef.current?.getBoundingClientRect();
-      if (!aside) return;
-      if (contains(aside, e.clientX, e.clientY)) {
-        lastDistance = 0;
-        clearPeekTimer();
-        return;
-      }
-      if (button && contains(button, e.clientX, e.clientY)) {
-        lastDistance = distanceToRect(e.clientX, e.clientY, aside);
-        if (!peekTimer.current) closePeekIn(PEEK_LINGER_MS);
-        return;
-      }
-      const distance = distanceToRect(e.clientX, e.clientY, aside);
-      const approaching = distance < lastDistance - 0.5;
-      lastDistance = distance;
-      closePeekIn(approaching ? PEEK_APPROACH_MS : PEEK_LEAVE_MS);
-    };
-    // The pointer left the window altogether.
-    const onLeave = () => closePeekIn(PEEK_LEAVE_MS);
-    // Resting on the button right after it opened: start the linger countdown without waiting for a move.
-    closePeekIn(PEEK_LINGER_MS);
-    document.addEventListener("pointermove", onMove);
-    document.documentElement.addEventListener("pointerleave", onLeave);
-    return () => {
-      document.removeEventListener("pointermove", onMove);
-      document.documentElement.removeEventListener("pointerleave", onLeave);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- the handlers only use refs and closePeek
-  }, [peek, held]);
+  const closePeek = React.useCallback(() => setPeek("closed"), []);
 
   // Open in either way: Escape closes and returns focus to the open button. Leaving 768–1199px closes it.
   React.useEffect(() => {
@@ -953,13 +908,14 @@ export function SidebarLayout({
     if (peek === "pinned") {
       // Wait a frame so the sidebar is visible (and focusable) before moving focus into it.
       requestAnimationFrame(() => dockRef.current?.focus());
+    } else if (skipFocusReturn.current) {
+      skipFocusReturn.current = false;
     } else if (wasPinned.current && !pendingHref.current && triggerRef.current?.offsetParent) {
       triggerRef.current.focus();
     }
     wasPinned.current = peek === "pinned";
   }, [peek]);
 
-  React.useEffect(() => clearPeekTimer, []);
   React.useEffect(syncSidebarCollapsed, []);
 
   const sidebar: SidebarContextValue = {
@@ -982,21 +938,25 @@ export function SidebarLayout({
     },
     hoverOpen: (button) => {
       triggerRef.current = button;
-      if (peek === "pinned" || hoverSuppressed.current) return;
-      clearPeekTimer();
-      setPeek("hover");
+      if (peek === "closed" && !hoverSuppressed.current) setPeek("hint");
     },
     hoverLeave: () => {
       hoverSuppressed.current = false;
+      if (peek === "hint" && !held) setPeek("closed");
     },
     setHeld,
+    close: () => {
+      if (peek !== "pinned" && !mobileOpen) return;
+      skipFocusReturn.current = true;
+      setPeek("closed");
+      setMobileOpen(false);
+    },
     togglePinned: (button) => {
       triggerRef.current = button;
       if (peek === "pinned") {
         hoverSuppressed.current = true;
         closePeek();
       } else {
-        clearPeekTimer();
         setPeek("pinned");
       }
     },
@@ -1043,7 +1003,9 @@ export function SidebarLayout({
         id={asideId}
         data-sidebar-panel=""
         $mobileOpen={mobileOpen}
-        $peek={peek !== "closed"}
+        $overlay={pinned ? "open" : peek === "hint" ? "hint" : "closed"}
+        // Only its edge shows while hinting: out of reach until clicked open.
+        inert={peek === "hint"}
         onKeyDown={onAsideKeyDown}
         {...(mobileOpen || pinned ? { role: "dialog", "aria-modal": true, "aria-labelledby": brandId } : {})}
       >
@@ -1061,12 +1023,11 @@ export function SidebarLayout({
       {mobileOpen && (
         <Scrim type="button" tabIndex={-1} aria-hidden="true" onClick={() => setMobileOpen(false)} />
       )}
-      {peek !== "closed" && (
+      {pinned && (
         <OverlayBackdrop
           type="button"
           tabIndex={-1}
           aria-hidden="true"
-          $passThrough={!pinned}
           onClick={(e) => {
             // Clicking the open button again (under this scrim) closes it for good, not just until a hover.
             const button = triggerRef.current?.getBoundingClientRect();

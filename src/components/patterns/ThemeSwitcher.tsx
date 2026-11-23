@@ -1,80 +1,44 @@
 "use client";
 
 import * as React from "react";
-import { Moon, Sun } from "lucide-react";
-import { styled } from "next-yak";
-import { Icon } from "@/components/ui/Icon";
-import { applyTheme, readTheme, THEME_STORAGE_KEY } from "@/lib/theme";
-
-const DARK_QUERY = "(prefers-color-scheme: dark)";
-
-/** The theme on screen: a saved choice, or else the device setting. */
-function effectiveTheme(): "light" | "dark" {
-  const saved = readTheme();
-  if (saved !== "system") return saved;
-  return window.matchMedia(DARK_QUERY).matches ? "dark" : "light";
-}
+import { Monitor, Moon, Sun } from "lucide-react";
+import { Select } from "@/components/ui/Select";
+import { applyTheme, readTheme, THEME_STORAGE_KEY, type ThemePreference } from "@/lib/theme";
 
 const listeners = new Set<() => void>();
 function subscribe(onChange: () => void) {
   listeners.add(onChange);
-  const query = window.matchMedia(DARK_QUERY);
   const onStorage = (event: StorageEvent) => event.key === THEME_STORAGE_KEY && onChange();
-  query.addEventListener("change", onChange);
   window.addEventListener("storage", onStorage);
   return () => {
     listeners.delete(onChange);
-    query.removeEventListener("change", onChange);
     window.removeEventListener("storage", onStorage);
   };
 }
 
-/* Styled like the sidebar's other footer items (Documentation). */
-const Item = styled.button`
-  all: unset;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  width: 100%;
-  height: 36px;
-  padding: 0 var(--space-2);
-  border-radius: var(--radius-md);
-  color: var(--color-text-muted);
-  font-size: var(--text-sm);
-  line-height: var(--leading-ui);
-  cursor: pointer;
-  transition:
-    background-color var(--duration-fast) var(--ease-out),
-    color var(--duration-fast) var(--ease-out);
-
-  &:hover {
-    background: var(--color-bg-hover);
-    color: var(--color-text);
-  }
-  &:focus-visible {
-    box-shadow: var(--focus-ring);
-  }
-`;
+const OPTIONS = [
+  { value: "system", label: "System", icon: Monitor },
+  { value: "light", label: "Light", icon: Sun },
+  { value: "dark", label: "Dark", icon: Moon },
+];
 
 /**
- * Owner: the app follows the device's light/dark setting by default. This one item names the mode
- * you'd switch to ("Dark mode" while light, "Light mode" while dark); choosing it saves that choice.
+ * The theme setting, on the Settings page (owner: not in the sidebar). System follows the device's light or
+ * dark setting and is the default; Light and Dark override it. It applies at once and is saved in this
+ * browser (src/lib/theme.ts), so it isn't part of the page's Save. Render it inside `Field` and spread its props.
  */
-export function ThemeSwitcher() {
-  // Before hydration we can't know the device setting, so the server renders the light-mode label.
-  const theme = React.useSyncExternalStore(subscribe, effectiveTheme, () => "light" as const);
-  const next = theme === "dark" ? "light" : "dark";
+export function ThemeChoice(props: { id?: string; "aria-describedby"?: string; "aria-labelledby"?: string }) {
+  // Before hydration the saved choice can't be read, so the server renders System.
+  const theme = React.useSyncExternalStore(subscribe, readTheme, () => "system" as const);
   return (
-    <Item
-      type="button"
-      onClick={() => {
-        applyTheme(next);
+    <Select
+      {...props}
+      options={OPTIONS}
+      value={theme}
+      onValueChange={(next) => {
+        applyTheme(next as ThemePreference);
         listeners.forEach((l) => l());
       }}
-    >
-      <Icon icon={next === "dark" ? Moon : Sun} size={16} strokeWidth={1.75} /* NAV_STROKE in Sidebar.tsx */ />
-      {next === "dark" ? "Dark mode" : "Light mode"}
-    </Item>
+    />
   );
 }

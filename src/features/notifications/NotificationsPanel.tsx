@@ -12,7 +12,7 @@ import { Tooltip } from "@/components/ui/Tooltip";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { List, ListRow } from "@/components/ui/ListRow";
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@/components/ui/Popover";
-import { useHoldSidebarOpen } from "@/components/patterns/Sidebar";
+import { useCloseSidebar, useHoldSidebarOpen } from "@/components/patterns/Sidebar";
 import { useToast } from "@/components/ui/Toast";
 import type { AdminNotification, NotificationsPage, NotificationsSource } from "./types";
 import { describe, fullTime, personHref, relativeTime, titleParts, type NotificationCopy } from "./copy";
@@ -89,6 +89,7 @@ function Notifications({ source, settingsHref }: { source: NotificationsSource; 
   const [open, setOpen] = React.useState(false);
   // The panel sits beside the sidebar, so the sidebar stays put until the panel closes.
   useHoldSidebarOpen(open);
+  const closeSidebar = useCloseSidebar();
   const [list, setList] = React.useState<ListState>({ status: "loading" });
   // Mark as done: the row plays its exit, then leaves the list and the Undo bar offers it back.
   const [leaving, setLeaving] = React.useState<Set<string>>(new Set());
@@ -295,9 +296,13 @@ function Notifications({ source, settingsHref }: { source: NotificationsSource; 
     rows[next].scrollIntoView({ block: "nearest" });
   }
 
+  /** Leaves for another page: the panel and a sidebar opened over the page both close first. */
   function go(href: string) {
     setOpen(false);
+    closeSidebar();
     router.push(href);
+    const hash = href.split("#")[1];
+    if (hash) revealSection(hash);
   }
 
   return (
@@ -913,3 +918,24 @@ const Collapse = styled.div`
     }
   }
 `;
+
+/**
+ * Scrolls to the section with this id once the destination page has rendered it (e.g. Settings' Email
+ * alerts), and moves focus there without scrolling again. Works whether or not the page changed.
+ */
+function revealSection(id: string) {
+  let frames = 0;
+  const tryReveal = () => {
+    const target = document.getElementById(id);
+    if (target) {
+      // A little room above, like the page's own top padding, so the heading isn't flush with the edge.
+      target.style.scrollMarginTop = "var(--space-5)";
+      target.scrollIntoView({ block: "start" });
+      if (!target.hasAttribute("tabindex")) target.setAttribute("tabindex", "-1");
+      target.focus({ preventScroll: true });
+      return;
+    }
+    if (++frames < 120) requestAnimationFrame(tryReveal);
+  };
+  requestAnimationFrame(tryReveal);
+}
