@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Potluck keynote, version A: keys</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0a0f1d;
+    --bg: #f6f6f3;
+    --grid: rgba(79, 155, 255, 0.26);
+    --orange: #ff6a00;
+    --lilac: #e6d4ff;
+    --violet: #7b6cff;
+    --mint: #5be0a1;
+    --blue: #4f9bff;
+    --yellow: #ffd22e;
+    --cream: #efe8d6;
+    --spring: cubic-bezier(0.525, 0, 0, 1);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); }
+  body { font-family: "Bricolage Grotesque", system-ui, sans-serif; color: var(--ink); }
+  #stage { position: fixed; left: 50%; top: 50%; width: 1920px; height: 1080px; transform-origin: center; }
+  .slide {
+    position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity 0.4s var(--spring);
+    background-color: var(--bg);
+    background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 120px 120px; background-position: center;
+  }
+  .slide.on { opacity: 1; }
+
+  /* the one component: a chunky key */
+  .key {
+    position: absolute; display: grid; place-items: center; font-weight: 800; color: var(--ink);
+    border-radius: 26px; box-shadow: 0 var(--d, 14px) 0 0 var(--ink), inset 0 6px 0 rgba(255, 255, 255, 0.45), inset 0 -6px 0 rgba(0, 0, 0, 0.08);
+    transition: transform 0.9s var(--spring), opacity 0.5s var(--spring), background-color 6s var(--spring), box-shadow 3s var(--spring), left 0.9s var(--spring), top 0.9s var(--spring);
+  }
+  @keyframes bob { from { translate: 0 -6px; } to { translate: 0 6px; } }
+  .bob { animation: bob var(--t, 4s) ease-in-out var(--dl, 0s) infinite alternate; }
+
+  .table { position: absolute; left: 260px; top: 790px; width: 1400px; height: 64px; border-radius: 20px; background: var(--cream); box-shadow: 0 14px 0 0 var(--ink); }
+  .timer { position: absolute; left: 0; right: 0; top: 800px; text-align: center; font-size: 210px; font-weight: 800; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="slide" id="s1"></div>
+  <div class="slide" id="s2"></div>
+  <div class="slide" id="s3"></div>
+  <div class="slide" id="s4"></div>
+</div>
+<script>
+const stage = document.getElementById("stage");
+const slides = [...document.querySelectorAll(".slide")];
+const fit = () => { stage.style.transform = `translate(-50%, -50%) scale(${Math.min(innerWidth / 1920, innerHeight / 1080)})`; };
+addEventListener("resize", fit); fit();
+
+const PAL = ["--orange", "--lilac", "--violet", "--mint", "--blue", "--yellow"].map((v) => `var(${v})`);
+const timers = [];
+const later = (fn, ms) => timers.push(setTimeout(fn, ms));
+const every = (fn, ms) => timers.push(setInterval(fn, ms));
+const rnd = (a, b) => a + Math.random() * (b - a);
+function key(parent, { x, y, w, h, bg, text = "", size = 60, r, d }) {
+  const k = document.createElement("div");
+  k.className = "key";
+  Object.assign(k.style, { left: x + "px", top: y + "px", width: w + "px", height: h + "px", background: bg, fontSize: size + "px" });
+  if (r) k.style.borderRadius = r + "px";
+  if (d !== undefined) k.style.setProperty("--d", d + "px");
+  k.textContent = text;
+  parent.appendChild(k);
+  return k;
+}
+const reflow = (el) => el.offsetWidth;
+
+/* 1. A hundred people at a time: one source breaks into many small gifts that land on the table */
+function build1(s) {
+  const table = document.createElement("div"); table.className = "table"; s.appendChild(table);
+  const src = key(s, { x: 810, y: 160, w: 300, h: 300, bg: "var(--yellow)", text: "$", size: 200, r: 44, d: 20 });
+  src.style.opacity = 0; src.style.transform = "translateY(-60px)"; reflow(src);
+  src.style.opacity = 1; src.style.transform = "none";
+  later(() => { src.style.transform = "scale(0.2)"; src.style.opacity = 0; }, 1500);
+  const N = 16;
+  for (let i = 0; i < N; i++) {
+    const big = i % 5 === 2;
+    const w = big ? 104 : 80;
+    const k = key(s, { x: 930, y: 270, w, h: w, bg: PAL[i % PAL.length], text: big ? "$60" : "$5", size: big ? 34 : 30, r: 22, d: 10 });
+    k.style.opacity = 0; k.style.transform = "scale(0.2)";
+    const tx = 270 + i * 86.5, ty = 790 - w - 6;
+    later(() => {
+      k.style.left = tx + "px"; k.style.top = ty + "px";
+      k.style.opacity = 1; k.style.transform = `rotate(${rnd(-5, 5)}deg)`;
+      later(() => { k.style.transform = "none"; k.classList.add("bob"); k.style.setProperty("--t", rnd(3, 5) + "s"); k.style.setProperty("--dl", rnd(0, 2) + "s"); }, 900);
+    }, 1500 + i * 85);
+  }
+}
+
+/* 2. Stephen gives once, then the glow goes out */
+function build2(s) {
+  const tile = key(s, { x: 780, y: 290, w: 360, h: 360, bg: "var(--orange)", text: "S", size: 240, r: 56, d: 24 });
+  tile.style.boxShadow = "0 24px 0 0 var(--ink), 0 0 220px 60px rgba(255,106,0,0.5), inset 0 8px 0 rgba(255,255,255,0.45)";
+  tile.classList.add("bob");
+  const gift = key(s, { x: 1010, y: -140, w: 190, h: 120, bg: "var(--yellow)", text: "$50", size: 56, r: 30, d: 12 });
+  later(() => { gift.style.top = "300px"; }, 400);
+  later(() => { gift.style.transform = "scale(0.1)"; gift.style.opacity = 0; }, 1800);
+  later(() => {
+    tile.style.backgroundColor = "#d6d6d1";
+    tile.style.boxShadow = "0 8px 0 0 var(--ink), 0 0 0 0 rgba(255,106,0,0), inset 0 8px 0 rgba(255,255,255,0.45)";
+    tile.style.transform = "translateY(16px) rotate(-3deg)";
+  }, 3200);
+}
+
+/* 3. Times a hundred, with ten minutes to call someone */
+function build3(s) {
+  const cols = 10, size = 50, gap = 20, left = (1920 - (cols * size + (cols - 1) * gap)) / 2, top = 100;
+  const keys = [];
+  for (let i = 0; i < 100; i++) {
+    const k = key(s, { x: left + (i % cols) * (size + gap), y: top + Math.floor(i / cols) * (size + gap), w: size, h: size, bg: PAL[(i * 7 + Math.floor(i / 10)) % PAL.length], r: 14, d: 8 });
+    k.style.opacity = 0; k.style.transform = "scale(0.4)";
+    later(() => { k.style.opacity = 1; k.style.transform = "none"; }, 100 + i * 14);
+    keys.push(k);
+  }
+  const t = document.createElement("div"); t.className = "timer"; t.textContent = "10:00"; s.appendChild(t);
+  let secs = 600;
+  later(() => every(() => { secs--; t.textContent = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`; }, 1000), 1600);
+  const order = keys.map((_, i) => i).sort(() => Math.random() - 0.5);
+  let n = 0;
+  later(() => every(() => { const k = keys[order[n++]]; if (k) { k.style.backgroundColor = "#d6d6d1"; k.style.setProperty("--d", "2px"); k.style.transform = "translateY(6px)"; } }, 420), 2200);
+}
+
+/* 4. The name */
+function build4(s) {
+  const word = "POTLUCK", w = 190, gap = 28, left = (1920 - (word.length * w + (word.length - 1) * gap)) / 2;
+  [...word].forEach((ch, i) => {
+    const k = key(s, { x: left + i * (w + gap), y: -300, w, h: w, bg: PAL[i % PAL.length], text: ch, size: 130, r: 38, d: 18 });
+    k.style.transitionDuration = "1.1s";
+    later(() => {
+      k.style.top = "440px"; k.style.transform = `rotate(${[-4, 3, -2, 4, -3, 2, -4][i]}deg)`;
+      later(() => { k.style.transform = "none"; k.classList.add("bob"); k.style.setProperty("--t", rnd(3.2, 4.8) + "s"); k.style.setProperty("--dl", rnd(0, 1.5) + "s"); }, 1100);
+    }, 300 + i * 110);
+  });
+}
+
+const builders = [build1, build2, build3, build4];
+let cur = -1;
+function go(i) {
+  i = Math.max(0, Math.min(builders.length - 1, i));
+  timers.splice(0).forEach((t) => { clearTimeout(t); clearInterval(t); });
+  slides.forEach((s, j) => s.classList.toggle("on", j === i));
+  slides[i].innerHTML = "";
+  cur = i;
+  builders[i](slides[i]);
+  history.replaceState(null, "", "#" + (i + 1));
+}
+addEventListener("keydown", (e) => { if (["ArrowRight", " ", "PageDown"].includes(e.key)) go(cur + 1); if (["ArrowLeft", "PageUp"].includes(e.key)) go(cur - 1); if (e.key.toLowerCase() === "r") go(cur); });
+addEventListener("click", () => go(cur + 1));
+addEventListener("hashchange", () => { const n = (parseInt(location.hash.slice(1)) || 1) - 1; if (n !== cur) go(n); });
+go((parseInt(location.hash.slice(1)) || 1) - 1);
+</script>
+</body>
+</html>

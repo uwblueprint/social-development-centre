@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Avatar lab</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --night: #11100e; --ink: #f3f1ea; --mute: #8d8a80; }
+  html, body { margin: 0; background: #11100e; color: #f3f1ea; font-family: "Instrument Sans", sans-serif; }
+  .o { position: absolute; }
+  .o > i { display: block; width: 100%; height: 100%; }
+  section { margin: 0 0 8px 40px; }
+  h2 { font: 500 22px/1 "Instrument Sans", sans-serif; color: #8d8a80; margin: 22px 0 14px; }
+  .row { position: relative; height: 170px; width: 1700px; }
+  .names { position: relative; width: 1700px; height: 26px; font-size: 16px; color: #8d8a80; }
+  .names span { position: absolute; width: 150px; text-align: center; }
+</style>
+</head>
+<body>
+<script src="core.js"></script>
+<script>
+  const people = ["Suhanya", "Stephen", "Maya", "Dana", "Omar", "Priya", "Leo", "Amara", "Jon", "Rita"];
+  [["split", "A: two-tone figure"], ["arch", "B: silhouette in an arch"], ["bauhaus", "C: abstract tiles"], ["classic", "Earlier version, for comparison"]].forEach(([style, title]) => {
+    const sec = document.createElement("section"), h = document.createElement("h2"); h.textContent = title; sec.appendChild(h);
+    const row = document.createElement("div"); row.className = "row"; sec.appendChild(row);
+    const nm = document.createElement("div"); nm.className = "names"; sec.appendChild(nm);
+    document.body.appendChild(sec);
+    const c = new Ctx(row);
+    people.forEach((n, i) => { c.avatar(80 + i * 165, 80, 140, n, { style }); const s = document.createElement("span"); s.textContent = n; s.style.left = 5 + i * 165 + "px"; nm.appendChild(s); });
+  });
+</script>
+</body>
+</html>

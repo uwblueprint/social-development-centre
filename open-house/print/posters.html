@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SDC booth posters</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* 12x18 arch B, portrait. Each sheet is laid out at 11in x 16.5in and scaled by 12/11 to fill the page, so
+     the drawings keep their 11in-wide positions. One grid for every page: the sheet has 56px padding, cards have
+     32px padding, and every gap is 24px. */
+  @page { size: 12in 18in; margin: 0; }
+  :root {
+    --ink: #1b2f4d;
+    --mute: #5d6672;
+    --cream: #f6f2e6;
+    --night: #11100e;
+    --margin: 0.5in;
+    --pad: 56px;
+    --card: 32px;
+    --gap: 24px;
+    --radius: 0;
+    --radius-art: 0;
+    --h1: 132px;
+    --h2: 40px;
+    --body: 24px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #fff; color: var(--ink); font-family: "Instrument Sans", system-ui, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  h1, h2, p, figure { margin: 0; }
+  h1 { font-size: var(--h1); line-height: 1.02; font-weight: 600; letter-spacing: -0.035em; }
+  h2 { font-size: var(--h2); line-height: 1.12; font-weight: 600; letter-spacing: -0.02em; }
+  p, figcaption { font-size: var(--body); line-height: 1.4; }
+
+  .page { width: 12in; height: 18in; padding: 0; break-after: page; overflow: hidden; }
+  .page:last-child { break-after: auto; }
+  /* transform, not zoom: Chrome prints zoomed content about 4% short, leaving a strip at the right and bottom */
+  .sheet { position: relative; width: 11in; height: 16.5in; transform: scale(calc(12 / 11)); transform-origin: 0 0; border-radius: var(--radius); overflow: hidden; }
+  .card { min-width: 0; }
+  .art { display: block; width: 100%; height: auto; border: 0; border-radius: var(--radius-art); background: var(--night); }
+
+  /* the document is exactly one page wide, so Chrome never shrinks it to fit and leaves white at the edges */
+  @media print {
+    html, body { width: 12in; overflow: hidden; background: var(--cream); }
+  }
+
+  /* on screen, show each sheet as its own page */
+  @media screen {
+    html, body { background: #d9d9d6; }
+    body { padding: 32px 0; }
+    .page { margin: 0 auto 32px; background: #fff; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15); }
+  }
+
+  /* 1. Headline and a phone that runs off the right and bottom edges */
+  .hook { background: var(--cream); padding: var(--pad); }
+  .hook h1 span { display: block; white-space: nowrap; }
+  /* an iPhone, tilted, running off the bottom of the sheet */
+  .phone { position: absolute; left: 248px; top: 274px; width: 560px; height: 1180px; transform: rotate(5deg) scale(1.3); transform-origin: 0 0; background: #1c1c1e; border-radius: 86px; padding: 16px; box-shadow: 0 0 0 3px #3a3a3c, 16px 22px 18px -6px rgba(27, 47, 77, 0.38); }
+  .screen { position: relative; height: 100%; background: #fff; border-radius: 70px; overflow: hidden; font-family: -apple-system, "SF Pro Text", "Instrument Sans", system-ui, sans-serif; color: #000; }
+  .island { position: absolute; top: 16px; left: 50%; width: 128px; height: 40px; margin-left: -64px; background: #000; border-radius: 999px; }
+  .status { display: flex; justify-content: space-between; align-items: center; height: 78px; padding: 8px 44px 0 62px; font-size: 24px; font-weight: 600; letter-spacing: -0.01em; }
+  .status svg { display: block; }
+  .status .icons { display: flex; gap: 8px; align-items: center; }
+  .head { position: relative; text-align: center; padding: 8px 0 18px; border-bottom: 1px solid #e5e5ea; background: #f7f7f8; }
+  .head .back { position: absolute; left: 28px; top: 34px; }
+  .head .pic { width: 72px; height: 72px; margin: 0 auto; border-radius: 50%; background: linear-gradient(#a5aab6, #868b97); color: #fff; display: grid; place-items: center; font-size: 34px; font-weight: 500; }
+  .head .name { margin-top: 8px; font-size: 19px; }
+  .thread { padding: 22px 26px 0; display: flex; flex-direction: column; }
+  .stamp { text-align: center; font-size: 18px; color: #8e8e93; margin: 6px 0 14px; }
+  .stamp b { font-weight: 600; }
+  .msg { position: relative; width: fit-content; max-width: 76%; padding: 13px 22px; font-size: 29px; line-height: 1.28; border-radius: 34px; margin-top: 6px; }
+  .msg.in { background: #e9e9eb; color: #000; margin-right: auto; }
+  .msg.out { background: #0a84ff; color: #fff; margin-left: auto; }
+  /* bubble tails */
+  .msg::before, .msg::after { content: ""; position: absolute; bottom: 0; height: 30px; }
+  .msg.out::before { right: -8px; width: 26px; background: #0a84ff; border-bottom-left-radius: 18px 16px; }
+  .msg.out::after { right: -26px; width: 26px; background: #fff; border-bottom-left-radius: 12px; }
+  .msg.in::before { left: -8px; width: 26px; background: #e9e9eb; border-bottom-right-radius: 18px 16px; }
+  .msg.in::after { left: -26px; width: 26px; background: #fff; border-bottom-right-radius: 12px; }
+  .msg.notail::before, .msg.notail::after { display: none; }
+  .delivered { align-self: flex-end; font-size: 17px; color: #8e8e93; margin: 6px 6px 8px 0; }
+  .stamp.later { margin-top: 40px; }
+
+  /* shared pieces for the drawings on pages 2 and 3: light cards, like the phone, that run off the page edge */
+  .band { position: relative; display: grid; grid-template-columns: repeat(12, 1fr); column-gap: var(--gap); align-items: center; }
+  .band .copy { grid-column: 1 / 6; position: relative; z-index: 2; }
+  .band .copy p { margin-top: 16px; }
+  .draw { position: absolute; top: 50%; left: calc(5 / 12 * 100% + 48px); transform: translateY(-50%); }
+  .ui { background: #fff; box-shadow: 0 0 0 1.5px #e3dccb, 0 30px 60px -24px rgba(27, 47, 77, 0.3); }
+  .av { flex: none; display: inline-block; border-radius: 50%; overflow: hidden; vertical-align: middle; }
+  .av img { display: block; width: 100%; height: 100%; }
+  .note { display: inline-block; background: #f1e6b8; color: var(--ink); padding: 8px 14px; font-size: 22px; }
+  .meta { color: var(--mute); font-size: 20px; }
+
+  /* 2. Three bands: what SDC is, the problem, what we're building */
+  .story { background: var(--cream); padding: var(--pad); display: grid; grid-template-rows: repeat(3, auto); align-content: space-between; }
+  .story .band { min-height: 460px; }
+  .story .band.flip .copy { grid-column: 8 / 13; }
+  .story .flip .draw { left: auto; right: calc(5 / 12 * 100% + 48px); }
+  .story .flip .pile .who { left: auto; right: -10px; }
+  /* SDC's community: neighbours joined up, tagged with what SDC helps with */
+  .web { width: 720px; height: 540px; transform: translateY(-50%) scale(0.84); transform-origin: 0 50%; }
+  .web .links { position: absolute; inset: 0; stroke: var(--ink); stroke-opacity: 0.35; stroke-width: 3; }
+  .web .av { position: absolute; box-shadow: 0 0 0 6px var(--cream); }
+  .tag-card { position: absolute; z-index: 2; background: #fff; padding: 12px 18px; font-size: 24px; font-weight: 600; white-space: nowrap; box-shadow: 0 0 0 1.5px #e3dccb, 8px 14px 14px -8px rgba(27, 47, 77, 0.3); }
+  .story .logo-art { grid-column: 6 / 13; width: 100%; }
+  /* Suhanya under a pile of other jobs, with the thank-you card buried at the bottom */
+  .pile { width: 700px; height: 480px; }
+  .pile .who { position: absolute; left: -40px; bottom: -10px; text-align: center; font-size: 24px; z-index: 5; }
+  .pile .who .av { width: 170px; height: 170px; margin-bottom: 8px; box-shadow: 0 0 0 6px var(--cream); }
+  /* sticky notes: one job each, with scribbles for the details */
+  .sticky { position: absolute; width: 190px; height: 190px; padding: 18px 18px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 2px 2px rgba(27, 47, 77, 0.08), 6px 20px 24px -14px rgba(27, 47, 77, 0.45); background-image: linear-gradient(180deg, rgba(0, 0, 0, 0.05) 0, rgba(0, 0, 0, 0) 24px); }
+  .sticky b { font-size: 24px; line-height: 1.15; font-weight: 600; }
+  .sticky svg { display: block; }
+  /* what people bring: money and time */
+  .pot { display: grid; grid-template-columns: repeat(5, 164px); gap: 20px; transform: translateY(-50%) rotate(-4deg); }
+  .pot span { width: 164px; height: 164px; border-radius: 50%; display: grid; place-items: center; font-size: 42px; font-weight: 600; color: var(--ink); }
+
+  /* 3. Title, then four bands that alternate sides */
+  .product { background: var(--cream); padding: var(--pad); display: grid; grid-template-rows: repeat(4, 1fr); }
+  .product { position: relative; }
+  .product .copy { position: relative; z-index: 4; }
+  .product .band { z-index: 2; }
+  .product .band.on-top { z-index: 3; }
+  .sticky.loose { z-index: 1; }
+  .product .band .copy { grid-column: 1 / 5; }
+  .product .band.flip .copy { grid-column: 9 / 13; }
+  .product .draw { left: calc(4 / 12 * 100% + 40px); }
+  .product .flip .draw { left: auto; right: calc(4 / 12 * 100% + 40px); }
+  .record { width: 820px; padding: 32px 36px; display: grid; grid-template-columns: 170px 1fr; gap: 32px; transform: translateY(-50%) rotate(-5deg); }
+  .record .me { text-align: center; }
+  .record .me .av { width: 112px; height: 112px; margin: 0 auto 10px; display: block; }
+  .record .me b { font-size: 28px; font-weight: 600; }
+  .record .row { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 12px 0; border-bottom: 1.5px solid #ece6d6; font-size: 26px; }
+  .record .row:last-child { border-bottom: 0; }
+  .record .note { white-space: nowrap; }
+  .recall { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; transform: translateY(calc(-50% - 100px)) rotate(4deg); }
+  .recall .line { display: flex; align-items: center; gap: 0; }
+  .recall .line .av { position: relative; z-index: 2; margin-right: 18px; }
+  .recall .line + .line { margin-top: -70px; position: relative; z-index: 3; }
+  .recall .av { width: 84px; height: 84px; }
+  /* a sticky note: square, bright yellow, lifted at the bottom corner */
+  .recall .note { width: 250px; height: 250px; padding: 24px 22px; font-size: 31px; line-height: 1.25; background: #ffe27a; transform: rotate(-4deg); box-shadow: 0 2px 2px rgba(27, 47, 77, 0.08), 6px 22px 26px -14px rgba(27, 47, 77, 0.45); background-image: linear-gradient(180deg, rgba(0, 0, 0, 0.05) 0, rgba(0, 0, 0, 0) 28px); }
+  .bubble { background: #6fa8ff; color: var(--ink); font-size: 32px; line-height: 1.3; padding: 18px 28px; border-radius: 34px; max-width: 560px; }
+  .mail { width: 700px; transform: translateY(-50%) rotate(-4deg); }
+  .mail .bar { display: flex; align-items: center; gap: 12px; padding: 18px 28px; border-bottom: 1.5px solid #ece6d6; font-size: 22px; }
+  .mail .bar .av { width: 40px; height: 40px; }
+  .mail .body { padding: 26px 32px 30px; font-size: 30px; line-height: 1.45; }
+  .mail .foot { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 0 28px 28px; }
+  .tag { background: #dcefe0; color: #1f5a33; font-size: 20px; font-weight: 600; padding: 8px 14px; }
+  .btn { background: var(--ink); color: #fff; font-size: 22px; font-weight: 600; padding: 14px 22px; }
+  .mail.ask { transform: translateY(calc(-50% - 70px)) rotate(5deg); }
+
+  /* 4. The logo on its own, six columns wide */
+  .logo-page { background: var(--cream); display: grid; grid-template-rows: 1fr auto; }
+  .logo-page .brand { align-self: center; text-align: center; padding: 0 var(--pad); }
+  .logo-page .brand img { width: 52%; display: block; margin: 0 auto 56px; }
+  .logo-page .brand h1 { font-size: 72px; color: #064a43; letter-spacing: -0.035em; white-space: nowrap; }
+  .logo-page .brand p { font-size: 34px; color: var(--mute); margin-top: 12px; }
+  .logo-page .foot { background: #064a43; color: var(--cream); padding: var(--pad); display: flex; justify-content: center; align-items: baseline; }
+  .logo-page .foot h2 { font-size: 72px; letter-spacing: -0.03em; }
+  .logo-page .foot p { font-size: 32px; }
+</style>
+</head>
+<body>
+
+<!-- 1. The hook -->
+<section class="page">
+  <div class="sheet hook">
+    <h1><span>Would you</span><span>keep donating?</span></h1>
+
+    <div class="phone" aria-label="Stephen's text messages with his friend Maya">
+      <div class="screen">
+        <div class="island"></div>
+        <div class="status">
+          <span>7:42</span>
+          <span class="icons">
+            <svg width="34" height="22" viewBox="0 0 34 22" aria-hidden="true"><rect x="0" y="14" width="6" height="8" rx="1.5"/><rect x="9" y="10" width="6" height="12" rx="1.5"/><rect x="18" y="5" width="6" height="17" rx="1.5"/><rect x="27" y="0" width="6" height="22" rx="1.5"/></svg>
+            <svg width="30" height="22" viewBox="0 0 30 22" aria-hidden="true"><path d="M15 21.5 10.6 17a6.3 6.3 0 0 1 8.8 0Z"/><path d="M6.7 13.1a11.8 11.8 0 0 1 16.6 0l-2.6 2.6a8.2 8.2 0 0 0-11.4 0Z"/><path d="M2.8 9.2a17.3 17.3 0 0 1 24.4 0l-2.6 2.6a13.6 13.6 0 0 0-19.2 0Z"/></svg>
+            <svg width="50" height="24" viewBox="0 0 50 24" aria-hidden="true"><rect x="1" y="1" width="42" height="22" rx="7" fill="none" stroke="#000" stroke-opacity=".4" stroke-width="2"/><rect x="4.5" y="4.5" width="31" height="15" rx="4"/><path d="M46 8.5v7c1.6-.6 2.6-2 2.6-3.5S47.6 9.1 46 8.5Z" fill-opacity=".45"/></svg>
+          </span>
+        </div>
+        <div class="head">
+          <svg class="back" width="20" height="34" viewBox="0 0 20 34" aria-hidden="true"><path d="M17 3 3 17l14 14" fill="none" stroke="#0a84ff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div class="pic">M</div>
+          <div class="name">Maya &rsaquo;</div>
+        </div>
+        <div class="thread">
+          <div class="stamp"><b>Today</b> 7:42 PM</div>
+          <div class="msg in">Hey! I'm helping fundraise for a nonprofit called SDC. Can you chip in?</div>
+          <div class="msg out notail" style="margin-top: 18px">Just sent $50!</div>
+          <div class="msg out">I love their mission. Would love to get involved somehow</div>
+          <div class="delivered">Delivered</div>
+          <div class="msg in">You're the best 💛</div>
+          <div class="stamp later">One month later</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 2. What SDC is, the problem, and what we're building -->
+<section class="page">
+  <div class="sheet story">
+    <div class="band">
+      <div class="copy"><h2>SDC helps people in Waterloo Region</h2><p>The Social Development Centre is a local nonprofit. They help people with housing and jobs, and back small community groups.</p></div>
+      <div class="draw web" aria-hidden="true">
+        <svg class="links" viewBox="0 0 720 540" width="720" height="540"><line x1="70" y1="90" x2="330" y2="40"/><line x1="330" y1="40" x2="560" y2="130"/><line x1="70" y1="90" x2="150" y2="330"/><line x1="330" y1="40" x2="420" y2="280"/><line x1="560" y1="130" x2="420" y2="280"/><line x1="150" y1="330" x2="420" y2="280"/><line x1="420" y1="280" x2="660" y2="380"/><line x1="560" y1="130" x2="660" y2="380"/><line x1="150" y1="330" x2="300" y2="470"/><line x1="420" y1="280" x2="300" y2="470"/></svg>
+        <span class="av" style="left: 10px; top: 30px; width: 120px; height: 120px"><img src="maya.svg" alt=""></span><span class="av" style="left: 278px; top: -12px; width: 104px; height: 104px"><img src="omar.svg" alt=""></span><span class="av" style="left: 496px; top: 66px; width: 128px; height: 128px"><img src="priya.svg" alt=""></span><span class="av" style="left: 94px; top: 274px; width: 112px; height: 112px"><img src="leo.svg" alt=""></span><span class="av" style="left: 352px; top: 212px; width: 136px; height: 136px"><img src="amara.svg" alt=""></span><span class="av" style="left: 604px; top: 324px; width: 112px; height: 112px"><img src="dana.svg" alt=""></span><span class="av" style="left: 250px; top: 420px; width: 100px; height: 100px"><img src="stephen.svg" alt=""></span>
+        <span class="tag-card" style="left: 110px; top: 160px; transform: rotate(-4deg)">Housing help</span><span class="tag-card" style="left: 420px; top: 200px; transform: rotate(3deg)">Job support</span><span class="tag-card" style="left: 20px; top: 400px; transform: rotate(2deg)">Tenants’ meetings</span><span class="tag-card" style="left: 380px; top: 372px; transform: rotate(-3deg)">Community groups</span>
+      </div>
+    </div>
+    <div class="band flip">
+      <div class="copy"><h2>People drift away when nobody keeps in touch</h2><p>SDC is starting a memberships program. Thanking every member falls to one person, Suhanya, who has 20 hours a week.</p></div>
+      <div class="draw pile" aria-hidden="true">
+        <div class="sticky" style="left: 390px; top: 60px; transform: rotate(11deg); background-color: #ffe27a"><b>Grant report</b><svg viewBox="0 0 99 16" width="99" height="16" aria-hidden="true"><path d="M2 8 q4.0 -7 8.0 0 t8.0 0 q3.2 -5 6.4 0 t6.4 0 q3.2 -5 6.5 0 t6.5 0 q3.1 -5 6.3 0 t6.3 0 q3.5 -7 7.1 0 t7.1 0 q4.1 -7 8.2 0 t8.2 0 q3.6 -5 7.2 0 t7.2 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg><svg viewBox="0 0 117 16" width="117" height="16" aria-hidden="true"><path d="M2 8 q3.1 -5 6.3 0 t6.3 0 q3.3 -7 6.6 0 t6.6 0 q4.6 -5 9.2 0 t9.2 0 q5.4 -5 10.7 0 t10.7 0 q4.5 -7 8.9 0 t8.9 0 q5.4 -7 10.9 0 t10.9 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg><svg viewBox="0 0 125 16" width="125" height="16" aria-hidden="true"><path d="M2 8 q5.1 -6 10.3 0 t10.3 0 q4.0 -5 8.1 0 t8.1 0 q3.3 -6 6.6 0 t6.6 0 q4.4 -5 8.8 0 t8.8 0 q3.5 -5 6.9 0 t6.9 0 q4.4 -7 8.9 0 t8.9 0 q3.9 -5 7.9 0 t7.9 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg></div>
+        <div class="sticky" style="left: 210px; top: 10px; transform: rotate(-7deg); background-color: #ffc4a3"><b>Board meeting</b><svg viewBox="0 0 126 16" width="126" height="16" aria-hidden="true"><path d="M2 8 q3.1 -7 6.3 0 t6.3 0 q4.2 -5 8.5 0 t8.5 0 q4.1 -6 8.1 0 t8.1 0 q4.2 -6 8.3 0 t8.3 0 q3.9 -7 7.8 0 t7.8 0 q5.0 -5 10.0 0 t10.0 0 q4.9 -7 9.9 0 t9.9 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg><svg viewBox="0 0 126 16" width="126" height="16" aria-hidden="true"><path d="M2 8 q3.8 -6 7.5 0 t7.5 0 q5.2 -5 10.4 0 t10.4 0 q4.1 -5 8.2 0 t8.2 0 q5.5 -7 10.9 0 t10.9 0 q4.3 -7 8.6 0 t8.6 0 q4.9 -7 9.8 0 t9.8 0 q5.3 -6 10.7 0 t10.7 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg></div>
+        <div class="sticky" style="left: 80px; top: 120px; transform: rotate(-12deg); background-color: #bfe6c6"><b>Budget</b><svg viewBox="0 0 132 16" width="132" height="16" aria-hidden="true"><path d="M2 8 q3.2 -5 6.4 0 t6.4 0 q4.4 -6 8.9 0 t8.9 0 q3.9 -6 7.7 0 t7.7 0 q4.5 -5 9.0 0 t9.0 0 q5.0 -7 10.0 0 t10.0 0 q5.1 -6 10.2 0 t10.2 0 q4.2 -5 8.4 0 t8.4 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg><svg viewBox="0 0 94 16" width="94" height="16" aria-hidden="true"><path d="M2 8 q3.2 -5 6.3 0 t6.3 0 q3.8 -5 7.5 0 t7.5 0 q5.5 -6 11.0 0 t11.0 0 q3.7 -6 7.4 0 t7.4 0 q5.2 -6 10.4 0 t10.4 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg></div>
+        <div class="sticky" style="left: 260px; top: 230px; transform: rotate(-5deg); background-color: #c4d8ff"><b>Payroll</b><svg viewBox="0 0 119 16" width="119" height="16" aria-hidden="true"><path d="M2 8 q3.9 -5 7.8 0 t7.8 0 q3.3 -7 6.6 0 t6.6 0 q3.5 -6 7.1 0 t7.1 0 q3.3 -7 6.6 0 t6.6 0 q4.0 -6 8.0 0 t8.0 0 q3.2 -6 6.4 0 t6.4 0 q4.0 -6 8.0 0 t8.0 0 q5.2 -6 10.4 0 t10.4 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg><svg viewBox="0 0 125 16" width="125" height="16" aria-hidden="true"><path d="M2 8 q3.7 -6 7.4 0 t7.4 0 q5.5 -5 10.9 0 t10.9 0 q5.2 -7 10.4 0 t10.4 0 q3.4 -7 6.8 0 t6.8 0 q3.4 -5 6.8 0 t6.8 0 q3.6 -6 7.2 0 t7.2 0 q5.1 -7 10.2 0 t10.2 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg></div>
+        <div class="sticky" style="left: 420px; top: 210px; transform: rotate(6deg); background-color: #e3d8ff"><b>Newsletter</b><svg viewBox="0 0 108 16" width="108" height="16" aria-hidden="true"><path d="M2 8 q3.0 -6 6.0 0 t6.0 0 q4.3 -5 8.7 0 t8.7 0 q4.4 -7 8.8 0 t8.8 0 q4.7 -5 9.5 0 t9.5 0 q5.4 -5 10.8 0 t10.8 0 q4.7 -7 9.4 0 t9.4 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg><svg viewBox="0 0 119 16" width="119" height="16" aria-hidden="true"><path d="M2 8 q5.2 -5 10.5 0 t10.5 0 q5.0 -6 10.0 0 t10.0 0 q4.0 -6 8.0 0 t8.0 0 q3.3 -5 6.5 0 t6.5 0 q4.0 -7 8.0 0 t8.0 0 q3.2 -7 6.3 0 t6.3 0 q4.1 -7 8.2 0 t8.2 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg><svg viewBox="0 0 111 16" width="111" height="16" aria-hidden="true"><path d="M2 8 q4.5 -7 9.0 0 t9.0 0 q3.0 -7 6.0 0 t6.0 0 q4.3 -6 8.7 0 t8.7 0 q4.5 -7 9.1 0 t9.1 0 q5.2 -5 10.4 0 t10.4 0 q3.9 -5 7.9 0 t7.9 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg></div>
+        <div class="sticky" style="left: 380px; top: 292px; transform: rotate(5deg); background-color: #ffd23f"><b>Thank new members</b><svg viewBox="0 0 112 16" width="112" height="16" aria-hidden="true"><path d="M2 8 q4.5 -6 9.0 0 t9.0 0 q3.3 -6 6.6 0 t6.6 0 q5.5 -6 11.0 0 t11.0 0 q4.2 -6 8.4 0 t8.4 0 q3.2 -7 6.4 0 t6.4 0 q4.9 -5 9.7 0 t9.7 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg><svg viewBox="0 0 106 16" width="106" height="16" aria-hidden="true"><path d="M2 8 q4.2 -5 8.4 0 t8.4 0 q3.4 -7 6.8 0 t6.8 0 q3.5 -5 7.0 0 t7.0 0 q3.9 -5 7.8 0 t7.8 0 q4.4 -7 8.7 0 t8.7 0 q4.9 -6 9.8 0 t9.8 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg><svg viewBox="0 0 131 16" width="131" height="16" aria-hidden="true"><path d="M2 8 q5.2 -5 10.3 0 t10.3 0 q5.1 -5 10.2 0 t10.2 0 q3.9 -7 7.8 0 t7.8 0 q3.9 -7 7.8 0 t7.8 0 q4.3 -5 8.7 0 t8.7 0 q3.8 -7 7.6 0 t7.6 0 q4.5 -7 9.1 0 t9.1 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg></div>
+        <div class="sticky" style="left: 140px; top: 250px; transform: rotate(9deg); background-color: #ffc4a3"><b>Volunteers</b><svg viewBox="0 0 115 16" width="115" height="16" aria-hidden="true"><path d="M2 8 q4.8 -7 9.7 0 t9.7 0 q3.5 -6 7.0 0 t7.0 0 q3.9 -7 7.8 0 t7.8 0 q5.5 -6 10.9 0 t10.9 0 q4.2 -7 8.4 0 t8.4 0 q4.7 -6 9.5 0 t9.5 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg><svg viewBox="0 0 118 16" width="118" height="16" aria-hidden="true"><path d="M2 8 q5.0 -5 10.0 0 t10.0 0 q5.5 -6 10.9 0 t10.9 0 q3.2 -7 6.4 0 t6.4 0 q3.6 -7 7.1 0 t7.1 0 q3.8 -6 7.7 0 t7.7 0 q4.6 -5 9.1 0 t9.1 0 q5.1 -6 10.2 0 t10.2 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg></div>
+        <div class="sticky" style="left: 30px; top: -10px; transform: rotate(4deg); background-color: #bfe6c6"><b>Event setup</b><svg viewBox="0 0 131 16" width="131" height="16" aria-hidden="true"><path d="M2 8 q3.2 -5 6.4 0 t6.4 0 q3.3 -6 6.6 0 t6.6 0 q5.0 -7 9.9 0 t9.9 0 q4.2 -7 8.4 0 t8.4 0 q4.1 -5 8.2 0 t8.2 0 q3.8 -5 7.7 0 t7.7 0 q4.0 -6 8.0 0 t8.0 0 q4.9 -7 9.7 0 t9.7 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg><svg viewBox="0 0 136 16" width="136" height="16" aria-hidden="true"><path d="M2 8 q3.4 -7 6.8 0 t6.8 0 q3.1 -5 6.1 0 t6.1 0 q5.3 -5 10.5 0 t10.5 0 q3.4 -5 6.7 0 t6.7 0 q5.5 -5 10.9 0 t10.9 0 q5.3 -7 10.7 0 t10.7 0 q4.4 -7 8.7 0 t8.7 0 q3.1 -5 6.1 0 t6.1 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg><svg viewBox="0 0 131 16" width="131" height="16" aria-hidden="true"><path d="M2 8 q3.3 -5 6.5 0 t6.5 0 q5.3 -6 10.7 0 t10.7 0 q5.5 -7 10.9 0 t10.9 0 q5.1 -7 10.1 0 t10.1 0 q3.1 -7 6.1 0 t6.1 0 q3.7 -7 7.5 0 t7.5 0 q4.9 -6 9.8 0 t9.8 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg></div>
+        <div class="sticky" style="left: 300px; top: 110px; transform: rotate(-9deg); background-color: #c4d8ff"><b>Emails</b><svg viewBox="0 0 124 16" width="124" height="16" aria-hidden="true"><path d="M2 8 q4.0 -7 8.1 0 t8.1 0 q3.2 -5 6.3 0 t6.3 0 q3.9 -6 7.8 0 t7.8 0 q4.7 -5 9.3 0 t9.3 0 q4.1 -5 8.1 0 t8.1 0 q3.3 -7 6.7 0 t6.7 0 q4.3 -7 8.6 0 t8.6 0 q5.2 -7 10.4 0 t10.4 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg><svg viewBox="0 0 128 16" width="128" height="16" aria-hidden="true"><path d="M2 8 q3.0 -7 6.0 0 t6.0 0 q3.4 -6 6.9 0 t6.9 0 q4.5 -7 9.1 0 t9.1 0 q4.4 -6 8.8 0 t8.8 0 q4.7 -5 9.4 0 t9.4 0 q4.4 -7 8.8 0 t8.8 0 q5.2 -7 10.4 0 t10.4 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg><svg viewBox="0 0 105 16" width="105" height="16" aria-hidden="true"><path d="M2 8 q3.5 -7 7.0 0 t7.0 0 q4.9 -5 9.9 0 t9.9 0 q4.1 -7 8.3 0 t8.3 0 q4.9 -7 9.8 0 t9.8 0 q4.1 -5 8.2 0 t8.2 0 q5.4 -5 10.9 0 t10.9 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg></div>
+        <div class="sticky" style="left: -10px; top: 210px; transform: rotate(-6deg); background-color: #e3d8ff"><b>Rent</b><svg viewBox="0 0 134 16" width="134" height="16" aria-hidden="true"><path d="M2 8 q3.7 -5 7.4 0 t7.4 0 q4.3 -6 8.7 0 t8.7 0 q4.3 -7 8.5 0 t8.5 0 q4.7 -6 9.5 0 t9.5 0 q5.3 -7 10.6 0 t10.6 0 q5.1 -7 10.2 0 t10.2 0 q4.0 -6 8.1 0 t8.1 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg><svg viewBox="0 0 118 16" width="118" height="16" aria-hidden="true"><path d="M2 8 q3.8 -5 7.6 0 t7.6 0 q3.6 -7 7.2 0 t7.2 0 q3.5 -6 7.1 0 t7.1 0 q5.0 -7 9.9 0 t9.9 0 q5.3 -5 10.7 0 t10.7 0 q4.7 -7 9.3 0 t9.3 0 q3.6 -7 7.3 0 t7.3 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg></div>
+        <div class="sticky" style="left: 180px; top: 120px; transform: rotate(13deg); background-color: #ffe27a"><b>Website</b><svg viewBox="0 0 104 16" width="104" height="16" aria-hidden="true"><path d="M2 8 q4.9 -7 9.7 0 t9.7 0 q4.0 -6 8.0 0 t8.0 0 q3.4 -5 6.8 0 t6.8 0 q5.1 -7 10.2 0 t10.2 0 q4.8 -5 9.5 0 t9.5 0 q4.0 -6 8.0 0 t8.0 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg><svg viewBox="0 0 102 16" width="102" height="16" aria-hidden="true"><path d="M2 8 q3.9 -7 7.8 0 t7.8 0 q4.8 -7 9.6 0 t9.6 0 q3.8 -6 7.7 0 t7.7 0 q4.1 -7 8.2 0 t8.2 0 q4.0 -5 7.9 0 t7.9 0 q4.6 -5 9.1 0 t9.1 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg><svg viewBox="0 0 94 16" width="94" height="16" aria-hidden="true"><path d="M2 8 q3.3 -7 6.6 0 t6.6 0 q5.4 -7 10.9 0 t10.9 0 q3.2 -6 6.4 0 t6.4 0 q3.1 -7 6.2 0 t6.2 0 q3.7 -7 7.4 0 t7.4 0 q5.0 -5 10.1 0 t10.1 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg></div>
+        <div class="who"><span class="av"><img src="suhanya.svg" alt=""></span><div>Suhanya</div></div>
+      </div>
+    </div>
+    <div class="band">
+      <div class="copy"><h2>We're building Potluck</h2><p>It remembers every member and sends the thank-yous, so Suhanya has time to talk to people. Launching in December.</p></div>
+      <div class="draw pot" aria-hidden="true">
+        <span style="background: #ff6b3d">$10</span><span style="background: #ffd23f">5h</span><span style="background: #7bd389">$30</span><span style="background: #6fa8ff">2h</span><span style="background: #c9b6ff">$25</span>
+        <span style="background: #c9b6ff">7h</span><span style="background: #ff6b3d">$50</span><span style="background: #ffd23f">$15</span><span style="background: #7bd389">3h</span><span style="background: #6fa8ff">$20</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3. The product -->
+<section class="page">
+  <div class="sheet product">
+    <div class="sticky loose" style="left: 800px; top: -40px; transform: rotate(9deg); background-color: #c4d8ff" aria-hidden="true"><b>Call Maria</b><svg viewBox="0 0 118 16" width="118" height="16" aria-hidden="true"><path d="M2 8 q5.2 -6 10.3 0 t10.3 0 q4.1 -5 8.3 0 t8.3 0 q3.5 -5 6.9 0 t6.9 0 q4.2 -5 8.4 0 t8.4 0 q5.0 -7 10.0 0 t10.0 0 q4.1 -7 8.2 0 t8.2 0 q3.2 -5 6.5 0 t6.5 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg><svg viewBox="0 0 130 16" width="130" height="16" aria-hidden="true"><path d="M2 8 q3.1 -6 6.2 0 t6.2 0 q5.4 -5 10.8 0 t10.8 0 q4.8 -5 9.7 0 t9.7 0 q3.4 -7 6.8 0 t6.8 0 q5.1 -7 10.2 0 t10.2 0 q3.1 -7 6.3 0 t6.3 0 q5.2 -5 10.4 0 t10.4 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg><svg viewBox="0 0 91 16" width="91" height="16" aria-hidden="true"><path d="M2 8 q4.9 -6 9.9 0 t9.9 0 q4.1 -7 8.2 0 t8.2 0 q4.3 -5 8.6 0 t8.6 0 q3.7 -7 7.5 0 t7.5 0 q4.7 -6 9.3 0 t9.3 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg></div>
+    <div class="sticky loose" style="left: -70px; top: 440px; transform: rotate(-10deg); background-color: #ffc4a3" aria-hidden="true"><b>Renewals</b><svg viewBox="0 0 131 16" width="131" height="16" aria-hidden="true"><path d="M2 8 q3.7 -5 7.4 0 t7.4 0 q5.5 -7 11.0 0 t11.0 0 q4.8 -6 9.5 0 t9.5 0 q4.9 -5 9.8 0 t9.8 0 q3.7 -7 7.4 0 t7.4 0 q4.4 -7 8.8 0 t8.8 0 q4.0 -6 8.0 0 t8.0 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg><svg viewBox="0 0 114 16" width="114" height="16" aria-hidden="true"><path d="M2 8 q3.2 -7 6.3 0 t6.3 0 q5.1 -7 10.2 0 t10.2 0 q3.5 -7 7.1 0 t7.1 0 q4.2 -5 8.3 0 t8.3 0 q4.0 -7 8.0 0 t8.0 0 q4.4 -7 8.8 0 t8.8 0 q4.9 -6 9.9 0 t9.9 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg><svg viewBox="0 0 111 16" width="111" height="16" aria-hidden="true"><path d="M2 8 q3.2 -6 6.4 0 t6.4 0 q3.0 -6 6.1 0 t6.1 0 q4.9 -7 9.8 0 t9.8 0 q3.3 -5 6.7 0 t6.7 0 q3.3 -7 6.5 0 t6.5 0 q4.2 -6 8.3 0 t8.3 0 q3.4 -5 6.9 0 t6.9 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg></div>
+    <div class="sticky loose" style="left: 880px; top: 800px; transform: rotate(7deg); background-color: #bfe6c6" aria-hidden="true"><b>Event recap</b><svg viewBox="0 0 102 16" width="102" height="16" aria-hidden="true"><path d="M2 8 q4.1 -7 8.2 0 t8.2 0 q5.5 -7 10.9 0 t10.9 0 q4.0 -6 8.1 0 t8.1 0 q3.3 -6 6.6 0 t6.6 0 q5.5 -7 11.0 0 t11.0 0 q3.7 -5 7.3 0 t7.3 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg><svg viewBox="0 0 109 16" width="109" height="16" aria-hidden="true"><path d="M2 8 q5.5 -7 11.0 0 t11.0 0 q3.5 -6 7.1 0 t7.1 0 q5.5 -5 11.0 0 t11.0 0 q4.6 -7 9.2 0 t9.2 0 q3.1 -7 6.2 0 t6.2 0 q3.5 -6 7.1 0 t7.1 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg><svg viewBox="0 0 90 16" width="90" height="16" aria-hidden="true"><path d="M2 8 q4.9 -6 9.9 0 t9.9 0 q5.1 -6 10.2 0 t10.2 0 q3.2 -7 6.4 0 t6.4 0 q3.5 -5 7.0 0 t7.0 0 q3.6 -5 7.2 0 t7.2 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg></div>
+    <div class="sticky loose" style="left: 440px; top: 1110px; transform: rotate(-7deg); background-color: #e3d8ff" aria-hidden="true"><b>Holiday email</b><svg viewBox="0 0 113 16" width="113" height="16" aria-hidden="true"><path d="M2 8 q3.9 -6 7.9 0 t7.9 0 q3.3 -5 6.6 0 t6.6 0 q4.2 -5 8.4 0 t8.4 0 q3.3 -6 6.7 0 t6.7 0 q3.5 -7 6.9 0 t6.9 0 q3.8 -7 7.6 0 t7.6 0 q5.0 -7 10.1 0 t10.1 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg><svg viewBox="0 0 136 16" width="136" height="16" aria-hidden="true"><path d="M2 8 q3.5 -5 6.9 0 t6.9 0 q4.6 -5 9.1 0 t9.1 0 q3.5 -6 7.0 0 t7.0 0 q5.2 -5 10.4 0 t10.4 0 q3.2 -7 6.4 0 t6.4 0 q3.3 -7 6.5 0 t6.5 0 q4.3 -6 8.6 0 t8.6 0 q3.6 -5 7.2 0 t7.2 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg><svg viewBox="0 0 115 16" width="115" height="16" aria-hidden="true"><path d="M2 8 q3.6 -5 7.3 0 t7.3 0 q4.2 -5 8.5 0 t8.5 0 q3.4 -5 6.9 0 t6.9 0 q5.4 -7 10.9 0 t10.9 0 q3.6 -5 7.1 0 t7.1 0 q4.6 -5 9.3 0 t9.3 0 q4.5 -6 9.1 0 t9.1 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg></div>
+    <div class="sticky loose" style="left: -60px; top: 1480px; transform: rotate(12deg); background-color: #ffe27a" aria-hidden="true"><b>Thank volunteers</b><svg viewBox="0 0 103 16" width="103" height="16" aria-hidden="true"><path d="M2 8 q5.3 -7 10.6 0 t10.6 0 q4.9 -7 9.7 0 t9.7 0 q3.7 -6 7.3 0 t7.3 0 q3.6 -7 7.2 0 t7.2 0 q3.4 -6 6.9 0 t6.9 0 q4.3 -7 8.7 0 t8.7 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg><svg viewBox="0 0 95 16" width="95" height="16" aria-hidden="true"><path d="M2 8 q3.9 -6 7.8 0 t7.8 0 q5.5 -5 10.9 0 t10.9 0 q4.8 -5 9.7 0 t9.7 0 q4.5 -7 8.9 0 t8.9 0 q4.5 -7 8.9 0 t8.9 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg><svg viewBox="0 0 120 16" width="120" height="16" aria-hidden="true"><path d="M2 8 q5.3 -5 10.6 0 t10.6 0 q3.8 -7 7.6 0 t7.6 0 q3.1 -5 6.1 0 t6.1 0 q3.2 -7 6.4 0 t6.4 0 q4.8 -6 9.7 0 t9.7 0 q3.3 -7 6.7 0 t6.7 0 q3.2 -5 6.4 0 t6.4 0 q3.9 -7 7.8 0 t7.8 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg></div>
+    <div class="sticky loose" style="left: 800px; top: 1520px; transform: rotate(-8deg); background-color: #ffc4a3" aria-hidden="true"><b>Newsletter</b><svg viewBox="0 0 137 16" width="137" height="16" aria-hidden="true"><path d="M2 8 q4.8 -7 9.7 0 t9.7 0 q5.0 -6 10.0 0 t10.0 0 q3.9 -5 7.8 0 t7.8 0 q4.2 -7 8.4 0 t8.4 0 q5.2 -6 10.4 0 t10.4 0 q5.4 -7 10.7 0 t10.7 0 q5.2 -5 10.3 0 t10.3 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg><svg viewBox="0 0 90 16" width="90" height="16" aria-hidden="true"><path d="M2 8 q4.6 -6 9.1 0 t9.1 0 q3.9 -7 7.9 0 t7.9 0 q4.5 -7 9.0 0 t9.0 0 q3.2 -7 6.5 0 t6.5 0 q5.5 -6 11.0 0 t11.0 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg><svg viewBox="0 0 136 16" width="136" height="16" aria-hidden="true"><path d="M2 8 q3.8 -5 7.7 0 t7.7 0 q4.7 -6 9.5 0 t9.5 0 q4.1 -5 8.2 0 t8.2 0 q3.2 -5 6.4 0 t6.4 0 q3.1 -5 6.1 0 t6.1 0 q3.2 -7 6.4 0 t6.4 0 q3.6 -5 7.2 0 t7.2 0 q3.3 -5 6.6 0 t6.6 0 q4.7 -6 9.3 0 t9.3 0" fill="none" stroke="rgba(27,47,77,0.55)" stroke-width="2.4" stroke-linecap="round"/></svg></div>
+    <div class="band">
+      <div class="copy"><h2>Every member gets their own page.</h2></div>
+      <div class="draw ui record" aria-hidden="true">
+        <div class="me"><span class="av"><img src="stephen.svg" alt=""></span><b>Stephen</b></div>
+        <div>
+          <div class="row"><span>Member joined</span><span class="meta">Mar 4</span></div>
+          <div class="row"><span>Thank-you email sent</span><span class="meta">Mar 4</span></div>
+          <div class="row"><span>Check-in call</span><span class="meta">Apr 3</span></div>
+          <div class="row"><span class="note">Daughter starts school in September</span><span class="meta">Jun 12</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="band flip">
+      <div class="copy"><h2>Notes come back when they matter.</h2></div>
+      <div class="draw recall" aria-hidden="true">
+        <div class="line"><span class="av"><img src="stephen.svg" alt=""></span><span class="note">Daughter starts school in September</span></div>
+        <div class="line"><span class="av"><img src="suhanya.svg" alt=""></span><span class="bubble">Hey, how's your daughter's first day at school?</span></div>
+      </div>
+    </div>
+    <div class="band on-top">
+      <div class="copy"><h2>Thank-yous send themselves.</h2></div>
+      <div class="draw ui mail" aria-hidden="true">
+        <div class="bar">To: <span class="av"><img src="stephen.svg" alt=""></span> Stephen</div>
+        <div class="body">Thank you for joining us. It means a lot to everyone at SDC.<br><br>Warm regards,<br>Suhanya</div>
+        <div class="foot"><span class="tag">Sends when someone joins</span></div>
+      </div>
+    </div>
+    <div class="band flip">
+      <div class="copy"><h2>Important emails wait for her OK.</h2></div>
+      <div class="draw ui mail ask" aria-hidden="true">
+        <div class="bar">To: <span class="av"><img src="stephen.svg" alt=""></span> Stephen</div>
+        <div class="body">Thinking of you and the kids this winter.<br><br>Suhanya</div>
+        <div class="foot"><span class="meta">Waiting for Suhanya</span><span class="btn">Approve and send</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. The SDC logo -->
+<section class="page">
+  <div class="sheet logo-page">
+    <div class="brand">
+      <img src="sdc-mark.svg" alt="">
+      <h1>Social Development Centre</h1>
+      <p>Waterloo Region</p>
+    </div>
+    <div class="foot"><h2>Potluck</h2></div>
+  </div>
+</section>
+
+</body>
+</html>
