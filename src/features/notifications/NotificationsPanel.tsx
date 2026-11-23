@@ -39,6 +39,13 @@ import { describe, fullTime, personHref, relativeTime, titleParts, type Notifica
  * No Suspense boundary or search-params read here: either can make React hide the bell while a page changes.
  * The demo reads `?notifications=empty` itself when the page loads.
  */
+const OPEN_EVENT = "potluck:open-notifications";
+
+/** Opens the bell's panel from elsewhere, e.g. the search palette's Notifications action. */
+export function openNotifications() {
+  window.dispatchEvent(new Event(OPEN_EVENT));
+}
+
 export function NotificationsButton(props: { source: NotificationsSource; settingsHref: string }) {
   return <Notifications {...props} />;
 }
@@ -106,6 +113,12 @@ function Notifications({ source, settingsHref }: { source: NotificationsSource; 
   const [width, setWidth] = React.useState(0);
   const anchorRef = React.useRef<HTMLElement | null>(null);
   const triggerRef = React.useRef<HTMLButtonElement>(null);
+  // openNotifications(): the same path as a click on the bell, so the panel places and loads itself as usual.
+  React.useEffect(() => {
+    const onOpen = () => triggerRef.current?.click();
+    window.addEventListener(OPEN_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_EVENT, onOpen);
+  }, []);
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const endRef = React.useRef<HTMLDivElement>(null);
 
