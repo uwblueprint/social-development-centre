@@ -31,6 +31,9 @@ send.**
   remove, with who and when; kept, with `tag_name`, after the tag is deleted).
 - `create_tag(name)` returns the existing tag for a name already in use. `rename_tag` returns `renamed` or
   `taken`. `delete_tag` returns `deleted`; the emails engine adds `in_use` for tags an automatic email uses.
+- `tags.color`: one of the kit's tag colours (`stone`, `rose`, `pink`, `orange`, `amber`, `emerald`, `teal`, `sky`, `indigo`, `violet`), `stone` by
+  default (`20261121000000_tag_colors.sql`). `set_tag_color(tag, color)` returns `updated`, `not_found`
+  or `invalid_color`. Nothing in the app sets it yet; the People page will.
 - `tag_members(tag, person_ids[])` / `untag_members(...)`: one person or many. Each change is one
   `tag_events` row (a bulk tag shares one timestamp) and calls `recheck_member`. Returns how many changed.
 - `recheck_member(person_id)` does nothing yet. The emails engine fills it in to re-check waiting sends.

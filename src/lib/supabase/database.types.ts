@@ -870,18 +870,21 @@ export type Database = {
       }
       tags: {
         Row: {
+          color: string
           created_at: string
           created_by: string | null
           id: string
           name: string
         }
         Insert: {
+          color?: string
           created_at?: string
           created_by?: string | null
           id?: string
           name: string
         }
         Update: {
+          color?: string
           created_at?: string
           created_by?: string | null
           id?: string
@@ -1012,6 +1015,7 @@ export type Database = {
       remove_member: { Args: { p_person_id: string }; Returns: undefined }
       rename_tag: { Args: { p_name: string; p_tag_id: string }; Returns: string }
       resubscribe_by_token: { Args: { p_token: string }; Returns: string }
+      set_tag_color: { Args: { p_color: string; p_tag_id: string }; Returns: string }
       split_name: {
         Args: { p_full_name: string }
         Returns: Record<string, unknown>
