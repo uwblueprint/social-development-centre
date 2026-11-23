@@ -2,37 +2,24 @@
 
 import { OfflineWatcher } from "@/app/_components/OfflineWatcher";
 import type { ReactNode } from "react";
-import { Mail, Settings, UserCog, UsersRound } from "lucide-react";
 import { AppToastProvider } from "@/components/ui/Toast";
-import { SidebarLayout, type SidebarNavItem } from "@/components/patterns/Sidebar";
-import type { AdminSection } from "../_data/types";
+import { SidebarLayout } from "@/components/patterns/Sidebar";
+import { adminNav } from "./adminNav";
 import { signOut } from "@/features/auth/actions";
-
-/** `description` shows as a delayed tooltip on the sidebar item; it replaces the old page descriptions. */
-const sections: { key: AdminSection; label: string; description: string; icon: SidebarNavItem["icon"] }[] = [
-  { key: "members", label: "Members", description: "People in SDC's community who can sign in to the members' area.", icon: UsersRound },
-  { key: "automatic-emails", label: "Automatic emails", description: "Set up an email once and it sends itself, like a thank-you when someone joins or a check-in a month later.", icon: Mail },
-  { key: "admins", label: "Admins", description: "Who can sign in to the admin portal.", icon: UserCog },
-  { key: "settings", label: "Settings", description: "Your name, and deleting your account.", icon: Settings },
-];
 
 /** No section shows a count badge yet (owner decision 10); a count needs `count` plus a `countLabel` that explains it. */
 export function AdminShell({ children }: { children: ReactNode }) {
-  const items: SidebarNavItem[] = sections.map((s) => ({
-    href: `/admin/${s.key}`,
-    label: s.label,
-    description: s.description,
-    icon: s.icon,
-  }));
+  const { items, footerItems } = adminNav("admin");
   return (
     // One provider for the whole portal so a toast survives navigating from a form back to its list.
     <AppToastProvider>
       <OfflineWatcher />
       <SidebarLayout
         config={{
-          product: { name: "Nexus" },
+          product: { name: "Potluck" },
           navLabel: "Admin navigation",
           items,
+          footerItems,
           docsHref: "/admin/documentation",
           onSignOut: () => void signOut("admin"),
         }}

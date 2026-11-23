@@ -4,7 +4,7 @@ import { AdminShell } from "./_components/AdminShell";
 import { getCurrentAdmin } from "./_data/session";
 
 export const metadata: Metadata = {
-  title: { template: "%s · Nexus", default: "Nexus" },
+  title: { template: "%s · Potluck", default: "Potluck" },
 };
 
 export default async function AdminLayout({ children }: LayoutProps<"/admin">) {

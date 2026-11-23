@@ -14,8 +14,8 @@ Check `git config user.name` and work in that person's folder:
 
 - `src/components/ui/`: the component kit. Import from here and nowhere else.
 - `src/components/patterns/`: layouts composed from the kit, e.g. `SidebarLayout` and `ListPage` (docs in `docs/patterns/`).
-- `src/app/admin/`: the admin portal, the product SDC staff use. Its sidebar config lives in `src/app/admin/_components/AdminShell.tsx`; each section is a route under `/admin/`. Sub-areas of a section use in-page tabs, not new sidebar items.
-- `src/app/design/<feature>/`: designers' screens on demo data. The folder's layout draws a blank placeholder where the sidebar will go. Devs build the real feature in `src/app/admin/` from these.
+- `src/app/admin/`: the admin portal, the product SDC staff use. Its sidebar sections live in `src/app/admin/_components/adminNav.ts`; each section is a route under `/admin/`. Sub-areas of a section use in-page tabs, not new sidebar items.
+- `src/app/design/(admin)/<feature>/`: designers' admin screens on demo data, inside the real admin sidebar. A dev adds a new screen to the sidebar (a `designHref` in `adminNav.ts`). Member-facing screens go outside `(admin)` and have no nav. Devs build the real feature in `src/app/admin/` from these.
 - `src/app/prototypes/<feature>/`: PM prototypes for scoping. Throwaway: never import from them.
 - `src/features/`: feature code, e.g. `src/features/intake/` (the public intake form).
 - `src/components/ui/tokens.ts`: every color, space, radius, type size, line height, shadow and duration.
@@ -68,7 +68,7 @@ Ask the person you're working with instead of guessing about: disabled reasons, 
 
 <!-- BEGIN:nextjs-agent-rules -->
 
-# This is NOT the Next.js you know
+## This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
 

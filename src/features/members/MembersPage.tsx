@@ -14,7 +14,7 @@ export function MembersPage({ members }: { members: PersonRow[] }) {
   return (
     <PeoplePage>
       <header>
-        <PageTitle>Members</PageTitle>
+        <PageTitle>People</PageTitle>
         <Muted>Members can sign in to the members’ area.</Muted>
       </header>
 
