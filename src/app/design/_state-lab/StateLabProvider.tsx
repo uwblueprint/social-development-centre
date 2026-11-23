@@ -137,13 +137,15 @@ function Lab({ children }: { children: React.ReactNode }) {
 
   const registered = [...pages.values()];
   const notApplicable = new Set(registered.flatMap((p) => p.notApplicable));
+  // Only states that can happen on this screen: the general ones it doesn't rule out, then its own.
+  const applies = (st: LabState) => !notApplicable.has(st.id);
   const groups: { title: string; states: readonly LabState[] }[] = [
-    { title: "Page", states: GENERAL.page },
-    { title: "Section", states: [...GENERAL.section, ...registered.flatMap((p) => p.data)] },
-    { title: "Action", states: [...GENERAL.action, ...registered.flatMap((p) => p.actions)] },
+    { title: "Page", states: GENERAL.page.filter(applies) },
+    { title: "Section", states: [...GENERAL.section.filter(applies), ...registered.flatMap((p) => p.data)] },
+    { title: "Action", states: [...GENERAL.action.filter(applies), ...registered.flatMap((p) => p.actions)] },
   ].filter((g) => g.states.length > 0);
 
-  const names = groups.flatMap((g) => g.states).filter((st) => active.has(st.id) && !notApplicable.has(st.id)).map((st) => st.label);
+  const names = groups.flatMap((g) => g.states).filter((st) => active.has(st.id)).map((st) => st.label);
   const shown = names.slice(0, SHOWN).join(", ");
   const more = names.length > SHOWN ? ` +${names.length - SHOWN}` : "";
 
@@ -180,15 +182,14 @@ function Lab({ children }: { children: React.ReactNode }) {
                 <GroupTitle>{group.title}</GroupTitle>
                 {group.states.map((state) => {
                   const id = `state-lab-${state.id}`;
-                  const skipped = notApplicable.has(state.id);
-                  const hint = skipped ? "Doesn't apply to this screen." : state.description;
+                  const hint = state.description;
                   return (
                     <Row key={state.id}>
                       <RowText>
                         <RowLabel htmlFor={id}>{state.label}</RowLabel>
                         {hint && <RowHint id={`${id}-hint`}>{hint}</RowHint>}
                       </RowText>
-                      <Switch id={id} aria-describedby={hint ? `${id}-hint` : undefined} disabled={skipped} checked={active.has(state.id) && !skipped} onCheckedChange={(on) => set(state.id, on)} />
+                      <Switch id={id} aria-describedby={hint ? `${id}-hint` : undefined} checked={active.has(state.id)} onCheckedChange={(on) => set(state.id, on)} />
                     </Row>
                   );
                 })}

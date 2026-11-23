@@ -22,6 +22,7 @@ Check `git config user.name` and work in that person's folder:
 - `docs/product/README.md`: links to the SDC page in Notion, the source of product context. Find the feature's PRD there and read it before building.
 - `docs/components/<Component>.md`: when to use each component, when not to, content rules and accessibility notes. Read the doc before using a component for the first time.
 - `docs/design/principles.md`: the design rules behind the kit.
+- `docs/design/state-lab.md`: how to design every state of a screen (loading, failing, empty, stale, offline) with the State lab, and the rules for each.
 - `docs/backend/`: how the backend connects (data seams, server actions returning `ActionState`, `SubmitButton`) and per-feature backend requirements. `/components/form-contract` shows exactly what a form submits.
 - `docs/user-guide/`: task-based user guide ("to do X, click Y"). Frozen until just before launch: don't add or edit guides.
 - `/components`: live showcase of every component in every state. Run `pnpm dev` and open http://localhost:3000/components.
@@ -45,12 +46,13 @@ Check `git config user.name` and work in that person's folder:
 
 1. Look for an existing pattern or component first (`src/components/ui/`, `docs/components/`). A near-duplicate component is worse than none.
 2. Compose kit components. Only write layout CSS (grid/flex/gap using `--space-*`), not new visual styles.
-3. Design every state: loading, empty, error, disabled, success, long text, and small screens (360px wide).
+3. Design every state: loading, empty, error, disabled, success, long text, and small screens (360px wide). On a design screen this means the State lab: list everything that can go wrong or be different on the page (a slow load, one part failing, partial or stale data, a number that can't be computed, empty because new vs empty because filtered, offline), declare each state in the lab and design it. The checklist and the rules (a failed part keeps its size and offers Try again, never show `NaN` or a fake 0, a part failing never blanks the page) are in `docs/design/state-lab.md`.
 4. Content: sentence case; buttons start with a verb ("Save changes", not "OK"); errors say what happened and how to fix it; no jargon.
 5. Density: list and table rows use `--space-2`/`--space-3` padding. Separate rows with 1px `--color-border` lines; save shadows for overlays.
 6. Accent (`--color-accent`) marks at most one thing per screen. Use status tokens (`--color-success`, `-warning`, `-danger`, `-info` with their `-subtle` backgrounds) for status.
 7. Motion uses `--duration`/`--duration-slow` with `--ease`/`--ease-spring`, only for real state changes. Reduced motion is handled globally; don't override it.
 8. Verify in the browser: open the page, try it with the keyboard only, and check hover, focus and disabled states.
+9. Put view state in the URL. Filters, search, sort, the open tab, the date range, the page number and an open side panel or sheet must be readable from search params, so any view can be bookmarked, shared or reopened from a link, not only reached by clicking. Update the URL with `router.replace` (no new history entry for every keystroke; use `push` only when opening a new view people expect Back to close), keep defaults out of the URL, and restore the full view on load. Throwaway UI state (a hover, an open menu, an unsaved draft) stays out.
 
 ## Shipping a product change
 

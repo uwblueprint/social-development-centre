@@ -10,7 +10,7 @@ export interface LabState {
 export interface PageStates {
   data: readonly LabState[];
   actions: readonly LabState[];
-  /** General state ids this screen has no use for; the panel shows them switched off with a note. */
+  /** General state ids that can't happen on this screen; the panel leaves them out. */
   notApplicable: readonly string[];
 }
 
