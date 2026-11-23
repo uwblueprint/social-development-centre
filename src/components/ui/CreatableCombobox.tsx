@@ -76,7 +76,7 @@ const Trigger = styled.button`
   &:focus-visible {
     outline: none;
     border-color: var(--color-focus);
-    box-shadow: var(--focus-field);
+    box-shadow: var(--focus-ring-text);
   }
 
   &[aria-invalid="true"] {
@@ -84,7 +84,7 @@ const Trigger = styled.button`
     box-shadow: inset 0 0 0 1px var(--color-danger);
 
     &:focus-visible {
-      box-shadow: var(--focus-field-invalid);
+      box-shadow: var(--focus-ring-text-invalid);
     }
   }
 
@@ -154,6 +154,12 @@ const SearchRow = styled.div`
   border-bottom: 1px solid var(--color-border);
   color: var(--color-text-muted);
   flex-shrink: 0;
+
+  /* The search is a text field: a click shows the darker 1px border only, Tab shows the ring (inputModality.ts). */
+  &:focus-within {
+    border-bottom-color: var(--color-focus);
+    box-shadow: var(--focus-ring-text);
+  }
 `;
 
 const SearchInput = styled(Command.Input)`

@@ -59,6 +59,7 @@ The hint says how to separate entries. The invalid reason says what's wrong and 
 - The tags are a `listbox` (`aria-multiselectable`) named by `copy.tagsLabel`; each tag is an `option` with `aria-selected`. An invalid tag's reason is part of its name ("grace@example. This isn't an email address…") and shows in a tooltip on hover.
 - Copying is announced ("2 copied"). Adding, removing and duplicate entries are announced politely ("ada@example.org added", "3 added", "ada@example.org removed", "3 removed", "ada@example.org is already in the list").
 - The field keeps the `Field`'s label, hint and error.
+- Active versus focused is built in: a click or tap shows a darker 1px border with no ring, and arriving by keyboard (Tab) shows the focus ring. Don't style `:focus` yourself.
 
 ## Don't
 1. Using the placeholder as the label: wrap it in `Field`.

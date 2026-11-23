@@ -75,7 +75,7 @@ const Box = styled.div<{ $invalid?: boolean; $disabled?: boolean }>`
 
   &:focus-within {
     border-color: ${({ $invalid }) => ($invalid ? "var(--color-danger)" : "var(--color-focus)")};
-    box-shadow: var(--focus-ring);
+    box-shadow: var(--focus-ring-text);
   }
 
   ${({ $disabled }) =>

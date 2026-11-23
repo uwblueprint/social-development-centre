@@ -148,6 +148,13 @@ const TitleInput = styled(Input)`
     letter-spacing: var(--tracking-tight);
   }
 
+  /* No box in any state, but keyboard arrival keeps the ring (never removed for keyboard users); a click shows only the caret. */
+  &&&& input:focus,
+  &&&& input:focus-visible {
+    border-radius: var(--radius-sm);
+    box-shadow: var(--focus-ring-text);
+  }
+
   &&&& input::placeholder {
     /* A light placeholder (owner): the empty title recedes so the sections read first. */
     color: var(--taupe-300);
@@ -347,6 +354,7 @@ const ToBox = styled.div`
 
   &:focus-within {
     border-color: var(--color-focus);
+    box-shadow: var(--focus-ring-text);
   }
 `;
 

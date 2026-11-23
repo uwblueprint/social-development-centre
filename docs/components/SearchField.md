@@ -49,6 +49,7 @@ Anything that depends on the search (the rows, the tab counts, the empty state) 
 - Enter searches because the field is its own `role="search"` form, which is also a landmark.
 - The × button is a real, keyboard-reachable `button` with an `aria-label`; the browser's native clear affordance is hidden.
 - The spinner is decorative (`aria-hidden`); `aria-busy` on the form is what signals loading, and the results region announces changes if it needs to (e.g. `aria-live` on a count).
+- Active versus focused is built in: a click or tap shows a darker 1px border with no ring, and arriving by keyboard (Tab) shows the focus ring. Don't style `:focus` yourself.
 
 ## Don't
 1. Wrapping it in `Field` with a visible label and hint. Use the placeholder and `aria-label`.

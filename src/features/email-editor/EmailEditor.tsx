@@ -376,6 +376,7 @@ const SubjectBox = styled.div`
 
   &:focus-within {
     border-color: var(--color-focus);
+    box-shadow: var(--focus-ring-text);
   }
 `;
 
