@@ -82,6 +82,11 @@ export async function GET(request: NextRequest) {
     if (finished.error) console.error("[automatic-emails] finish_email_run failed:", finished.error.message);
   }
 
+  // Admin notifications for the Outbox (waiting for review, past due, couldn't send), from what this run
+  // left behind. A failure here shouldn't fail the run: the emails have gone.
+  const notified = await supabase.rpc("refresh_outbox_notifications");
+  if (notified.error) console.error("[automatic-emails] refresh_outbox_notifications failed:", notified.error.message);
+
   return Response.json({ ready: prepared.data, sent, failed, left: deliveries.data.length - sent - failed });
 }
 

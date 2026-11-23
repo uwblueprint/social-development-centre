@@ -57,6 +57,8 @@ export interface SidebarConfig {
   docsHref: string;
   /** Links at the top of the footer, right above Documentation (e.g. Admins and Settings). */
   footerItems?: { href: string; label: string; icon: LucideIcon }[];
+  /** Icon buttons in the header, left of the collapse button (e.g. notifications). Always visible. */
+  headerActions?: React.ReactNode;
   /** Owner decision: no My account concept (logins can be shared); the footer is just Documentation and a red Sign out. */
   onSignOut: () => void;
 }
@@ -238,6 +240,12 @@ const Header = styled.div`
   padding: 0 var(--space-1) 0 var(--space-2);
   margin-bottom: var(--space-3);
 
+`;
+
+const HeaderActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 2px;
 `;
 
 const Brand = styled.span`
@@ -580,18 +588,21 @@ function SidebarContent({
         <Brand id={brandId}>
           {config.product.name}
         </Brand>
-        <CloseButton ref={closeRef} type="button" aria-label="Close menu" onClick={onClose}>
-          <Icon icon={X} size={20} />
-        </CloseButton>
-        <DockButton
-          ref={dockRef}
-          type="button"
-          aria-label={collapsed ? "Keep sidebar open" : "Collapse sidebar"}
-          onClick={onToggleCollapsed}
-        >
-          {/* A pin, not the open button's icon: it docks the sidebar, and the open button is already on screen. */}
-          <Icon icon={collapsed ? Pin : PanelLeftClose} size={16} strokeWidth={NAV_STROKE} />
-        </DockButton>
+        <HeaderActions>
+          {config.headerActions}
+          <CloseButton ref={closeRef} type="button" aria-label="Close menu" onClick={onClose}>
+            <Icon icon={X} size={20} />
+          </CloseButton>
+          <DockButton
+            ref={dockRef}
+            type="button"
+            aria-label={collapsed ? "Keep sidebar open" : "Collapse sidebar"}
+            onClick={onToggleCollapsed}
+          >
+            {/* A pin, not the open button's icon: it docks the sidebar, and the open button is already on screen. */}
+            <Icon icon={collapsed ? Pin : PanelLeftClose} size={16} strokeWidth={NAV_STROKE} />
+          </DockButton>
+        </HeaderActions>
       </Header>
 
       <Nav aria-label={config.navLabel}>
@@ -718,6 +729,8 @@ interface SidebarContextValue {
   hoverLeave: () => void;
   /** An open button was clicked or pressed. */
   togglePinned: (button: HTMLElement) => void;
+  /** Keeps a peeking sidebar open regardless of where the pointer goes (see `useHoldSidebarOpen`). */
+  setHeld: (held: boolean) => void;
 }
 
 const SidebarContext = React.createContext<SidebarContextValue | null>(null);
@@ -727,6 +740,20 @@ const subscribeCollapsed = (listener: () => void) => {
   observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-sidebar"] });
   return () => observer.disconnect();
 };
+
+/**
+ * Keeps a peeking (collapsed, hovered-open) sidebar open while `hold` is true, e.g. while a panel that opened
+ * from the sidebar is showing beside it. Without it, moving the pointer into that panel counts as leaving the
+ * sidebar, which slides away and leaves the panel on its own. Does nothing outside a SidebarLayout.
+ */
+export function useHoldSidebarOpen(hold: boolean) {
+  const setHeld = React.useContext(SidebarContext)?.setHeld;
+  React.useEffect(() => {
+    if (!setHeld || !hold) return;
+    setHeld(true);
+    return () => setHeld(false);
+  }, [setHeld, hold]);
+}
 
 /**
  * Opens a collapsed sidebar: hover to peek, click to keep it open. Renders nothing outside a SidebarLayout,
@@ -782,6 +809,8 @@ export function SidebarLayout({
   const section = pathname.split("/").slice(0, 3).join("/");
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [peek, setPeek] = React.useState<Peek>("closed");
+  // Something that opened from the sidebar (e.g. the notifications panel) is open: don't let hover close it.
+  const [held, setHeld] = React.useState(false);
   const collapsed = React.useSyncExternalStore(subscribeCollapsed, readSidebarCollapsed, () => false);
   const dockRef = React.useRef<HTMLButtonElement>(null);
   /** The open button last used, for hover intent and for returning focus. */
@@ -861,7 +890,7 @@ export function SidebarLayout({
 
   // Hover intent while peeking: keep it open over the sidebar, or while heading towards it.
   React.useEffect(() => {
-    if (peek !== "hover") return;
+    if (peek !== "hover" || held) return;
     let lastDistance = Infinity;
     const onMove = (e: PointerEvent) => {
       if (e.pointerType !== "mouse") return;
@@ -894,7 +923,7 @@ export function SidebarLayout({
       document.documentElement.removeEventListener("pointerleave", onLeave);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the handlers only use refs and closePeek
-  }, [peek]);
+  }, [peek, held]);
 
   // Open in either way: Escape closes and returns focus to the open button. Leaving 768–1199px closes it.
   React.useEffect(() => {
@@ -960,6 +989,7 @@ export function SidebarLayout({
     hoverLeave: () => {
       hoverSuppressed.current = false;
     },
+    setHeld,
     togglePinned: (button) => {
       triggerRef.current = button;
       if (peek === "pinned") {
@@ -1011,6 +1041,7 @@ export function SidebarLayout({
       <Aside
         ref={asideRef}
         id={asideId}
+        data-sidebar-panel=""
         $mobileOpen={mobileOpen}
         $peek={peek !== "closed"}
         onKeyDown={onAsideKeyDown}

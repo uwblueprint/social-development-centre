@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { TooltipContent, TooltipRoot, TooltipTrigger } from "@/components/ui/Tooltip";
-import { Cell, Row, RowDetail, RowLabel } from "./parts";
+import { Cell, Row, RowLabel } from "./parts";
 
 /** How long someone can sit in a field doing nothing before we assume they're unsure what it is. */
 const PAUSE_MS = 2000;
@@ -15,12 +15,13 @@ const PAUSE_MS = 2000;
  */
 export function HintedRow({
   label,
-  detail,
+  field,
   hint,
   children,
 }: {
   label: string;
-  detail?: string;
+  /** The kind of field, when its first line of text doesn't sit in the middle of a 40px control. */
+  field?: "textarea";
   hint: string;
   children: React.ReactNode;
 }) {
@@ -46,9 +47,8 @@ export function HintedRow({
     >
       <Row>
         <TooltipTrigger asChild>
-          <RowLabel>
+          <RowLabel data-field={field}>
             {label}
-            {detail && <RowDetail>{detail}</RowDetail>}
           </RowLabel>
         </TooltipTrigger>
         <Cell

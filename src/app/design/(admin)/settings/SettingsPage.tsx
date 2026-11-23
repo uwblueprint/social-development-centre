@@ -22,14 +22,15 @@ import { Icon } from "@/components/ui/Icon";
 import { Input } from "@/components/ui/Input";
 import { TagCombobox } from "@/components/ui/TagCombobox";
 import { Textarea } from "@/components/ui/Textarea";
-import { AppToastProvider, useToast } from "@/components/ui/Toast";
-import { ADMINS, ALERTS, SEED, isEmail, type Settings } from "./data";
+import { useToast } from "@/components/ui/Toast";
+import { ADMINS, ALERTS, ALERT_GROUPS, ALERT_GROUP_TITLES, SEED, isEmail, splitName, type Settings } from "./data";
 import { HintedRow } from "./HintedRow";
-import { Cell, Column, Row, RowDetail, RowLabel, Section, SectionTitle, Sections } from "./parts";
+import { Cell, Column, Row, RowLabel, Section, SectionTitle, Sections } from "./parts";
 
 const SUPPORT_EMAIL = "bsf-support@example.com";
 
-const HelpRow = styled(Row)`
+/* For rows whose control is shorter than a field (a button): centre it on the label, which is as tall as a field. */
+const ButtonRow = styled(Row)`
   align-items: center;
 `;
 
@@ -42,7 +43,14 @@ const HelpValue = styled.div`
   color: var(--color-text);
 `;
 
-type Errors = Partial<Record<"firstName" | "lastName" | "replyTo" | "signature", string>>;
+/* Last on the page: the button alone, its right edge on the fields' right edge. */
+const DeleteRow = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--space-3) 0;
+`;
+
+type Errors = Partial<Record<"name" | "replyTo" | "footer", string>>;
 
 /* Alerts go to people already on the Admins page, so the choices are their emails; nothing else can be typed. */
 const ADMIN_OPTIONS = ADMINS.map((a) => ({
@@ -53,20 +61,20 @@ const ADMIN_OPTIONS = ADMINS.map((a) => ({
 
 function validate(s: Settings): Errors {
   const e: Errors = {};
-  if (!s.firstName.trim()) e.firstName = "Enter your first name.";
-  if (!s.lastName.trim()) e.lastName = "Enter your last name.";
+  if (!s.name.trim()) e.name = "Enter your name.";
+  else if (!splitName(s.name)) e.name = "Enter your first and last name.";
   if (!isEmail(s.replyTo)) e.replyTo = "Enter an email address like name@example.org.";
-  if (!s.signature.trim()) e.signature = "Write the sign-off members see at the end of every email.";
+  if (!s.footer.trim()) e.footer = "Write the sign-off members see at the end of every email.";
   return e;
 }
 
 /** Plain sentences about what now happens, so a rare visitor knows what the change means. */
 function describeChanges(before: Settings, after: Settings): { title: string; description?: string } {
   const lines: { name: string; text: string }[] = [];
-  if (before.firstName !== after.firstName || before.lastName !== after.lastName) {
+  if (before.name.trim() !== after.name.trim()) {
     lines.push({
       name: "Your name",
-      text: `Your name is now ${after.firstName.trim()} ${after.lastName.trim()}.`,
+      text: `Your name is now ${after.name.trim().split(/\s+/).join(" ")}.`,
     });
   }
   if (before.replyTo !== after.replyTo)
@@ -74,10 +82,10 @@ function describeChanges(before: Settings, after: Settings): { title: string; de
       name: "Reply-to address",
       text: `Replies to member emails now go to ${after.replyTo}.`,
     });
-  if (before.signature !== after.signature)
+  if (before.footer !== after.footer)
     lines.push({
-      name: "Email signature",
-      text: "Every email from SDC will now end with the new signature.",
+      name: "Email footer",
+      text: "Every email from SDC will now end with the new footer.",
     });
   for (const a of ALERTS) {
     const now = after.alerts[a.key];
@@ -108,7 +116,7 @@ function SettingsScreen({ onlyAdmin }: { onlyAdmin: boolean }) {
   const [errors, setErrors] = React.useState<Errors>({});
 
   const dirty = JSON.stringify(saved) !== JSON.stringify(draft);
-  // Your name and your signature are yours; a reply-to or an alert changes things for every admin.
+  // Your name and the footer are yours; a reply-to or an alert changes things for every admin.
   const sharedChanged =
     draft.replyTo !== saved.replyTo || JSON.stringify(draft.alerts) !== JSON.stringify(saved.alerts);
 
@@ -158,18 +166,19 @@ function SettingsScreen({ onlyAdmin }: { onlyAdmin: boolean }) {
                 </Field>
               </HintedRow>
               <HintedRow
-                label="Email signature"
+                label="Email footer"
+                field="textarea"
                 hint="Ends every email members get from SDC. The unsubscribe link is added below it for you."
               >
-                <Field label="Email signature" error={errors.signature}>
+                <Field label="Email footer" error={errors.footer}>
                   {(props) => (
                     <Textarea
                       {...props}
                       rows={5}
-                      value={draft.signature}
+                      value={draft.footer}
                       onChange={(e) => {
-                        setDraft((d) => ({ ...d, signature: e.target.value }));
-                        setErrors((x) => ({ ...x, signature: undefined }));
+                        setDraft((d) => ({ ...d, footer: e.target.value }));
+                        setErrors((x) => ({ ...x, footer: undefined }));
                       }}
                     />
                   )}
@@ -177,83 +186,61 @@ function SettingsScreen({ onlyAdmin }: { onlyAdmin: boolean }) {
               </HintedRow>
             </Section>
 
-            <Section aria-labelledby="alerts">
-              <SectionTitle id="alerts">Email alerts</SectionTitle>
-              {ALERTS.map((a) => (
-                <Row key={a.key}>
-                  <RowLabel>
-                    {a.label}
-                    {a.detail && <RowDetail>{a.detail}</RowDetail>}
-                  </RowLabel>
-                  <Cell>
-                    <Field label={`Admins to email when ${a.when}`}>
-                      {(props) => (
-                        <TagCombobox
-                          {...props}
-                          options={ADMIN_OPTIONS}
-                          value={draft.alerts[a.key]}
-                          onValueChange={(next) =>
-                            setDraft((d) => ({
-                              ...d,
-                              alerts: { ...d.alerts, [a.key]: next },
-                            }))
-                          }
-                          placeholder="Off"
-                        />
-                      )}
-                    </Field>
-                  </Cell>
-                </Row>
-              ))}
-            </Section>
+            {ALERT_GROUPS.map((g, i) => {
+              // The first alerts section keeps the "alerts" anchor, which the notifications panel links to.
+              const id = i === 0 ? "alerts" : `alerts-${g.toLowerCase()}`;
+              return (
+                <Section key={g} aria-labelledby={id}>
+                  <SectionTitle id={id}>{ALERT_GROUP_TITLES[g]}</SectionTitle>
+                  {ALERTS.filter((a) => a.group === g).map((a) => (
+                    <Row key={a.key}>
+                      <RowLabel>{a.label}</RowLabel>
+                      <Cell>
+                        <Field label={`Admins to email when ${a.when}`}>
+                          {(props) => (
+                            <TagCombobox
+                              {...props}
+                              options={ADMIN_OPTIONS}
+                              value={draft.alerts[a.key]}
+                              onValueChange={(next) =>
+                                setDraft((d) => ({
+                                  ...d,
+                                  alerts: { ...d.alerts, [a.key]: next },
+                                }))
+                              }
+                              placeholder="Off"
+                            />
+                          )}
+                        </Field>
+                      </Cell>
+                    </Row>
+                  ))}
+                </Section>
+              );
+            })}
 
-            <Section aria-labelledby="name">
-              <SectionTitle id="name">Your name</SectionTitle>
+            <Section aria-labelledby="account">
+              <SectionTitle id="account">Account</SectionTitle>
               <Row>
-                <RowLabel>First name</RowLabel>
+                <RowLabel>Your name</RowLabel>
                 <Cell>
-                  <Field label="First name" error={errors.firstName}>
+                  <Field label="Your name" error={errors.name}>
                     {(props) => (
                       <Input
                         {...props}
-                        autoComplete="given-name"
-                        value={draft.firstName}
+                        autoComplete="name"
+                        value={draft.name}
                         onChange={(e) => {
-                          setDraft((d) => ({
-                            ...d,
-                            firstName: e.target.value,
-                          }));
-                          setErrors((x) => ({ ...x, firstName: undefined }));
+                          setDraft((d) => ({ ...d, name: e.target.value }));
+                          setErrors((x) => ({ ...x, name: undefined }));
                         }}
                       />
                     )}
                   </Field>
                 </Cell>
               </Row>
-              <Row>
-                <RowLabel>Last name</RowLabel>
-                <Cell>
-                  <Field label="Last name" error={errors.lastName}>
-                    {(props) => (
-                      <Input
-                        {...props}
-                        autoComplete="family-name"
-                        value={draft.lastName}
-                        onChange={(e) => {
-                          setDraft((d) => ({ ...d, lastName: e.target.value }));
-                          setErrors((x) => ({ ...x, lastName: undefined }));
-                        }}
-                      />
-                    )}
-                  </Field>
-                </Cell>
-              </Row>
-            </Section>
-
-            <Section aria-labelledby="help">
-              <SectionTitle id="help">Help</SectionTitle>
-              <HelpRow>
-                <RowLabel>Something broken?</RowLabel>
+              <ButtonRow>
+                <RowLabel>Support</RowLabel>
                 <HelpValue>
                   {SUPPORT_EMAIL}
                   <Button
@@ -269,51 +256,43 @@ function SettingsScreen({ onlyAdmin }: { onlyAdmin: boolean }) {
                     Copy
                   </Button>
                 </HelpValue>
-              </HelpRow>
-            </Section>
-
-            {/* Last on the page, apart from everything else. */}
-            <Section aria-labelledby="delete">
-              <SectionTitle id="delete">Delete account</SectionTitle>
-              <Row>
-                <RowLabel>Permanently delete your account?</RowLabel>
-                <div>
-                  <AlertDialog>
-                    {onlyAdmin ? (
-                      // The reason is the existing rule from docs/decisions/admins.md (decision 2).
-                      <DisabledReason reason="You're the only admin. Add another admin before you leave.">
-                        <Button type="button" $variant="danger" disabled>
+              </ButtonRow>
+              <DeleteRow>
+                <AlertDialog>
+                  {onlyAdmin ? (
+                    // The reason is the existing rule from docs/decisions/admins.md (decision 2).
+                    <DisabledReason reason="You're the only admin. Add another admin before you leave.">
+                      <Button type="button" $variant="danger" disabled>
+                        Delete account
+                      </Button>
+                    </DisabledReason>
+                  ) : (
+                    <AlertDialogTrigger asChild>
+                      <Button type="button" $variant="danger">
+                        Delete account
+                      </Button>
+                    </AlertDialogTrigger>
+                  )}
+                  <AlertDialogContent>
+                    <AlertDialogTitle>Delete your account?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      You won&rsquo;t be able to log in anymore. Another admin can invite you back.
+                    </AlertDialogDescription>
+                    <AlertDialogActions>
+                      <AlertDialogCancel asChild>
+                        <Button type="button" $variant="secondary">
+                          Cancel
+                        </Button>
+                      </AlertDialogCancel>
+                      <AlertDialogAction asChild>
+                        <Button type="button" $variant="danger" onClick={() => router.push("/design/goodbye")}>
                           Delete account
                         </Button>
-                      </DisabledReason>
-                    ) : (
-                      <AlertDialogTrigger asChild>
-                        <Button type="button" $variant="danger">
-                          Delete account
-                        </Button>
-                      </AlertDialogTrigger>
-                    )}
-                    <AlertDialogContent>
-                      <AlertDialogTitle>Delete your account?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        You won&rsquo;t be able to log in anymore. Another admin can invite you back.
-                      </AlertDialogDescription>
-                      <AlertDialogActions>
-                        <AlertDialogCancel asChild>
-                          <Button type="button" $variant="secondary">
-                            Cancel
-                          </Button>
-                        </AlertDialogCancel>
-                        <AlertDialogAction asChild>
-                          <Button type="button" $variant="danger" onClick={() => router.push("/design/goodbye")}>
-                            Delete account
-                          </Button>
-                        </AlertDialogAction>
-                      </AlertDialogActions>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </Row>
+                      </AlertDialogAction>
+                    </AlertDialogActions>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </DeleteRow>
             </Section>
           </Sections>
         </Column>
@@ -322,10 +301,7 @@ function SettingsScreen({ onlyAdmin }: { onlyAdmin: boolean }) {
   );
 }
 
+/** Toasts come from the design shell's provider. */
 export function SettingsPage({ onlyAdmin = false }: { onlyAdmin?: boolean }) {
-  return (
-    <AppToastProvider>
-      <SettingsScreen onlyAdmin={onlyAdmin} />
-    </AppToastProvider>
-  );
+  return <SettingsScreen onlyAdmin={onlyAdmin} />;
 }

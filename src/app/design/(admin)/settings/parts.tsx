@@ -7,68 +7,84 @@ export const Column = styled.div`
   width: 100%;
   max-width: 760px;
   margin-inline: auto;
+  /* Rows stack by the column's own width, not the window's: beside the sidebar the column can be narrow on a wide screen. */
+  container: settings / inline-size;
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
 `;
 
+/* One line between sections, none between rows: the lines show what belongs together. */
 export const Sections = styled.div`
   display: flex;
   flex-direction: column;
-  gap: var(--space-7);
 `;
 
 export const Section = styled.section`
   display: flex;
   flex-direction: column;
+  padding-block: var(--space-6);
+
+  &:first-child {
+    padding-top: 0;
+  }
+  & + & {
+    border-top: 1px solid var(--color-border);
+  }
 `;
 
+/* The page's one heading style. Everything else is the one label style below. */
 export const SectionTitle = styled.h2`
   margin: 0;
-  padding-bottom: var(--space-3);
+  padding-bottom: var(--space-2);
   font-size: var(--text-md);
   font-weight: var(--weight-medium);
   line-height: var(--leading-heading);
   color: var(--color-text);
-  border-bottom: 1px solid var(--color-border);
 `;
 
 /*
  * Label on the left, the field itself on the right. Fields are always editable: click and type.
- * Rows align to the top so a field that grows (several emails, a longer signature) never drags its label.
+ * Rows align to the top so a field that grows (several emails, a longer footer) never drags its label.
  */
 export const Row = styled.div`
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr);
   align-items: start;
   column-gap: var(--space-5);
-  padding: var(--space-3) 0;
-  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-2) 0;
 
-  &:last-child {
-    border-bottom: 0;
-  }
-
-  @media (max-width: 767px) {
+  /* Too narrow for a 280px label and a field that fits an email in one tag: the label goes above its field. */
+  @container settings (max-width: 599px) {
     grid-template-columns: minmax(0, 1fr);
     row-gap: var(--space-2);
   }
 `;
 
-/* The kit's label look (small, regular, main text), as tall as an input so it sits level with the first line of its field. */
+/*
+ * The page's one label style (small, regular, main text). Its first line sits level with the first line of
+ * text in the field: padded by half of what a 40px control has around one line, so one line is control-height tall.
+ */
 export const RowLabel = styled.span`
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-height: var(--control-height);
+  display: block;
+  padding-block: calc((var(--control-height) - 1lh) / 2);
   font-size: var(--text-sm);
   font-weight: var(--weight-regular);
   line-height: var(--leading-ui);
   color: var(--color-text);
-`;
 
-export const RowDetail = styled.span`
-  color: var(--color-text-muted);
+  /* Beside a textarea: its first line starts below its 1px border and --space-3 padding, not centred. */
+  &[data-field="textarea"] {
+    padding-top: calc(var(--space-3) + 1px);
+  }
+
+  /* Stacked above its field there is nothing to sit level with, so the label is only as tall as its text. */
+  @container settings (max-width: 599px) {
+    &,
+    &[data-field="textarea"] {
+      padding-block: 0;
+    }
+  }
 `;
 
 /* The row's own label is the visible one; the Field's label row is kept for screen readers only. */
