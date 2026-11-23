@@ -81,6 +81,8 @@ const NameButton = styled(Button)`
   height: auto;
   padding: 0;
   overflow: hidden;
+  /* The kit Button centres its content; a name reads from the left like the rest of the table. */
+  justify-content: flex-start;
   text-align: left;
   font-size: inherit;
   line-height: inherit;
