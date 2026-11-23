@@ -38,6 +38,7 @@ No backend work. When there's no connection, what's on screen stays readable; su
 ## Feature requirements
 - [Intake form](./intake-form.md) (public, no sign-in)
 - [Automatic emails](./automatic-emails.md) (storage, lifecycle, conditions, Outbox and the daily send)
+- [Search palette (Ctrl K)](./command-k.md) (the search route, row ids for highlighting, what's left)
 - [Settings](./settings.md) (your name and delete account are connected; the rest of the design has no backend yet)
 - [Notifications](./notifications.md) (the bell: storage, writers, seen and done, paging; payments and email alerts still to come)
 

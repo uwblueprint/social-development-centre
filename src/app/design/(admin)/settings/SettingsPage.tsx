@@ -30,6 +30,7 @@ import { Tooltip } from "@/components/ui/Tooltip";
 import { ADMINS, ALERTS, ALERT_GROUPS, ALERT_GROUP_TITLES, LOGIN_EMAIL, SEED, isEmail, splitName, type Settings } from "./data";
 import { HintedRow } from "./HintedRow";
 import { Cell, Column, Row, RowLabel, Section, SectionTitle, Sections } from "./parts";
+import { settingTargetId } from "@/features/search/targets";
 
 const SUPPORT_EMAIL = "bsf-support@example.com";
 
@@ -248,7 +249,7 @@ function SettingsScreen({ onlyAdmin }: { onlyAdmin: boolean }) {
                     </Tooltip>
                   </SectionTitle>
                   {ALERTS.filter((a) => a.group === g).map((a) => (
-                    <Row key={a.key}>
+                    <Row key={a.key} id={settingTargetId(`alert-${a.key}`)}>
                       <RowLabel>{a.label}</RowLabel>
                       <Cell>
                         <Field label={`Admins to email when ${a.when}`}>
@@ -277,6 +278,7 @@ function SettingsScreen({ onlyAdmin }: { onlyAdmin: boolean }) {
             <Section aria-labelledby="sending">
               <SectionTitle id="sending">Email sending</SectionTitle>
               <HintedRow
+                id={settingTargetId("reply-to")}
                 label="Reply-to address"
                 hint="When a member replies to an email from SDC, the reply comes here."
               >
@@ -294,7 +296,7 @@ function SettingsScreen({ onlyAdmin }: { onlyAdmin: boolean }) {
                   )}
                 </Field>
               </HintedRow>
-              <HintedRow label="Email footer" hint="Ends every email members get from SDC, including ones waiting to send.">
+              <HintedRow id={settingTargetId("footer")} label="Email footer" hint="Ends every email members get from SDC, including ones waiting to send.">
                 <Field label="Email footer" error={errors.footer}>
                   {(props) => (
                     <FooterEditor
@@ -315,7 +317,7 @@ function SettingsScreen({ onlyAdmin }: { onlyAdmin: boolean }) {
 
             <Section aria-labelledby="account">
               <SectionTitle id="account">Account</SectionTitle>
-              <Row>
+              <Row id={settingTargetId("name")}>
                 <RowLabel>Your name</RowLabel>
                 <Cell>
                   <Field label="Your name" error={errors.name}>
@@ -333,17 +335,17 @@ function SettingsScreen({ onlyAdmin }: { onlyAdmin: boolean }) {
                   </Field>
                 </Cell>
               </Row>
-              <Row>
+              <Row id={settingTargetId("email")}>
                 <RowLabel>Your email</RowLabel>
                 <ReadOnlyValue>{LOGIN_EMAIL}</ReadOnlyValue>
               </Row>
-              <Row>
+              <Row id={settingTargetId("theme")}>
                 <RowLabel>Theme</RowLabel>
                 <Cell>
                   <Field label="Theme">{(props) => <ThemeChoice {...props} />}</Field>
                 </Cell>
               </Row>
-              <Row>
+              <Row id={settingTargetId("support")}>
                 <RowLabel>Support</RowLabel>
                 <Cell>
                   <Field label="Support email, press Enter to copy it">
@@ -371,7 +373,7 @@ function SettingsScreen({ onlyAdmin }: { onlyAdmin: boolean }) {
                   </Field>
                 </Cell>
               </Row>
-              <ButtonRow>
+              <ButtonRow id={settingTargetId("delete-account")}>
                 <RowLabel>Delete account</RowLabel>
                 <EndAligned>
                   <AlertDialog onOpenChange={(open) => !open && setConfirmText("")}>

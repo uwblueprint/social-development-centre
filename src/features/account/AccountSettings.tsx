@@ -29,6 +29,7 @@ import { deleteAccount, updateName, type NameValues } from "./actions";
 import { initialCommunityPhoto, saveCommunityPhoto, type CommunityPhoto } from "./communityPhoto";
 import { CommunityPhotos, type PhotoDraft } from "./CommunityPhotos";
 import { Cell, Column, FormColumn, Row, RowLabel, Section, SectionTitle, Sections } from "./layout";
+import { settingTargetId } from "@/features/search/targets";
 import type { Account } from "./queries";
 
 const idleName: ActionState<NameValues> = { status: "idle" };
@@ -46,7 +47,7 @@ export function AccountSettings({ account, footer }: { account: Account; footer:
         <Sections>
           <Section aria-labelledby="sending">
             <SectionTitle id="sending">Email sending</SectionTitle>
-            <Row>
+            <Row id={settingTargetId("footer")}>
               <RowLabel>Email footer</RowLabel>
               <Cell>
                 <FooterSettings initial={footer} />
@@ -55,7 +56,7 @@ export function AccountSettings({ account, footer }: { account: Account; footer:
           </Section>
           <Section aria-labelledby="appearance">
             <SectionTitle id="appearance">Appearance</SectionTitle>
-            <Row>
+            <Row id={settingTargetId("theme")}>
               <RowLabel id="theme-label">Theme</RowLabel>
               <div>
                 <ThemeChoice aria-labelledby="theme-label" />
@@ -131,7 +132,7 @@ function SettingsForm({ initial }: { initial: NameValues }) {
         <CommunityPhotos draft={photo} onChange={(next) => setPhoto((p) => ({ ...p, ...next }))} />
         <Section aria-labelledby="name">
           <SectionTitle id="name">Your name</SectionTitle>
-          <Row>
+          <Row id={settingTargetId("first-name")}>
             <RowLabel>First name</RowLabel>
             <Cell>
               <Field label="First name" error={fieldError(state, "firstName")}>
@@ -147,7 +148,7 @@ function SettingsForm({ initial }: { initial: NameValues }) {
               </Field>
             </Cell>
           </Row>
-          <Row>
+          <Row id={settingTargetId("last-name")}>
             <RowLabel>Last name</RowLabel>
             <Cell>
               <Field label="Last name" error={fieldError(state, "lastName")}>
@@ -174,7 +175,7 @@ function DeleteAccount({ onlyAdmin }: { onlyAdmin: boolean }) {
   return (
     <Section aria-labelledby="delete">
       <SectionTitle id="delete">Delete account</SectionTitle>
-      <Row>
+      <Row id={settingTargetId("delete-account")}>
         <RowLabel>You’ll lose access to the admin portal.</RowLabel>
         <div>
           {onlyAdmin ? (

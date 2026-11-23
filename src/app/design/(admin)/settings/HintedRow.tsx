@@ -14,10 +14,13 @@ const PAUSE_MS = 2000;
  * It never shows while they are typing or clicking, and it points at the label, so it can't cover another field.
  */
 export function HintedRow({
+  id,
   label,
   hint,
   children,
 }: {
+  /** Lets the search palette scroll to and mark this row. */
+  id?: string;
   label: string;
   hint: string;
   children: React.ReactNode;
@@ -42,7 +45,7 @@ export function HintedRow({
         if (!open) setPaused(false);
       }}
     >
-      <Row>
+      <Row id={id}>
         <TooltipTrigger asChild>
           <RowLabel>
             {label}

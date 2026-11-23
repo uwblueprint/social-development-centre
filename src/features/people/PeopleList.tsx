@@ -15,6 +15,7 @@ import { idleState, type ActionState } from "@/lib/forms";
 import { resendSignInLink } from "./actions";
 import { Muted, Section, SectionTitle, Success } from "./PeoplePage";
 import { displayName, type PersonRow } from "./person";
+import { personTargetId } from "@/features/search/targets";
 
 /** What a row's remove control needs: report the result and move focus once its row is gone. */
 export interface Removal {
@@ -101,6 +102,8 @@ export function PeopleList({
   renderRemove: (person: PersonRow, removal: Removal) => ReactNode;
 }) {
   const [notice, setNotice] = useState("");
+  // The People page is where search sends you for a person; the Admins page isn't.
+  const searchable = portal === "member";
   const removal: Removal = { onRemoved: setNotice, onFocusLost: () => document.getElementById(titleId)?.focus() };
 
   return (
@@ -114,9 +117,9 @@ export function PeopleList({
       {people.length === 0 ? (
         <Muted>{emptyText}</Muted>
       ) : (
-        <List>
+        <List data-search-list={searchable ? "people" : undefined}>
           {people.map((person) => (
-            <Row key={person.id}>
+            <Row key={person.id} id={searchable ? personTargetId(person.id) : undefined}>
               <Person>
                 <span>
                   {displayName(person)}

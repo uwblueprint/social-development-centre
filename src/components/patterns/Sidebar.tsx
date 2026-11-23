@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { css, keyframes, styled } from "next-yak";
 import type { LucideIcon } from "lucide-react";
-import { BookOpen, LogOut, Menu, PanelLeftClose, PanelLeftOpen, Pin, X } from "lucide-react";
+import { BookOpen, LogOut, Menu, PanelLeftClose, PanelLeftOpen, Pin, Search, X } from "lucide-react";
 import { Icon } from "@/components/ui/Icon";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { applySidebarCollapsed, readSidebarCollapsed, syncSidebarCollapsed } from "@/lib/sidebar";
@@ -59,6 +59,11 @@ export interface SidebarConfig {
   headerActions?: React.ReactNode;
   /** Owner decision: no My account concept (logins can be shared); the footer is just Documentation and a red Sign out. */
   onSignOut: () => void;
+  /**
+   * A Search icon at the left of the header's icons: the pointer and touch way into a keyboard search palette.
+   * Its tooltip says "Search" with `shortcut` in brackets (e.g. "Search (Ctrl K)"); null leaves the shortcut out.
+   */
+  search?: { onOpen: () => void; shortcut: string | null };
 }
 
 const MOBILE = "@media (max-width: 767px)";
@@ -251,7 +256,7 @@ const Header = styled.div`
 const HeaderActions = styled.div`
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-1);
 `;
 
 const Brand = styled.span`
@@ -593,6 +598,27 @@ function SidebarContent({
           {config.product.name}
         </Brand>
         <HeaderActions>
+          {/* Search comes first, on the left of the header's icons (owner). */}
+          {config.search && (
+            <Tooltip
+              content={config.search.shortcut ? `Search (${config.search.shortcut})` : "Search"}
+              side="bottom"
+              pinOnClick={false}
+            >
+              <IconButton
+                type="button"
+                aria-label="Search"
+                aria-keyshortcuts="Control+K Meta+K"
+                onClick={() => {
+                  // Below 768px the sidebar is a drawer: close it first so the palette doesn't open behind it.
+                  onClose();
+                  requestAnimationFrame(config.search!.onOpen);
+                }}
+              >
+                <Icon icon={Search} size={16} strokeWidth={NAV_STROKE} />
+              </IconButton>
+            </Tooltip>
+          )}
           {config.headerActions}
           <CloseButton ref={closeRef} type="button" aria-label="Close menu" onClick={onClose}>
             <Icon icon={X} size={20} />
@@ -604,7 +630,8 @@ function SidebarContent({
             onClick={onToggleCollapsed}
           >
             {/* A pin, not the open button's icon: it docks the sidebar, and the open button is already on screen. */}
-            <Icon icon={collapsed ? Pin : PanelLeftClose} size={16} strokeWidth={NAV_STROKE} />
+            {/* 0.15 lighter (owner): its box outline reads heavier than the search icon beside it at the same stroke. */}
+            <Icon icon={collapsed ? Pin : PanelLeftClose} size={16} strokeWidth={NAV_STROKE - 0.15} />
           </DockButton>
         </HeaderActions>
       </Header>
