@@ -60,8 +60,18 @@ addEventListener("keydown", (e) => {
   else if (k.toLowerCase() === "g") { grid = !grid; render(); }
   else if (k.toLowerCase() === "r") render();
   else if (k.toLowerCase() === "t") { const order = ["dark", "navy", "cream"]; setTheme(order[(order.indexOf(THEME) + 1) % 3]); render(); }
+  else if (k.toLowerCase() === "f") {
+    /* hide the hints right away; full screen is a bonus the browser may refuse or delay */
+    const on = !document.body.classList.contains("present");
+    document.body.classList.toggle("present", on);
+    if (on && !document.fullscreenElement) document.documentElement.requestFullscreen?.().catch(() => {});
+    if (!on && document.fullscreenElement) document.exitFullscreen();
+  }
+  else if (k === "Escape" && document.body.classList.contains("present")) document.body.classList.remove("present");
   else if (k === "Escape" && grid) { grid = false; render(); }
 });
+/* F presents: full screen with the hints hidden. Leaving full screen (F or Esc) brings them back. */
+addEventListener("fullscreenchange", () => { if (!document.fullscreenElement) document.body.classList.remove("present"); });
 addEventListener("resize", render);
 addEventListener("click", (e) => { if (!grid && !e.target.closest("#hud, #notes")) advance(); });
 

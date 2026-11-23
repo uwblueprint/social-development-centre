@@ -68,6 +68,7 @@ SLIDES[11].variants = [
     const av = c.avatar(470, 810, 110, "Suhanya", {}); av.style.zIndex = 5; c.pop(av, 4600);
     const msg = c.box(570, 600, 0, 0, { zIndex: 5, transition: "opacity 1s var(--soft), transform 1.15s var(--snap)" });
     msg.style.cssText += `;width:auto;height:auto;max-width:760px;background:${COL.system};color:${COL.night};padding:20px 30px;font-size:40px;line-height:1.25;letter-spacing:-0.015em;border-radius:40px 40px 40px 0`;
+    msg.style.opacity = 0; /* hidden before it is measured, or the measuring pass shows it and it fades out first */
     msg.textContent = "Hey, how's your daughter's first day at school?"; msg.style.top = 865 - msg.offsetHeight + "px"; c.rise(msg, 5000, 24);
   }),
   V("memory", "A lens on the record", (c) => {

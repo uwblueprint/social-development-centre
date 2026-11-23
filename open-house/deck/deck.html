@@ -59,13 +59,16 @@
   #notes { position: fixed; left: 14px; bottom: 12px; z-index: 20; max-width: 380px; font: 400 14px/1.45 "Instrument Sans", sans-serif; color: #d9d5c8; background: rgba(0, 0, 0, 0.72); padding: 12px 14px; border-radius: 8px; display: none; white-space: pre-line; }
   #notes.on { display: block; }
   #help { position: fixed; left: 14px; top: 12px; z-index: 20; font: 400 12px/1.4 "Instrument Sans", sans-serif; color: #6f6c63; }
+  /* presenting: full screen, no instructional text */
+  body.present #hud, body.present #help { display: none !important; }
+  body.present { cursor: none; }
 </style>
 </head>
 <body>
 <div id="app"></div>
 <div id="hud"></div>
 <div id="notes"></div>
-<div id="help">arrows: slides and variations · G: compare all · S: script · T: dark / navy / cream · V: hide labels · R: replay</div>
+<div id="help">arrows: slides and variations · G: compare all · S: script · T: dark / navy / cream · V: hide labels · R: replay · F: present</div>
 <script src="core.js"></script>
 <script src="assets/sdc-logo-data.js"></script>
 <script src="t1.js"></script>

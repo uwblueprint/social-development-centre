@@ -43,10 +43,8 @@ slide("Giving once was the easy part. A month later, he feels no connection to S
     grid.style.opacity = 0; reflow(grid); grid.style.opacity = 1;
     c.box(0, 0, 1920, 1080, { zIndex: 4, pointerEvents: "none", background: "repeating-linear-gradient(0deg, rgba(0,0,0,0.2) 0 2px, rgba(0,0,0,0) 2px 4px)" });
     const alarm = c.box(0, 0, 1920, 1080, { zIndex: 3, pointerEvents: "none", opacity: 0, background: `radial-gradient(ellipse 80% 80% at 50% 50%, ${rgba(COL.orange, 0)} 45%, ${rgba(COL.orange, 0.3)} 100%)` });
-    const lab = c.text("HEART RATE", { x: 120, y: 96, w: 700, size: 34, color: gr(0.85), align: "left", weight: 500 }); lab.style.letterSpacing = "0.12em";
-    const num = c.text("72", { x: 120, y: 140, w: 700, size: 250, color: G, align: "left" }); num.style.fontVariantNumeric = "tabular-nums"; num.style.zIndex = 5;
-    const unit = c.text("BPM", { x: 120, y: 410, w: 700, size: 40, color: gr(0.85), align: "left", weight: 500 }); unit.style.letterSpacing = "0.12em";
-    const trace = c.box(0, 440, 1920, 500, { zIndex: 2 });
+    /* no readout: the trace alone says the connection went quiet */
+    const trace = c.box(0, 290, 1920, 500, { zIndex: 2 });
     const cv = document.createElement("canvas"); cv.width = 1920; cv.height = 500; cv.style.cssText = "display:block;width:1920px;height:500px"; trace.appendChild(cv);
     const g = cv.getContext("2d");
     const D = 4200, BW = 520, gaps = [1000], amps = [1], starts = [];
@@ -54,7 +52,7 @@ slide("Giving once was the easy part. A month later, he feels no connection to S
     const gs = (u, m, sd) => Math.exp(-(((u - m) / sd) ** 2));
     const ecg = (u) => 0.1 * gs(u, 0.16, 0.05) - 0.14 * gs(u, 0.29, 0.02) + gs(u, 0.32, 0.022) - 0.3 * gs(u, 0.36, 0.024) + 0.2 * gs(u, 0.6, 0.07);
     const val = (t) => { for (let i = 0; i < starts.length; i++) { const u = (t - starts[i]) / BW; if (u >= 0 && u <= 1) return amps[i] * ecg(u); } return 0; };
-    const lastEnd = starts[starts.length - 1] + BW; let t0 = 0, id = null, shown = "72", flat = false;
+    const lastEnd = starts[starts.length - 1] + BW; let t0 = 0, id = null, flat = false;
     c.later(() => {
       t0 = performance.now();
       id = c.every(() => {
@@ -63,10 +61,7 @@ slide("Giving once was the easy part. A month later, he feels no connection to S
         g.strokeStyle = el > lastEnd ? COL.quiet : G; g.shadowColor = el > lastEnd ? "rgba(0,0,0,0)" : G; g.shadowBlur = 14;
         g.beginPath(); for (let x = 0; x <= headX; x += 2) { const y = 250 - val((x / 1920) * D) * 210; x ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke();
         g.shadowBlur = 0; g.fillStyle = el > lastEnd ? COL.quiet : G; g.beginPath(); g.arc(headX, 250 - val(el) * 210, 7, 0, 6.3); g.fill();
-        let bpm = "72";
-        if (el > lastEnd) bpm = "0";
-        if (bpm !== shown) { shown = bpm; num.textContent = bpm; }
-        if (el > lastEnd && !flat) { flat = true; num.style.color = COL.quiet; lab.style.color = COL.quiet; unit.style.color = COL.quiet; grid.style.transition = "opacity 3.5s ease"; grid.style.opacity = 0.2; }
+        if (el > lastEnd && !flat) { flat = true; grid.style.transition = "opacity 3.5s ease"; grid.style.opacity = 0.2; }
         if (el >= D) clearInterval(id);
       }, 16);
     }, 500);

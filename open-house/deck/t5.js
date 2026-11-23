@@ -67,9 +67,9 @@ slide("So how do we make it easier to build those relationships? We're building 
     const mail = c.card(EX, Y + 150, EW, 640, { r: 24, bg: "linear-gradient(180deg, #2a2823, #1d1c19)" }); mail.style.opacity = 0; c.later(() => { mail.style.opacity = 1; }, 3400);
     const parts = [];
     parts.push(c.text("To:", { x: EX + 40, w: 100, y: Y + 197, size: 34, color: COL.mute, align: "left" }));
-    parts.push(c.box(EX + 120, Y + 180, 270, 64, { border: `${HAIR}px solid ${rgba(COL.ink, 0.3)}`, borderRadius: "10px" }));
-    parts.push(c.avatar(EX + 160, Y + 212, 44, "Stephen", { ground: COL.stephen, cloth: COL.stephen }));
-    parts.push(c.text("Stephen", { x: EX + 200, w: 190, y: Y + 195, size: 32, align: "left" }));
+    const to = c.box(EX + 120, Y + 180, 0, 0, { border: `${HAIR}px solid ${rgba(COL.ink, 0.3)}`, borderRadius: "10px" }); to.style.cssText += ";width:auto;height:64px;display:flex;align-items:center;gap:14px;padding:0 22px 0 14px;white-space:nowrap";
+    const toAv = c.avatar(0, 0, 44, "Stephen", { ground: COL.stephen, cloth: COL.stephen }); toAv.style.cssText += ";position:relative;left:0;top:0;flex:none"; to.appendChild(toAv);
+    const toName = document.createElement("div"); toName.textContent = "Stephen"; toName.style.cssText = `font-size:32px;letter-spacing:-0.02em;color:${COL.ink}`; to.appendChild(toName); parts.push(to);
     parts.push(c.rect(EX, Y + 270, EW, 1.5, rgba(COL.ink, 0.1)));
     const body = c.text("", { x: EX + 40, w: EW - 80, y: Y + 300, size: 38, color: rgba(COL.ink, 0.78), align: "left" }); body.style.lineHeight = 1.35;
     parts.push(c.rect(EX, Y + 650, EW, 1.5, rgba(COL.ink, 0.1)));

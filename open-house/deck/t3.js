@@ -78,20 +78,23 @@ slide("Imagine someone joins. A thank-you will go out automatically, in Suhanya'
     c.rect(X, Y + 104, W2, 1.5, hair); c.rect(X, Y + 214, W2, 1.5, hair); c.rect(X, Y + 740, W2, 1.5, hair);
     c.text("To:", { x: X + P, w: 100, y: Y + 137, size: 40, color: COL.mute, align: "left" });
     /* the recipient is a tag: avatar and name, in an outlined box after "To:" */
-    const tag = c.box(X + 150, Y + 120, 340, 76, { border: `1.5px solid ${rgba(COL.ink, 0.3)}`, borderRadius: "10px", transition: "transform .5s var(--soft), border-color .5s ease" });
-    const nameEl = c.text("Maya", { x: X + 238, w: 240, y: Y + 138, size: 38, align: "left" }); nameEl.style.transition = "opacity .18s ease, transform .18s ease";
+    const tag = c.box(X + 150, Y + 120, 0, 0, { border: `1.5px solid ${rgba(COL.ink, 0.3)}`, borderRadius: "10px", transition: "transform .5s var(--soft), border-color .5s ease" });
+    /* the box hugs the avatar and the name, whatever the name is */
+    tag.style.cssText += ";width:auto;height:76px;display:flex;align-items:center;gap:16px;padding:0 26px 0 19px;white-space:nowrap";
+    const nameEl = document.createElement("div"); nameEl.style.cssText = `font-size:38px;letter-spacing:-0.02em;color:${COL.ink};transition:opacity .18s ease, transform .18s ease`; nameEl.textContent = "Mei"; tag.appendChild(nameEl);
     /* the email stays put: only the person changes */
     const body = c.text("Thank you for joining us. It means a lot to everyone at SDC.\n\nWarm regards,\nSuhanya", { x: X + P, w: W2 - 2 * P, y: Y + 250, size: 42, color: rgba(COL.ink, 0.78), align: "left" }); body.style.whiteSpace = "pre-wrap"; body.style.lineHeight = 1.45;
     let av = null;
-    const mkAv = (n) => c.avatar(X + 196, Y + 158, 54, n, n === "Stephen" ? { ground: COL.stephen, cloth: COL.stephen } : {});
-    av = mkAv("Maya");
+    const mkAv = (n) => { const a = c.avatar(0, 0, 54, n, n === "Stephen" ? { ground: COL.stephen, cloth: COL.stephen } : {}); a.style.cssText += ";position:relative;left:0;top:0;flex:none"; tag.insertBefore(a, nameEl); return a; };
+    av = mkAv("Mei");
     const setTo = (n) => {
       if (av) av.remove(); av = mkAv(n); av.style.opacity = 0; av.style.transition = "opacity .35s ease"; reflow(av); av.style.opacity = 1;
       nameEl.style.opacity = 0; nameEl.style.transform = "translateY(-8px)";
       c.later(() => { nameEl.textContent = n; nameEl.style.transform = "translateY(8px)"; reflow(nameEl); nameEl.style.opacity = 1; nameEl.style.transform = "none"; }, 180);
       tag.style.transform = "scale(1.025)"; tag.style.borderColor = rgba(COL.ink, 0.55); c.later(() => { tag.style.transform = "none"; tag.style.borderColor = rgba(COL.ink, 0.3); }, 240);
     };
-    ["Dana", "Omar", "Priya", "Stephen"].forEach((n, i) => c.later(() => setTo(n), 1400 + i * 1000));
+    /* short and long names, so the tag visibly hugs each one */
+    ["Anastasia", "Jo", "Oluwaseun", "Stephen"].forEach((n, i) => c.later(() => setTo(n), 1400 + i * 1000));
     const send = c.bubble(X + P, Y + 778, 190, 72, "Send", { bg: COL.system, color: COL.night, size: 36, r: 10 });
     /* the cursor rises from the bottom of the screen */
     const cur = cursor(c, X + W2 - 300, 1120);
