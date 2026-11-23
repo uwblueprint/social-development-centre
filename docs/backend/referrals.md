@@ -121,9 +121,45 @@ error under the email row. One email per address, ever, also stays.
 The **Refer a friend** line sits above the legal footer (why they get the email, SDC's address, Unsubscribe),
 so it reads as an invitation, not small print. Three copy options for the PM; the recommendation is
 "Know someone who'd care about this? **Refer a friend**", which matches the page title.
+## The redesigned page (Nov 2026)
+
+`/refer/[token]` renders the redesigned page (`src/features/referrals/ReferPage.tsx`, from the referrals design). It calls `referFriend` unchanged. Step 1 asks for the friend's name and email; step 2 offers both ways to invite them (we email them, or the member copies their link); Send invite goes to a thank-you screen. The step is in the URL (`?step=how`, `?step=thanks`) so Back and Forward work; a step URL opened fresh shows step 1.
+
+### Edge cases
+
+| Case | What the member sees | Handled by |
+|---|---|---|
+| Link's token isn't a current member's (on load, or it stops working mid-way) | "This link doesn't work" | `referral_page` / `unknown_link`; the page swaps to that screen |
+| Name or email missing on Next | The error under each field; Next is never disabled | Page |
+| Name with links or symbols (`@`, `/`, `<`) | "Enter just their name…" on step 1 | Page and `refer_friend` (`invalid_name`) |
+| Email the server rejects, or the member's own address | The error under the email field on step 2 (the page stays there) | `refer_friend` (`invalid_email`, `own_email`) |
+| Likely typo (`priya@gmial.com`) | "Did you mean priya@gmail.com?", one click fixes it | Page only |
+| Partly typed domain (`priya@g`) | `mail.com` offered inline; Tab, →, or a click on the Tab key fills it | Page only |
+| Titles and full names ("Dr. Priya Patel", "mrs priya") | Thanked and labelled as "Priya"; "Dr. Patel" stays whole | Page (`firstNameOf`) and `refer_friend` (`split_referred_name`, migration `20261123000000_referral_names`), so the stored first name agrees |
+| Already a member, unsubscribed, bounced, suppressed, or already invited by someone else | Exactly what a new referral shows | `refer_friend`: never emailed, still recorded |
+| This member already referred this address | "You invited Priya on Nov 3, thank you! We only email once…" with their link | `refer_friend` (`message` with `referred_on`) |
+| Send invite fails (connection) | Thank-you screen, then back to step 2 with "We couldn't send that…" | Page |
+| Ten referrals today | "You've referred 10 people today…" under the email | `refer_friend` (`limit`) |
+| Copy link before anything is recorded | The link field is empty ("Their link appears here when you copy it"), then fills | `refer_friend` with `delivery: "self"` records it and returns the link |
+| Copy link after the email went out (thank-you screen) | Copies their link; no second email | A second `refer_friend` call returns the existing referral's link |
+| The browser blocks the copy (Safari after a network wait) | The link shown, selected, with "copy it yourself" | Page |
+| Phones | Share (the system share sheet) instead of Copy link | Page: a touch screen that can share |
+| Two tabs or double clicks | One referral, one email | `refer_friend` (locks and the unique index) |
+
+### Decided
+- **The daily limit stays** (PM, Nov 23): ten new referrals per member per day, because the page works without signing in. The page shows `copy.limit` under the email row.
+
+### Decisions for the PM
+- **Same person, different spelling.** `sam+sdc@` and `s.am@gmail.com` reach the same inbox but count as different addresses, so each could get one email. Normalising them (lower case, no `+tag`, no dots in Gmail names) would need a change to the one-email-per-address index.
+
+### Later (not designed yet)
+- A friend who joins with a different email, or through a link passed on to someone else, and how admins see a member's referrals.
+- A broken or incomplete refer-page link should open the join page, not an error screen.
+- Friend links open the intake form (`friendLinkPath`); they should open the join page once it exists.
+- Showing the friend's link before anything is recorded would need the backend to hand out a link ahead of the referral. Not worth it yet: the empty field explains itself.
 
 ## Tests
-`supabase/tests/`: replays every migration on a local Postgres and checks every rule above (65 checks), see its README. Also checked by hand: 15 parallel requests create exactly 10 referrals; 8 parallel requests for one friend create one referral and one invite; 12 members referring one friend at once create 12 referrals and one invite; two people joining at once through one link credit one. An independent review found no security issues; its three email-option findings are fixed.
+`supabase/tests/`: replays every migration on a local Postgres and checks every rule above (73 checks, including the name splitting), see its README. Also checked by hand: 15 parallel requests create exactly 10 referrals; 8 parallel requests for one friend create one referral and one invite; 12 members referring one friend at once create 12 referrals and one invite; two people joining at once through one link credit one. An independent review found no security issues; its three email-option findings are fixed.
 
 ## Open
 - Later (PM, Nov 23): a friend who joins with a different email, or through a link passed on to someone else, and how admins see referrals on a member's profile. Not designed yet.

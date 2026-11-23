@@ -174,4 +174,16 @@ do $$ begin
 exception when check_violation then raise notice 'ok  can''t mark sent without a request';
 end $$;
 
+-- ---------- names as typed (20261123000000_referral_names) ----------
+set role anon;
+select t.eq('title dropped', (select friend_name from public.refer_friend('10000000-0000-0000-0000-00000000000d', 'Dr. Priya Patel', 'drpriya@example.org', false)), 'Priya');
+select t.eq('title with no full stop, any case', (select friend_name from public.refer_friend('10000000-0000-0000-0000-00000000000d', 'mrs Ana Silva', 'ana@example.org', false)), 'Ana');
+select t.eq('two titles', (select friend_name from public.refer_friend('10000000-0000-0000-0000-00000000000d', 'Prof. Dr. Omar Haddad', 'omar@example.org', false)), 'Omar');
+select t.eq('title and one name kept whole', (select friend_name from public.refer_friend('10000000-0000-0000-0000-00000000000d', 'Dr. Patel', 'patel@example.org', false)), 'Dr. Patel');
+select t.eq('a name that only starts like a title', (select friend_name from public.refer_friend('10000000-0000-0000-0000-00000000000d', 'Drew Barry', 'drew@example.org', false)), 'Drew');
+select t.eq('no title: first word', (select friend_name from public.refer_friend('10000000-0000-0000-0000-00000000000d', 'Mei Lin Chen', 'mei@example.org', false)), 'Mei');
+reset role;
+select t.eq('title dropped: stored first and last', (select referred_first_name || '|' || referred_last_name from public.referrals where referred_email = 'drpriya@example.org'), 'Priya|Patel');
+select t.eq('two titles: stored', (select referred_first_name || '|' || referred_last_name from public.referrals where referred_email = 'omar@example.org'), 'Omar|Haddad');
+
 \echo ALL REFERRAL TESTS PASSED
