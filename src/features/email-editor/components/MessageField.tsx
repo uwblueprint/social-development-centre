@@ -424,6 +424,7 @@ const Card = styled.div`
   background: var(--color-bg);
   transition: border-color var(--duration) var(--ease);
 
+  /* A text field: a click shows the darker 1px border only, Tab shows the ring (inputModality.ts). */
   &:focus-within {
     border-color: var(--color-focus);
     box-shadow: var(--focus-ring-text);
@@ -431,6 +432,9 @@ const Card = styled.div`
   &[data-invalid],
   &[data-invalid]:focus-within {
     border-color: var(--color-danger);
+    box-shadow: var(--focus-ring-text-invalid);
+  }
+  &[data-invalid]:focus-within {
     box-shadow: var(--focus-ring-text-invalid);
   }
 `;

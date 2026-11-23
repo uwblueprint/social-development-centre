@@ -6,7 +6,7 @@ This file is for AI coding agents and humans alike. Read it before writing any U
 
 Check `git config user.name` and work in that person's folder:
 
-- **Justin or Shallot (design):** `src/app/design/<feature>/` only, on demo data. Frontend only. No backend: don't add or change server actions, data seams, API routes, database code or other server-side logic. If the UI needs data or actions that don't exist yet, list them in `docs/backend/<feature>.md` and stop there.
+- **Justin or Shallot (design):** `src/app/design/<feature>/` only, on demo data, with navigation in the left sidebar and no top nav. Frontend only. No backend: don't add or change server actions, data seams, API routes, database code or other server-side logic. If the UI needs data or actions that don't exist yet, list them in `docs/backend/<feature>.md` and stop there. Every design screen declares its edge cases in the State lab (`src/app/design/README.md`) and handles each one.
 - **Gaurav or Olivia (PM):** `src/app/prototypes/<name>/` only, on demo data.
 - **Anyone else (dev):** the product (`src/app/admin/`, `src/features/`, `supabase/`). Pull from `src/app/design/` when building a feature; never import from `src/app/prototypes/`.
 
