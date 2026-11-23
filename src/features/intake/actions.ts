@@ -1,6 +1,7 @@
 "use server";
 
 import type { ActionState } from "@/lib/forms";
+import { parseUuid } from "@/features/referrals/types";
 import { createClient } from "@/lib/supabase/server";
 import { intakeCopy } from "./copy";
 import { EMAIL_PATTERN, isIntakeFormSource, type IntakeSubmission } from "./submit";
@@ -35,6 +36,7 @@ export async function submitIntake(submission: IntakeSubmission): Promise<Action
     p_last_name: lastName,
     p_email: email,
     p_form_source: submission.formSource,
+    p_referral_id: parseUuid(submission.referralId),
     p_answers: {
       submittedAt: submission.submittedAt,
       topics: submission.topics,

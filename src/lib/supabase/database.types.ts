@@ -449,6 +449,7 @@ export type Database = {
           first_name: string
           form_source: string | null
           last_name: string
+          referral_id: string | null
           submission_id: string
           updated_at: string
         }
@@ -459,6 +460,7 @@ export type Database = {
           first_name: string
           form_source?: string | null
           last_name: string
+          referral_id?: string | null
           submission_id: string
           updated_at?: string
         }
@@ -469,10 +471,19 @@ export type Database = {
           first_name?: string
           form_source?: string | null
           last_name?: string
+          referral_id?: string | null
           submission_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "intake_submissions_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: false
+            referencedRelation: "referrals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       page_visits: {
         Row: {
@@ -811,6 +822,8 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          invite_requested_at: string | null
+          invite_sent_at: string | null
           joined_at: string | null
           referred_email: string
           referred_first_name: string | null
@@ -821,6 +834,8 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          invite_requested_at?: string | null
+          invite_sent_at?: string | null
           joined_at?: string | null
           referred_email: string
           referred_first_name?: string | null
@@ -831,6 +846,8 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          invite_requested_at?: string | null
+          invite_sent_at?: string | null
           joined_at?: string | null
           referred_email?: string
           referred_first_name?: string | null
@@ -1139,6 +1156,21 @@ export type Database = {
         }
         Returns: undefined
       }
+      refer_friend: {
+        Args: {
+          p_email: string
+          p_full_name: string
+          p_send_email: boolean
+          p_token: string
+        }
+        Returns: {
+          friend_name: string
+          referral_id: string
+          referred_on: string
+          status: string
+        }[]
+      }
+      referral_page: { Args: { p_token: string }; Returns: { first_name: string }[] }
       remove_admin: { Args: { p_person_id: string }; Returns: string }
       remove_member: { Args: { p_person_id: string }; Returns: undefined }
       rename_tag: { Args: { p_name: string; p_tag_id: string }; Returns: string }
@@ -1155,6 +1187,7 @@ export type Database = {
           p_first_name: string
           p_form_source: string
           p_last_name: string
+          p_referral_id?: string
           p_submission_id: string
         }
         Returns: undefined
