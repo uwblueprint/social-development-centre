@@ -4,7 +4,8 @@ import { OfflineWatcher } from "@/app/_components/OfflineWatcher";
 import type { ReactNode } from "react";
 import { AppToastProvider } from "@/components/ui/Toast";
 import { SidebarLayout } from "@/components/patterns/Sidebar";
-import { adminNav } from "./adminNav";
+import { ADMIN_DOCS_HREF, adminNav } from "./adminNav";
+import { AdminSearchWithToast, useAdminSearch } from "./AdminSearch";
 import { signOut } from "@/features/auth/actions";
 import { NotificationsButton } from "@/features/notifications/NotificationsPanel";
 import { serverNotifications } from "@/features/notifications/source";
@@ -12,6 +13,7 @@ import { serverNotifications } from "@/features/notifications/source";
 /** No section shows a count badge yet (owner decision 10); a count needs `count` plus a `countLabel` that explains it. */
 export function AdminShell({ children }: { children: ReactNode }) {
   const { items, footerItems } = adminNav("admin");
+  const search = useAdminSearch();
   return (
     // One provider for the whole portal so a toast survives navigating from a form back to its list.
     <AppToastProvider>
@@ -22,13 +24,15 @@ export function AdminShell({ children }: { children: ReactNode }) {
           navLabel: "Admin navigation",
           items,
           footerItems,
-          docsHref: "/admin/documentation",
+          docsHref: ADMIN_DOCS_HREF,
           headerActions: <NotificationsButton source={serverNotifications} settingsHref="/admin/settings#alerts" />,
           onSignOut: () => void signOut("admin"),
+          search: search.sidebar,
         }}
       >
         {children}
       </SidebarLayout>
+      <AdminSearchWithToast open={search.open} onOpenChange={search.setOpen} />
     </AppToastProvider>
   );
 }

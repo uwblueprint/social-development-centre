@@ -1,6 +1,7 @@
-import { CreditCard, Link2, Mail, Send, Settings, UserCog, UsersRound } from "lucide-react";
+import { BookOpen, CreditCard, Link2, Mail, Send, Settings, UserCog, UsersRound } from "lucide-react";
 import type { SidebarNavItem } from "@/components/patterns/Sidebar";
 import type { AdminSection } from "../_data/types";
+import type { SearchPage } from "@/features/search/SearchPalette";
 
 /**
  * The admin sidebar, shared by the real portal (`/admin`) and the designers' admin screens
@@ -17,6 +18,8 @@ const sections: {
   icon: SidebarNavItem["icon"];
   href?: string;
   designHref?: string;
+  /** Other words that find this section in the search palette. Never shown. */
+  keywords?: string[];
   /** Shown at the bottom of the sidebar, above Documentation, instead of with the main sections. */
   footer?: true;
 }[] = [
@@ -26,6 +29,7 @@ const sections: {
     description: "Everyone in SDC's community.",
     icon: UsersRound,
     href: "/admin/members",
+    keywords: ["members", "community", "directory"],
   },
   {
     key: "outbox",
@@ -33,6 +37,7 @@ const sections: {
     description: "Review emails before they send.",
     icon: Send,
     designHref: "/design/outbox",
+    keywords: ["review", "queue", "scheduled"],
   },
   {
     key: "payments",
@@ -41,6 +46,7 @@ const sections: {
     icon: CreditCard,
     // Built on the icema/payments branch; becomes `href` once it merges.
     designHref: "/admin/payments",
+    keywords: ["paypal", "money", "membership fees"],
   },
   {
     key: "automatic-emails",
@@ -48,6 +54,7 @@ const sections: {
     description: "Emails that send themselves on a schedule.",
     icon: Mail,
     href: "/admin/automatic-emails",
+    keywords: ["schedule", "templates"],
   },
   {
     key: "signup-links",
@@ -55,6 +62,7 @@ const sections: {
     description: "Links people use to join SDC.",
     icon: Link2,
     designHref: "/design/signup-links",
+    keywords: ["join", "sign up", "invite"],
   },
   {
     key: "admins",
@@ -63,6 +71,7 @@ const sections: {
     icon: UserCog,
     href: "/admin/admins",
     designHref: "/design/admins",
+    keywords: ["team", "staff"],
     footer: true,
   },
   {
@@ -72,6 +81,7 @@ const sections: {
     icon: Settings,
     href: "/admin/settings",
     designHref: "/design/settings",
+    keywords: ["account", "preferences", "alerts"],
     footer: true,
   },
 ];
@@ -92,3 +102,15 @@ export function adminNav(from: "admin" | "design"): { items: SidebarNavItem[]; f
     footerItems: links.filter((l) => l.footer).map((l) => l.item),
   };
 }
+
+/** Every section as the search palette lists it (the same links as the sidebar), then Documentation. */
+export function adminSearchPages(from: "admin" | "design"): SearchPage[] {
+  const { items, footerItems } = adminNav(from);
+  const keywords = new Map(sections.map((s) => [s.label, s.keywords]));
+  return [
+    ...[...items, ...footerItems].map(({ href, label, icon }) => ({ href, label, icon, keywords: keywords.get(label) })),
+    { href: ADMIN_DOCS_HREF, label: "Documentation", icon: BookOpen, keywords: ["help", "guide", "docs", "how to"] },
+  ];
+}
+
+export const ADMIN_DOCS_HREF = "/admin/documentation";

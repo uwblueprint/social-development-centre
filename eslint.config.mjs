@@ -55,7 +55,7 @@ const eslintConfig = defineConfig([
         {
           paths: [
             { name: "radix-ui", message: "Import from @/components/ui; primitives stay inside the kit." },
-            { name: "cmdk", message: "Use Select from @/components/ui." },
+            { name: "cmdk", message: "Use Select or CommandPalette from @/components/ui." },
             { name: "react-day-picker", message: "Use DatePicker from @/components/ui." },
           ],
         },
