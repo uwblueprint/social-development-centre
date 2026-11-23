@@ -2,7 +2,16 @@
 
 import { styled } from "next-yak";
 import { useState } from "react";
-import { Check, Copy, ExternalLink, Info, MoreHorizontal, Trash2 } from "lucide-react";
+import { Check, CircleAlert, Copy, ExternalLink, Info, Mail, MoreHorizontal, RotateCw, Search, Settings, Trash2, UsersRound } from "lucide-react";
+import {
+  CommandPalette,
+  CommandPaletteGroup,
+  CommandPaletteItem,
+  CommandPaletteLoading,
+  CommandPaletteMatch,
+  CommandPaletteMessage,
+} from "@/components/ui/CommandPalette";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { Icon } from "@/components/ui/Icon";
 import { Button, CancelButton } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -379,8 +388,75 @@ export function OverlayDemos() {
           <ToastDemo />
           <SheetDemo />
           <WideSheetDemo />
+          <CommandPaletteDemo />
         </Row>
       </AppToastProvider>
     </TooltipProvider>
+  );
+}
+
+const PALETTE_DEMO = [
+  { label: "People", icon: UsersRound },
+  { label: "Automatic emails", icon: Mail },
+  { label: "Settings", icon: Settings },
+];
+
+/** Every state of the palette: results with a bolded match, loading, a failed group with a retry, and nothing found. */
+function CommandPaletteDemo() {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const query = search.trim().toLowerCase();
+  const pages = PALETTE_DEMO.flatMap((p) => {
+    const at = p.label.toLowerCase().indexOf(query);
+    return at >= 0 ? [{ ...p, range: query ? ([at, at + query.length] as const) : null }] : [];
+  });
+  return (
+    <>
+      <Button $variant="secondary" onClick={() => setOpen(true)}>
+        Open command palette
+      </Button>
+      <CommandPalette
+        open={open}
+        onOpenChange={setOpen}
+        label="Search"
+        placeholder="Search pages"
+        search={search}
+        onSearchChange={setSearch}
+        empty={
+          pages.length === 0 ? (
+            <EmptyState
+              icon={Search}
+              title="No matches"
+              action={
+                <Button $variant="secondary" onClick={() => setSearch("")}>
+                  Clear search
+                </Button>
+              }
+            />
+          ) : undefined
+        }
+      >
+        <CommandPaletteGroup heading="Pages">
+          {pages.map((p) => (
+            <CommandPaletteItem
+              key={p.label}
+              value={p.label}
+              icon={p.icon}
+              label={<CommandPaletteMatch text={p.label} range={p.range} />}
+              onSelect={() => setOpen(false)}
+            />
+          ))}
+        </CommandPaletteGroup>
+        <CommandPaletteGroup heading="People">
+          <CommandPaletteLoading label="Finding people…" />
+        </CommandPaletteGroup>
+        <CommandPaletteGroup>
+          <CommandPaletteMessage icon={CircleAlert} tone="danger">
+            Couldn’t load automatic emails
+          </CommandPaletteMessage>
+          <CommandPaletteItem value="retry" icon={RotateCw} label="Try again" onSelect={() => {}} />
+        </CommandPaletteGroup>
+      </CommandPalette>
+    </>
   );
 }

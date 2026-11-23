@@ -14,20 +14,24 @@ Each doc covers when to use it, its API, a working example, content rules, and a
 - [Input](./Input.md) — a single-line text field.
 - [SearchField](./SearchField.md) — a single-line text field for filtering a list.
 - [Textarea](./Textarea.md) — a multi-line text field with a character counter.
+- [FileUpload](./FileUpload.md) — pick or drag in one file, with type and size checks; `FileUploadButton` for Replace.
 - [Select](./Select.md) — pick one option from a list, dropdown or searchable.
 - [CreatableCombobox](./CreatableCombobox.md) — pick an existing option or create one inline.
 - [RadioGroup](./RadioGroup.md) — mutually exclusive options.
 - [Switch](./Switch.md) — an immediate-effect on/off setting.
 - [Slider](./Slider.md) — a labeled numeric range with synced number inputs.
+- [SortableList](./SortableList.md) — a list people put in their own order, dragged by a handle or moved with Up and Down.
 - [DatePicker](./DatePicker.md) — a typed date field with an assistive calendar.
 - [RangeCalendar](./RangeCalendar.md) — a month calendar for before, after or between dates.
 - [DateRulePicker](./DateRulePicker.md) — a date rule as text that opens Before / After / Between and a range calendar.
+- [MonthRangePicker](./MonthRangePicker.md) — a field that picks one month or a run of months, with an optional "All time".
 - [TagCombobox](./TagCombobox.md) — pick several options from a list as tags in one field.
 - [Tag](./Tag.md) — static, selectable, and removable pill chips.
 
 ## Overlays
 - [Dialog](./Dialog.md) — a modal window for a focused task.
 - [AlertDialog](./AlertDialog.md) — a modal that requires an explicit confirm or cancel.
+- [CommandPalette](./CommandPalette.md) — search in a modal: type, arrow to a result, Enter to go.
 - [Sheet](./Sheet.md) — a right-anchored panel for viewing/editing one record.
 - [Popover](./Popover.md) — a small dismissible panel anchored to a trigger.
 - [HoverCard](./HoverCard.md) — a read-only preview panel on hover/focus.
