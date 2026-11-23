@@ -46,4 +46,4 @@ No backend work. When there's no connection, what's on screen stays readable; su
 - [Payments](./payments.md) and [Payments insights](./payments-insights.md) (design only)
 
 ## Support address
-`BSF_SUPPORT_EMAIL` (`src/lib/contact.ts`) is where admins escalate a page that keeps failing to load. It is still the placeholder `{BSF email}`; set the real address there, and the load-error page turns it into a mailto link automatically.
+`BSF_SUPPORT_EMAIL` (`src/lib/contact.ts`) is where admins escalate a page that keeps failing to load. It is info@blueprintsoftware.org; the load-error page turns it into a mailto link automatically.
