@@ -20,7 +20,7 @@ import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
 import { Input } from "@/components/ui/Input";
 import { Table, type TableColumn } from "@/components/ui/Table";
-import { AppToastProvider, useToast } from "@/components/ui/Toast";
+import { useToast } from "@/components/ui/Toast";
 import { TruncatedText } from "@/components/ui/TruncatedText";
 import { isEmail, ME, SEED_ADMINS, type Admin } from "./data";
 
@@ -266,10 +266,7 @@ function InviteDialog({
   );
 }
 
+/** Toasts come from the design shell's provider. */
 export function AdminsPage() {
-  return (
-    <AppToastProvider>
-      <AdminsScreen />
-    </AppToastProvider>
-  );
+  return <AdminsScreen />;
 }

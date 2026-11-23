@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_notification_seen: {
+        Row: {
+          person_id: string
+          seen_at: string
+        }
+        Insert: {
+          person_id: string
+          seen_at?: string
+        }
+        Update: {
+          person_id?: string
+          seen_at?: string
+        }
+        Relationships: []
+      }
+      admin_notifications: {
+        Row: {
+          created_at: string
+          data: Json
+          done_at: string | null
+          done_by: string | null
+          group_key: string
+          id: string
+          occurred_at: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          done_at?: string | null
+          done_by?: string | null
+          group_key: string
+          id?: string
+          occurred_at?: string
+          type: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          done_at?: string | null
+          done_by?: string | null
+          group_key?: string
+          id?: string
+          occurred_at?: string
+          type?: string
+        }
+        Relationships: []
+      }
       admins: {
         Row: {
           added_at: string
@@ -937,6 +985,45 @@ export type Database = {
       }
     }
     Functions: {
+      admin_notifications_new_count: { Args: never; Returns: number }
+      admin_notifications_page: {
+        Args: { p_before_at?: string; p_before_id?: string; p_limit?: number }
+        Returns: {
+          data: Json
+          id: string
+          occurred_at: string
+          seen_at: string | null
+          type: string
+        }[]
+      }
+      open_admin_notifications: {
+        Args: { p_limit?: number }
+        Returns: {
+          data: Json
+          id: string
+          occurred_at: string
+          seen_at: string | null
+          type: string
+        }[]
+      }
+      notify_admins: {
+        Args: {
+          p_data: Json
+          p_group_key: string
+          p_occurred_at?: string
+          p_reopen?: boolean
+          p_type: string
+        }
+        Returns: string
+      }
+      refresh_outbox_notifications: {
+        Args: { p_today?: string }
+        Returns: undefined
+      }
+      set_admin_notification_done: {
+        Args: { p_done: boolean; p_id: string }
+        Returns: undefined
+      }
       add_admin: {
         Args: { p_email: string; p_full_name: string }
         Returns: boolean

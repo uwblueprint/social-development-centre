@@ -6,6 +6,8 @@ import { AppToastProvider } from "@/components/ui/Toast";
 import { SidebarLayout } from "@/components/patterns/Sidebar";
 import { adminNav } from "./adminNav";
 import { signOut } from "@/features/auth/actions";
+import { NotificationsButton } from "@/features/notifications/NotificationsPanel";
+import { serverNotifications } from "@/features/notifications/source";
 
 /** No section shows a count badge yet (owner decision 10); a count needs `count` plus a `countLabel` that explains it. */
 export function AdminShell({ children }: { children: ReactNode }) {
@@ -21,6 +23,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
           items,
           footerItems,
           docsHref: "/admin/documentation",
+          headerActions: <NotificationsButton source={serverNotifications} settingsHref="/admin/settings#alerts" />,
           onSignOut: () => void signOut("admin"),
         }}
       >
