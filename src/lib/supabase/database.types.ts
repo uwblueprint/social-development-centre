@@ -106,10 +106,14 @@ export type Database = {
           created_by: string | null
           delay_amount: number
           delay_unit: string
+          description: string
           id: string
           mode: string
           name: string
           published_at: string | null
+          send_to_unsubscribed: boolean
+          split_from_id: string | null
+          split_tag_id: string | null
           state: string
           subject: string
           subject_doc: Json
@@ -127,10 +131,14 @@ export type Database = {
           created_by?: string | null
           delay_amount?: number
           delay_unit?: string
+          description?: string
           id?: string
           mode?: string
           name?: string
           published_at?: string | null
+          send_to_unsubscribed?: boolean
+          split_from_id?: string | null
+          split_tag_id?: string | null
           state?: string
           subject?: string
           subject_doc?: Json
@@ -148,10 +156,14 @@ export type Database = {
           created_by?: string | null
           delay_amount?: number
           delay_unit?: string
+          description?: string
           id?: string
           mode?: string
           name?: string
           published_at?: string | null
+          send_to_unsubscribed?: boolean
+          split_from_id?: string | null
+          split_tag_id?: string | null
           state?: string
           subject?: string
           subject_doc?: Json
@@ -1218,6 +1230,7 @@ export type Database = {
         Returns: boolean
       }
       email_personalized_ids: { Args: { p_doc: Json }; Returns: string[] }
+      finish_split: { Args: { p_id: string }; Returns: string }
       finish_email_run: {
         Args: { p_failed: number; p_id: number; p_ready: number; p_sent: number }
         Returns: undefined
@@ -1341,6 +1354,7 @@ export type Database = {
         Returns: undefined
       }
       set_email_footer: { Args: { p_doc: Json }; Returns: undefined }
+      split_automatic_email: { Args: { p_id: string; p_tag_id: string }; Returns: string }
       start_email_run: { Args: { p_forced: boolean }; Returns: number }
       toronto_today: { Args: never; Returns: string }
       trash_automatic_email: { Args: { p_id: string }; Returns: undefined }

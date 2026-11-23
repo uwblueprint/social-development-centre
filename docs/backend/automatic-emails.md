@@ -89,11 +89,14 @@ Stored on `automatic_emails.conditions` and validated on save (`22023` if malfor
 | Column | Notes |
 |---|---|
 | `name`, `subject` | Blank allowed while a draft is set up; publishing requires both. |
+| `description` | One line (≤ 80 characters) saying what the email is, shown under its name on the list. Blank by default; publishing doesn't require it. Duplicates keep it (`20261121000100_automatic_email_description.sql`). |
 | `state` | `draft`, `published`, `trash`. Only drafts can be edited. |
 | `trigger` | Events: `join_any`, `join_no_referral`, `join_referral`, `refers`, `referral_joins` (both referral triggers send to the referrer), `tag_added` (with `trigger_tag_id`). |
 | `delay_amount`, `delay_unit` | `days` ≤ 365, `weeks` ≤ 52, `months` ≤ 24, `years` ≤ 5. Calendar months and years: 31 Jan + 1 month = 28 Feb. |
 | `conditions` | See above. |
 | `mode` | `auto`, or `review` (each send waits in the Outbox for approval). |
+| `split_from_id`, `split_tag_id` | Set on a copy made by `split_automatic_email(email, tag)`: same rule plus "must have" the tag, named `<name> (<tag>)`. People with the tag keep getting the original until the copy is published; then `finish_split(copy)` (called by `publishAutomaticEmail`) adds the tag to the original's `never` list, even if it's published, so nobody gets both (`20261121000300_split_automatic_email.sql`). |
+| `send_to_unsubscribed` | Off by default. On, the email also reaches members who unsubscribed (they're still members), for emails SDC is legally required to send. Bounced addresses are still skipped. `email_candidate_state.emailable` applies it, so the Outbox, approving and the daily run all agree (`20261121000200_send_to_unsubscribed.sql`). |
 | `alert_enabled`, `alert_to`, `alert_when` | Review mode only. `alert_to` defaults to suhanya@waterlooregion.org (PM, 3 Nov 2026). `alert_when`: `waiting`, `due_soon`, `past_due`. |
 | `body` | Opaque JSON from the Email Editor (its own PRD). |
 
