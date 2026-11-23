@@ -15,13 +15,10 @@ const PAUSE_MS = 2000;
  */
 export function HintedRow({
   label,
-  field,
   hint,
   children,
 }: {
   label: string;
-  /** The kind of field, when its first line of text doesn't sit in the middle of a 40px control. */
-  field?: "textarea";
   hint: string;
   children: React.ReactNode;
 }) {
@@ -47,7 +44,7 @@ export function HintedRow({
     >
       <Row>
         <TooltipTrigger asChild>
-          <RowLabel data-field={field}>
+          <RowLabel>
             {label}
           </RowLabel>
         </TooltipTrigger>

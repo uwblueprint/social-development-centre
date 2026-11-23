@@ -26,5 +26,9 @@ These are on `/design/settings` and need storage and server actions before they 
   - Outbox: email waiting for review (48 hours prior), email past due, emails couldn't send (after 3 tries). Sent by the emails engine. The full list and when each is created: [Notifications](./notifications.md).
   - Payments: card declined (PayPal tries again), payments stopped (after 2 declines), payment not matched to a person, refund or chargeback, payment received. Sent from the payment events.
   - Members: someone joins, membership cancelled, membership paused or changed (pause or new tier), unsubscribes from emails, referral joins. Sent from `member_events`.
+- Alert emails always go out once a day, with the daily run at 10:30 a.m. (one email listing the alerts since the last one; see notifications.md). It is not a setting.
+- **Your email** (the address you sign in with) is shown read-only: the signed-in admin's `people.email` (or the auth email). Admins can't change it; another admin removes and re-adds them.
 - The email footer is plain text (a sign-off, a name and SDC's mailing address). The emails engine appends the unsubscribe, cancel and refer links itself.
+- **One footer for all of SDC, not one per admin** (owner, 21 Nov 2026). Store it once, like the reply-to: not on `people` or `admins`, and never looked up by the signed-in or sending admin. Any admin can change it; the write function checks the caller is an admin, not whose footer it is.
+- **Sends read the current footer when they go out.** Every email sent after a change ends with the new footer, including emails already scheduled or waiting in the Outbox. Don't copy the footer into a delivery when it's scheduled; `render.ts` reads it at send time, as it does today with the placeholder in `src/features/automatic-emails/footer.ts`.
 - Save button label: **Save** when only your name or the email footer changed, **Save for all admins** when a reply-to or an alert changed.

@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import { AccountSettings } from "@/features/account/AccountSettings";
 import { getAccount } from "@/features/account/queries";
+import { getEmailFooter } from "@/features/email-footer/queries";
 
 export const metadata: Metadata = { title: "Settings" };
 
-// Your name and deleting your account. Email sending and alerts join this page when their backend lands
-// (see docs/backend/settings.md).
+// The email footer, your name, the theme and deleting your account. Reply-to and alerts join this page when
+// their backend lands (see docs/backend/settings.md).
 export default async function SettingsRoute() {
-  const account = await getAccount();
-  return <AccountSettings account={account} />;
+  const [account, footer] = await Promise.all([getAccount(), getEmailFooter()]);
+  return <AccountSettings account={account} footer={footer} />;
 }

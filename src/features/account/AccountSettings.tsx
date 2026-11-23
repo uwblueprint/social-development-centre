@@ -4,6 +4,9 @@ import { useActionState, useState } from "react";
 import { CircleAlert } from "lucide-react";
 import { styled } from "next-yak";
 import { ListPage, ListPageHeader } from "@/components/patterns/ListPage";
+import { ThemeChoice } from "@/components/patterns/ThemeSwitcher";
+import type { FooterDoc } from "@/features/email-footer/doc";
+import { FooterSettings } from "@/features/email-footer/FooterSettings";
 import {
   AlertDialog,
   AlertDialogActions,
@@ -33,12 +36,30 @@ const PageColumn = styled(Column)`
   gap: var(--space-7);
 `;
 
-export function AccountSettings({ account }: { account: Account }) {
+export function AccountSettings({ account, footer }: { account: Account; footer: FooterDoc }) {
   return (
     <ListPage>
       <PageColumn>
         <NameForm initial={{ firstName: account.firstName, lastName: account.lastName }} />
         <Sections>
+          <Section aria-labelledby="sending">
+            <SectionTitle id="sending">Email sending</SectionTitle>
+            <Row>
+              <RowLabel>Email footer</RowLabel>
+              <Cell>
+                <FooterSettings initial={footer} />
+              </Cell>
+            </Row>
+          </Section>
+          <Section aria-labelledby="appearance">
+            <SectionTitle id="appearance">Appearance</SectionTitle>
+            <Row>
+              <RowLabel id="theme-label">Theme</RowLabel>
+              <div>
+                <ThemeChoice aria-labelledby="theme-label" />
+              </div>
+            </Row>
+          </Section>
           <DeleteAccount onlyAdmin={account.onlyAdmin} />
         </Sections>
       </PageColumn>
@@ -154,8 +175,14 @@ function DeleteAccount({ onlyAdmin }: { onlyAdmin: boolean }) {
 }
 
 /** Mounted only while the dialog is open, so a failed attempt's error is gone when it reopens. */
+/** Typed to confirm deleting your account (owner's words). Case and surrounding spaces don't matter. */
+const CONFIRM_PHRASE = "I acknowledge";
+
 function DeleteForm() {
   const [state, formAction] = useActionState(() => deleteAccount(), idleState);
+  // Typed first, so leaving can't happen by a stray click. The dialog unmounts on close, which clears it.
+  const [confirmText, setConfirmText] = useState("");
+  const confirmed = confirmText.trim().toLowerCase() === CONFIRM_PHRASE.toLowerCase();
 
   return (
     <form action={formAction}>
@@ -169,13 +196,24 @@ function DeleteForm() {
           {state.message}
         </FormError>
       )}
+      <Field label={`Type “${CONFIRM_PHRASE}” to confirm`}>
+        {(props) => <Input {...props} autoComplete="off" placeholder={CONFIRM_PHRASE} value={confirmText} onChange={(e) => setConfirmText(e.target.value)} />}
+      </Field>
       <AlertDialogActions>
         <AlertDialogCancel asChild>
           <Button type="button" $variant="secondary">
             Cancel
           </Button>
         </AlertDialogCancel>
-        <SubmitButton $variant="danger">Delete account</SubmitButton>
+        {confirmed ? (
+          <SubmitButton $variant="danger">Delete account</SubmitButton>
+        ) : (
+          <DisabledReason reason={`Type “${CONFIRM_PHRASE}” to confirm.`}>
+            <Button type="button" $variant="danger" disabled>
+              Delete account
+            </Button>
+          </DisabledReason>
+        )}
       </AlertDialogActions>
     </form>
   );

@@ -4,12 +4,13 @@ export interface Settings {
   /** One field for the whole name; saved as a first and last name with splitName. */
   name: string;
   replyTo: string;
-  /** The email footer: the sign-off that closes every email, a name and SDC's mailing address. Links are added for you. */
-  footer: string;
+  /** The email footer under every email, with its fixed unsubscribe and cancel links (src/features/email-footer). */
+  footer: FooterDoc;
   alerts: Record<AlertKey, string[]>;
 }
 
 import type { NotificationType } from "@/features/notifications/types";
+import { defaultFooterDoc, type FooterDoc } from "@/features/email-footer/doc";
 
 /** One email alert per kind of notification (src/features/notifications/types.ts). */
 export type AlertKey = NotificationType;
@@ -55,12 +56,14 @@ export const ADMINS = [
   { name: "Carolyn Zhang", email: "carolyn@uwblueprint.org" },
 ];
 
+/** The address this admin signs in with. Admins can't change it: another admin removes and re-adds them. */
+export const LOGIN_EMAIL = "suhanya@waterlooregion.org";
+
 /** No addresses means the alert is off. */
 export const SEED: Settings = {
   name: "Suhanya Ketheeswaran",
   replyTo: "suhanya@waterlooregion.org",
-  footer:
-    "Warm regards,\nSuhanya from Social Development Centre\nWaterloo Region Community Foundation\n43 Shantz Ave, Kitchener, ON N2G 1G7",
+  footer: defaultFooterDoc(),
   alerts: {
     outboxWaiting: ["suhanya@waterlooregion.org"],
     outboxPastDue: ["suhanya@waterlooregion.org", "jesse@uwblueprint.org"],
