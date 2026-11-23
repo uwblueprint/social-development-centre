@@ -96,9 +96,10 @@ const ErrorMessage = styled.span`
   font-size: var(--text-xs);
   color: var(--color-danger);
 
+  /* As tall as one line of the message, so the icon centres on its first line. */
   svg {
     flex-shrink: 0;
-    margin-top: 1px;
+    height: 1lh;
   }
 `;
 

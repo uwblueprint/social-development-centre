@@ -9,9 +9,9 @@
  * - lee@example.org: already a member, and taken@example.org: already invited by another member. Both look
  *   exactly like a new referral, so the form can't be used to find out who's a member or who invited whom.
  * - fail@example.org: the connection drops
+ * - limit@example.org: the member has made ten referrals today (the daily limit)
  * - priya@gmial.com: a likely typo, so the form asks "Did you mean priya@gmail.com?"
  * - anything else: a new referral
- * Open /design/referrals?link=unknown for a link with a bad or missing token.
  */
 import { copy } from "./copy";
 import type { ReferralResult, ReferralValues } from "@/features/referrals/types";
@@ -44,7 +44,7 @@ export function normalizeEmail(email: string) {
   return `${gmail ? base.replaceAll(".", "") : base}@${gmail ? "gmail.com" : domain}`;
 }
 
-/** Common email domains, for "Did you mean …?". */
+/** Common email domains, most used first: offered as you type, and for "Did you mean …?". */
 const DOMAINS = [
   "gmail.com", "outlook.com", "hotmail.com", "yahoo.com", "yahoo.ca", "icloud.com", "live.com",
   "rogers.com", "bell.net", "sympatico.ca", "uwaterloo.ca", "wlu.ca", "conestogac.on.ca",
@@ -114,10 +114,41 @@ export async function demoReferFriend(values: ReferralValues): Promise<ReferralR
   const fieldErrors = checkRecipient(values.name, values.email);
   if (fieldErrors) return { status: "invalid", fieldErrors };
   if (email === "fail@example.org") throw new Error("Network error (demo)");
+  if (email === "limit@example.org") return { status: "limit" };
 
   const friendName = name.split(/\s+/)[0];
   if (email === "sam@example.org") return { status: "message", friendName, link: link(codeFor(email)), referredOn: "Nov 3" };
   if (values.delivery === "email") return { status: "emailed", friendName };
   // Each person gets their own link; the same person always gets the same one.
   return { status: "message", friendName, link: link(codeFor(email)) };
+}
+
+/** Titles people type before a name. Matched without case, with or without a full stop. */
+const TITLES = new Set(["mr", "mrs", "ms", "miss", "mx", "dr", "prof", "professor", "rev", "sir", "madam", "dame"]);
+
+/**
+ * The friend's first name, for "Thank you for inviting Priya" and the invite email's greeting.
+ * Drops titles ("Dr. Priya Patel" → "Priya") and keeps the first word ("Priya Patel" → "Priya").
+ * A title with a single name left ("Dr. Patel") can't tell first from last, so it stays whole.
+ * Case is kept as typed (names like "de la Cruz" or "McKay" aren't ours to change).
+ */
+export function firstNameOf(raw: string): string {
+  const words = raw.trim().split(/\s+/).filter(Boolean);
+  let i = 0;
+  while (i < words.length && TITLES.has(words[i].replace(/\.$/, "").toLowerCase())) i++;
+  const rest = words.slice(i);
+  if (rest.length === 0) return raw.trim();
+  if (i > 0 && rest.length === 1) return words.join(" ");
+  return rest[0];
+}
+
+/** Offered as you type, from the same list (most used first): "priya@g" → gmail.com, "@h" → hotmail.com. */
+/** The rest of the address to offer after what's typed ("priya@g" → "mail.com"), or null. */
+export function completeEmail(value: string): string | null {
+  const at = value.indexOf("@");
+  if (at < 1 || value.indexOf("@", at + 1) !== -1) return null;
+  const typed = value.slice(at + 1).toLowerCase();
+  if (!typed) return null;
+  const match = DOMAINS.find((domain) => domain.startsWith(typed) && domain !== typed);
+  return match ? match.slice(typed.length) : null;
 }

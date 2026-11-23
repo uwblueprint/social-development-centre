@@ -3,8 +3,6 @@
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import Image from "next/image";
 import { styled } from "next-yak";
-import { DialRoot, useDialKit } from "dialkit";
-import "dialkit/styles.css";
 import photo from "./referral-photo.jpg";
 import skyline from "./waterloo-skyline.png";
 import { Clouds } from "./Clouds";
@@ -175,9 +173,9 @@ const Visual = styled.div`
       }
     }
 
+    /* Keeps the --space-5 inset on phones: the heading starts on the same line as the form under it. */
     @media (max-width: 599px) {
       min-height: 220px;
-      padding: var(--space-5) var(--space-4);
     }
   }
 `;
@@ -280,11 +278,11 @@ const VisualIcon = styled.span`
   color: var(--color-success);
 `;
 
-/* A little smaller than the display size, and as wide as the panel. */
+/* The display size beside the form; a page title (--text-xl, as in the kit) on the banner. */
 const VisualTitle = styled.h1`
   margin: 0;
   overflow-wrap: anywhere;
-  font-size: calc(var(--text-display) * 0.8);
+  font-size: var(--text-display);
   font-weight: var(--weight-medium);
   line-height: var(--leading-display);
   color: var(--taupe-50);
@@ -294,7 +292,7 @@ const VisualTitle = styled.h1`
   }
 
   [data-layout="banner"] & {
-    font-size: calc(var(--text-xl) * 0.8);
+    font-size: var(--text-xl);
     line-height: var(--leading-heading);
   }
 `;
@@ -343,7 +341,7 @@ const Card = styled.div`
 /*
  * The card's drop shadow, from the portfolio file (Figma node 540:18): five layers, from a tight one close
  * under the card to a wide, faint one far below. Dark in light mode; in dark mode the same layers in white
- * (--card-shadow), since a dark shadow wouldn't show. Live DialKit controls (dev only): Strength scales
+ * (--card-shadow), since a dark shadow wouldn't show. Strength scales
  * every layer's opacity, Distance how far down they fall, Softness their blur; each layer's own opacity is
  * under Layers. The layers start from the Figma file; the defaults are Justin's tuned values (Nov 21):
  * a much lighter, softer shadow than Figma's (Figma: strength 1, distance 1, softness 1, layers 0/1/5/9/10).
@@ -357,18 +355,12 @@ const SHADOW_LAYERS = [
 ] as const;
 
 function useCardShadow() {
-  const d = useDialKit("Card shadow", {
-    strength: [0.25, 0, 3, 0.05],
-    distance: [0.8, 0, 2, 0.05],
-    softness: [1.5, 0, 2, 0.05],
-    layers: {
-      farthest: [0, 0, 30, 0.5],
-      far: [0, 0, 30, 0.5],
-      middle: [5, 0, 30, 0.5],
-      near: [7, 0, 30, 0.5],
-      close: [10, 0, 30, 0.5],
-    },
-  });
+  const d = {
+    strength: 0.25,
+    distance: 0.8,
+    softness: 1.5,
+    layers: { farthest: 0, far: 0, middle: 5, near: 7, close: 10 },
+  };
   return SHADOW_LAYERS.map(({ key, y, blur }) => {
     const alpha = Math.min(d.layers[key] * d.strength, 100);
     return `0 ${(y * d.distance).toFixed(1)}px ${(blur * d.softness).toFixed(1)}px color-mix(in oklch, var(--card-shadow) ${alpha.toFixed(2)}%, transparent)`;
@@ -390,6 +382,7 @@ const Side = styled.div`
     /* The inputs keep some space from the card's edges. */
     padding: var(--space-5);
   }
+
 `;
 
 const SideInner = styled.div`
@@ -476,12 +469,15 @@ export function SplitLayout({
   variant = "figma",
   layout = "banner",
   aside,
+  photo: showPhoto = true,
   children,
 }: {
+  /** false: no photo banner, just the card (e.g. the thank-you screen, where the form's done). */
+  photo?: boolean;
   /** Banner only: shown to the right of the heading, inside the banner (stacks under it on narrow screens). */
   aside?: ReactNode;
   title: string;
-  lede: ReactNode;
+  lede?: ReactNode;
   /** Shown above the heading in a light circle, e.g. a check mark once something's done. */
   icon?: ReactNode;
   /** Pass to move focus to the heading, e.g. after a form is sent. */
@@ -494,6 +490,7 @@ export function SplitLayout({
   const textRef = useRef<HTMLDivElement>(null);
   const [box, setBox] = useState<Box | null>(null);
   const cardShadow = useCardShadow();
+
 
   // The line is drawn from the panel's and the text's real sizes, so it hugs the heading at any width.
   useEffect(() => {
@@ -515,8 +512,11 @@ export function SplitLayout({
   const page = (
     <Split data-layout={layout}>
       {/* Live controls for the Figma panel's fade and hexagons (dev only). */}
-      {(variant === "figma" || layout === "banner") && <DialRoot position="bottom-right" />}
-      <Card style={layout === "banner" ? { boxShadow: cardShadow } : undefined}>
+      <Card
+        data-photo={showPhoto ? undefined : "none"}
+        style={layout === "banner" ? { boxShadow: cardShadow } : undefined}
+      >
+      {showPhoto && (
       <Visual ref={visualRef} data-variant={variant} data-aside={aside ? "" : undefined}>
         <Photo src={photo} alt="" fill sizes={layout === "banner" ? "600px" : "(max-width: 899px) 100vw, 50vw"} priority />
         {variant === "hex" && box && <HexShade box={box} />}
@@ -526,10 +526,11 @@ export function SplitLayout({
           <VisualTitle ref={headingRef} tabIndex={headingRef ? -1 : undefined}>
             {title}
           </VisualTitle>
-          <VisualLede>{lede}</VisualLede>
+          {lede && <VisualLede>{lede}</VisualLede>}
         </TextBlock>
         {aside && <Aside>{aside}</Aside>}
       </Visual>
+      )}
       {children && (
       <Side>
         <SideInner>{children}</SideInner>

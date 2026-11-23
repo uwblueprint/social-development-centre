@@ -1,30 +1,21 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, useSyncExternalStore, useTransition } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { keyframes, styled } from "next-yak";
-import { Check, CircleAlert, CircleCheck, Copy, Info, Link2Off, Send, ArrowRight, Plus, RefreshCw, LoaderCircle, Share2 } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogActions,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogTitle,
-} from "@/components/ui/AlertDialog";
+import { Check, CircleAlert, Copy, Heart, Send, Plus, LoaderCircle, Share2, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { DisabledReason } from "@/components/ui/DisabledReason";
-import { Tooltip } from "@/components/ui/Tooltip";
+import { DropdownMenuShortcut } from "@/components/ui/DropdownMenu";
 import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
 import { Input } from "@/components/ui/Input";
-import { Label } from "@/components/ui/Label";
-import { RadioGroup, RadioGroupOption } from "@/components/ui/RadioGroup";
 import { AppToastProvider } from "@/components/ui/Toast";
 import { copy } from "./copy";
 import type { Delivery, ReferralResult, ReferralValues } from "@/features/referrals/types";
-import { checkRecipient, demoReferFriend, previewLinkFor, suggestEmail } from "./data";
+import { REFERRER, checkRecipient, completeEmail, demoReferFriend, firstNameOf, previewLinkFor, suggestEmail } from "./data";
 import { SplitLayout, type PanelLayout, type PanelVariant } from "./SplitLayout";
+import { SAVING_FOR, useStateLab } from "../_state-lab/useStateLab";
+import { LONG_VALUES, REFER_LAB } from "./states";
 
 /*
  * The member's "Invite a friend" page (opened from the footer of any SDC email): one card, the photo with
@@ -42,9 +33,17 @@ import { SplitLayout, type PanelLayout, type PanelVariant } from "./SplitLayout"
  */
 export type View = { result?: ReferralResult; values?: ReferralValues; sentTo?: string };
 
-/* Keeps its width when the label switches to "Copied", so nothing beside it shifts. */
-const CopyButton = styled(Button)`
-  min-width: 8em;
+/*
+ * Every button beside a field (Next, Copy link or Share, Send invite): sized to its label, as tall as the field.
+ */
+const ActionButton = styled(Button)`
+  /* As wide as its label; as tall as the field beside it. */
+  height: var(--control-height);
+
+  /* Phones: the rows stack (as the link row does), so every button runs full width. */
+  @media (max-width: 399px) {
+    width: 100%;
+  }
 `;
 
 /* Says "Link copied" to screen readers when the button changes. */
@@ -67,13 +66,6 @@ const HiddenTitle = styled.h2`
   white-space: nowrap;
 `;
 
-const StepText = styled.p`
-  margin: var(--space-2) 0 0;
-  font-size: var(--text-md);
-  line-height: var(--leading-body);
-  color: var(--color-text-muted);
-`;
-
 /* Icon plus text, never colour alone. */
 const Note = styled.p`
   display: flex;
@@ -84,58 +76,75 @@ const Note = styled.p`
   line-height: var(--leading-ui);
   color: var(--color-text-muted);
 
+  /* As tall as one line, so the glyph centres on the first line however many lines follow. */
   & > svg {
     flex: none;
-    margin-top: 2px;
+    height: 1lh;
   }
+  /* An error on the form (a failed send, a blocked copy): its own tinted block, set apart from the fields. */
   &[data-tone="danger"] {
+    padding: var(--space-3);
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    background: var(--color-danger-subtle);
     color: var(--color-danger);
   }
 `;
 
-const Well = styled.span`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius-full);
-  background: var(--color-mention-subtle);
-  color: var(--color-mention);
-`;
-
 export function ReferDesign({
-  unknownLink,
   panel,
   layout,
 }: {
-  unknownLink: boolean;
   panel: PanelVariant;
   layout: PanelLayout;
 }) {
-  if (unknownLink) {
-    return (
-      <SplitLayout variant={panel} layout={layout} title={copy.unknownTitle} lede={copy.unknownDescription}>
-        <Well>
-          <Icon icon={Link2Off} size={22} />
-        </Well>
-        <StepText>{copy.unknownHelp}</StepText>
-      </SplitLayout>
-    );
-  }
+  const lab = useReferLab();
   return (
     <AppToastProvider>
-      <Refer panel={panel} layout={layout} />
+      {/* Long text starts the form over with a long name and email filled in. */}
+      <Refer
+        key={lab.longText ? "long" : "normal"}
+        panel={panel}
+        layout={layout}
+        lab={lab}
+        start={lab.longText ? { view: { values: { ...LONG_VALUES, delivery: "email" } } } : undefined}
+      />
     </AppToastProvider>
   );
 }
 
-/** The form's two steps: who it's for, then how to invite them. */
-type Step = "who" | "how";
+/** The State lab's switches for this page (states.ts). */
+function useReferLab() {
+  return useStateLab(REFER_LAB);
+}
+type ReferLab = ReturnType<typeof useReferLab>;
+
+/**
+ * The demo's referFriend, answering the way the switched-on state would make the server answer. With no
+ * switch on, the demo's own answers (see data.ts for the emails that trigger each).
+ */
+async function answer(values: ReferralValues, lab?: ReferLab): Promise<ReferralResult> {
+  if (!lab) return demoReferFriend(values);
+  if (lab.saving) await new Promise((resolve) => setTimeout(resolve, SAVING_FOR));
+  if (lab.saveFailed) throw new Error("Connection failed (State lab)");
+  if (lab.rateLimited) return { status: "limit" };
+  if (lab.is("name-refused")) return { status: "invalid", fieldErrors: { name: copy.nameInvalid } };
+  if (lab.validationError) return { status: "invalid", fieldErrors: { email: copy.emailInvalid } };
+  if (lab.is("own-email")) return { status: "invalid", fieldErrors: { email: copy.ownEmail } };
+  if (lab.is("already-referred")) {
+    return { status: "message", friendName: firstNameOf(values.name), link: previewLinkFor(values.email) ?? "", referredOn: "Nov 3" };
+  }
+  // "not-emailed" answers exactly like a new referral: that's the design.
+  return demoReferFriend(values);
+}
+
+/** The form's steps: who it's for, how to invite them, then thank you. */
+type Step = "who" | "how" | "thanks";
+
 
 /** Where a demo starts: used by the edge-case gallery (/design/referrals/states) to open in a given state. */
 export interface StartState {
-  /** "who": name and email; "how": how to invite them. */
+  /** "who": name and email; "how": how to invite them; "thanks": the thank-you screen. */
   step?: Step;
   view?: View;
   delivery?: Delivery;
@@ -147,22 +156,58 @@ function Refer({
   panel,
   layout,
   start,
+  lab,
   bare = false,
 }: {
   panel?: PanelVariant;
   layout?: PanelLayout;
   start?: StartState;
+  /** The State lab's switches (the main page only; the gallery's cards don't take them). */
+  lab?: ReferLab;
   /** Just the form (no photo panel), for the gallery. */
   bare?: boolean;
 }) {
   const [view, setView] = useState<View>(start?.view ?? {});
   /** Which step the form is on; the banner's subtext follows it. */
-  const [step, setStep] = useState<Step>(start?.step ?? "who");
+  const [step, setStepState] = useState<Step>(start?.step ?? "who");
+
+  /*
+   * The step lives in the URL (?step=how, ?step=thanks; step 1 has none), so the browser's Back and Forward
+   * move between steps. Each step forward adds a history entry. Not in the gallery's cards (`bare`).
+   * A step URL opened fresh (nothing typed yet) shows step 1.
+   */
+  function setStep(next: Step, replace = false) {
+    setStepState(next);
+    if (bare) return;
+    const url = new URL(window.location.href);
+    if (next === "who") url.searchParams.delete("step");
+    else url.searchParams.set("step", next);
+    if (url.href === window.location.href) return;
+    window.history[replace ? "replaceState" : "pushState"](null, "", url);
+  }
+  useEffect(() => {
+    if (bare) return;
+    const fromUrl = (): Step => {
+      const s = new URL(window.location.href).searchParams.get("step");
+      return s === "how" || s === "thanks" ? s : "who";
+    };
+    const initial = fromUrl();
+    if (initial !== "who") {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("step");
+      window.history.replaceState(null, "", url);
+    }
+    const onPop = () => setStepState(fromUrl());
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [bare]);
+  /** The friend's first name, once step 1 is done: step 2's heading asks how to invite them. */
+  const [friendFirst, setFriendFirst] = useState(start?.view?.values ? firstNameOf(start.view.values.name) : "");
 
   // No confirmation page: the form stays put. Sent or link ready: the result shows under the button.
   // Anything else keeps what was typed and shows why.
   async function submit(values: ReferralValues): Promise<ReferralResult> {
-    const result = await demoReferFriend(values).catch((): ReferralResult => ({ status: "failed" }));
+    const result = await answer(values, lab).catch((): ReferralResult => ({ status: "failed" }));
     if (result.status === "emailed") setView({ result, sentTo: values.email.trim() });
     else setView({ result, values });
     return result;
@@ -172,12 +217,6 @@ function Refer({
   function onEditing() {
     if (view.result?.status === "emailed") setView({});
     else if (view.result?.status === "message") setView({ values: view.values });
-  }
-
-  // Switching between "Email them for me" and "I'll send it myself" starts fresh: no old error or result
-  // (what's typed stays).
-  function onChoiceChange() {
-    setView((v) => ({ values: v.values }));
   }
 
   // "Send another referral": a blank form for the next person (who gets their own link).
@@ -191,10 +230,12 @@ function Refer({
       start={start}
       step={step}
       onStep={setStep}
+      onFriend={setFriendFirst}
       onSubmit={submit}
       onEditing={onEditing}
-      onChoiceChange={onChoiceChange}
       onNew={onNew}
+      offline={lab?.offline ?? false}
+      copyBlocked={lab?.is("copy-blocked") ?? false}
     />
   );
   if (bare) return form;
@@ -202,20 +243,13 @@ function Refer({
     <SplitLayout
       variant={panel}
       layout={layout}
-      title={copy.sendTitle}
-      lede={step === "who" ? copy.whoDescription : copy.howDescription}
+      title={step === "how" ? copy.headingHow(friendFirst) : copy.headingWho(REFERRER.firstName)}
+      photo={step !== "thanks"}
     >
       {form}
     </SplitLayout>
   );
 }
-
-/* SubmitButton-style label: text then icon. */
-const WithIcon = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-`;
 
 /* An input with its button beside it, the button stretched to the input's height. */
 const LinkRow = styled.div`
@@ -225,40 +259,162 @@ const LinkRow = styled.div`
   grid-auto-flow: column;
   gap: var(--space-2);
 
-  @media (min-width: 400px) {
-    & > button {
-      height: 100%;
-    }
-  }
-
   @media (max-width: 399px) {
     grid-auto-flow: row;
   }
 `;
 
-/* The friend's link is shown, not edited: it can't be clicked into or focused (Copy link copies it). */
-const StaticLink = styled(Input)`
-  pointer-events: none;
-  user-select: none;
+/*
+ * Step 2's rows on one grid: the field column, then a button column as wide as the widest button. Each Field
+ * and its control row are subgrids, so Send invite and Copy link share both edges without a fixed width.
+ */
+const ActionGrid = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  column-gap: var(--space-2);
+  row-gap: var(--space-4);
+
+  /* Notes span the row. */
+  & > p {
+    grid-column: 1 / -1;
+  }
+  /* A Field: spans both columns and shares them (its own 6px label gap stays as the row gap). A disabled
+     Field comes wrapped in the kit's DisabledArea (a span), which passes the columns through the same way. */
+  & > div,
+  & > span,
+  & > span > div {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: subgrid;
+    column-gap: var(--space-2);
+  }
+  & > div > *,
+  & > span > div > * {
+    grid-column: 1 / -1;
+  }
+  & > div > ${LinkRow},
+  & > span > div > ${LinkRow} {
+    grid-template-columns: subgrid;
+  }
+
+  /* Phones: one column; the buttons stack under their fields, full width. */
+  @media (max-width: 399px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
 `;
 
-/* "Invitation sent to …": green check plus text, never colour alone. */
-const SentNote = styled.p`
+/* The friend's link is shown, not edited: clicking it selects the whole link. */
+const StaticLink = styled(Input)``;
+
+
+/* The thank-you screen: a heart, the thanks, one line on what happened, then the next action. */
+const ThanksBlock = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+
+  & > h1 {
+    margin: var(--space-1) 0 0;
+    /* The same size as the banner heading on the other steps. */
+    font-size: var(--text-xl);
+    font-weight: var(--weight-medium);
+    line-height: var(--leading-heading);
+    color: var(--color-text);
+  }
+  & > p {
+    margin: 0;
+    font-size: var(--text-sm);
+    line-height: var(--leading-body);
+    color: var(--color-text-muted);
+  }
+`;
+
+/*
+ * The thank-you moment (a brand screen, so it may use the brand entrance tokens; see docs/design/motion.md):
+ * the heart's outline draws itself, then fills, then the words fade in. No scaling, nothing springs.
+ * Reduced motion is handled globally (everything shows at once).
+ */
+const draw = keyframes`
+  from {
+    stroke-dashoffset: 72;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+`;
+const fillIn = keyframes`
+  from {
+    fill-opacity: 0;
+  }
+  to {
+    fill-opacity: 1;
+  }
+`;
+const appear = keyframes`
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+`;
+
+const ThanksHeart = styled.span`
+  display: inline-flex;
+  color: var(--color-mention);
+
+  & path {
+    fill: currentColor;
+    fill-opacity: 0;
+    /* The heart's outline is about 70 units long at 24px; 72 hides all of it before it draws. */
+    stroke-dasharray: 72;
+    stroke-dashoffset: 72;
+    animation:
+      ${draw} var(--duration-enter) var(--ease-out) forwards,
+      ${fillIn} var(--duration-slow) var(--ease-out) var(--duration-enter) forwards;
+  }
+
+  & ~ * {
+    opacity: 0;
+    animation: ${appear} var(--duration-slow) var(--ease-out) var(--duration-enter) forwards;
+  }
+`;
+
+/*
+ * "Thanks for sharing SDC with Priya" after copying or sharing: a soft tinted bar with a filled heart (the
+ * thank-you heart's colours), fading in so it's noticed. Text stays in the body colour (icon plus words,
+ * never colour alone).
+ */
+const SharedNote = styled.p`
   display: flex;
   align-items: flex-start;
   gap: var(--space-2);
   margin: 0;
+  padding: var(--space-3);
+  /* Same box as a field (a 1px edge), so the text inside starts on the fields' text column. */
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--color-mention-subtle);
   font-size: var(--text-sm);
   line-height: var(--leading-ui);
-  color: var(--color-success);
+  color: var(--color-text);
+  animation: ${appear} var(--duration-slow) var(--ease-out);
 
-  &:empty {
-    display: none;
-  }
+  /* As tall as one line, so the glyph centres on the first line. */
   & > svg {
     flex: none;
-    margin-top: 2px;
+    height: 1lh;
+    color: var(--color-mention);
+    fill: currentColor;
   }
+`;
+
+const ThanksActions = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
 `;
 
 const Panel = styled.form`
@@ -267,47 +423,38 @@ const Panel = styled.form`
   gap: var(--space-4);
 `;
 
-const Choice = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-`;
-
 /* The button at the bottom right of the form. */
 const SubmitRow = styled.div`
   display: flex;
   justify-content: flex-end;
 `;
 
-/* The friend's own link, once "I'll send it myself" has made it. */
-const LinkResult = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--color-border);
-`;
-
 /* "Did you mean …?" under the email field: a likely typo in a common email domain. */
+/* Reads as one sentence: normal word spacing, the "?" right after the address, a little air above it. */
 const Suggest = styled.span`
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-1);
+  display: block;
+  margin-top: var(--space-1);
 
   & > button {
+    display: inline;
     height: auto;
-    padding: 0 var(--space-1);
+    padding: 0;
+    border: 0;
     font-size: inherit;
+    line-height: inherit;
     text-decoration: underline;
+    text-underline-offset: 2px;
   }
 `;
 
-/** Whether this browser has a system share sheet (most phones). False on the server and most desktops. */
+/**
+ * Phones and tablets with a share sheet. Desktop browsers can have navigator.share too (Chrome on Windows),
+ * but people there expect Copy link, so it also needs a touch screen as the main pointer.
+ */
 function useCanShare() {
   return useSyncExternalStore(
     () => () => {},
-    () => typeof navigator.share === "function",
+    () => typeof navigator.share === "function" && window.matchMedia("(pointer: coarse)").matches,
     () => false,
   );
 }
@@ -340,87 +487,172 @@ function Spinner() {
   );
 }
 
-/* Step 2's first line: who the invite is for, and Change. */
-const Recipient = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
-  /* One step darker than the card (taupe-100 in light mode; its dark-mode match in dark). */
-  background: var(--color-secondary);
-  font-size: var(--text-sm);
-  line-height: var(--leading-ui);
-  color: var(--color-text);
-
-  & strong {
-    font-weight: var(--weight-medium);
-  }
-  & > span {
-    min-width: 0;
-    overflow-wrap: anywhere;
-  }
-
-  /* Change: the ghost button's usual hover matches this box's shade, so it gets the next shade down. */
-  & > button:hover:not(:disabled):not([aria-disabled="true"]) {
-    background: var(--color-bg-selected);
-  }
-`;
-
-const RecipientLabel = styled.span`
-  display: block;
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-`;
-
-const RecipientEmail = styled.span`
-  color: var(--color-text-muted);
-`;
 
 /* The link field. */
 const LinkBlock = styled.div`
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-`;
-
-/* Under "Invitation sent to …": the credit window, in the muted text colour. */
-const CreditLine = styled.span`
-  display: block;
-  margin-top: 2px;
-  color: var(--color-text-muted);
-`;
-
-/* "Send another referral", at the bottom left, set apart by a line. */
-const Another = styled.div`
-  display: flex;
-  padding-top: var(--space-3);
-  border-top: 1px solid var(--color-border);
-`;
-
-/*
- * "Send another referral": a button that reads as a text link (underlined, no box, no icon), in link blue.
- * The kit has no link colour token yet; --color-info is the system's blue (lighter in dark mode).
- */
-const TextLink = styled(Button)`
-  height: auto;
-  padding: 0;
-  font-weight: var(--weight-medium);
-  color: var(--color-info);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-
-  &:hover:not(:disabled) {
-    background: transparent;
-    text-decoration-thickness: 2px;
-  }
+  /* Full width, also inside the thank-you block (which lines its items up on the left). */
+  align-self: stretch;
 `;
 
 /* After a failed copy, the link can be selected and copied by hand. */
 const SelectableLink = styled(Input)`
   user-select: all;
 `;
+
+/* Offline: an info-tone bar (nothing is broken), as every screen does it (docs/design/state-lab.md, rule 19). */
+const OfflineNote = styled.p`
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-3);
+  /* Same box as a field (a 1px edge), so the text inside starts on the fields' text column. */
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--color-info-subtle);
+  font-size: var(--text-sm);
+  line-height: var(--leading-ui);
+  color: var(--color-text);
+
+  /* As tall as one line, so the glyph centres on the first line. */
+  & > svg {
+    flex: none;
+    height: 1lh;
+    color: var(--color-info);
+  }
+`;
+
+function OfflineBar() {
+  return (
+    <OfflineNote role="status">
+      <Icon icon={WifiOff} size={16} />
+      {copy.offline}
+    </OfflineNote>
+  );
+}
+
+/* The field and its offered ending, stacked: the ending sits exactly where the typed text ends. */
+const Completion = styled.div`
+  position: relative;
+  min-width: 0;
+`;
+
+/* Same box as the input's text (a transparent 1px border and the same inline padding), so they line up. */
+const Ghost = styled.span`
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-3);
+  border: 1px solid transparent;
+  overflow: hidden;
+  pointer-events: none;
+  font-size: var(--text-sm);
+  line-height: var(--leading-none);
+  white-space: pre;
+`;
+
+const Typed = styled.span`
+  color: transparent;
+`;
+
+const Ending = styled.span`
+  color: var(--color-text-muted);
+`;
+
+/*
+ * The Tab key hint, right after the offered ending: the kit's shortcut chip as a key outline (border, no
+ * fill), a little taller so it reads as a key, in the smallest kit type size.
+ */
+const KeyHint = styled(DropdownMenuShortcut)`
+  margin-left: 0;
+  padding: var(--space-1);
+  /* The UI font, not mono, with the kit's tight tracking: smaller and closer-set at the same --text-xs. */
+  font-family: inherit;
+  letter-spacing: var(--tracking-tight);
+  background: transparent;
+  /* Light: a hint, not a control (hidden from screen readers), so it needn't meet the 3:1 border rule. */
+  border-color: var(--color-border);
+  /* Clicking or tapping it completes the address too (the pointer path for Tab, and phones have no Tab key). */
+  pointer-events: auto;
+  cursor: pointer;
+`;
+
+/**
+ * An email field that finishes the address: "priya@g" shows "mail.com" after the cursor, faintly, with a Tab
+ * key beside it. Tab (or →) accepts it; typing anything else carries on as normal.
+ */
+function EmailInput({
+  fieldProps,
+  inputRef,
+  value,
+  onValue,
+  invalid,
+  placeholder,
+}: {
+  fieldProps: React.ComponentProps<typeof Input>;
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  value: string;
+  onValue: (value: string) => void;
+  invalid?: boolean;
+  placeholder?: string;
+}) {
+  const [focused, setFocused] = useState(false);
+  const ending = focused && !invalid ? completeEmail(value) : null;
+
+  function accept() {
+    if (!ending) return;
+    const full = value + ending;
+    if (inputRef.current) inputRef.current.value = full;
+    onValue(full);
+  }
+
+  return (
+    <Completion>
+      <Input
+        {...fieldProps}
+        ref={inputRef}
+        type="email"
+        name="email"
+        aria-required
+        placeholder={placeholder}
+        autoComplete="off"
+        maxLength={254}
+        defaultValue={value}
+        onChange={(e) => onValue(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        onKeyDown={(e) => {
+          if (!ending || e.shiftKey || (e.key !== "Tab" && e.key !== "ArrowRight")) return;
+          // Email fields don't report the cursor position; the ending only shows while typing at the end.
+          e.preventDefault();
+          accept();
+        }}
+      />
+      {ending && (
+        <Ghost aria-hidden="true">
+          <span>
+            <Typed>{value}</Typed>
+            <Ending>{ending}</Ending>
+          </span>
+          <KeyHint
+            onMouseDown={(e) => {
+              // Keep focus in the field (a blur would hide the ending before the click lands).
+              e.preventDefault();
+              accept();
+            }}
+          >
+            {copy.completeKey}
+          </KeyHint>
+        </Ghost>
+      )}
+    </Completion>
+  );
+}
 
 /**
  * The form: the recipient's first name and email, then how to invite them: SDC emails them (Send invite),
@@ -434,32 +666,33 @@ function SharePanel({
   start,
   onSubmit,
   onEditing,
-  onChoiceChange,
   onNew,
   step,
   onStep: setStep,
+  onFriend,
+  offline = false,
+  copyBlocked = false,
 }: {
   view: View;
   start?: StartState;
   onSubmit: (values: ReferralValues) => Promise<ReferralResult>;
   onEditing: () => void;
-  onChoiceChange: () => void;
   onNew: () => void;
   step: Step;
-  onStep: (step: Step) => void;
+  /** Moves to a step. `replace` for corrections (a failed send), so Back doesn't land on a dead step. */
+  onStep: (step: Step, replace?: boolean) => void;
+  onFriend: (firstName: string) => void;
+  /** No connection: actions that need the server wait (with why); typing and Next still work. */
+  offline?: boolean;
+  /** The browser refuses the copy (State lab). */
+  copyBlocked?: boolean;
 }) {
   const canShare = useCanShare();
   /** Mistakes found on Next (before anything is sent). */
   const [stepErrors, setStepErrors] = useState<{ name?: string; email?: string } | null>(null);
-  const choiceRef = useRef<HTMLDivElement>(null);
-  const [delivery, setDelivery] = useState<Delivery>(start?.delivery ?? "email");
-  const deliveryLabelId = useId();
+  const recipientRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState(view.values?.name ?? "");
   const [email, setEmail] = useState(view.values?.email ?? "");
-  const hasName = name.trim() !== "";
-  const hasEmail = email.trim() !== "";
-  /** Why Send invite / Copy link is unavailable, for its tooltip; null once both fields have something in them. */
-  const missing = !hasName && !hasEmail ? copy.needBoth : !hasName ? copy.needName : !hasEmail ? copy.needEmail : null;
   const [pending, startTransition] = useTransition();
   /** Which action is running, for its progress label ("Sending…", "Getting link…"). */
   const [running, setRunning] = useState<"send" | "link" | null>(null);
@@ -469,9 +702,8 @@ function SharePanel({
 
   /** True for a few seconds after copying: the button shows a check and "Copied". */
   const [copied, setCopied] = useState(start?.copied ?? false);
-  /** Their link has been copied at least once (so they may already have it): Change asks first. */
+  /** Their link has been copied or shared: the thanks line shows under it. */
   const [linkCopied, setLinkCopied] = useState(start?.copied ?? false);
-  const [confirmChange, setConfirmChange] = useState(false);
   /** The browser blocked the copy: the link becomes selectable and a note says to copy it by hand. */
   const [copyFailed, setCopyFailed] = useState(start?.copyFailed ?? false);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -479,15 +711,18 @@ function SharePanel({
 
   const { result } = view;
   const fieldErrors = stepErrors ?? (result?.status === "invalid" ? result.fieldErrors : {});
-  // No daily limit (Nov 23): the only form-wide error is a failed connection.
+  // Form-wide errors: a failed connection, or the daily limit (kept, PM Nov 23).
   const formError = result?.status === "failed" ? copy.failed : undefined;
+  /** Ten referrals today (the daily limit): a thank-you note, and new invites wait until tomorrow. */
+  const limitReached = result?.status === "limit";
   const link = result?.status === "message" ? result : undefined;
   // Always show a link: the recorded one once it exists, else the one their email will get.
   const shownLink = link ? link.link : (previewLinkFor(email) ?? undefined);
-  /** Once something has gone out (sent, or a link made): offer a fresh form for the next person. */
-  const done = result?.status === "emailed" || result?.status === "message";
+  /** Who the thank-you screen names. */
+  const friend = firstNameOf(name) || (result && "friendName" in result ? result.friendName : "");
   // A likely typo ("gmial.com"), offered before sending so the referral isn't tracked to a dead address.
-  const suggestion = fieldErrors.email ? null : suggestEmail(email);
+  // Only for a finished address with a typo ("gmial.com"); while typing, the field offers the ending instead.
+  const suggestion = fieldErrors.email || completeEmail(email) ? null : suggestEmail(email);
 
   function clearFields() {
     if (nameRef.current) nameRef.current.value = "";
@@ -501,43 +736,34 @@ function SharePanel({
     const errors = checkRecipient(name, email);
     setStepErrors(errors);
     if (errors) return;
+    onFriend(firstNameOf(name));
     setStep("how");
-    requestAnimationFrame(() => choiceRef.current?.querySelector<HTMLElement>('[role="radio"][data-state="checked"]')?.focus());
+    // Focus lands on their email (not a button): the first thing on the step, and what to check.
+    requestAnimationFrame(() => recipientRef.current?.focus());
   }
 
-  /**
-   * Change, after their link was copied or the invite was emailed: they may already have it, so confirm
-   * first. What went out keeps working (and counting) for them; a new recipient gets their own.
-   */
-  function askBack() {
-    if ((linkCopied && link) || result?.status === "emailed") setConfirmChange(true);
-    else back();
-  }
-
-  /** Back to step 1 to change who it's for (the choice and anything typed stay). */
-  function back() {
-    setConfirmChange(false);
-    setLinkCopied(false);
-    setStep("who");
-    setCopied(false);
-    setCopyFailed(false);
-    onChoiceChange();
-    requestAnimationFrame(() => nameRef.current?.focus());
-  }
 
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    // Enter on step 1 means Next; on step 2 only "Email them for me" submits.
+    // Enter on step 1 means Next; on step 2 it sends the invite.
     if (step === "who") {
       next();
       return;
     }
-    if (delivery !== "email") return;
+    if (offline) return;
+    // The email can be edited on this step, so check it again first.
+    const errors = checkRecipient(name, email);
+    setStepErrors(errors);
+    if (errors) return;
+    // Straight to the thank-you screen; sending finishes behind it. If it fails, back to this step with why.
+    setStep("thanks");
     setRunning("send");
     startTransition(async () => {
-      // Sent: the summary stays, showing who it went to; "Send another referral" starts again.
       const r = await onSubmit({ name, email, delivery: "email" });
-      if (r.status === "invalid") setStep("who");
+      // A problem with the name goes back to step 1; with the email (invalid, or their own), step 2 has the
+      // email field, so it stays there. Anything else that isn't "emailed" comes back to step 2 with why.
+      if (r.status === "invalid") setStep(r.fieldErrors.name ? "who" : "how", true);
+      else if (r.status !== "emailed") setStep("how", true);
     });
   }
 
@@ -564,7 +790,8 @@ function SharePanel({
 
   /** Records the referral first if needed (same checks as Send invite), then hands over their link. */
   function withTheirLink(handOver: (url: string) => Promise<void>) {
-    if (link && shownLink) {
+    // Already recorded, or offline with the link on screen: hand it over as it is (copying needs no connection).
+    if ((link || offline) && shownLink) {
       void handOver(shownLink);
       return;
     }
@@ -572,12 +799,13 @@ function SharePanel({
     startTransition(async () => {
       const r = await onSubmit({ name, email, delivery: "self" });
       if (r.status === "message") await handOver(r.link);
-      if (r.status === "invalid") setStep("who");
+      if (r.status === "invalid" && r.fieldErrors.name) setStep("who", true);
     });
   }
 
   async function copyLink(text: string) {
     try {
+      if (copyBlocked) throw new Error("Copy blocked (State lab)");
       await navigator.clipboard.writeText(text);
       setCopyFailed(false);
       setCopied(true);
@@ -610,67 +838,112 @@ function SharePanel({
     onEditing();
   }
 
-  const linkField = (forFriend: NonNullable<typeof link> | undefined) => (
-    <LinkBlock>
-      <Field
-        label={forFriend ? copy.friendLinkLabel(forFriend.friendName) : copy.linkLabel}
-        // Once there's a link to send: only the first person to join with it counts.
-        hint={shownLink ? copy.linkUnique : undefined}
-      >
+
+  /**
+   * Their link with Copy link (Share on phones). On the thank-you screen the referral is already recorded
+   * (the email went out), so Copy link just copies, under a plain label.
+   */
+  const linkField = (forFriend: NonNullable<typeof link> | undefined, afterSend = false) => (
+    <Field label={afterSend ? copy.friendLinkLabel(friend) : copy.linkRowLabel(friend)}>
         {(p) => (
           <LinkRow>
             {copyFailed && forFriend ? (
               <SelectableLink {...p} ref={linkRef} readOnly value={shownLink} onFocus={(e) => e.currentTarget.select()} />
             ) : (
-              // Their link, shown as soon as their email is typed (the field says so until then).
-              <StaticLink {...p} readOnly tabIndex={-1} value={shownLink ?? ""} placeholder={copy.linkPlaceholder} />
+              // Their link, shown as soon as their email is typed. Clicking it selects it (to copy by hand);
+              // only the button copies.
+              <StaticLink
+                {...p}
+                readOnly
+                value={shownLink ?? ""}
+                placeholder={copy.linkPlaceholder}
+                onFocus={(e) => e.currentTarget.select()}
+                onClick={(e) => e.currentTarget.select()}
+              />
             )}
-            {/* Waits for the name and email, so the referral is tracked against that address; until then a
-                tooltip says what's missing. (Once their link exists it can always be copied again.) */}
-            {!forFriend && missing ? (
-              <DisabledReason reason={missing}>
-                <Button type="button" $variant="outline">
-                  {copy.copyLink}
-                  <Icon icon={Copy} />
+            {/* Phones (where the browser can share): Share opens the system share sheet. Laptops: Copy link. */}
+            {(offline && !shownLink) || (limitReached && !link) ? (
+              <DisabledReason
+                reason={limitReached ? copy.limitReason : canShare ? copy.offlineShare : copy.offlineCopy}
+              >
+                <Button type="button" $variant="outline" style={{ height: "var(--control-height)" }}>
+                  {canShare ? copy.share : copy.copyLink}
                 </Button>
               </DisabledReason>
+            ) : canShare ? (
+              <ActionButton type="button" $variant="outline" disabled={pending} aria-busy={pending || undefined} onClick={shareTheirLink}>
+                {pending && running === "link" ? <Spinner /> : <Icon icon={Share2} />}
+                {pending && running === "link" ? copy.gettingLink : copy.share}
+              </ActionButton>
             ) : (
-              <CopyButton
+              <ActionButton
                 type="button"
                 $variant="outline"
-                disabled={!forFriend && pending}
+                disabled={pending}
                 aria-busy={pending || undefined}
-                onClick={forFriend && delivery === "email" ? () => void copyLink(shownLink ?? "") : copyTheirLink}
+                onClick={afterSend ? () => void copyLink(shownLink ?? "") : copyTheirLink}
               >
-                {pending && running === "link" ? copy.gettingLink : copied ? copy.copiedShort : copy.copyLink}
                 {pending && running === "link" ? <Spinner /> : <Icon icon={copied ? Check : Copy} />}
-              </CopyButton>
-            )}
-            {/* Phones (where the browser can share): Share opens the system share sheet. */}
-            {canShare && delivery === "self" && !(!forFriend && missing) && (
-              <Button type="button" $variant="outline" disabled={pending} onClick={shareTheirLink}>
-                {copy.share}
-                <Icon icon={Share2} />
-              </Button>
+                {pending && running === "link" ? copy.gettingLink : copied ? copy.copiedShort : copy.copyLink}
+              </ActionButton>
             )}
           </LinkRow>
         )}
-      </Field>
-    </LinkBlock>
+    </Field>
   );
+
+  if (step === "thanks") {
+    return (
+      <Panel aria-label={copy.sendTitle} onSubmit={(e) => e.preventDefault()}>
+        {offline && <OfflineBar />}
+        <ThanksBlock role="status">
+          <ThanksHeart>
+            <Icon icon={Heart} size={40} />
+          </ThanksHeart>
+          <h1>{copy.thanksTitle(friend)}</h1>
+          {copyFailed && (
+            <Note role="alert" data-tone="danger">
+              <Icon icon={CircleAlert} size={16} />
+              {copy.copyFailedLink}
+            </Note>
+          )}
+          <ThanksActions>
+            <Button type="button" onClick={startNew}>
+              <Icon icon={Plus} />
+              {copy.again}
+            </Button>
+            {/* Their link too, to send another way (a text, a chat). The email already recorded the invite. */}
+            {/* Works offline too: the link exists (the email recorded it) and copying needs no connection. */}
+            {shownLink && (
+              <Button type="button" $variant="outline" onClick={() => void copyLink(shownLink)}>
+                <Icon icon={copied ? Check : Copy} />
+                {copied ? copy.copiedShort : copy.copyLink}
+              </Button>
+            )}
+          </ThanksActions>
+          {/* The browser blocked the copy: show the link, selected, to copy by hand. */}
+          {copyFailed && shownLink && <LinkBlock>{linkField(undefined, true)}</LinkBlock>}
+        </ThanksBlock>
+      </Panel>
+    );
+  }
 
   return (
     <Panel onSubmit={submit} noValidate aria-label={copy.sendTitle}>
       {/* Not shown: the photo panel already says what this is. Kept for screen readers. */}
       <HiddenTitle>{copy.formTitle}</HiddenTitle>
+      {offline && <OfflineBar />}
       {step === "who" ? (
         <>
-      <Field label={copy.nameLabel} required error={fieldErrors.name}>
+      {/* Both fields are required, so neither is marked: Next says what's missing. */}
+      <Field label={copy.nameLabel} error={fieldErrors.name}>
         {(p) => (
           <Input
             {...p}
+            aria-required
             ref={nameRef}
             name="name"
+            placeholder={copy.namePlaceholder}
             autoComplete="off"
             maxLength={80}
             defaultValue={name}
@@ -683,12 +956,11 @@ function SharePanel({
       </Field>
       <Field
         label={copy.emailLabel}
-        required
         error={fieldErrors.email}
         hint={
           suggestion && (
             <Suggest>
-              {copy.didYouMean}
+              {copy.didYouMean}{" "}
               <Button
                 type="button"
                 $variant="ghost"
@@ -700,119 +972,97 @@ function SharePanel({
                 }}
               >
                 {suggestion}
-              </Button>
-              ?
+              </Button>?
             </Suggest>
           )
         }
       >
         {(p) => (
-          <Input
-            {...p}
-            ref={emailRef}
-            type="email"
-            name="email"
-            autoComplete="off"
-            maxLength={254}
-            defaultValue={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
+          <EmailInput
+            fieldProps={p}
+            inputRef={emailRef}
+            value={email}
+            invalid={Boolean(fieldErrors.email)}
+            placeholder={copy.emailPlaceholder}
+            onValue={(v) => {
+              setEmail(v);
               edited();
             }}
           />
         )}
       </Field>
       <SubmitRow>
-        {/* Next waits for both fields (tooltip says what's missing), then checks them. */}
-        {missing ? (
-          // Same as DisabledReason (unavailable, stays focusable, tooltip says why), without its lock icon.
-          <Tooltip content={missing}>
-            <Button type="submit" aria-disabled onClick={(event) => event.preventDefault()}>
-              <WithIcon>
-                {copy.next}
-                <Icon icon={ArrowRight} />
-              </WithIcon>
-            </Button>
-          </Tooltip>
-        ) : (
-          <Button type="submit">
-            <WithIcon>
-              {copy.next}
-              <Icon icon={ArrowRight} />
-            </WithIcon>
-          </Button>
-        )}
+        {/* Always available: pressing it with something missing or wrong shows why under that field. */}
+        <ActionButton type="submit">{copy.next}</ActionButton>
       </SubmitRow>
         </>
       ) : (
         <>
-      {/* Step 2: who it's for, with Change to go back. */}
-      <Recipient>
-        <span>
-          <RecipientLabel>{copy.invitingLabel}</RecipientLabel>
-          <strong>{name.trim()}</strong> <RecipientEmail>– {email.trim()}</RecipientEmail>
-        </span>
-        <Button type="button" $variant="ghost" $size="sm" onClick={askBack}>
-            {copy.change}
-            <Icon icon={RefreshCw} />
-          </Button>
-      </Recipient>
-      <Choice ref={choiceRef}>
-        <Label id={deliveryLabelId}>{copy.deliveryLabel}</Label>
-        <RadioGroup
-          value={delivery}
-          onValueChange={(v) => {
-            setDelivery(v as Delivery);
-            setCopied(false);
-            setCopyFailed(false);
-            onChoiceChange();
-          }}
-          aria-labelledby={deliveryLabelId}
-        >
-          <RadioGroupOption value="email" label={copy.deliveryEmail} />
-          <RadioGroupOption value="self" label={copy.deliverySelf} />
-        </RadioGroup>
-      </Choice>
+      {/*
+        Step 2: the two ways to invite them, one row each, each with its own label and button (as Gusto does):
+        SDC emails them (their email, editable here, with Send invite beside it), or the member sends the link
+        themselves (with Copy link, or Share on phones). Both rows share one grid (ActionGrid), so the two
+        buttons are one width: the wider label's.
+      */}
+      <ActionGrid>
+      <Field
+        label={copy.emailRowLabel(friend)}
+        error={fieldErrors.email}
+        {...(limitReached ? { disabled: true as const, disabledReason: copy.limitReason } : { disabled: false as const })}
+      >
+        {(p) => (
+          <LinkRow>
+            <EmailInput
+              fieldProps={p}
+              inputRef={recipientRef}
+              value={email}
+              invalid={Boolean(fieldErrors.email)}
+              onValue={(v) => {
+                setEmail(v);
+                edited();
+              }}
+            />
+            {offline || limitReached ? (
+              <DisabledReason reason={limitReached ? copy.limitReason : copy.offlineSend}>
+                <Button type="button" style={{ height: "var(--control-height)" }}>
+                  {copy.submitEmail}
+                </Button>
+              </DisabledReason>
+            ) : (
+              <ActionButton type="submit" disabled={pending} aria-busy={pending || undefined}>
+                {pending && running === "send" ? <Spinner /> : <Icon icon={Send} />}
+                {pending && running === "send" ? copy.sending : copy.submitEmail}
+              </ActionButton>
+            )}
+          </LinkRow>
+        )}
+      </Field>
       {formError && (
         <Note role="alert" data-tone="danger">
           <Icon icon={CircleAlert} size={16} />
           {formError}
         </Note>
       )}
-      {delivery === "email" ? (
-        <SubmitRow>
-          {/* Disabled until the name and email both have something in them (they're checked on send); a
-              tooltip on hover, focus or tap says what's missing. */}
-          {missing ? (
-            <DisabledReason reason={missing}>
-              <Button type="submit">
-                <WithIcon>
-                  {copy.submitEmail}
-                  <Icon icon={Send} />
-                </WithIcon>
-              </Button>
-            </DisabledReason>
-          ) : (
-            <Button type="submit" disabled={pending} aria-busy={pending || undefined}>
-              <WithIcon>
-                {pending && running === "send" ? copy.sending : copy.submitEmail}
-                {pending && running === "send" ? <Spinner /> : <Icon icon={Send} />}
-              </WithIcon>
-            </Button>
-          )}
-        </SubmitRow>
-      ) : (
-        // "I'll send it myself": shown only for this choice. Until the friend's link is made, the field
-        // previews the member's link; Copy link records the referral and swaps in theirs.
-        <>
-          {link?.referredOn && (
-            <Note>
-              <Icon icon={Info} size={16} />
-              {copy.alreadyInvited(link.friendName, link.referredOn)}
-            </Note>
-          )}
-          {linkField(link)}
-        </>
+      {limitReached && (
+        <SharedNote role="status">
+          <Icon icon={Heart} size={16} />
+          {copy.limit}
+        </SharedNote>
+      )}
+      {link?.referredOn && (
+        <SharedNote>
+          <Icon icon={Heart} size={16} />
+          {copy.alreadyInvited(friend, link.referredOn)}
+        </SharedNote>
+      )}
+      {linkField(link)}
+      </ActionGrid>
+      {/* After copying or sharing: thanks, right where they acted. The page stays put. */}
+      {linkCopied && !copyFailed && (
+        <SharedNote>
+          <Icon icon={Heart} size={16} />
+          {copy.linkThanks(friend)}
+        </SharedNote>
       )}
         </>
       )}
@@ -824,66 +1074,6 @@ function SharePanel({
           {copy.copyFailedLink}
         </Note>
       )}
-      <SentNote role="status">
-        {result?.status === "emailed" && view.sentTo && (
-          <>
-            <Icon icon={CircleCheck} size={16} />
-            <span>
-              {copy.sentNote(view.sentTo)}
-              <CreditLine>{copy.creditWindow}</CreditLine>
-            </span>
-          </>
-        )}
-      </SentNote>
-      {/* Email them for me, but they were invited before: no email; their link to send instead. */}
-      {delivery === "email" && link && (
-        <LinkResult>
-          {link.referredOn && (
-            <Note>
-              <Icon icon={Info} size={16} />
-              {copy.alreadyInvited(link.friendName, link.referredOn)}
-            </Note>
-          )}
-          {linkField(link)}
-        </LinkResult>
-      )}
-      {/* Only once something has gone out: a blank form for the next person, who gets their own link. */}
-      {done && (
-        <Another>
-          <TextLink type="button" $variant="ghost" onClick={startNew}>
-            {copy.sendAnother}
-          </TextLink>
-        </Another>
-      )}
-      <AlertDialog open={confirmChange} onOpenChange={setConfirmChange}>
-        <AlertDialogContent>
-          <AlertDialogTitle>{copy.changeTitle}</AlertDialogTitle>
-          <AlertDialogDescription>
-            {result?.status === "emailed"
-              ? copy.changeDescriptionEmailed(result.friendName, view.sentTo ?? email.trim())
-              : copy.changeDescription(link?.friendName ?? name.trim())}
-          </AlertDialogDescription>
-          <AlertDialogActions>
-            <AlertDialogCancel asChild>
-              <Button type="button" $variant="secondary">
-                {copy.cancel}
-              </Button>
-            </AlertDialogCancel>
-            <AlertDialogAction asChild>
-              <Button
-                type="button"
-                onClick={() => {
-                  setConfirmChange(false);
-                  startNew();
-                }}
-              >
-                {copy.changeConfirm}
-                <Icon icon={Plus} />
-              </Button>
-            </AlertDialogAction>
-          </AlertDialogActions>
-        </AlertDialogContent>
-      </AlertDialog>
     </Panel>
   );
 }
@@ -993,18 +1183,18 @@ const CASES: { section: string; cases: GalleryCase[] }[] = [
   {
     section: "Sending by email",
     cases: [
-      { title: "Step 1: who it's for", about: "Next waits for both fields (a tooltip says what's missing), then checks them before showing the choice." },
+      { title: "Step 1: who it's for", about: "Neither field is marked required (both are). Next checks them and says what's missing under each." },
       {
         title: "Step 2: how to invite them",
-        about: "Who it's for, with Change to go back, then the choice. Email them for me shows Send invite.",
+        about: "Who it's for, with Change to go back, then both ways to invite them: copy their link, or Send invite to email it.",
         start: { step: "how", view: { values: { name: "Priya", email: "priya@example.org", delivery: "email" } } },
       },
       {
-        title: "Invitation sent",
+        title: "Thank you (emailed)",
         about:
-          "No confirmation page. The note says it's sent and that joining within 30 days counts. \"Send another referral\" clears the form for the next person.",
+          "Send invite goes straight here; sending finishes behind it. If it fails, the form comes back with why. \"Invite someone else\" starts a blank form.",
         start: {
-          step: "how",
+          step: "thanks",
           view: {
             result: { status: "emailed", friendName: "Priya" },
             sentTo: "priya@example.org",
@@ -1015,9 +1205,9 @@ const CASES: { section: string; cases: GalleryCase[] }[] = [
       {
         title: "Already a member, unsubscribed, or invited by someone else",
         about:
-          "Looks exactly like \"Invitation sent\", so the form can't be used to find out who's a member or who invited whom. SDC doesn't email them (and never emails someone who unsubscribed).",
+          "Looks exactly like the thank-you screen, so the form can't be used to find out who's a member or who invited whom. SDC doesn't email them (and never emails someone who unsubscribed).",
         start: {
-          step: "how", view: { result: { status: "emailed", friendName: "Lee" }, sentTo: "lee@example.org" } },
+          step: "thanks", view: { result: { status: "emailed", friendName: "Lee" }, sentTo: "lee@example.org" } },
       },
       {
         title: "Already invited by this member",
@@ -1075,23 +1265,23 @@ const CASES: { section: string; cases: GalleryCase[] }[] = [
     ],
   },
   {
-    section: "I'll send it myself",
+    section: "Copying their link",
     cases: [
       {
         title: "Before copying",
         about:
-          "Their link shows as soon as their email is typed. Copy link waits for the name and email, because the referral is tracked against that address.",
+          "Their link shows straight away. Clicking the link selects it; Copy link copies it. On phones the button is Share instead.",
         start: {
           step: "how", delivery: "self", view: { values: { name: "Priya", email: "priya@example.org", delivery: "self" } } },
       },
       {
         title: "Copied",
         about:
-          "Copy link records the referral, then copies that friend's own link. Copying again doesn't record it twice.",
+          "Copying stays on the page: the button says Copied for a moment, and a thank-you line appears under the link. Copying again doesn't record it twice.",
         start: {
           step: "how",
-          delivery: "self",
           copied: true,
+          delivery: "self",
           view: {
             result: { status: "message", friendName: "Priya", link: newLink },
             values: { name: "Priya", email: "priya@example.org", delivery: "self" },
@@ -1130,31 +1320,16 @@ const CASES: { section: string; cases: GalleryCase[] }[] = [
     section: "Failures",
     cases: [
       {
+        title: "Ten referrals today",
+        about: "The daily limit (kept, PM Nov 23). Send invite comes back to this step with the reason; what's typed stays.",
+        start: {
+          step: "how", view: { result: { status: "limit" }, values: { name: "Priya", email: "priya@example.org", delivery: "email" } } },
+      },
+      {
         title: "Connection failed",
         about: "Nothing was sent or recorded. What was typed stays, so trying again is one click.",
         start: {
           step: "how", view: { result: { status: "failed" }, values: { name: "Priya", email: "priya@example.org", delivery: "email" } } },
-      },
-      {
-        title: "Switching the choice after an error",
-        about:
-          "Changing \"How should we invite them?\" clears the old error or result (what's typed stays). Try it: switch the choice in the \"Connection failed\" card.",
-      },
-    ],
-  },
-  {
-    section: "Elsewhere",
-    cases: [
-      {
-        title: "Broken page link",
-        about: "The page link from the email is incomplete or wrong.",
-        href: "/design/referrals?link=unknown",
-      },
-      {
-        title: "Joined with another email, or the link was passed on",
-        about:
-          "The member is credited either way (the link's code decides). On their admin profile, the referral says who actually joined.",
-        href: "/design/members",
       },
     ],
   },

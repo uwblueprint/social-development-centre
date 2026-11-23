@@ -2,11 +2,10 @@
 
 import { useEffect, useRef, type CSSProperties } from "react";
 import { styled } from "next-yak";
-import { useDialKit } from "dialkit";
 
 /*
  * The Figma panel's gradient (SDC Working File, node 893:15) plus an optional hexagon band, with live
- * DialKit controls for tuning the fade-out (dev only; the panel is hidden in production builds).
+ * The fade-out uses the values tuned with DialKit (since removed).
  * Every default equals the Figma settings, so the panel looks exactly like the file until a dial moves.
  * Use the panel's Copy button to export tuned values, then paste them back in as the defaults here.
  *
@@ -110,24 +109,10 @@ const DEFAULTS = {
 
 export function FigmaShade({ layout = "split" }: { layout?: "split" | "banner" }) {
   const d = DEFAULTS[layout];
-  const p = useDialKit(layout === "banner" ? "Photo banner" : "Photo panel", {
-    gradient: {
-      angle: [188.64, 150, 230, 0.5],
-      top: [d.top, 0, 80, 0.5],
-      fadeStart: [d.fadeStart, 0, 90, 0.5],
-      fadeEnd: [d.fadeEnd, 10, 100, 0.5],
-      darkness: [1, 0.2, 1, 0.01],
-    },
-    hexagons: {
-      show: false,
-      size: [10, 4, 30, 1],
-      gap: [4, 0, 16, 1],
-      opacity: [1, 0, 1, 0.01],
-      bandStart: [10, 0, 100, 0.5],
-      bandPeak: [35, 0, 100, 0.5],
-      bandEnd: [70, 0, 100, 0.5],
-    },
-  });
+  const p = {
+    gradient: { angle: 188.64, top: d.top, fadeStart: d.fadeStart, fadeEnd: d.fadeEnd, darkness: 1 },
+    hexagons: { show: false, size: 10, gap: 4, opacity: 1, bandStart: 10, bandPeak: 35, bandEnd: 70 },
+  };
 
   // The gradient needs the tokens' resolved colours, so it's applied once the page has them.
   const shadeRef = useRef<HTMLDivElement>(null);

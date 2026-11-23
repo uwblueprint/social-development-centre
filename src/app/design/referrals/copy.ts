@@ -12,26 +12,22 @@ import { copy as productCopy } from "@/features/referrals/copy";
 
 export const copy = {
   ...productCopy,
-  pageTitle: "Share SDC referral",
+  pageTitle: "Invite a friend to SDC",
   title: "Invite a friend to SDC",
   description: "We'll send them one short note from SDC saying you thought they'd like to get involved.",
 
   formTitle: "Who are you inviting?",
-  nameLabel: "Recipient's first name",
+  nameLabel: "Recipient's name",
+  namePlaceholder: "John Doe",
   emailLabel: "Recipient's email address",
-  nameRequired: "Enter the recipient's first name.",
+  emailPlaceholder: "johndoe@example.com",
+  nameRequired: "Enter the recipient's name.",
 
   noteLabel: "Referral message",
   noteReset: "Reset to original",
   linkLabel: "Their invite link",
   linkPlaceholder: "Enter their email to get their link",
-  /** Under their link: it credits one join (the first). */
-  linkUnique: "Only the first person to join with this link counts as your referral.",
-  /** The credit window: a link keeps working, but only counts as a referral if they join within 30 days. */
-  creditWindow: "If they join within 30 days, it counts as your referral.",
-  sendAnother: "Send another referral",
   next: "Next",
-  invitingLabel: "Inviting",
   change: "Change",
   // Change after their link was copied or their invite emailed: they may already have it.
   changeTitle: "Create new referral?",
@@ -54,20 +50,15 @@ export const copy = {
   // What the phone's share sheet pre-fills (the link is added after it).
   shareTitle: "Join me at SDC",
   shareText: "I've been getting involved with the Social Development Centre in Waterloo Region. Join me here:",
-  // Tooltip on Send invite and Copy link while they're unavailable: what to fill in first.
-  needBoth: "Fill in their first name and email address first.",
-  needName: "Fill in their first name first.",
-  needEmail: "Fill in their email address first.",
   friendLinkLabel: (friend: string) => `${friend}'s invite link`,
   didYouMean: "Did you mean",
   copyFailedLink: "We couldn't copy it. The link is selected: copy it yourself (Ctrl+C or ⌘C).",
 
-  // The share panel beside the message: copy the link to share it yourself, or SDC emails the message.
-  sendTitle: "Share SDC referral",
-  // The banner's line under "Share SDC referral", per step. Step 1 can't share anything yet, so it says
-  // what to fill in; step 2 names the two ways to invite them.
-  whoDescription: "Please specify the recipient's name and email.",
-  howDescription: "Please choose how you want to share your referral.",
+  // The banner, one line per step, asked as a question (an invitation, not an order). Step 1 uses the
+  // member's name (they arrive from their own SDC email); step 2 the friend's first name.
+  headingWho: (member: string) => `Thank you for inviting a friend to the SDC community, ${member}`,
+  headingHow: (friend: string) => `How would you like to invite ${friend}?`,
+  sendTitle: "Invite a friend to SDC",
   or: "or",
   shareInvite: "Share invite",
   cancel: "Cancel",
@@ -80,12 +71,31 @@ export const copy = {
 
   failed: "We couldn't send that. Check your connection and try again.",
 
-  // Must stay true whether or not an email goes out, so "we'll let you know if they join" is left out
-  // until the "Member joins via referral" email is confirmed as set up.
-  sentNote: (email: string) => `Invitation sent to ${email}`,
+  // The thank-you screen after Send invite, Copy link or Share. Gratitude first, then one plain line on
+  // what happened. Must stay true whether or not an email goes out (already a member, unsubscribed).
+  /** The key hint beside an offered email ending. */
+  completeKey: "Tab",
+  // One line: the thanks and what happened together.
+  // Kinder versions of the server's messages. The limit isn't their mistake: thank them.
+  limit: "You've invited 10 friends today, thank you! You can invite more tomorrow.",
+  /** Tooltip on the locked email field and buttons while the limit shows (PM, Nov 23). */
+  limitReason: "You can invite more tomorrow",
+  ownEmail: "That's your own email. Enter your friend's to invite them.",
+  // Offline (docs/design/state-lab.md, rule 19: the same words on every screen).
+  offline: "You're offline. You can still look around, but you'll need to reconnect to make changes",
+  offlineSend: "You're offline. Reconnect to send the invite",
+  offlineCopy: "You're offline. Reconnect to copy their link",
+  offlineShare: "You're offline. Reconnect to share their link",
+  thanksTitle: (friend: string) => `Thank you! We've emailed ${friend} an invite.`,
+  // Step 2's two rows. The first says SDC sends the email, so Send invite can't read as "you send it".
+  emailRowLabel: (friend: string) => `We'll email ${friend} for you`,
+  linkRowLabel: (friend: string) => `Or send ${friend}'s link yourself`,
+  // Under the link once it's copied or shared.
+  linkThanks: (friend: string) => `Thanks for sharing SDC with ${friend}.`,
 
+  // Warm first (they already helped), then why no second email, then what they can do instead.
   alreadyInvited: (friend: string, on: string) =>
-    `You invited ${friend} on ${on}, so we won't email them again. Send them their link yourself.`,
+    `You invited ${friend} on ${on}, thank you! We only email once, so share their link below to remind them.`,
 
   again: "Invite someone else",
 

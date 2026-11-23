@@ -39,7 +39,7 @@ From the PM's notes. Design only, on demo data; nothing below is connected yet.
 One photo banner, centred on the page: "Share SDC referral" on the left; under it the member's invite
 link (shown, not editable) with **Copy link**, then "or", then **Recipient's first name** and **Send to
 email address** with **Share invite**. After sending, the same "Thanks for inviting…" and repeat-referral states as `ReferPage`.
-`?link=unknown` shows the broken-link state. To ship it, port the layout into
+To ship it, port the layout into
 `src/features/referrals/ReferPage.tsx`.
 
 The design changes two things the backend needs to know about:
@@ -51,6 +51,17 @@ The design changes two things the backend needs to know about:
   against that email, then copies that friend's own link.
 - **The form asks for the friend's first name and email address**, the same two things `refer_friend`
   takes today (`p_name`, `p_email`), so nothing changes there.
+
+### The friend's first name
+
+The member types the friend's name however they like: "Priya", "Priya Patel", "Dr. Priya Patel", "dr priya". The invite email greets the friend by first name, and the member's page thanks them by it, so both need the same rule (`firstNameOf` in `src/app/design/referrals/data.ts`):
+
+- Drop leading titles, with or without a full stop and in any case: Mr, Mrs, Ms, Miss, Mx, Dr, Prof, Professor, Rev, Sir, Madam, Dame.
+- Use the first word that's left.
+- If a title leaves only one word ("Dr. Patel"), keep the title: we can't tell a first name from a last name.
+- Keep the case as typed.
+
+Store the name as typed too; admins see it in full.
 
 ### Where a referral link goes: the join page
 A referral link opens the **join page** (`/design/membership` in the `justin/membership-design` branch),
@@ -94,47 +105,28 @@ the backend needs for each:
 |---|---|---|
 | Copy fails after the referral is recorded (Safari blocks a copy after a network wait) | The link stays, selected, with "copy it yourself"; Copy link copies again without recording twice | Recording with `delivery = 'self'` is idempotent for the same member and email (returns the same link) |
 | Typo in the email (`priya@gmial.com`) | "Did you mean priya@gmail.com?" under the field, before sending | None; the suggestion is client-side only |
-| Friend joins with a different email | Admin profile: the referral turns Joined, with "Joined with another email: …" | Credit follows the link's `ref` code, not the email. Store the joining address on the referral (`joined_email`) |
-| Link passed on to someone else | Admin profile: "Link passed on: Rosa Moreno (…) joined with it" | Same as above: the code credits the member; store who joined (`joined_person_id`). One join per code |
 | Two members invite the same person | Each member sees a normal "Invitation sent" (nothing about the other) | Only the first is emailed. Credit goes to the link they join through; if they join with no link, to the earliest invite for that email |
 | Friend joins without any link | Nothing on the member page | At join, match the new member's normalised email to an open referral and credit it |
-| No limit on how many people a member invites | Never a "try again tomorrow" message | Drop the daily limit from `refer_friend` (see "No daily limit" below) |
+| Ten referrals in a day | "You've referred 10 people today. Try again tomorrow." under the email row | The daily limit stays (see "Daily limit" below) |
 | Same person, different spelling (`Sam+sdc@`, `SAM@`, `s.am@gmail.com`) | Treated as already invited | Compare normalised emails: lower case, trimmed, no `+tag`, no dots in Gmail names. Email the address as typed |
 | Changing the choice after an error | The old error or result clears; what's typed stays | None |
 | Already a member, unsubscribed, or invited by someone else | A normal "Invitation sent", so the form reveals nothing | Never email an unsubscribed person (CASL); still record the referral so a later join can be credited |
 
-### No daily limit
-The design removes the limit on how many people a member can invite (Justin, Nov 23): no "ten a day", and
-no `limit` result. For the backend: drop the "Ten new referrals per referrer per day" rule and the `limit`
-result from `refer_friend` (the page no longer handles it). The protection that matters for friends stays:
-SDC still emails any one address at most once, ever, whoever refers them. Worth a check with the PM: without
-a cap, one member could make many referrals (e.g. a pasted list); if that's a worry, an alert to admins
-above some number is gentler than a hard stop.
+### Daily limit
+The PM decided to keep the limit (Nov 23): ten new referrals per member per day, because the page works
+without signing in. Justin's design had dropped it; the page now shows `refer_friend`'s `limit` result as an
+error under the email row. One email per address, ever, also stays.
 
 ### Email footer (`/design/referrals/footer`)
 The **Refer a friend** line sits above the legal footer (why they get the email, SDC's address, Unsubscribe),
 so it reads as an invitation, not small print. Three copy options for the PM; the recommendation is
 "Know someone who'd care about this? **Refer a friend**", which matches the page title.
 
-### Admin: referring for a member (`/design/members`)
-On a member's profile in the Member Directory, for members who aren't comfortable with the email link.
-
-| Needs | Notes |
-|---|---|
-| `admin_refer_friend(person_id, name, email, send_email)` (admins only) | The same rules and results as `refer_friend` (one SDC email per friend address, ever; own email refused), with the referral credited to that member. No daily limit for admins. Record who created it (`created_by`), so the profile can say "added by an admin". |
-| The friend's link when `send_email` is false | `/intake-form/sdc-members?r=<referral id>`, shown in the dialog to copy and pass on. |
-| The member's own refer page link | `/refer/<unsubscribe_token>`, for the "Copy Maya's refer link" button. Admins can read it. |
-| A member's referrals | Friend name and email, referred date, made by the member or an admin, and status: **Invite emailed** (`invite_requested_at` set), **Link shared** (not emailed), **Joined** (`referred_id` set, with `joined_at`). Admins see all of this; the member's page never does. |
-| Activity entries | "Referred {friend}" on the referrer (with "added by an admin" when an admin made it), "{friend} joined through {member}'s referral" on the referrer, and "Joined via referral by {member}" on the friend. These are the Member Directory timeline entries from the PRD. |
-| "Referred by" on the friend's profile | The referrer's name once the friend is a member. |
-
-Open for the PM: should the member be told when an admin refers someone for them? (Whether admin referrals
-count toward the daily limit no longer matters: the design has no limit.)
-
 ## Tests
 `supabase/tests/`: replays every migration on a local Postgres and checks every rule above (65 checks), see its README. Also checked by hand: 15 parallel requests create exactly 10 referrals; 8 parallel requests for one friend create one referral and one invite; 12 members referring one friend at once create 12 referrals and one invite; two people joining at once through one link credit one. An independent review found no security issues; its three email-option findings are fixed.
 
 ## Open
-- Daily limit: removed in the design (see "No daily limit"); confirm with the PM before dropping it from `refer_friend`.
+- Later (PM, Nov 23): a friend who joins with a different email, or through a link passed on to someone else, and how admins see referrals on a member's profile. Not designed yet.
+- Later (PM, Nov 23): a broken or incomplete refer-page link should open the join page, not an error screen. Not designed yet.
 - A way to rotate a member's person token if one leaks (it's in every email and never changes).
 - Removing a friend's details on request: admins can read referrals but there's no delete function yet.
