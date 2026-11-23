@@ -22,6 +22,7 @@ import { Field } from "@/components/ui/Field";
 import { Icon } from "@/components/ui/Icon";
 import { Input } from "@/components/ui/Input";
 import { TagCombobox } from "@/components/ui/TagCombobox";
+import { CommunityPhotos, type PhotoDraft } from "@/features/account/CommunityPhotos";
 import { LazyFooterEditor as FooterEditor } from "@/features/email-footer/LazyFooterEditor";
 import { footerProblem } from "@/features/email-footer/doc";
 import { Toast, ToastAction, ToastTitle, useToast } from "@/components/ui/Toast";
@@ -125,8 +126,13 @@ function validate(s: Settings): Errors {
 }
 
 /** Plain sentences about what now happens, so a rare visitor knows what the change means. */
-function describeChanges(before: Settings, after: Settings): { title: string; description?: string } {
+function describeChanges(
+  before: Settings,
+  after: Settings,
+  photoChanged: boolean,
+): { title: string; description?: string } {
   const lines: { name: string; text: string }[] = [];
+  if (photoChanged) lines.push({ name: "Community Photos", text: "Community Photos saved." });
   if (before.name.trim() !== after.name.trim()) {
     lines.push({
       name: "Your name",
@@ -186,9 +192,15 @@ function SettingsScreen({ onlyAdmin }: { onlyAdmin: boolean }) {
       .then(() => setCopied(true))
       .catch(() => toast({ title: "Couldn’t copy. Select the address and copy it yourself." }));
 
-  const dirty = JSON.stringify(saved) !== JSON.stringify(draft);
-  // Your name is yours; a reply-to, the footer or an alert changes things for every admin.
+  // Community Photos, the same component as /admin/settings. Starts with no photo.
+  const [savedPhoto, setSavedPhoto] = React.useState({ url: null as string | null, alt: "" });
+  const [photo, setPhoto] = React.useState<PhotoDraft>({ url: null, fileName: null, alt: "", uploading: false });
+  const photoChanged = photo.url !== savedPhoto.url || photo.alt !== savedPhoto.alt;
+
+  const dirty = JSON.stringify(saved) !== JSON.stringify(draft) || photoChanged;
+  // Your name is yours; a reply-to, the footer, an alert or the photo changes things for every admin.
   const sharedChanged =
+    photoChanged ||
     draft.replyTo !== saved.replyTo ||
     JSON.stringify(draft.footer) !== JSON.stringify(saved.footer) ||
     JSON.stringify(draft.alerts) !== JSON.stringify(saved.alerts);
@@ -196,6 +208,7 @@ function SettingsScreen({ onlyAdmin }: { onlyAdmin: boolean }) {
   const saveLabel = sharedChanged ? "Save for all admins" : "Save";
 
   const save = () => {
+    if (photo.uploading) return;
     const found = validate(draft);
     setErrors(found);
     if (Object.values(found).some(Boolean)) {
@@ -207,8 +220,9 @@ function SettingsScreen({ onlyAdmin }: { onlyAdmin: boolean }) {
       });
       return;
     }
-    toast(describeChanges(saved, draft));
+    toast(describeChanges(saved, draft, photoChanged));
     setSaved(draft);
+    setSavedPhoto({ url: photo.url, alt: photo.alt });
   };
 
   return (
@@ -296,6 +310,8 @@ function SettingsScreen({ onlyAdmin }: { onlyAdmin: boolean }) {
                 </Field>
               </HintedRow>
             </Section>
+
+            <CommunityPhotos draft={photo} onChange={(next) => setPhoto((p) => ({ ...p, ...next }))} />
 
             <Section aria-labelledby="account">
               <SectionTitle id="account">Account</SectionTitle>
@@ -418,7 +434,7 @@ function SettingsScreen({ onlyAdmin }: { onlyAdmin: boolean }) {
         </Column>
       </form>
       {/* Wherever they are on the page, unsaved changes and Save stay in view until saved (owner). */}
-      <Toast persistent open={dirty} onOpenChange={() => {}}>
+      <Toast persistent open={dirty && !photo.uploading} onOpenChange={() => {}}>
         <ToastTitle>You have unsaved changes</ToastTitle>
         <ToastAction altText={saveLabel} onClick={save}>
           {saveLabel}

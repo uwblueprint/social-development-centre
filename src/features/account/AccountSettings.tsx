@@ -26,6 +26,8 @@ import { useToast } from "@/components/ui/Toast";
 import { FormError } from "@/features/auth/AuthScreen";
 import { fieldError, idleState, type ActionState } from "@/lib/forms";
 import { deleteAccount, updateName, type NameValues } from "./actions";
+import { initialCommunityPhoto, saveCommunityPhoto, type CommunityPhoto } from "./communityPhoto";
+import { CommunityPhotos, type PhotoDraft } from "./CommunityPhotos";
 import { Cell, Column, FormColumn, Row, RowLabel, Section, SectionTitle, Sections } from "./layout";
 import type { Account } from "./queries";
 
@@ -40,7 +42,7 @@ export function AccountSettings({ account, footer }: { account: Account; footer:
   return (
     <ListPage>
       <PageColumn>
-        <NameForm initial={{ firstName: account.firstName, lastName: account.lastName }} />
+        <SettingsForm initial={{ firstName: account.firstName, lastName: account.lastName }} />
         <Sections>
           <Section aria-labelledby="sending">
             <SectionTitle id="sending">Email sending</SectionTitle>
@@ -67,33 +69,58 @@ export function AccountSettings({ account, footer }: { account: Account; footer:
   );
 }
 
+const toDraft = (photo: CommunityPhoto | null): PhotoDraft => ({
+  url: photo?.url ?? null,
+  fileName: photo?.fileName ?? null,
+  alt: photo?.alt ?? "",
+  uploading: false,
+});
+
 /**
- * Always editable. Nothing is saved until Save, and the Save button only appears once a name has changed.
- * Leaving the page with unsaved edits discards them.
+ * Your name and Community Photos. Always editable. Nothing is saved until Save, and the Save button only appears once
+ * something has changed. Leaving the page with unsaved edits discards them.
+ * Community Photos is on demo data (./communityPhoto.ts); your name saves for real.
  */
-function NameForm({ initial }: { initial: NameValues }) {
+function SettingsForm({ initial }: { initial: NameValues }) {
   const { toast } = useToast();
   const [saved, setSaved] = useState(initial);
   const [draft, setDraft] = useState(initial);
+  const [savedPhoto, setSavedPhoto] = useState(initialCommunityPhoto);
+  const [photo, setPhoto] = useState(() => toDraft(initialCommunityPhoto));
+
+  const nameDirty = draft.firstName.trim() !== saved.firstName || draft.lastName.trim() !== saved.lastName;
+  const photoDirty = photo.url !== (savedPhoto?.url ?? null) || photo.alt !== (savedPhoto?.alt ?? "");
 
   const [state, formAction] = useActionState(async (prev: ActionState<NameValues>, formData: FormData) => {
-    const result = await updateName(prev, formData);
-    if (result.status === "success" && result.data) {
+    if (!nameDirty && !photoDirty) return prev;
+    let nameMessage: string | undefined;
+    if (nameDirty) {
+      const result = await updateName(prev, formData);
+      if (result.status !== "success" || !result.data) return result;
       setSaved(result.data);
       setDraft(result.data);
-      toast({ title: result.message ?? "Your name is saved." });
-      // Save disappears once nothing is unsaved; move focus off it before it goes, so it isn't lost.
-      document.querySelector<HTMLInputElement>('input[name="firstName"]')?.focus();
+      nameMessage = result.message;
     }
-    return result;
+    if (photoDirty) {
+      // No photo means it was removed.
+      const result = await saveCommunityPhoto(
+        photo.url && photo.fileName ? { url: photo.url, fileName: photo.fileName, alt: photo.alt } : null,
+      );
+      setSavedPhoto(result.photo);
+    }
+    toast({ title: photoDirty ? (nameDirty ? "Changes saved." : "Community Photos saved.") : (nameMessage ?? "Your name is saved.") });
+    return { status: "success" } satisfies ActionState<NameValues>;
   }, idleName);
 
-  const dirty = draft.firstName.trim() !== saved.firstName || draft.lastName.trim() !== saved.lastName;
   const formLevelError = state.status === "error" && !state.fieldErrors ? state.message : undefined;
+  const canSave = (nameDirty || photoDirty) && !photo.uploading;
 
   return (
     <FormColumn action={formAction} noValidate>
-      <ListPageHeader title="Settings" actions={dirty ? <SubmitButton>Save</SubmitButton> : undefined} />
+      <ListPageHeader
+        title="Settings"
+        actions={canSave ? <SubmitButton>{photoDirty ? "Save for all admins" : "Save"}</SubmitButton> : undefined}
+      />
       {formLevelError && (
         <FormError role="alert">
           <Icon icon={CircleAlert} size={16} />
@@ -101,6 +128,7 @@ function NameForm({ initial }: { initial: NameValues }) {
         </FormError>
       )}
       <Sections>
+        <CommunityPhotos draft={photo} onChange={(next) => setPhoto((p) => ({ ...p, ...next }))} />
         <Section aria-labelledby="name">
           <SectionTitle id="name">Your name</SectionTitle>
           <Row>
