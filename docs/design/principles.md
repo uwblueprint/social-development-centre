@@ -18,6 +18,10 @@ The rules behind the component kit.
 
 A text field has two quiet states people mistake for one. **Active** is the field you clicked or tapped into to type: a darker 1px border and nothing else. **Focused** is where the keyboard has landed, after Tab or Shift+Tab: the focus ring, because someone who can't see where they are needs the loud signal. Browsers show the ring on a text field even after a click, so the kit tracks how focus arrived (`data-input-modality` on `<html>`, set by `src/components/ui/inputModality.ts`) and the kit's text controls switch on it through `--focus-ring-text`. A mouse user gets a calm screen; a keyboard user keeps full visibility. The active border is `--color-focus`, 3:1 or better against the page in both themes. Buttons, checkboxes, radios, switches and tabs keep plain `:focus-visible`, which browsers already get right.
 
+## Active is not focused
+
+A text field has two quiet states people mistake for one. **Active** is the field you clicked or tapped into to type: a darker 1px border and nothing else. **Focused** is where the keyboard has landed, after Tab or Shift+Tab: the focus ring, because someone who can't see where they are needs the loud signal. Browsers show the ring on a text field even after a click, so the kit tracks how focus arrived (`data-input-modality` on `<html>`, set by `src/components/ui/inputModality.ts`) and the kit's text controls switch on it through `--focus-ring-text`. A mouse user gets a calm screen; a keyboard user keeps full visibility. The active border is `--color-focus`, 3:1 or better against the page in both themes. Buttons, checkboxes, radios, switches and tabs keep plain `:focus-visible`, which browsers already get right.
+
 ## 3. Quiet type, clear hierarchy
 - One family (Switzer, from Fontshare, weights 400 and 500; Geist, bundled, as the fallback) for UI and headings; the system mono font (SF Mono on Mac, Consolas on Windows; owner, 23 Nov 2026) for keyboard shortcuts, codes and IDs.
 - Regular (400) by default, medium (500) for headings and titles. Nothing bolder.
