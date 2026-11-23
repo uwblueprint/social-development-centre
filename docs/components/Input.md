@@ -31,6 +31,7 @@ Placeholder shows an example value, never the label itself (e.g. "Ada Lovelace",
 
 ## Accessibility
 Border color never carries the invalid state alone — an icon appears too, using reserved padding, not a layout jump. Focus thickens the border inside the field (1px to 2px dark, or 3px red with an error) instead of adding an outer ring, and meets 3:1 contrast; disabled combines dashed border, muted text, and `not-allowed` cursor.
+- Active versus focused is built in: a click or tap shows a darker 1px border with no ring, and arriving by keyboard (Tab) shows the focus ring. Don't style `:focus` yourself.
 
 ## Don't
 1. Rendering a native `<input>` directly in app code — lint blocks it.

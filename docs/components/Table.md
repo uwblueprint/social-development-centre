@@ -16,14 +16,17 @@ import type { TableColumn, TableSort } from "@/components/ui/Table";
 - `rows`: `T[]`.
 - `getRowId`: `(row: T) => string` — stable React key per row.
 - `onRowClick?`: `(row: T) => void` — makes the whole row open a detail view; the row becomes keyboard-focusable and `Enter` activates it, same as a click. Omit it for a plain, non-interactive table.
+- `rowFocusable?`: default `true`. With `onRowClick`, `false` leaves the row without a tab stop or Enter handler so it only takes the mouse click. Use it when the row holds its own focusable control that opens the same thing (a name `Button` stretched over the row with a `::after`), so each row has exactly one tab stop. Other controls in such a row (a Copy button) must call `event.stopPropagation()` in their `onClick` so they don't also trigger the row.
 - `sticky?`: keeps the header row visible while the body scrolls — wrap `Table` in a container with its own `max-height` and `overflow-y: auto`.
 - `empty?`: rendered in place of the table when `rows` is empty (e.g. an `EmptyState`).
+- `emptyBelowHeader?`: with no rows, keeps the column headings and shows `empty` below them instead of replacing the table.
+- Edge alignment: the table cancels its cell padding at the left and right edges (negative inline margin of `--space-3`), so at rest the first column's text lines up with the page heading and the last column's content with the header button. Only the row hover fill reaches that padding past both edges; the header line and row dividers stop at the text edges (drawn as inset pseudo-elements on the cells). Left-align every column, numbers included, and right-align the last column's content only when it is controls (row actions).
 - `sort?`: `{ key, direction: "asc" | "desc" }`, the active sort. Controlled.
 - `onSortChange?`: `(next: TableSort) => void`. Without it, every header renders as plain text, even with a `sortKey`.
 - `busy?`: the next rows are loading. See Loading.
 - `sortPending?`: a sort change is in flight; the active sort icon becomes a spinner. See Loading.
 - `stickyColumns?`: `number` — freezes the first N columns while the table scrolls sideways. See Frozen columns.
-- On a column, `filter?`: `{ label, options: { value, label, count? }[], selected, onChange, defaultSelected? }` — a filter in the column header. See Filters.
+- On a column, `filter?`: `{ label, options: { value, label, count?, display? }[], selected, onChange, defaultSelected? }` (`display` shows something other than the label's text in the list, e.g. a `Tag` in its colour for a tags column) — a filter in the column header. See Filters.
 - On a column, `width?`: a fixed CSS width such as `"240px"`. See Row height and widths.
 - On a column, `isEmpty?`: `(row: T) => boolean` — when every row is empty for the column, the column is hidden. See Empty columns.
 - `aria-label?`: accessible name for the table, when no visible heading already names it.
@@ -117,7 +120,9 @@ Show the chosen sort at once (`useListSort` does this optimistically) so the spi
 `stickyColumns={n}` keeps the first `n` columns (header and cells) in place while the rest scroll sideways, with the table background behind them. Columns only freeze when the table is actually wider than its container; a table that fits behaves like any other. The 1px `--color-border` divider and a soft `--shadow-edge` shadow after the last frozen column appear only while the table is scrolled sideways (the wrapper's `data-scrolled`, set on scroll), so an unscrolled table has no extra line. Freeze what identifies a row, usually the name (1) or name and organization (2), never more. Below 600px only the first column freezes, so frozen columns never fill a phone screen. It works with `sticky` (the header row stays up too). Row focus rings are drawn inside the cells, so the scroll container never clips them.
 
 ## Hover
-Row hover is pure CSS on every cell (`tbody tr:hover > td`, frozen cells included) with no transition and no script, so the whole row highlights in the same frame. Don't add a hover transition to rows or cells: frozen cells paint their own background, and a transition makes them lag behind the rest of the row.
+Row hover is pure CSS on every cell (`tbody tr:is(:hover, :focus-within) > td`, frozen cells included) with no transition and no script, so the whole row highlights in the same frame. Don't add a hover transition to rows or cells: frozen cells paint their own background, and a transition makes them lag behind the rest of the row.
+
+At rest the text and the inset dividers sit on the page edges. On hover or `:focus-within` the row becomes a box: the `--color-bg-hover` fill, a 1px `--color-border` outline that runs the full width of the fill (`--space-3` past the text on both sides), and `--radius-sm` (4px) corners. The outline is drawn on the cells' `::before`, so it never shifts layout; the next row's divider and, for the first row, the header line are hidden while the box is showing so they don't double up against its edges. The table uses `border-collapse: separate` (no spacing) so the end cells can take the radius.
 
 ## Content rules
 Header labels are short nouns in sentence case ("Date added", not "DATE ADDED"). A cell with no value reads as muted placeholder text ("No name"), never a blank cell — a blank cell reads as missing data, not "not set".
@@ -140,7 +145,8 @@ A list page's search field above a `Table` is one documented exception to "every
 6. Leaving off `getRowId` in favor of array index — breaks focus/selection identity when rows reorder or filter.
 
 ## Column filter with many options
-- More than 8 options: a search box ("Search {label}s") appears at the top and takes focus; the list filters as you type, with "Nothing matches that search." when empty.
+- More than 8 options: a search box ("Search {label}s") appears at the top and takes focus; the list filters as you type, with "Nothing matches that search." when empty. Enter ticks the first match; Enter again (or with nothing new to tick) applies.
+- No visible heading: the popover opens under its column. The legend ("Show {label}") stays for screen readers.
 - Options already selected when the popover opens are pinned to the top (pinned at open, so rows don't jump while you check).
 - One 36px line per option: long labels truncate with the full name on hover; counts sit in a right-aligned column with a gap before the scrollbar.
 - The list shows 6½ rows, so the last row is cut in half and the list reads as scrollable even where scrollbars are hidden. The scrollbar is thin, arrowless and has a reserved gutter.

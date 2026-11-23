@@ -13,19 +13,15 @@ const Wrapper = styled.span`
 const StyledInput = styled.input<{ $invalid?: boolean }>`
   display: block;
   width: 100%;
-  height: var(--control-height);
+  height: 40px;
   padding: 0 var(--space-3);
   border-radius: var(--radius-md);
-  /* Subtle border at rest; the focus colour replaces it while typing. */
-  border: 1px solid var(--color-text-subtle);
+  border: 1px solid var(--color-border-strong);
   background: var(--color-bg);
   color: var(--color-text);
   font-family: inherit;
   font-size: var(--text-sm);
   line-height: 1;
-  transition:
-    border-color var(--duration) var(--ease),
-    box-shadow var(--duration) var(--ease);
 
   &::placeholder {
     color: var(--color-text-muted);
@@ -39,7 +35,7 @@ const StyledInput = styled.input<{ $invalid?: boolean }>`
   &:focus {
     outline: none;
     border-color: var(--color-focus);
-    box-shadow: var(--focus-ring-field);
+    box-shadow: var(--focus-ring-text);
   }
 
   ${({ $invalid }) =>
@@ -53,7 +49,9 @@ const StyledInput = styled.input<{ $invalid?: boolean }>`
 
       &:focus-visible,
       &:focus {
-        box-shadow: var(--focus-ring-field-invalid);
+        box-shadow:
+          inset 0 0 0 1px var(--color-danger),
+          var(--focus-ring-text-invalid);
       }
     `}
 
@@ -74,7 +72,7 @@ const IconSlot = styled.span`
   position: absolute;
   top: 0;
   right: 0;
-  height: var(--control-height);
+  height: 40px;
   width: 36px;
   display: inline-flex;
   align-items: center;

@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { styled } from "next-yak";
+import { overlayMotion } from "./overlayMotion";
 import { Popover as PopoverPrimitive } from "radix-ui";
 import { Command } from "cmdk";
 import { ChevronDown, Plus, Search } from "lucide-react";
@@ -76,9 +77,6 @@ const Trigger = styled.button`
   text-align: left;
   appearance: none;
   cursor: pointer;
-  transition:
-    border-color var(--duration) var(--ease),
-    box-shadow var(--duration) var(--ease);
 
   &[data-placeholder] {
     color: var(--color-text-muted);
@@ -91,7 +89,7 @@ const Trigger = styled.button`
   &:focus-visible {
     outline: none;
     border-color: var(--color-focus);
-    box-shadow: var(--focus-ring-field);
+    box-shadow: var(--focus-ring-text);
   }
 
   &[aria-invalid="true"] {
@@ -99,7 +97,9 @@ const Trigger = styled.button`
     box-shadow: inset 0 0 0 1px var(--color-danger);
 
     &:focus-visible {
-      box-shadow: var(--focus-ring-field-invalid);
+      box-shadow:
+        inset 0 0 0 1px var(--color-danger),
+        var(--focus-ring-text-invalid);
     }
   }
 
@@ -156,6 +156,8 @@ const Content = styled(PopoverPrimitive.Content)`
   &:focus {
     outline: none;
   }
+
+  ${overlayMotion}
 `;
 
 const SearchRow = styled.div`
@@ -167,6 +169,12 @@ const SearchRow = styled.div`
   border-bottom: 1px solid var(--color-border);
   color: var(--color-text-muted);
   flex-shrink: 0;
+
+  /* The search is a text field: a click shows the darker 1px border only, Tab shows the ring (inputModality.ts). */
+  &:focus-within {
+    border-bottom-color: var(--color-focus);
+    box-shadow: var(--focus-ring-text);
+  }
 `;
 
 const SearchInput = styled(Command.Input)`
@@ -184,7 +192,8 @@ const SearchInput = styled(Command.Input)`
 
 const List = styled(Command.List)`
   overflow-y: auto;
-  max-height: 260px;
+  /* 7.5 rows: the half row shows there is more to scroll to. */
+  max-height: calc(var(--menu-row-height) * 7.5);
 `;
 
 const EmptyState = styled(Command.Empty)`
@@ -198,7 +207,7 @@ const ComboItem = styled(Command.Item)`
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  height: 34px;
+  height: var(--menu-row-height);
   padding: 0 var(--space-2);
   border-radius: var(--radius-sm);
   font-size: var(--text-sm);
@@ -410,7 +419,7 @@ const InlineField = styled.div<{ $invalid?: boolean }>`
 
   &:focus-within {
     border-color: ${({ $invalid }) => ($invalid ? "var(--color-danger)" : "var(--color-focus)")};
-    box-shadow: ${({ $invalid }) => ($invalid ? "var(--focus-ring-field-invalid)" : "var(--focus-ring-field)")};
+    box-shadow: ${({ $invalid }) => ($invalid ? "inset 0 0 0 1px var(--color-danger), var(--focus-ring-text-invalid)" : "var(--focus-ring-text)")};
   }
 
   &[data-disabled] {

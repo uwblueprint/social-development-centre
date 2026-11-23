@@ -5,10 +5,11 @@ import { Label as LabelPrimitive } from "radix-ui";
 
 export const Label = styled(LabelPrimitive.Root)`
   display: inline-block;
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   font-weight: var(--weight-regular);
   line-height: var(--leading-ui);
-  color: var(--color-text-subtle);
+  color: var(--color-text);
+  margin-bottom: var(--space-1);
   cursor: pointer;
 
   /* Structural case: label wraps its control, e.g. <Label><Checkbox disabled />text</Label>. */

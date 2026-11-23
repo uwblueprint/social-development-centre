@@ -85,8 +85,11 @@ export interface TableColumn<T> {
 export interface TableColumnFilter {
   /** The column's name in the filter's accessible name and heading, e.g. "Status". */
   label: string;
-  /** `count` is how many records have that value; shown muted after the option label. */
-  options: { value: string; label: string; count?: number }[];
+  /**
+   * `count` is how many records have that value; shown muted after the option label. `display` replaces the label's text
+   * in the list (e.g. a `Tag` in its colour); `label` still names the option for search and assistive tech.
+   */
+  options: { value: string; label: string; count?: number; display?: React.ReactNode }[];
   selected: string[];
   onChange: (values: string[]) => void;
   /**
@@ -124,10 +127,18 @@ export interface TableProps<T> {
   getRowId: (row: T) => string;
   /** Makes the whole row open a detail view: focusable, and Enter activates it, same as a click. */
   onRowClick?: (row: T) => void;
+  /**
+   * Default true: a row with `onRowClick` is a tab stop and Enter activates it. Pass false when the row
+   * holds its own focusable control that does the same thing (a name button stretched over the row);
+   * the row then only takes the mouse click.
+   */
+  rowFocusable?: boolean;
   /** Keeps the header row visible while the body scrolls. Wrap the table in a container with its own `max-height` and `overflow-y: auto`. */
   sticky?: boolean;
   /** Rendered instead of the table when `rows` is empty (e.g. an `EmptyState`). */
   empty?: React.ReactNode;
+  /** With no rows, keep the column headings and show `empty` below them, instead of replacing the whole table. */
+  emptyBelowHeader?: boolean;
   /** The active sort, controlled. The page does the sorting (usually on the server); `Table` only shows it. */
   sort?: TableSort;
   /** Called with the next sort when a sortable header is selected. Without it, headers render as plain text. */
@@ -165,7 +176,11 @@ const Wrapper = styled.div`
   /* Contains absolutely positioned cell content (e.g. visually hidden text) so it scrolls with the
      table instead of widening the page at 360px. */
   position: relative;
-  width: 100%;
+  /* The cells' inline padding gives the row hover fill room. Cancel it at the edges so, at rest, the
+     first column's text lines up with the page heading and the last column's content with the header
+     button; the hover fill reaches past them by that padding. */
+  width: calc(100% + 2 * var(--space-3));
+  margin-inline: calc(var(--space-3) * -1);
   overflow-x: auto;
 
   &[data-overflowing] [data-frozen] {
@@ -178,7 +193,10 @@ const Wrapper = styled.div`
     z-index: calc(var(--z-sticky) + 1);
   }
 
-  [data-frozen-edge]::after {
+  /* The frozen edge: ::after on body cells (their ::before is the row divider) and ::before on header cells (their
+     ::after is the line under the header, which must stay). */
+  td[data-frozen-edge]::after,
+  th[data-frozen-edge]::before {
     content: "";
     display: none;
     position: absolute;
@@ -191,12 +209,14 @@ const Wrapper = styled.div`
     pointer-events: none;
   }
 
-  &[data-scrolled] [data-frozen-edge]::after {
+  &[data-scrolled] td[data-frozen-edge]::after,
+  &[data-scrolled] th[data-frozen-edge]::before {
     display: block;
   }
 
   @media (min-width: 600px) {
-    &[data-scrolled] [data-frozen-edge="narrow"]::after {
+    &[data-scrolled] td[data-frozen-edge="narrow"]::after,
+    &[data-scrolled] th[data-frozen-edge="narrow"]::before {
       display: none;
     }
   }
@@ -212,7 +232,8 @@ const Wrapper = styled.div`
       z-index: var(--z-sticky);
     }
 
-    &[data-scrolled] [data-frozen-edge="wide"]::after {
+    &[data-scrolled] td[data-frozen-edge="wide"]::after,
+    &[data-scrolled] th[data-frozen-edge="wide"]::before {
       display: none;
     }
   }
@@ -223,7 +244,9 @@ const StyledTable = styled.table`
   /* Below this, columns are squeezed unreadably; the wrapper scrolls
      horizontally instead (rule: a pointer/touch path at 360px). */
   min-width: 560px;
-  border-collapse: collapse;
+  /* Separate (with no spacing) so the hovered row's end cells can take a corner radius. */
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: var(--text-sm);
 
   /* When every column has a fixed width, the table uses fixed layout (data-fixed). */
@@ -236,12 +259,22 @@ const StyledTable = styled.table`
     background: var(--color-bg);
   }
 
+  /* Fixed layout hands columns extra width, so cell content fills its column instead of the width asked for. */
+  &[data-fixed] [data-cell-box] {
+    width: calc(100% + 2 * var(--space-1));
+  }
+
   /*
    * Row hover is pure CSS on every cell (frozen ones too), with no transition, so the whole row
    * highlights in the same frame.
    */
-  tbody tr:hover > td {
+  tbody tr:is(:hover, :focus-within) > td {
     background: var(--color-bg-hover);
+  }
+
+  /* The header line sits right above the first row; the first row's box draws that edge instead. */
+  &:has(tbody tr:first-child:is(:hover, :focus-within)) th::after {
+    background: transparent;
   }
 
 `;
@@ -266,13 +299,33 @@ const CellBox = styled.div`
 
 const Th = styled.th<{ $align?: "left" | "right"; $sticky?: boolean }>`
   height: var(--row-height);
+  position: relative;
   padding: 0 var(--space-3);
-  border-bottom: 1px solid var(--color-border);
   font-size: var(--text-xs);
   font-weight: var(--weight-medium);
   color: var(--color-text-muted);
   text-align: ${({ $align }) => $align ?? "left"};
   white-space: nowrap;
+
+  /* The header's bottom line, inset like the row dividers. */
+  &::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 1px;
+    background: var(--color-border);
+    pointer-events: none;
+  }
+
+  &:first-child::after {
+    left: var(--space-3);
+  }
+
+  &:last-child::after {
+    right: var(--space-3);
+  }
 
   ${({ $sticky }) =>
     $sticky &&
@@ -307,8 +360,8 @@ const FilterButton = styled.button<{ $active?: boolean }>`
   color: ${({ $active }) => ($active ? "var(--color-text)" : "var(--color-text-subtle)")};
   cursor: pointer;
   transition:
-    background-color var(--duration) var(--ease),
-    color var(--duration) var(--ease);
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
 
   &:hover,
   &[data-state="open"] {
@@ -328,6 +381,14 @@ const FilterCount = styled.span`
   font-variant-numeric: tabular-nums;
 `;
 
+/* Grows to fit its body (at least the search width) instead of letting it spill past the popover's fixed width. */
+const FilterPopover = styled(PopoverContent)`
+  && {
+    width: auto;
+    max-width: calc(100vw - var(--space-4) * 2);
+  }
+`;
+
 const FilterFieldset = styled.fieldset`
   margin: 0;
   padding: 0;
@@ -336,11 +397,15 @@ const FilterFieldset = styled.fieldset`
 `;
 
 const FilterLegend = styled.legend`
+  position: absolute;
+  width: 1px;
+  height: 1px;
   padding: 0;
-  margin-bottom: var(--space-2);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-medium);
-  color: var(--color-text-muted);
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 `;
 
 /* Fixed width, so long option names truncate instead of stretching the popover. */
@@ -369,6 +434,7 @@ const FilterOptions = styled.ul`
   list-style: none;
   max-height: calc(${OPTION_HEIGHT} * 6.5);
   overflow-y: auto;
+  overscroll-behavior: contain;
   scrollbar-width: thin;
   scrollbar-color: var(--color-border-strong) transparent;
 
@@ -471,6 +537,12 @@ function ColumnFilter({ filter }: { filter: TableColumnFilter }) {
   const toggle = (value: string, checked: boolean) =>
     setDraft((prev) => (checked ? [...prev.filter((v) => v !== value), value] : prev.filter((v) => v !== value)));
 
+  /** Commits the draft, in the page's option order whatever order the boxes were checked in, and closes. */
+  const apply = () => {
+    onChange(options.map((o) => o.value).filter((v) => draft.includes(v)));
+    setOpen(false);
+  };
+
   const q = query.trim().toLowerCase();
   const shown = options
     .filter((o) => !q || o.label.toLowerCase().includes(q))
@@ -495,16 +567,15 @@ function ColumnFilter({ filter }: { filter: TableColumnFilter }) {
           {count > 0 && <FilterCount aria-hidden="true">{count}</FilterCount>}
         </FilterButton>
       </PopoverTrigger>
-      <PopoverContent align="start" showClose={false}>
+      <FilterPopover align="start" showClose={false}>
         <form
           onSubmit={(event) => {
             event.preventDefault();
-            // Keep the page's option order, whatever order the boxes were checked in.
-            onChange(options.map((o) => o.value).filter((v) => draft.includes(v)));
-            setOpen(false);
+            apply();
           }}
         >
           <FilterFieldset>
+            {/* Names the checkbox group for screen readers; the popover sits under its column, so no visible heading. */}
             <FilterLegend>{tableFilterCopy.legend(label)}</FilterLegend>
             <FilterBody>
               {searchable && (
@@ -514,8 +585,15 @@ function ColumnFilter({ filter }: { filter: TableColumnFilter }) {
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   onSearch={setQuery}
-                  // Enter searches as you type already; don't let it submit (Apply) the form.
-                  onKeyDown={(event) => event.key === "Enter" && event.preventDefault()}
+                  // Enter ticks the first match; Enter again (or with nothing new to tick) applies. Handled here, since the
+                  // search box is its own form and Enter would otherwise submit that one.
+                  onKeyDown={(event) => {
+                    if (event.key !== "Enter") return;
+                    event.preventDefault();
+                    const first = q ? shown[0] : undefined;
+                    if (first && !draft.includes(first.value)) toggle(first.value, true);
+                    else apply();
+                  }}
                   autoFocus
                 />
               )}
@@ -530,7 +608,7 @@ function ColumnFilter({ filter }: { filter: TableColumnFilter }) {
                         onCheckedChange={(checked) => toggle(option.value, checked === true)}
                         label={
                           <OptionLabel title={option.label}>
-                            <OptionName>{option.label}</OptionName>
+                            <OptionName>{option.display ?? option.label}</OptionName>
                             {option.count !== undefined && <OptionCount>{option.count}</OptionCount>}
                           </OptionLabel>
                         }
@@ -542,7 +620,7 @@ function ColumnFilter({ filter }: { filter: TableColumnFilter }) {
             </FilterBody>
           </FilterFieldset>
           <PopoverActions>
-            <Button type="button" $variant="ghost" $size="sm" onClick={() => setDraft(options.map((o) => o.value))}>
+            <Button type="button" $variant="secondary" $size="sm" onClick={() => setDraft(options.map((o) => o.value))}>
               {tableFilterCopy.clear}
             </Button>
             <Button type="submit" $variant="primary" $size="sm">
@@ -550,7 +628,7 @@ function ColumnFilter({ filter }: { filter: TableColumnFilter }) {
             </Button>
           </PopoverActions>
         </form>
-      </PopoverContent>
+      </FilterPopover>
     </Popover>
   );
 }
@@ -561,7 +639,7 @@ const SortHint = styled.span`
   flex: none;
   color: var(--color-text-subtle);
   opacity: 0;
-  transition: opacity var(--duration) var(--ease);
+  transition: opacity var(--duration-fast) var(--ease-out);
 `;
 
 /*
@@ -571,7 +649,8 @@ const SortHint = styled.span`
  */
 const SortButton = styled.button<{ $align?: "left" | "right"; $active?: boolean }>`
   display: inline-flex;
-  flex-direction: ${({ $align }) => ($align === "right" ? "row-reverse" : "row")};
+  /* The icon always follows the label, right-aligned columns included (owner, Nov 2026). */
+  flex-direction: row;
   align-items: center;
   gap: var(--space-1);
   margin: calc(var(--space-1) * -1);
@@ -584,8 +663,8 @@ const SortButton = styled.button<{ $align?: "left" | "right"; $active?: boolean 
   color: ${({ $active }) => ($active ? "var(--color-text)" : "inherit")};
   cursor: pointer;
   transition:
-    background-color var(--duration) var(--ease),
-    color var(--duration) var(--ease);
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
 
   &:hover {
     background: var(--color-bg-hover);
@@ -728,13 +807,14 @@ const Body = styled.tbody``;
  * so they stay fully legible — and 78% keeps even the palette's most muted table text at 4.5:1+.
  */
 const Td = styled.td<{ $align?: "left" | "right"; $busy?: boolean }>`
+  position: relative;
   height: var(--row-height);
   padding: 0 var(--space-3);
   white-space: nowrap;
   color: var(--color-text);
   text-align: ${({ $align }) => $align ?? "left"};
   vertical-align: middle;
-  transition: color var(--duration) var(--ease);
+  transition: color var(--duration-fast) var(--ease-out);
 
   ${({ $busy }) =>
     $busy &&
@@ -744,8 +824,70 @@ const Td = styled.td<{ $align?: "left" | "right"; $busy?: boolean }>`
 `;
 
 const Row = styled.tr<{ $clickable?: boolean }>`
-  &:not(:first-child) {
-    border-top: 1px solid var(--color-border);
+  &:not(:first-child) > td::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--color-border);
+    pointer-events: none;
+  }
+
+  /* The table's edges are padded to give the hover fill room; the dividers stop at the text edges. */
+  &:not(:first-child) > td:first-child::before {
+    left: var(--space-3);
+  }
+
+  &:not(:first-child) > td:last-child::before {
+    right: var(--space-3);
+  }
+
+  /*
+   * Hover and focus-within turn the row into a box: the hover fill, a 1px --color-border outline that
+   * runs the full width of the fill (12px past the text), and --radius-sm corners. The outline is the
+   * cells' ::before (the divider's slot), so nothing shifts, and the next row's divider is hidden so
+   * it doesn't double up against the box's bottom edge.
+   */
+  &:is(:hover, :focus-within) > td::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    height: auto;
+    background: transparent;
+    border-style: solid;
+    border-color: var(--color-border);
+    border-width: 1px 0;
+    pointer-events: none;
+  }
+
+  &:is(:hover, :focus-within) > td:first-child::before {
+    left: 0;
+    border-left-width: 1px;
+    border-top-left-radius: var(--radius-sm);
+    border-bottom-left-radius: var(--radius-sm);
+  }
+
+  &:is(:hover, :focus-within) > td:last-child::before {
+    right: 0;
+    border-right-width: 1px;
+    border-top-right-radius: var(--radius-sm);
+    border-bottom-right-radius: var(--radius-sm);
+  }
+
+  &:is(:hover, :focus-within) > td:first-child {
+    border-top-left-radius: var(--radius-sm);
+    border-bottom-left-radius: var(--radius-sm);
+  }
+
+  &:is(:hover, :focus-within) > td:last-child {
+    border-top-right-radius: var(--radius-sm);
+    border-bottom-right-radius: var(--radius-sm);
+  }
+
+  &:is(:hover, :focus-within) + tr > td::before {
+    background: transparent;
   }
 
   ${({ $clickable }) =>
@@ -815,8 +957,10 @@ export function Table<T>({
   rows,
   getRowId,
   onRowClick,
+  rowFocusable = true,
   sticky,
   empty,
+  emptyBelowHeader,
   sort,
   onSortChange,
   busy = false,
@@ -876,11 +1020,12 @@ export function Table<T>({
     };
   }, [frozen, hasRows]);
 
-  if (!hasRows) return <>{empty}</>;
+  if (!hasRows && !emptyBelowHeader) return <>{empty}</>;
 
   const fixed = visibleColumns.every((col) => col.width);
 
   return (
+    <>
     <Wrapper ref={wrapperRef}>
       <StyledTable
         ref={tableRef}
@@ -943,10 +1088,10 @@ export function Table<T>({
               <Row
                 key={id}
                 $clickable={clickable}
-                tabIndex={clickable ? 0 : undefined}
+                tabIndex={clickable && rowFocusable ? 0 : undefined}
                 onClick={clickable ? () => onRowClick(row) : undefined}
                 onKeyDown={
-                  clickable
+                  clickable && rowFocusable
                     ? (event) => {
                         if (event.key === "Enter") {
                           event.preventDefault();
@@ -959,7 +1104,7 @@ export function Table<T>({
                 {visibleColumns.map((col, index) => (
                   <Td key={col.key} $align={col.align} $busy={busy} {...frozenProps(index, frozen, offsets)}>
                     {col.width ? (
-                      <CellBox style={{ "--column-width": col.width } as React.CSSProperties}>{col.render(row)}</CellBox>
+                      <CellBox data-cell-box="" style={{ "--column-width": col.width } as React.CSSProperties}>{col.render(row)}</CellBox>
                     ) : (
                       col.render(row)
                     )}
@@ -971,5 +1116,7 @@ export function Table<T>({
         </Body>
       </StyledTable>
     </Wrapper>
+    {!hasRows && empty}
+    </>
   );
 }

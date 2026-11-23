@@ -27,9 +27,21 @@ const Leading = styled.span`
   position: absolute;
   top: 0;
   left: var(--space-3);
-  height: var(--control-height);
+  height: 40px;
   display: inline-flex;
   align-items: center;
+  color: var(--color-text-muted);
+  pointer-events: none;
+`;
+
+/** Same 32px slot as the clear button, so the field's right padding already fits it. */
+const Pending = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
   color: var(--color-text-muted);
   pointer-events: none;
 `;
@@ -42,19 +54,16 @@ const Spinner = styled.span`
 const StyledInput = styled.input`
   display: block;
   width: 100%;
-  height: var(--control-height);
-  /* Leading icon column (12 + 16 + 8) on the left, room for the clear button on the right. */
+  height: 40px;
+  /* Leading icon column (12 + 16 + 8) on the left, room for the clear button or the spinner on the right. */
   padding: 0 calc(var(--space-6) + var(--space-2)) 0 calc(var(--space-3) + var(--space-5));
   border-radius: var(--radius-md);
-  border: 1px solid var(--color-border-field);
+  border: 1px solid var(--color-border-strong);
   background: var(--color-bg);
   color: var(--color-text);
   font-family: inherit;
   font-size: var(--text-sm);
   line-height: 1;
-  transition:
-    border-color var(--duration) var(--ease),
-    box-shadow var(--duration) var(--ease);
 
   &::placeholder {
     color: var(--color-text-muted);
@@ -74,7 +83,7 @@ const StyledInput = styled.input`
   &:focus {
     outline: none;
     border-color: var(--color-focus);
-    box-shadow: var(--focus-ring-field);
+    box-shadow: var(--focus-ring-text);
   }
 
   &:disabled {
@@ -94,7 +103,7 @@ const Actions = styled.span`
   position: absolute;
   top: 0;
   right: var(--space-1);
-  height: var(--control-height);
+  height: 40px;
   display: inline-flex;
   align-items: center;
 `;
@@ -129,7 +138,7 @@ export interface SearchFieldProps
    * and with "" when the clear (×) button is clicked.
    */
   onSearch: (value: string) => void;
-  /** True while results are loading: the leading search icon becomes a spinner. */
+  /** True while results are loading: a spinner shows at the right edge in place of the clear (×) button. */
   pending?: boolean;
   /** Accessible label for the clear button. Defaults to "Clear search". */
   clearLabel?: string;
@@ -208,13 +217,7 @@ export const SearchField = React.forwardRef<HTMLInputElement, SearchFieldProps>(
     >
       <Wrapper>
         <Leading aria-hidden="true">
-          {pending ? (
-            <Spinner>
-              <Icon icon={LoaderCircle} size={16} />
-            </Spinner>
-          ) : (
-            <Icon icon={Search} size={16} />
-          )}
+          <Icon icon={Search} size={16} />
         </Leading>
         <StyledInput
           ref={innerRef}
@@ -224,12 +227,23 @@ export const SearchField = React.forwardRef<HTMLInputElement, SearchFieldProps>(
           disabled={disabled}
           {...props}
         />
-        {text && !disabled && (
-          <Actions>
-            <ClearButton type="button" aria-label={clearLabel} onClick={handleClear}>
-              <Icon icon={X} size={14} />
-            </ClearButton>
+        {pending ? (
+          <Actions aria-hidden="true">
+            <Pending>
+              <Spinner>
+                <Icon icon={LoaderCircle} size={16} />
+              </Spinner>
+            </Pending>
           </Actions>
+        ) : (
+          text &&
+          !disabled && (
+            <Actions>
+              <ClearButton type="button" aria-label={clearLabel} onClick={handleClear}>
+                <Icon icon={X} size={14} />
+              </ClearButton>
+            </Actions>
+          )
         )}
       </Wrapper>
     </Form>

@@ -45,8 +45,8 @@ const Item = styled.button`
   line-height: var(--leading-ui);
   cursor: pointer;
   transition:
-    background-color var(--duration) var(--ease),
-    color var(--duration) var(--ease);
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
 
   &:hover {
     background: var(--color-bg-hover);

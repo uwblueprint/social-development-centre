@@ -12,7 +12,7 @@ const Root = styled(SwitchPrimitive.Root)`
   border-radius: var(--radius-full);
   background: var(--color-border-strong);
   cursor: pointer;
-  transition: background-color var(--duration) var(--ease);
+  transition: background-color var(--duration-fast) var(--ease-out);
 
   &[data-state="checked"] {
     background: var(--color-primary);
@@ -34,7 +34,7 @@ const Thumb = styled(SwitchPrimitive.Thumb)`
   background: var(--color-bg);
   box-shadow: var(--shadow-sm);
   transform: translateX(3px);
-  transition: transform var(--duration) var(--ease);
+  transition: transform var(--duration) var(--ease-out);
 
   &[data-state="checked"] {
     transform: translateX(19px);

@@ -68,7 +68,7 @@ An empty or error state says what's empty, why, and the one action that fixes it
 | Matches elsewhere | `query`, and `elsewhere.count` > 0 | No {items} match “{query}” | {n} matches in {scope} | Show in {scope} |
 | Search plus filters | `query` and `filtered` | No {filtered} match “{query}” | Searched {searchedFields} with these filters on. Check the spelling, or clear the search and filters. | Clear search and filters |
 | No matches anywhere | `query` | No {items} match “{query}” | Searched {searchedFields}. Check the spelling, or clear the search. | Clear search |
-| Filters hide everything | `filtered` | No {filtered} | Nothing matches these filters. | Clear filters |
+| Filters hide everything | `filtered` | No {filtered} | Try removing a filter to see more. | Clear filters |
 | Truly empty | none of the above | the caller's `empty.title` | `empty.description` | `empty.action` (optional) |
 
 Props:
@@ -117,4 +117,4 @@ Opportunity edit pages call `notFound()` for a missing id, which renders `[id]/n
 - Search results are announced politely through `ListPageHeader`'s (or `ListPageToolbar`'s) `results`, not by moving focus.
 - `ListEmptyState` is plain text plus one button with a leading or trailing icon and a verb label; the icon above the title is decorative.
 
-Motion: everything under the header animates in (`contentIn`: fade plus an 8px rise) when the page mounts after its loading state. The header stays put so the title never moves; `PageLoading` (aria-busy) doesn't animate.
+Motion: none. Content appears when it loads; nothing fades or rises in.

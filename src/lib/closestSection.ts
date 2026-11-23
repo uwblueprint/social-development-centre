@@ -4,7 +4,7 @@
  * two typos, and only for segments of 4+ characters. Anything else stays a 404.
  */
 const SECTIONS = {
-  admin: ["documentation"],
+  admin: ["members", "admins", "documentation"],
 } as const;
 
 function distance(a: string, b: string) {

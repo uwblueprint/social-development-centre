@@ -5,13 +5,13 @@ import { Accordion as AccordionPrimitive } from "radix-ui";
 import type { ReactNode } from "react";
 
 const openAnim = keyframes`
-  from { height: 0; }
-  to { height: var(--radix-accordion-content-height); }
+  from { height: 0; overflow: hidden; }
+  to { height: var(--radix-accordion-content-height); overflow: hidden; }
 `;
 
 const closeAnim = keyframes`
-  from { height: var(--radix-accordion-content-height); }
-  to { height: 0; }
+  from { height: var(--radix-accordion-content-height); overflow: hidden; }
+  to { height: 0; overflow: hidden; }
 `;
 
 export const Accordion = AccordionPrimitive.Root;
@@ -58,36 +58,32 @@ const Trigger = styled(AccordionPrimitive.Trigger)`
 `;
 
 /**
- * Plus that morphs into a minus: the horizontal bar always stays, the
- * vertical bar rotates 90deg and fades out when the item opens.
+ * Plus that becomes a minus: the horizontal bar always stays, the
+ * vertical bar disappears when the item opens (instant; the height reveal carries the motion).
  */
 const PlusMinus = styled.svg`
   flex-shrink: 0;
   color: var(--color-text-muted);
 
   rect:last-child {
-    transform-origin: 8px 8px;
-    transition:
-      transform var(--duration) var(--ease),
-      opacity var(--duration) var(--ease);
   }
 
-  [data-state="open"] & rect:last-child {
-    transform: rotate(90deg);
+  /* Only the trigger's own state: a Dialog or Popover around the accordion is also data-state="open". */
+  [data-state="open"] > & rect:last-child {
     opacity: 0;
   }
 `;
 
+/* Clips only while the height animates: at rest, children's focus rings reach past the box. */
 export const AccordionContent = styled(AccordionPrimitive.Content)`
-  overflow: hidden;
   font-size: var(--text-sm);
   color: var(--color-text-muted);
 
   &[data-state="open"] {
-    animation: ${openAnim} var(--duration) var(--ease);
+    animation: ${openAnim} var(--duration-slow) var(--ease-out);
   }
   &[data-state="closed"] {
-    animation: ${closeAnim} var(--duration) var(--ease);
+    animation: ${closeAnim} var(--duration) var(--ease-in);
   }
 
   & > div {

@@ -7,7 +7,7 @@ import type { ReactNode } from "react";
 import { Icon } from "./Icon";
 import { keepEscapeForTagSelection } from "./TagInput";
 
-// Owner decision 9: subtle enter and exit. Radix keeps the element mounted until the exit animation ends.
+// Calm enter and exit: fade plus a 4px rise (no scale); exit is a faster fade. See docs/design/motion.md. Radix keeps the element mounted until the exit animation ends.
 const overlayShow = keyframes`
   from { opacity: 0; }
   to { opacity: 1; }
@@ -19,26 +19,26 @@ const overlayHide = keyframes`
 `;
 
 const contentShow = keyframes`
-  from { opacity: 0; transform: translate(-50%, -50%) scale(0.98); }
-  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  from { opacity: 0; transform: translate(-50%, calc(-50% + var(--space-1))); }
+  to { opacity: 1; transform: translate(-50%, -50%); }
 `;
 
 const contentHide = keyframes`
-  from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-  to { opacity: 0; transform: translate(-50%, -50%) scale(0.98); }
+  from { opacity: 1; transform: translate(-50%, -50%); }
+  to { opacity: 0; transform: translate(-50%, calc(-50% + var(--space-1))); }
 `;
 
 const Overlay = styled(DialogPrimitive.Overlay)`
   position: fixed;
   inset: 0;
   background: var(--color-overlay);
-  /* Dialogs blur what's behind them; sheets don't (see tokens: --overlay-blur). */
+  /* Dialogs and sheets blur what's behind them (see tokens: --overlay-blur). */
   backdrop-filter: blur(var(--overlay-blur));
   z-index: var(--z-modal);
-  animation: ${overlayShow} var(--duration-slow) var(--ease);
+  animation: ${overlayShow} var(--duration) var(--ease-out);
 
   &[data-state="closed"] {
-    animation: ${overlayHide} var(--duration-slow) var(--ease) forwards;
+    animation: ${overlayHide} var(--duration-fast) var(--ease-in) forwards;
   }
 `;
 
@@ -56,10 +56,10 @@ const Content = styled(DialogPrimitive.Content)`
   box-shadow: var(--shadow-lg);
   padding: 20px;
   z-index: var(--z-modal);
-  animation: ${contentShow} var(--duration-slow) var(--ease);
+  animation: ${contentShow} var(--duration) var(--ease-out);
 
   &[data-state="closed"] {
-    animation: ${contentHide} var(--duration-slow) var(--ease) forwards;
+    animation: ${contentHide} var(--duration-fast) var(--ease-in) forwards;
   }
 
   &:focus {
@@ -91,7 +91,11 @@ const CloseButton = styled(DialogPrimitive.Close)`
 `;
 
 const Title = styled(DialogPrimitive.Title)`
-  margin: 0 0 4px;
+  /* 16px to whatever follows; 8px when a description follows (owner, Nov 2026). */
+  margin: 0 0 var(--space-4);
+  &:has(+ p) {
+    margin-bottom: var(--space-2);
+  }
   font-size: var(--text-lg);
   font-weight: var(--weight-medium);
   line-height: var(--leading-heading);
@@ -112,6 +116,13 @@ const Actions = styled.div`
   justify-content: flex-end;
   gap: var(--space-3);
   margin-top: var(--space-5);
+  /* Cancel sits on the far left, lined up with the content, away from the action (owner, Nov 2026). */
+  & > [data-cancel],
+  & > [data-back],
+  & > :has(> [data-cancel], > [data-back]) {
+    order: -1;
+    margin-inline-end: auto;
+  }
 `;
 
 export const Dialog = DialogPrimitive.Root;

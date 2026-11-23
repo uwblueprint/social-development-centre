@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { css, styled } from "next-yak";
+import { overlayMotion } from "./overlayMotion";
 import { Popover as PopoverPrimitive, Select as SelectPrimitive } from "radix-ui";
 import { Command } from "cmdk";
 import { Check, ChevronDown, Search } from "lucide-react";
@@ -45,10 +46,10 @@ const triggerStyles = css`
   justify-content: space-between;
   gap: var(--space-2);
   width: 100%;
-  height: var(--control-height);
+  height: 40px;
   padding: 0 var(--space-3);
   border-radius: var(--radius-md);
-  border: 1px solid var(--color-border-field);
+  border: 1px solid var(--color-border-strong);
   background: var(--color-bg);
   color: var(--color-text);
   font-family: inherit;
@@ -56,9 +57,6 @@ const triggerStyles = css`
   text-align: left;
   appearance: none;
   cursor: pointer;
-  transition:
-    border-color var(--duration) var(--ease),
-    box-shadow var(--duration) var(--ease);
 
   &[data-placeholder] {
     color: var(--color-text-muted);
@@ -71,7 +69,7 @@ const triggerStyles = css`
   &:focus-visible {
     outline: none;
     border-color: var(--color-focus);
-    box-shadow: var(--focus-ring-field);
+    box-shadow: var(--focus-ring);
   }
 
   &[aria-invalid="true"] {
@@ -79,7 +77,10 @@ const triggerStyles = css`
     box-shadow: inset 0 0 0 1px var(--color-danger);
 
     &:focus-visible {
-      box-shadow: var(--focus-ring-field-invalid);
+      box-shadow:
+        inset 0 0 0 1px var(--color-danger),
+        0 0 0 2px var(--color-bg),
+        0 0 0 4px var(--color-danger);
     }
   }
 
@@ -164,6 +165,8 @@ const Content = styled(SelectPrimitive.Content)`
   box-shadow: var(--shadow-md);
   border: 1px solid var(--color-border);
   z-index: var(--z-popover);
+
+  ${overlayMotion}
 `;
 
 const Viewport = styled(SelectPrimitive.Viewport)`
@@ -176,7 +179,7 @@ const Item = styled(SelectPrimitive.Item)`
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  height: 34px;
+  height: var(--menu-row-height);
   padding: 0 var(--space-2);
   border-radius: var(--radius-sm);
   font-size: var(--text-sm);
@@ -302,6 +305,8 @@ const ComboContent = styled(PopoverPrimitive.Content)`
   &:focus {
     outline: none;
   }
+
+  ${overlayMotion}
 `;
 
 const SearchRow = styled.div`
@@ -313,6 +318,12 @@ const SearchRow = styled.div`
   border-bottom: 1px solid var(--color-border);
   color: var(--color-text-muted);
   flex-shrink: 0;
+
+  /* The search is a text field: a click shows the darker 1px border only, Tab shows the ring (inputModality.ts). */
+  &:focus-within {
+    border-bottom-color: var(--color-focus);
+    box-shadow: var(--focus-ring-text);
+  }
 `;
 
 const SearchInput = styled(Command.Input)`
@@ -330,7 +341,8 @@ const SearchInput = styled(Command.Input)`
 
 const List = styled(Command.List)`
   overflow-y: auto;
-  max-height: 260px;
+  /* 7.5 rows: the half row shows there is more to scroll to. */
+  max-height: calc(var(--menu-row-height) * 7.5);
 `;
 
 const EmptyState = styled(Command.Empty)`
@@ -345,7 +357,7 @@ const ComboItem = styled(Command.Item)`
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  height: 34px;
+  height: var(--menu-row-height);
   padding: 0 var(--space-2);
   border-radius: var(--radius-sm);
   font-size: var(--text-sm);
