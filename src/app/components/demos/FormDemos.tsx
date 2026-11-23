@@ -10,10 +10,12 @@ import { Select } from "@/components/ui/Select";
 import { CreatableCombobox } from "@/components/ui/CreatableCombobox";
 import { SearchField } from "@/components/ui/SearchField";
 import { DatePicker } from "@/components/ui/DatePicker";
+import { MonthRangePicker, type MonthRange } from "@/components/ui/MonthRangePicker";
 import { ErrorSummary } from "@/components/ui/ErrorSummary";
 import { TagInput } from "@/components/ui/TagInput";
-import { ArrowLeftToLine, Trash2 } from "lucide-react";
+import { ArrowLeftToLine, ImageUp, Trash2 } from "lucide-react";
 import { TagCombobox } from "@/components/ui/TagCombobox";
+import { FileUpload, FileUploadButton, type FileRejection } from "@/components/ui/FileUpload";
 import type { TagColor } from "@/components/ui/Tag";
 
 const Section = styled.div`
@@ -199,6 +201,17 @@ const countryOptions = [
   { value: "it", label: "Italy", disabled: true },
 ];
 
+function MonthRangeDemo(
+  props: Omit<React.ComponentProps<typeof MonthRangePicker>, "value" | "onValueChange" | "allTime">,
+) {
+  const [value, setValue] = React.useState<MonthRange | null>(() => {
+    const d = new Date();
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    return { from: key, to: key };
+  });
+  return <MonthRangePicker {...props} value={value} onValueChange={setValue} allTime />;
+}
+
 export function SelectDemo() {
   return (
     <Section>
@@ -211,6 +224,9 @@ export function SelectDemo() {
             placeholder="Choose a method"
           />
         )}
+      </Field>
+      <Field label="Months" hint="Click a month, then another to make a range">
+        {(props) => <MonthRangeDemo {...props} />}
       </Field>
       <Field label="Country" hint="Type to search the list">
         {(props) => (
@@ -353,5 +369,65 @@ export function TagInputDemo() {
         />
       )}
     </Field>
+  );
+}
+
+const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const FIVE_MB = 5 * 1024 * 1024;
+const REJECTED: Record<FileRejection, string> = {
+  type: "Choose a JPG, PNG or WebP image.",
+  size: "Choose an image under 5 MB.",
+};
+
+export function FileUploadDemo() {
+  const [picked, setPicked] = React.useState<string>();
+  const [error, setError] = React.useState<string>();
+  const [busy, setBusy] = React.useState(false);
+  const picker = {
+    accept: IMAGE_TYPES,
+    maxBytes: FIVE_MB,
+    onFile: (file: File) => {
+      setError(undefined);
+      setPicked(file.name);
+    },
+    onReject: (reason: FileRejection) => setError(REJECTED[reason]),
+  };
+  const zone = {
+    icon: ImageUp,
+    action: "Upload",
+    prompt: "or drag and drop a photo here",
+    dropPrompt: "Drop the photo to upload it",
+    limits: "JPG, PNG or WebP, up to 5 MB",
+  };
+
+  return (
+    <Section>
+      <Field label="Photo" error={error} hint={picked ? `Picked ${picked}` : undefined}>
+        {(props) => <FileUpload {...props} {...picker} {...zone} />}
+      </Field>
+      <Field label="Photo, with an error" error="The photo didn’t upload. Try again.">
+        {(props) => <FileUpload {...props} {...picker} {...zone} />}
+      </Field>
+      <Field label="Photo, disabled" disabled disabledReason={null}>
+        {(props) => <FileUpload {...props} {...picker} {...zone} />}
+      </Field>
+      <Field label="Replace a photo">
+        {(props) => (
+          <div>
+            <FileUploadButton
+              {...props}
+              {...picker}
+              busy={busy}
+              onFile={() => {
+                setBusy(true);
+                setTimeout(() => setBusy(false), 1500);
+              }}
+            >
+              Replace photo
+            </FileUploadButton>
+          </div>
+        )}
+      </Field>
+    </Section>
   );
 }

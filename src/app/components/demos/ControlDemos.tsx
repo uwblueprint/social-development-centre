@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/Checkbox";
 import { RadioCard, RadioCardGroup, RadioGroup, RadioGroupOption } from "@/components/ui/RadioGroup";
 import { Switch } from "@/components/ui/Switch";
 import { SliderField } from "@/components/ui/Slider";
+import { SortableList } from "@/components/ui/SortableList";
 import { Toggle } from "@/components/ui/Toggle";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/ToggleGroup";
 import { DatePicker } from "@/components/ui/DatePicker";
@@ -165,6 +166,23 @@ export function SliderDemo() {
   );
 }
 
+export function SortableListDemo() {
+  const [items, setItems] = React.useState(["Gold", "Silver", "Bronze", "Supporter"]);
+  return (
+    <Section>
+      <SortableList
+        items={items}
+        getId={(item) => item}
+        getLabel={(item) => item}
+        onReorder={setItems}
+        aria-label="Example tiers, in the order members see them"
+      >
+        {(item) => <span>{item}</span>}
+      </SortableList>
+    </Section>
+  );
+}
+
 export function ToggleDemo() {
   return (
     <Section>
@@ -268,6 +286,7 @@ export function ControlDemos() {
       <RadioGroupDemo />
       <SwitchDemo />
       <SliderDemo />
+      <SortableListDemo />
       <ToggleDemo />
       <ToggleGroupDemo />
       <DatePickerDemo />
