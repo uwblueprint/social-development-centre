@@ -6,7 +6,7 @@ import type { ActionState } from "@/lib/forms";
 
 /** Layout for the admin pages that manage people (Admins, Members) until the admin portal's shell lands. */
 
-export const PeoplePage = styled.main`
+export const PeoplePage = styled.div`
   display: flex;
   flex-direction: column;
   gap: var(--space-6);

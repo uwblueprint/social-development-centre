@@ -35,13 +35,13 @@ const Item = styled.button`
   box-sizing: border-box;
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
   width: 100%;
   height: 36px;
   padding: 0 var(--space-2);
   border-radius: var(--radius-md);
   color: var(--color-text-muted);
-  font-size: var(--text-md);
+  font-size: var(--text-sm);
   line-height: var(--leading-ui);
   cursor: pointer;
   transition:
@@ -73,7 +73,7 @@ export function ThemeSwitcher() {
         listeners.forEach((l) => l());
       }}
     >
-      <Icon icon={next === "dark" ? Moon : Sun} size={18} />
+      <Icon icon={next === "dark" ? Moon : Sun} size={16} strokeWidth={1.75} /* NAV_STROKE in Sidebar.tsx */ />
       {next === "dark" ? "Dark mode" : "Light mode"}
     </Item>
   );

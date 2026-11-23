@@ -3,7 +3,7 @@ import { requireAdmin } from "@/features/auth/session";
 import { MembersPage } from "@/features/members/MembersPage";
 import { listMembers } from "@/features/members/queries";
 
-export const metadata: Metadata = { title: "Members" };
+export const metadata: Metadata = { title: "People" };
 
 // A plain list until the Member Directory (tags, unsubscribes, email history) lands.
 export default async function CommunityRoute() {

@@ -3,6 +3,7 @@
 import * as React from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { styled } from "next-yak";
+import { SidebarOpenButton } from "./Sidebar";
 import { ArrowRight, FunnelX, SearchX, X, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -134,6 +135,7 @@ export function ListPageHeader({
     <HeaderContainer>
       <Header>
         <TitleRow>
+          <SidebarOpenButton slot />
           <Title tabIndex={-1}>{title}</Title>
         </TitleRow>
         {search && <HeaderSearch>{search}</HeaderSearch>}

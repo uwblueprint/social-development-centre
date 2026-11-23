@@ -4,6 +4,7 @@ import "@fontsource-variable/jetbrains-mono/wght.css";
 import "@/components/ui/tokens";
 import { TooltipProvider } from "@/components/ui/Tooltip";
 import { inputModalityScript } from "@/components/ui/inputModality";
+import { sidebarBootScript } from "@/lib/sidebar";
 import { themeBootScript } from "@/lib/theme";
 
 export const metadata: Metadata = {
@@ -12,10 +13,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    // suppressHydrationWarning: the theme script may set data-theme on <html> before React hydrates.
+    // suppressHydrationWarning: the boot scripts may set data-theme or data-sidebar on <html> before React hydrates.
     <html lang="en" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
+        <script dangerouslySetInnerHTML={{ __html: themeBootScript + sidebarBootScript }} />
         <script dangerouslySetInnerHTML={{ __html: inputModalityScript }} />
         {/* Switzer from Fontshare: 400 for text, 500 for headings (--weight-regular / --weight-medium). */}
         <link rel="preconnect" href="https://api.fontshare.com" />
