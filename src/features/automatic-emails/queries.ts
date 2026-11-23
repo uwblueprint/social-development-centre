@@ -17,7 +17,7 @@ export async function listAutomaticEmails(): Promise<AutomaticEmail[]> {
 /** Every tag, A to Z, for the pickers. */
 export async function listTagOptions(): Promise<TagOption[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase.from("tags").select("id, name").order("name");
+  const { data, error } = await supabase.from("tags").select("id, name, color").order("name");
   if (error) throw error;
   return data;
 }
