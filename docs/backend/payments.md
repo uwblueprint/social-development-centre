@@ -36,7 +36,7 @@ if it doesn't, suspension happens at PayPal's own threshold instead.
 
 | Where | What |
 | --- | --- |
-| `supabase/migrations/20261119000000_payments.sql` | `subscriptions`, `payments`, `paypal_events`; `end_paid_membership()`, `assign_payment()`; row-level security |
+| `supabase/migrations/20261124000000_payments.sql` | `subscriptions`, `payments`, `paypal_events`; `end_paid_membership()`, `assign_payment()`; row-level security |
 | `src/features/payments/config.ts` | Plans (by PayPal Plan id), the failure limit, PayPal URLs |
 | `src/features/payments/copy.ts` | Every string members and admins see |
 | `src/features/payments/paypal.ts` | PayPal REST calls (server only) |
