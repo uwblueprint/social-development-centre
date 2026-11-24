@@ -45,8 +45,9 @@ export function PaymentsPage({ members, unmatched }: { members: MemberPaymentRow
   };
 
   const cancelButton = (m: MemberPaymentRow) =>
-    // Nothing to cancel yet: "none" never started, "pending" is still on PayPal's approval page.
-    m.status === "none" || m.status === "pending" ? null : (
+    // Nothing to cancel: "none" never started, "pending" is still on PayPal's approval page,
+    // "cancelled" already ended.
+    m.status === "none" || m.status === "pending" || m.status === "cancelled" ? null : (
       <Button
         type="button"
         $variant="outline"
@@ -278,7 +279,8 @@ function AssignForm({
     return result;
   }, idleState);
 
-  const options = members.map((m) => ({ value: m.personId, label: m.name ? `${m.name} (${m.email})` : m.email }));
+  // assign_payment() only accepts current members.
+  const options = members.filter((m) => m.isMember).map((m) => ({ value: m.personId, label: m.name ? `${m.name} (${m.email})` : m.email }));
 
   return (
     <form action={formAction} noValidate>

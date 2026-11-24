@@ -65,15 +65,20 @@ export async function getMyMembership(personId: string): Promise<MyMembership> {
   };
 }
 
-/** Every current member with their payment status, A–Z. Admins only (row-level security). */
+/**
+ * Everyone on the Payments page, A–Z: every current member, plus anyone who has a subscription or a
+ * payment on record. Cancelling ends the membership, so without the second group a cancelled member
+ * would disappear along with their payment history. Admins only (row-level security).
+ */
 export async function listMemberPayments(): Promise<MemberPaymentRow[]> {
   const supabase = await createClient();
   const [members, subscriptions, payments] = await Promise.all([
-    supabase.from("memberships").select("person:people!person_id(id, email, full_name)"),
+    supabase.from("memberships").select("person_id"),
     supabase
       .from("subscriptions")
-      .select("person_id, status, failed_attempts, next_billing_at")
-      .in("status", LIVE),
+      .select("person_id, status, failed_attempts, next_billing_at, created_at")
+      .not("person_id", "is", null)
+      .order("created_at", { ascending: false }),
     supabase
       .from("payments")
       .select("person_id, kind, amount_cents, currency, paid_at")
@@ -84,27 +89,45 @@ export async function listMemberPayments(): Promise<MemberPaymentRow[]> {
   if (subscriptions.error) throw subscriptions.error;
   if (payments.error) throw payments.error;
 
-  const subscriptionOf = new Map(subscriptions.data.map((s) => [s.person_id, s]));
-  const thisYear = dayKey(new Date().toISOString()).slice(0, 4);
+  const memberIds = new Set(members.data.map((m) => m.person_id));
+  const personIds = new Set([
+    ...memberIds,
+    ...subscriptions.data.map((s) => s.person_id!),
+    ...payments.data.map((p) => p.person_id!),
+  ]);
+  if (personIds.size === 0) return [];
+
+  const people = await supabase.from("people").select("id, email, full_name").in("id", [...personIds]);
+  if (people.error) throw people.error;
+
+  // A live subscription wins; otherwise the newest one (a cancelled one says "Cancelled").
+  const subscriptionOf = new Map<string, (typeof subscriptions.data)[number]>();
+  for (const s of subscriptions.data) {
+    const current = subscriptionOf.get(s.person_id!);
+    if (!current || (LIVE.includes(s.status) && !LIVE.includes(current.status))) subscriptionOf.set(s.person_id!, s);
+  }
   const paymentsOf = new Map<string, typeof payments.data>();
   for (const payment of payments.data) {
     const list = paymentsOf.get(payment.person_id!) ?? [];
     list.push(payment);
     paymentsOf.set(payment.person_id!, list);
   }
+  const thisYear = dayKey(new Date().toISOString()).slice(0, 4);
 
-  return members.data
-    .map(({ person }) => {
+  return people.data
+    .map((person) => {
       const subscription = subscriptionOf.get(person.id);
+      const live = subscription && LIVE.includes(subscription.status) ? subscription : null;
       const history = paymentsOf.get(person.id) ?? [];
       const last = history.find((p) => p.kind === "payment");
       return {
         personId: person.id,
         name: person.full_name,
         email: person.email,
+        isMember: memberIds.has(person.id),
         status: (subscription?.status ?? "none") as PaymentStatus,
-        failedAttempts: subscription?.failed_attempts ?? 0,
-        nextBillingAt: subscription?.next_billing_at ?? null,
+        failedAttempts: live?.failed_attempts ?? 0,
+        nextBillingAt: live?.next_billing_at ?? null,
         lastPaidAt: last?.paid_at ?? null,
         lastAmountCents: last?.amount_cents ?? null,
         currency: last?.currency ?? null,

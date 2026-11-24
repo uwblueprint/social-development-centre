@@ -53,10 +53,10 @@ export const disabledReasons = {
 
 export const adminCopy = {
   pageTitle: "Payments",
-  membersHeading: "Members",
+  membersHeading: "Members and payments",
   unmatchedHeading: "Unmatched payments",
   unmatchedIntro: "PayPal payments we couldn’t link to a member, for example someone who paid SDC’s PayPal directly.",
-  noMembers: "No members yet.",
+  noMembers: "No members or payments yet.",
   noUnmatched: "Every payment is linked to a member.",
   status: {
     none: "Not paying",

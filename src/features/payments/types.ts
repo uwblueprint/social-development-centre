@@ -22,11 +22,13 @@ export interface MyMembership {
   lastFailedAt: string | null;
 }
 
-/** A row on the admin Payments page. */
+/** A row on the admin Payments page: a current member, or anyone with payment history. */
 export interface MemberPaymentRow {
   personId: string;
   name: string | null;
   email: string;
+  /** False once they've cancelled (cancelling ends the membership); kept for their payment history. */
+  isMember: boolean;
   status: PaymentStatus;
   failedAttempts: number;
   nextBillingAt: string | null;
