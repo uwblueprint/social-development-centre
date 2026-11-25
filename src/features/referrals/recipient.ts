@@ -1,6 +1,6 @@
 /*
  * What the page checks before anything is sent, and the helpers it uses on what's typed. The server
- * (`refer_friend`, supabase/migrations/20261112000000_referrals.sql) checks everything again, including
+ * (`refer_friend`, supabase/migrations/20261120000000_referrals.sql) checks everything again, including
  * the member's own address, which only it knows.
  */
 import { copy } from "./copy";
