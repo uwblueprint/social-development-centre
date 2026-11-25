@@ -163,8 +163,9 @@ export async function loadOutbox(): Promise<OutboxInitial> {
       // It goes with the next run: today's if it hasn't happened yet, else tomorrow's (a join after 10:30 with no delay).
       push(r, { day: due > 0 ? due : afterSend ? 1 : 0, status: "scheduled" });
     } else {
-      // Waiting for review keeps its due day, so past due reads "N days late".
-      push(r, { day: due, status: "review" });
+      // Waiting for review keeps its due day, so past due reads "N days late". Due today after today's run,
+      // approving it sends it tomorrow, so it shows tomorrow.
+      push(r, { day: due === 0 && afterSend ? 1 : due, status: "review" });
     }
   }
   for (const r of notSentRows) {
