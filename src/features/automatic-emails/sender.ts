@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { REPLY_TO } from "./footer";
 
 export type OutgoingEmail = {
   to: string;
@@ -60,6 +61,7 @@ function smtpFromEnv(): Sender | null {
       try {
         const info = await transport.sendMail({
           from: { name: FROM_NAME, address: SMTP_USER },
+          replyTo: REPLY_TO,
           to: email.to,
           subject: email.subject,
           text: email.text,

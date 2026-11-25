@@ -1,6 +1,6 @@
 /*
  * Demo data for the referral page: the same component as /refer/<token>, with this function standing in
- * for the server action. The real rules live in `refer_friend` (supabase/migrations/20261112000000_referrals.sql).
+ * for the server action. The real rules live in `refer_friend` (supabase/migrations/20261120000000_referrals.sql).
  *
  * Try these in the email field (every state is also laid out at /design/referrals/states):
  * - amara@example.org: the referrer's own address (refused)

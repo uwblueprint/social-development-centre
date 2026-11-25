@@ -17,7 +17,7 @@ import { SearchField } from "@/components/ui/SearchField";
   - immediately on **Enter** (cancelling the pending timer),
   - with `""` when the clear (×) button is clicked.
   Called with whatever is typed, even if unchanged; de-duplicate in the caller if a repeat search is costly (`useListSearch` does).
-- `pending?: boolean`: while `true`, the leading search icon becomes a spinner and the form is `aria-busy`. Pass `useTransition`'s pending flag.
+- `pending?: boolean`: while `true`, a spinner shows at the right edge in place of the × button (the leading search icon stays), and the form is `aria-busy`. × returns when loading ends. Pass `useTransition`'s pending flag.
 - `clearLabel?: string`: accessible name of the × button. Default "Clear search".
 - Controlled (`value` + `onChange`) or uncontrolled (`defaultValue`). In both modes × empties the field through a normal change event, so a controlled caller's `onChange` receives `""`.
 
@@ -48,7 +48,7 @@ Anything that depends on the search (the rows, the tab counts, the empty state) 
 - No visible label is the one exception to "every control has a visible label" (AGENTS.md rule 4): the leading search icon, the placeholder and the required `aria-label` together identify it.
 - Enter searches because the field is its own `role="search"` form, which is also a landmark.
 - The × button is a real, keyboard-reachable `button` with an `aria-label`; the browser's native clear affordance is hidden.
-- The spinner is decorative; the results region announces changes if it needs to (e.g. `aria-live` on a count).
+- The spinner is decorative (`aria-hidden`); `aria-busy` on the form is what signals loading, and the results region announces changes if it needs to (e.g. `aria-live` on a count).
 
 ## Don't
 1. Wrapping it in `Field` with a visible label and hint. Use the placeholder and `aria-label`.
