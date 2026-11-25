@@ -6,10 +6,6 @@
  * https://www.figma.com/board/jvbGjJ6Wb3CZIOjTB6x81Z/Unsub-flow
  */
 
-/** The email page's "What's going on?" answers. Each opens its own follow-up (FigJam). */
-export const emailReasons = ["too-many", "not-relevant", "no-more"] as const;
-export type EmailReason = (typeof emailReasons)[number];
-
 /** "What's the main reason you're cancelling?" answers. Each opens its own follow-up (FigJam). */
 export const membershipReasons = ["emails", "budget", "break", "done"] as const;
 export type MembershipReason = (typeof membershipReasons)[number];
@@ -31,6 +27,11 @@ export const tiers: Tier[] = [
 
 export interface DemoMember {
   firstName: string;
+  /**
+   * A paying member. Comes from the member's record (looked up from the email link's token), never
+   * from the URL. The demo person is always a member; set this to false to preview a subscriber.
+   */
+  isMember: boolean;
   email: string;
   tierId: string;
   /** ISO dates (YYYY-MM-DD). */
@@ -40,6 +41,7 @@ export interface DemoMember {
 
 export const demoMember: DemoMember = {
   firstName: "Priya",
+  isMember: true,
   email: "priya.shah@example.com",
   tierId: "sustainer",
   nextPaymentDate: "2026-12-01",
@@ -53,12 +55,16 @@ export const DEMO_TODAY = "2026-11-11";
 export const RESTART_REMINDER_DAYS = 7;
 
 /**
- * The email types "too many emails" lets people tick, independent of each other so any mix makes
- * sense. Placeholders until SDC lists the email types it actually sends (doc: Open questions).
- * Membership and voting notices aren't here: voting members can't turn the legally required ones off.
+ * The email types on the preferences page, independent of each other. "membership" (only emails
+ * about my membership) shows for members only: see `emailTypesFor`. Placeholders until SDC lists the
+ * email types it actually sends (doc: Open questions).
  */
-export const emailTypes = ["monthly", "events", "campaigns"] as const;
+export const emailTypes = ["monthly", "membership"] as const;
 export type EmailType = (typeof emailTypes)[number];
+
+/** The email types a person can choose: everyone gets the monthly summary; members also get membership emails. */
+export const emailTypesFor = (isMember: boolean): EmailType[] =>
+  emailTypes.filter((t) => isMember || t !== "membership");
 
 /**
  * How long a pause lasts, in months: presets rather than free entry, since most people want one to

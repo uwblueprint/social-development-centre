@@ -2,11 +2,8 @@
 
 import { useEffect, useRef, type ReactNode } from "react";
 import Link from "next/link";
-import { keyframes, styled } from "next-yak";
-import { Check } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import { styled } from "next-yak";
 import { Collapsible, CollapsibleContent } from "@/components/ui/Collapsible";
-import { Icon } from "@/components/ui/Icon";
 import { RadioGroup, RadioGroupOption } from "@/components/ui/RadioGroup";
 import { Separator } from "@/components/ui/Separator";
 import { AuthActions, AuthColumn, AuthHeading, AuthScreen, SdcLogo } from "@/features/auth/AuthScreen";
@@ -17,25 +14,18 @@ import { AuthActions, AuthColumn, AuthHeading, AuthScreen, SdcLogo } from "@/fea
  * 1. One template: logo, green heading with what happened right under it, content, actions, and an
  *    undo set apart by a divider.
  * 2. A question is one bordered list of answers; choosing one slides open its follow-up.
- * 3. The button a person presses changes its text to the result and stops doing anything. An undo,
- *    when there is one, is a muted line with a text button.
+ * 3. A result shows as a new screen whose heading says what happened, or as a toast for a saved
+ *    setting. An undo, when there is one, is a muted line with a text button.
+ *
+ * Motion follows docs/design/motion.md: screens and follow-up contents don't fade in (page entrances
+ * are static); only the kit's Collapsible height reveal moves.
  */
 
 /* ---- Template ---- */
 
-export const fadeIn = keyframes`
-  from {
-    opacity: 0;
-  }
-`;
-
-/**
- * Each new screen fades in (reduced motion is handled globally). Key it by screen. Sections sit
- * further apart than AuthColumn's default, so the heading and its line read as one group.
- */
-export const Column = styled(AuthColumn)`
+/** Sections sit further apart than AuthColumn's default, so the heading and its line read as one group. */
+const Column = styled(AuthColumn)`
   gap: var(--space-6);
-  animation: ${fadeIn} var(--duration) var(--ease);
 `;
 
 /** The heading and what happened, one group: closer than sections (--space-6), with room to breathe. */
@@ -149,12 +139,6 @@ export const OptionList = styled.div`
   }
 `;
 
-/** A follow-up slides open at the slower height duration, the token for "things with real distance". */
-export const FollowUp = styled(CollapsibleContent)`
-  &&[data-state] {
-    animation-duration: var(--duration-slow);
-  }
-`;
 
 /** A follow-up's contents, inset under its answer. Padding also keeps focus rings inside the clip. */
 export const FollowUpBody = styled.div`
@@ -162,7 +146,6 @@ export const FollowUpBody = styled.div`
   flex-direction: column;
   gap: var(--space-3);
   padding: var(--space-1) var(--space-3) var(--space-3);
-  animation: ${fadeIn} var(--duration-slow) var(--ease);
 `;
 
 /** A checkbox or answer label at body size; the kit's labels are form-label size. */
@@ -170,12 +153,6 @@ export const ChoiceText = styled.span`
   font-size: var(--text-md);
   line-height: var(--leading-ui);
   color: var(--color-text);
-`;
-
-export const Choices = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
 `;
 
 interface Option<T extends string> {
@@ -207,9 +184,9 @@ export function Options<T extends string>({
               <RadioGroupOption value={o.value} label={<ChoiceText>{o.label}</ChoiceText>} />
               {o.followUp && (
                 <Collapsible open={value === o.value}>
-                  <FollowUp>
+                  <CollapsibleContent>
                     <FollowUpBody>{o.followUp}</FollowUpBody>
-                  </FollowUp>
+                  </CollapsibleContent>
                 </Collapsible>
               )}
             </div>
@@ -220,24 +197,10 @@ export function Options<T extends string>({
   );
 }
 
-/* ---- Pattern 3: results ---- */
-
-/**
- * A pressed button's result: same place, its text says what happened, and it does nothing more.
- * aria-disabled on the secondary style, not `disabled`: the kit fades disabled buttons below 4.5:1,
- * and this text needs reading. No disabled reason (design: the label explains it). It's a plain kit
- * Button (a function, not a component) so React updates the pressed button in place and focus stays
- * on it; no transition, so it doesn't fade through the old button's colours.
- */
-export const done = (label: string) => (
-  <Button type="button" $variant="secondary" $size="lg" aria-disabled="true" style={{ transition: "none" }}>
-    <Icon icon={Check} size={16} />
-    {label}
-  </Button>
-);
+/* ---- The undo ---- */
 
 /** "Unsubscribed by mistake? Resubscribe": a muted line with a text button, centred. */
-export const UndoLine = styled.div`
+const UndoLine = styled.div`
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -246,25 +209,7 @@ export const UndoLine = styled.div`
 `;
 
 /**
- * A result line that replaces a button that's gone (Resubscribe, Restart). Fades in and takes focus,
- * so keyboard and screen-reader users aren't dropped at the top of the page.
- */
-export function StatusLine({ children }: { children: ReactNode }) {
-  const ref = useRef<HTMLParagraphElement>(null);
-  useEffect(() => ref.current?.focus(), []);
-  return (
-    <FadingNote ref={ref} role="status" tabIndex={-1}>
-      {children}
-    </FadingNote>
-  );
-}
-
-export const FadingNote = styled(Note)`
-  animation: ${fadeIn} var(--duration) var(--ease);
-`;
-
-/**
- * Pattern 1: the template every screen fills. Keyed by `screenKey` so each screen fades in.
+ * Pattern 1: the template every screen fills. Keyed by `screenKey`, so each screen is a fresh tree.
  * - `line`: what happened, in one or two sentences, right under the heading (near-black, `Lead`).
  *   Every screen uses this one treatment; grey (`Note`) is only for small print in `children`.
  * - `undo`: a muted question and a text button, after a divider below the actions.

@@ -6,29 +6,29 @@ The flow follows the [Unsub flow FigJam board](https://www.figma.com/board/jvbGj
 
 ## Screens
 
-- **The email page.** "What's going on?": too many emails → tick the email types you want → Save. Not relevant → link to the intake form to update interests. Don't want to hear from SDC → the Unsubscribe button below.
-- **After Unsubscribe** the page becomes the result: the question slides closed, the heading changes to "You're unsubscribed" and takes focus. Members see that their membership is still active (body size, date and price in bold), with "Sounds good" and "Cancel membership" (opens the cancel-membership flow at "Before you go"). "Unsubscribed by mistake? Resubscribe" is the last line; resubscribing slides the question open again and shows "You're subscribed again" in place of the note under Unsubscribe.
+- **Update your email preferences** (footer link 1). "Choose what you still want to hear about." over one bordered list of checkboxes: A monthly summary of SDC's work; Only emails about my membership (members only); Unsubscribe from all emails. "Unsubscribe from all" and the email types exclude each other: ticking one clears the other side. Everything the person gets now starts ticked. "Save my preference" shows a toast: "Your preference has been updated."
+- **You're unsubscribed** (`?screen=unsubscribed`): saving with "Unsubscribe from all" ticked, or with nothing ticked. Members see that their membership is still active (date and price in bold), with "Sounds good" and "Cancel membership" (opens the cancel-membership flow at "Before you go"). Non-members see only the heading. "Unsubscribed by mistake? Resubscribe" is the last line; resubscribing returns to the preferences page with everything ticked and a toast.
 - **"Sounds good"** opens a closing screen: "You're unsubscribed / Awesome! You can close this tab now." (`?screen=closed`)
+
+Whether the person is a member comes from their record (`demoMember.isMember` in `data.ts`), never the URL. The demo person is always a member; set it to `false` to preview a subscriber.
 
 ## Three patterns, shared with the cancel-membership flow
 
 Both flows are built from `parts.tsx`:
 
-1. **One template** (`Template`). SDC logo; green heading (it gets smaller as the screen narrows) with what happened right under it as one tight group (`line`: near-black, body size, centred, every screen the same); content; actions; then the undo, if any, after a divider. Sections are `--space-6` apart, the heading and its line `--space-2`, so grouping comes from spacing. Grey (`Note`) is only for small print: refunds, the undo question, what pausing means. Questions are centred over their answer list. Each new screen fades in.
-2. **A question is one bordered list of answers** (`Options`: kit `RadioGroup`, one answer, optional). Choosing an answer slides its follow-up open under it (kit `Collapsible`, `--duration-slow`) and closes the previous one. Follow-ups never open a new page. Text inside a follow-up is small and muted, so the answer above it reads first; messages the page is about are body size (`Lead`).
-3. **The button you press becomes its result** (`done()`). It stays in place, says what happened ("✓ Your preference is saved") and does nothing more. It's `aria-disabled` on the secondary style rather than `disabled`, because the kit fades disabled buttons below 4.5:1, and it has no disabled reason (design: the label explains it). Focus stays on it. An undo is a muted question and a text button after a divider (`Template`'s `undo`).
+1. **One template** (`Template`). SDC logo; green heading (it gets smaller as the screen narrows) with what happened right under it as one tight group (`line`: near-black, body size, centred, every screen the same); content; actions; then the undo, if any, after a divider. Sections are `--space-6` apart, the heading and its line `--space-2`, so grouping comes from spacing. Grey (`Note`) is only for small print: refunds, the undo question, what pausing means. Questions are centred over their answer list. Screens don't fade in (page entrances are static, `docs/design/motion.md`).
+2. **A question is one bordered list of answers** (`Options`: kit `RadioGroup`, one answer, optional). Choosing an answer slides its follow-up open under it (kit `Collapsible`) and closes the previous one. Follow-ups never open a new page. Text inside a follow-up is small and muted, so the answer above it reads first; messages the page is about are body size (`Lead`).
+3. **Results.** A change that moves the person on gets its own screen whose heading says what happened ("You're unsubscribed"). A saved setting that leaves them where they are gets a kit `Toast`. An undo is a muted question and a text button after a divider (`Template`'s `undo`).
 
-Buttons: black primary for the main action, red outline for Unsubscribe and cancelling, outline for the rest.
+Buttons: green primary (the kit's `--color-primary`) for the main action, red outline for cancelling, outline for the rest.
 
 ## Reused
 
 | Piece | From | Used for |
 | --- | --- | --- |
-| `AuthScreen`, `AuthColumn`, `AuthHeading`, `AuthActions`, `LinkButton`, `SdcLogo` | `src/features/auth/AuthScreen.tsx` | The template, the green heading, the actions column, the intake-form link |
+| `AuthScreen`, `AuthColumn`, `AuthHeading`, `AuthActions`, `LinkButton`, `SdcLogo` | `src/features/auth/AuthScreen.tsx` | The template, the green heading, the actions column |
 | `--color-brand-heading`, `--color-brand-tint`, `public/brand/sdc-logo.png` | `src/components/ui/tokens.ts`, `public/brand/` | The green heading and the logo |
-| `Button`, `Checkbox`, `Collapsible`, `Field`, `Input`, `RadioGroup` + `RadioGroupOption`, `Select`, `Separator`, `Textarea`, `Icon` | `src/components/ui/` | Everything else |
-
-`AuthScreen.tsx`, the logo and the two brand tokens are on main but not yet on this branch, so they are copied over exactly as main has them. When this branch takes main, they merge without changes.
+| `Button`, `Checkbox`, `Collapsible`, `RadioGroup` + `RadioGroupOption`, `Separator`, `Toast` | `src/components/ui/` | Everything else |
 
 ## New here (`parts.tsx`)
 
@@ -36,15 +36,13 @@ Promote them to the kit if a third flow needs them.
 
 | Piece | Why it's new |
 | --- | --- |
-| `danger-outline` Button variant (`src/components/ui/Button.tsx`; main has the same variant now) | Unsubscribe and cancelling must always be visible without competing with the main action. |
 | `Template`, `Column`, `Heading` | The shared template. `Heading` sizes the green heading to its width (a container query); it belongs in `AuthHeading`, for devs to move. |
-| `Options` (with `OptionList`, `FollowUp`) | A radio question whose answers each slide open a follow-up. The kit has radios and collapsibles but not the two together. |
-| `done()`, `UndoLine`, `StatusLine` | Pattern 3, the undo line, and a result line that replaces a button that's gone (takes focus). |
+| `Options` (with `OptionList`, `FollowUpBody`) | A radio question whose answers each slide open a follow-up. The kit has radios and collapsibles but not the two together. |
 | `ChoiceText`, `Lead` | Body-size answer labels and messages; the kit's labels are form-label size. |
 
-Layout-only: `Stack`, `Choices`, `Question`, `Note`, `Body`.
+Layout-only: `Stack`, `Question`, `Note`, `Body`.
 
 ## Open with SDC
 
-- Strings marked "Not in doc" in `copy.tsx`, including the email-type labels (SDC still has to list the types it sends) and "Sounds good".
-- Footer link 1 now opens the email page, not the doc's A1 preferences screen.
+- Strings marked "Not in doc" in `copy.tsx`, and the email types: SDC still has to list the types it sends.
+- "Only emails about my membership" sits beside the monthly summary as its own checkbox, so ticking both means both. If "only" should mean "nothing else", it would clear the monthly summary like "Unsubscribe from all" does.

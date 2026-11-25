@@ -13,25 +13,23 @@ Items marked **new** aren't on Jesse's branch.
 - Footer link 1 opens the email page; footer link 2 ("Pause or cancel membership") opens the cancel-membership
   flow. "Cancel membership" on the unsubscribed page opens the same flow.
 - Opening a page never changes anything (email scanners open links). Every change is a button press.
-- Each page needs: first name, email, subscribed or not, the chosen email types, and for members the tier
+- Each page needs: first name, email, member or not, subscribed or not, the chosen email types, and for members the tier
   name, monthly price, next payment date, member-since date and status (active / paused / cancelled), and the
   list of tiers with prices (and what each includes, once SDC says).
 - An unknown or broken token shows Jesse's "This link doesn't work" page.
 
-## Email page
-- "What's going on?" (optional, one answer): too many emails / not relevant / don't want to hear from SDC.
-  Store the answer with the unsubscribe or the preference change (Jesse's `subscription_events.reason`).
-- **Email types (new):** the types a person still wants (monthly summary, event invitations, campaigns; SDC
-  to confirm the real list). `save_email_types(token, types[])`; an empty list is an unsubscribe.
-  Legally required membership and voting notices always send and aren't a type.
-- "Not relevant" links to the intake form (`/intake-form`) to update interests. The form needs to open
-  pre-filled for the person from the token (**new**, or confirm it already can).
-- Unsubscribe and Resubscribe: Jesse's `unsubscribe(token)` / `resubscribe(token)`.
+## Email preferences page
+- Whether the person is a member comes from their record via the token, never from the URL.
+- **Email types (new):** the types a person still wants: the monthly summary, and for members "only emails
+  about my membership" (SDC to confirm the real list). The page opens with the types they get now ticked.
+  `save_email_types(token, types[])`. "Unsubscribe from all emails", or an empty list, is an unsubscribe:
+  Jesse's `unsubscribe(token)`. Legally required voting notices always send and aren't a type.
+- Resubscribe: Jesse's `resubscribe(token)`, back to every type.
 
 ## Cancel-membership flow
 - "What's the main reason you're cancelling?" (optional, one answer): too many emails / too expensive / need a
   break / no longer involved. Store it with whatever they do next, including the cancellation.
-- Too many emails: unsubscribes from emails only (same as the email page's Unsubscribe).
+- Too many emails: unsubscribes from emails only (same as the email page's "Unsubscribe from all emails").
 - **Switch to a lower tier (new):** `change_tier(token, tierId)`. Takes effect on the next payment; the
   current period stays at the current tier. Undoable until then (`change_tier` back to the current tier).
 - **Pause (new):** `pause_membership(token, months)`, months 1, 2 or 3 (SDC to confirm the maximum; the FigJam

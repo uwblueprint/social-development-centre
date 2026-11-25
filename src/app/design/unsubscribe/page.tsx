@@ -1,32 +1,30 @@
 import type { Metadata } from "next";
 import { unsubscribeCopy } from "./copy";
-import { demoMember, emailReasons, tiers } from "./data";
-import { UnsubscribeFlow, type EmailFlowStart } from "./UnsubscribeFlow";
+import { demoMember, tiers } from "./data";
+import { UnsubscribeFlow, type EmailFlowStart, type EmailScreen } from "./UnsubscribeFlow";
 
 export const metadata: Metadata = { title: unsubscribeCopy.pageTitle };
 
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
+const screens: EmailScreen[] = ["preferences", "unsubscribed", "closed"];
 
 /**
  * The email flow, as reached from footer link 1 in an SDC email. Member facing, so no sidebar.
- * Cancelling a membership is its own flow at /design/cancel-membership. Every state opens directly:
+ * Cancelling a membership is its own flow at /design/cancel-membership. Whether the person is a
+ * member comes from their record (`demoMember.isMember` in data.ts), never the URL. Every state opens
+ * directly:
  *
- * - `?screen=closed` is the closing screen after "Sounds good" (default: the email page).
- * - `?reason=too-many|not-relevant|no-more` opens with that answer chosen.
- * - `?state=saved|unsubscribed|resubscribed` opens just after that action (saved goes with too-many).
- * - `?member=false` shows the page for someone who only subscribes (default: a member).
+ * - `?screen=unsubscribed` is the page after "Unsubscribe from all emails"; `?screen=closed` the
+ *   closing screen after "Sounds good" (default: the preferences page).
  * - `?tier=friend|supporter|sustainer` sets the demo member's tier (default sustainer).
  */
 export default async function UnsubscribeDesign({ searchParams }: PageProps<"/design/unsubscribe">) {
   const params = await searchParams;
-  const reason = first(params.reason);
+  const screenParam = first(params.screen);
   const tierParam = first(params.tier);
 
   const start: EmailFlowStart = {
-    screen: first(params.screen) === "closed" ? "closed" : "email",
-    reason: emailReasons.find((r) => r === reason) ?? null,
-    state: first(params.state) ?? null,
-    isMember: first(params.member) !== "false",
+    screen: screens.find((s) => s === screenParam) ?? "preferences",
     tierId: tiers.some((t) => t.id === tierParam) ? tierParam! : demoMember.tierId,
   };
   // Keyed by the URL so changing a parameter starts the flow fresh.
