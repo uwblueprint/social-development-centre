@@ -77,16 +77,42 @@ const FooterRow = styled.div`
 
 /* ---- Offers ---- */
 
-/** Offer cards: side by side on wide screens, stacked on phones (the kit's 767px breakpoint). */
-export const OfferGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
-  gap: var(--space-4);
+/** Measures the space the offer cards have, so they stack by their own width, not the window's. */
+const OfferSpace = styled.div`
+  container-type: inline-size;
   width: 100%;
+`;
 
-  @media (max-width: 767px) {
-    grid-template-columns: minmax(0, 1fr);
+/**
+ * Offer cards side by side whenever they fit. They stack only below 488px of room: two cards of 236px
+ * (a 20px card inset each side around a 196px "Choose Supporter instead" button) plus the 16px gap.
+ * Narrower than that, the button label would be cut off. In practice: only on phones.
+ */
+const OfferColumns = styled.div`
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+
+  @container (max-width: 487px) {
+    grid-auto-flow: row;
   }
+`;
+
+export function OfferGrid({ children }: { children: ReactNode }) {
+  return (
+    <OfferSpace>
+      <OfferColumns>{children}</OfferColumns>
+    </OfferSpace>
+  );
+}
+
+/** A card's subheading (a tier's price): body size and near-black, so it reads as part of the offer, not small print. */
+const OfferSubheading = styled.p`
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-md);
+  line-height: var(--leading-ui);
+  color: var(--color-text);
 `;
 
 /** The card's accept button fills the card's width. */
@@ -100,12 +126,25 @@ const OfferFooter = styled(CardFooter)`
  * One retention offer: a kit Card with a title, one line, and the button that accepts it. The title is
  * the card's h3; offer pages have no h2, which WCAG allows (heading order is a best practice).
  */
-export function OfferCard({ title, description, action }: { title: string; description: ReactNode; action: ReactNode }) {
+export function OfferCard({
+  title,
+  subheading,
+  description,
+  action,
+}: {
+  title: string;
+  /** Near-black, body size, under the title (a tier's price). */
+  subheading?: ReactNode;
+  /** Muted small print under the title. */
+  description?: ReactNode;
+  action: ReactNode;
+}) {
   return (
     <Card>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
+        {subheading && <OfferSubheading>{subheading}</OfferSubheading>}
+        {description && <CardDescription>{description}</CardDescription>}
       </CardHeader>
       <OfferFooter>{action}</OfferFooter>
     </Card>

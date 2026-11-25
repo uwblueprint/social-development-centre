@@ -19,7 +19,7 @@ Every step of cancelling ends with one bottom row: **Keep my membership** on the
 1. **Before you go** (`?step=reasons`, default). "What's the main reason you're cancelling?" as one list of answers, then Continue. Nothing opens under an answer: what follows is the next page. The answer is optional, so Continue never stands between someone and cancelling.
 2. **The offer** (`?step=offer&reason=…`). One page per answer. Each offer is a kit `Card` (title, one line, and a full-width button that accepts it):
    - Too many emails → "Stop the emails, keep your membership": card "Unsubscribe from emails" → Unsubscribe from emails instead.
-   - Too expensive → "Pay less instead": one card per lower tier, side by side (the tier name, "$15 per month", "Choose Supporter instead"). Two cards widen the page to `--flow-width`; on phones they stack. A Friend has no lower tier, so they get the break offer.
+   - Too expensive → "Pay less instead": one card per lower tier, side by side (the tier name, "$15 per month", "Choose Supporter instead"). Two cards widen the page to `--flow-width` and sit side by side whenever they fit (by their own space, not the window), stacking only on phones. The price is a near-black, body-size subheading. A Friend has no lower tier, so they get the break offer.
    - Need a break → "Take a break instead": card "Pause for up to 3 months" → Pause instead.
    - No longer involved, or no answer → no offer: Continue goes straight to step 3.
 3. **Cancel your membership?** (`?step=confirm`). "Your voting rights and member benefits end at the end of the month, and you won't be charged again.", then, in small grey text, how to ask for a refund (email admin@sdc.com). Keep my membership (filled, left) or Cancel membership (red outline, right).

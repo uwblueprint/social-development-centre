@@ -230,7 +230,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
                 <OfferCard
                   key={t.id}
                   title={t.name}
-                  description={copy.offer.budget.price(formatMoney(t.monthlyPrice))}
+                  subheading={copy.offer.budget.price(formatMoney(t.monthlyPrice))}
                   action={
                     <Button
                       type="button"
