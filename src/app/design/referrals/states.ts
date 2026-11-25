@@ -1,6 +1,6 @@
 /*
  * Every state the referral page can be in, declared for the State lab (docs/design/state-lab.md). Each one
- * comes from the backend (refer_friend in supabase/migrations/20261112000000_referrals.sql, the referFriend
+ * comes from the backend (refer_friend in supabase/migrations/20261120000000_referrals.sql, the referFriend
  * server action) or the browser. A switch doesn't jump to a screen: it changes what the demo's referFriend
  * answers (or what the browser does), so you walk the flow and meet the state where a member would.
  *
