@@ -2,28 +2,30 @@
 
 Its own flow. Footer link 2 in every SDC email ("Pause or cancel membership") and "Cancel membership" on the unsubscribed page (`/design/unsubscribe`) both open "Before you go": one click from either. Pausing is one of its offers. Open at `/design/cancel-membership`; `page.tsx` lists the query parameters for every state. Built from the email flow's parts (`../unsubscribe/parts.tsx`), so it follows the same three patterns; see [the unsubscribe README](../unsubscribe/README.md). Demo data is shared (`../unsubscribe/data.ts`). What the backend needs is in `docs/backend/unsubscribe.md`.
 
-Follows the [Unsub flow FigJam board](https://www.figma.com/board/jvbGjJ6Wb3CZIOjTB6x81Z/Unsub-flow), with a survey before cancelling and a lower-tier offer (references: Uber's and Hinge's cancel surveys, Spotify's cheaper plans, Disney+'s pause with a live resume date), in our design system.
+Follows the [Unsub flow FigJam board](https://www.figma.com/board/jvbGjJ6Wb3CZIOjTB6x81Z/Unsub-flow) in three steps, survey → retention offer → cancellation confirmation (Shallot, after a Mobbin cancel flow), with a lower-tier offer (Spotify's cheaper plans) and Disney+'s pause with a live resume date, in our design system.
 
 ## Steps
 
 ```
-Before you go ─► (need a break, or too expensive → Pause instead) Pause ─► Paused (end)
-  ├─ too many emails → Unsubscribed, membership kept (end)
-  ├─ too expensive   → Switched to a lower tier (end)
-  └─ Continue to cancel ─► Cancel your membership? ─► We're sorry to see you go (end)
-                                     └─ Keep my membership ─► Your membership is active again (end)
+1 Before you go ─Continue─► 2 Offer for that answer ─Continue to cancel─► 3 Cancel your membership? ─► We're sorry to see you go (end)
+     no answer, or "no longer involved": straight to 3                         └─ Keep my membership ─► Your membership is active again (end)
+  2 too many emails → Unsubscribe from emails instead ─► Unsubscribed, membership kept (end)
+  2 too expensive   → Switch to [tier] ─► Switched (end), or Pause instead
+  2 need a break    → Pause instead ─► Pause ─► Paused (end)
 ```
 
-- **Pause your membership** (`?step=pause`). 1, 2 or 3 months as one list (the copy doc's maximum), the restart date in bold, updating as they choose (after Disney+), what pausing means, then Pause membership or Back.
-- **Before you go** (`?step=reasons`, default). "What's the main reason you're cancelling?" (optional, one answer). Each answer opens one line and its buttons, never a nested form:
-  - Too many emails → Unsubscribe from emails instead.
-  - It's too expensive right now → "Switch to [tier] · $[price] a month" for each lower tier (starts on the next payment), and Pause instead. A Friend has no lower tier, so only Pause instead.
-  - I need a break → Pause instead.
-  - I don't want to be involved with SDC anymore → nothing: Continue to cancel is right there.
+1. **Before you go** (`?step=reasons`, default). "What's the main reason you're cancelling?" as one list of answers, then Continue. Nothing opens under an answer: what follows is the next page. The answer is optional, so Continue never stands between someone and cancelling.
+2. **The offer** (`?step=offer&reason=…`). One page per answer, each with its offer as the filled button and "Continue to cancel" (red outline) last:
+   - Too many emails → "Stop the emails, keep your membership": Unsubscribe from emails instead.
+   - Too expensive → "Pay less instead": "Switch to [tier] · $[price] a month" for each lower tier (starts on the next payment; the nearest tier is filled), and Pause instead. A Friend has no lower tier, so they get the break page.
+   - Need a break → "Take a break instead": Pause instead.
+   - No longer involved, or no answer → no offer: Continue goes straight to step 3.
+3. **Cancel your membership?** (`?step=confirm`). "Your voting rights and member benefits end at the end of the month, and you won't be charged again.", then, in small grey text, how to ask for a refund (email admin@sdc.com). Keep my membership (filled, first) or Cancel membership (red outline, second).
 
-  "Continue to cancel" is always visible: the question never stands between someone and cancelling.
-- **End screens for each alternative** (`?step=paused|switched|unsubscribed`). Saying yes to an alternative ends the flow on its own screen: the outcome as the heading, the details with dates and amounts in bold, and a muted undo line ("Switched" also says "Awesome! You can close this tab now."). Undoing changes the heading ("Your membership is active again" with "Thank you for your support.", "You'll stay a Sustainer member", "You're subscribed again") and moves focus to it.
-- **Cancel your membership?** (`?step=confirm`). "Your voting rights and member benefits end at the end of the month, and you won't be charged again.", then, in small grey text, how to ask for a refund (email admin@sdc.com). Keep my membership (filled, first) or Cancel membership (red outline, second).
+Then the ends:
+
+- **Pause your membership** (`?step=pause`). 1, 2 or 3 months as one list (the copy doc's maximum), the restart date in bold, updating as they choose (after Disney+), what pausing means, then Pause membership or Back (to the offer).
+- **End screens for each offer** (`?step=paused|switched|unsubscribed`). The outcome as the heading, the details with dates and amounts in bold, and a muted undo line ("Switched" also says "Awesome! You can close this tab now."). Undoing changes the heading ("Your membership is active again" with "Thank you for your support.", "You'll stay a Sustainer member", "You're subscribed again") and moves focus to it.
 - **Your membership is active again** (`?step=kept`). After Keep my membership: "Thank you for your support." Nothing else to do.
 - **We're sorry to see you go** (`?step=cancelled`). Thanks (the "supporter since" line lives only here), then small print: the confirmation email and, if they still get emails, "If you would no longer like to hear from SDC, you can unsubscribe here" ("unsubscribe here" links to the email flow). No buttons.
 

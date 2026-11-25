@@ -47,7 +47,7 @@ export const cancelCopy = {
     thanks: "Thank you for your support.", // Shallot: "a thank you note for your support".
   },
 
-  /* Before you go: the survey, for people who chose to cancel. */
+  /* Step 1, the survey: one question, no follow-ups on this page. */
   reasons: {
     heading: "Before you go", // Shallot.
     question: "What's the main reason you're cancelling?", // Shallot.
@@ -57,20 +57,33 @@ export const cancelCopy = {
       break: "I need a break",
       done: "I don't want to be involved with SDC anymore",
     } satisfies Record<MembershipReason, string>,
+    continue: "Continue", // Not in doc.
+  },
 
+  /* Step 2, the retention offer: one page per answer that has something to offer. "No longer involved" (or no answer) skips it. */
+  offer: {
     // Too many emails → unsubscribe from emails instead (FigJam).
-    emailsBody: "You can stop getting emails and keep your membership.", // Not in doc.
-    emailsAction: "Unsubscribe from emails instead", // Not in doc.
-
+    emails: {
+      heading: "Stop the emails, keep your membership", // Not in doc.
+      line: "You can stop getting emails from SDC and still be a member.", // Not in doc.
+      action: "Unsubscribe from emails instead", // Not in doc.
+    },
     // Too expensive → a lower tier, or a pause (FigJam: "Pause / discontinue completely").
-    lowerTierBody: (date: string) => `Pay less from your next payment on ${date}, or take a break.`, // Not in doc.
-    noLowerTierBody: "You can take a break instead. You won't be charged while paused.", // Not in doc.
-    switchTo: (tier: string, amount: string) => `Switch to ${tier} · ${amount} a month`, // The doc's "Switch to [lower tier]", with the price.
-
-    // Need a break → pause.
-    breakBody: "Pause for up to 3 months instead. You won't be charged while paused.", // Not in doc.
+    budget: {
+      heading: "Pay less instead", // Not in doc.
+      line: (date: ReactNode) => (
+        <>
+          Switch to a lower tier from your next payment on <strong>{date}</strong>, or take a break.
+        </>
+      ), // Not in doc.
+      switchTo: (tier: string, amount: string) => `Switch to ${tier} · ${amount} a month`, // The doc's "Switch to [lower tier]", with the price.
+    },
+    // Need a break, or too expensive with no lower tier → pause.
+    break: {
+      heading: "Take a break instead", // Not in doc.
+      line: "Pause for up to 3 months. You won't be charged while paused.", // Not in doc.
+    },
     pauseInstead: "Pause instead", // Not in doc.
-
     continueToCancel: "Continue to cancel", // Not in doc.
   },
 

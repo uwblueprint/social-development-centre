@@ -18,26 +18,27 @@ import {
   type MembershipReason,
   type PauseLength,
 } from "../unsubscribe/data";
-import { Body, Lead, Note, Options, Stack, Template, TextLink, useFocusHeadingOn } from "../unsubscribe/parts";
+import { Lead, Note, Options, Stack, Template, TextLink, useFocusHeadingOn } from "../unsubscribe/parts";
 import { cancelCopy as copy } from "./copy";
 
 /*
  * The cancel-membership flow, its own path. Footer link 2 in every SDC email ("Pause or cancel
- * membership") and "Cancel membership" on the unsubscribed page both open "Before you go": one click
- * from either. Pausing is one of its offers.
+ * membership") and "Cancel membership" on the unsubscribed page both open "Before you go".
+ * Three steps: survey → retention offer → cancellation confirmation.
  *
- *   Before you go ─► (break, or too expensive) Pause ─► Paused (end)
- *     ├─ too many emails → Unsubscribed, membership kept (end)
- *     ├─ too expensive   → Switched to a lower tier (end)
- *     └─ Continue to cancel ─► Cancel your membership? ─► We're sorry to see you go (end)
- *                                        └─ Keep my membership ─► Your membership is active again (end)
+ *   1 Before you go (survey) ─Continue─► 2 Offer for that answer ─Continue to cancel─► 3 Cancel your membership?
+ *        │ no answer, or "no longer involved": straight to 3                              ├─► We're sorry to see you go (end)
+ *        │                                                                                └─ Keep my membership ─► active again (end)
+ *        2 too many emails → Unsubscribe from emails instead → Unsubscribed, membership kept (end)
+ *        2 too expensive   → Switch to a lower tier → Switched (end), or Pause instead
+ *        2 need a break    → Pause instead → Pause ─► Paused (end)
  *
  * Every step is in the URL (`?step=`), so the phone's back button goes back a step, not out of the
  * flow. Saying yes to an alternative ends on its own screen, like the email flow's "You can close this
  * tab now". Built from the email flow's parts (../unsubscribe/parts.tsx). Client state only.
  */
 
-export const CANCEL_STEPS = ["reasons", "pause", "paused", "switched", "unsubscribed", "confirm", "kept", "cancelled"] as const;
+export const CANCEL_STEPS = ["reasons", "offer", "pause", "paused", "switched", "unsubscribed", "confirm", "kept", "cancelled"] as const;
 export type CancelStep = (typeof CANCEL_STEPS)[number];
 
 export interface CancelFlowStart {
@@ -84,6 +85,9 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
     else go(fallback);
   }
 
+  /** Answers with a retention offer. "No longer involved", or no answer, goes straight to the confirm step. */
+  const hasOffer = reason === "emails" || reason === "budget" || reason === "break";
+
   const restartDate = addMonths(DEMO_TODAY, Number(pauseLength));
   const switched = tierById(switchedTo);
 
@@ -98,7 +102,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
               <Button type="button" $size="lg" onClick={() => go("paused")}>
                 {copy.pause.pause}
               </Button>
-              <Button type="button" $variant="outline" $size="lg" onClick={() => back("reasons")}>
+              <Button type="button" $variant="outline" $size="lg" onClick={() => back("offer")}>
                 {copy.back}
               </Button>
             </>
@@ -143,10 +147,11 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
         <Template
           screenKey={step}
           heading={copy.reasons.heading}
-          // Always visible: the question never stands between someone and cancelling.
+          // The answer is optional: Continue always works, so the question never stands between
+          // someone and cancelling.
           actions={
-            <Button type="button" $variant="danger-outline" $size="lg" onClick={() => go("confirm")}>
-              {copy.reasons.continueToCancel}
+            <Button type="button" $size="lg" onClick={() => go(hasOffer ? "offer" : "confirm")}>
+              {copy.reasons.continue}
             </Button>
           }
         >
@@ -155,62 +160,108 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
             question={copy.reasons.question}
             value={reason}
             onChange={setReason}
-            // One line and the buttons for one alternative per answer; no nesting. "No longer
-            // involved" has nothing to offer, so it just leaves Continue to cancel.
-            options={membershipReasons.map((r) => ({
-              value: r,
-              label: copy.reasons.options[r],
-              followUp:
-                r === "emails" ? (
-                  <>
-                    <Body>{copy.reasons.emailsBody}</Body>
-                    <Button
-                      type="button"
-                      $variant="outline"
-                      $size="lg"
-                      onClick={() => {
-                        setSubscribed(false);
-                        go("unsubscribed");
-                      }}
-                    >
-                      {copy.reasons.emailsAction}
-                    </Button>
-                  </>
-                ) : r === "budget" ? (
-                  <>
-                    <Body>
-                      {lowerTiers.length > 0 ? copy.reasons.lowerTierBody(formatDate(nextPayment)) : copy.reasons.noLowerTierBody}
-                    </Body>
-                    {lowerTiers.map((t) => (
-                      <Button
-                        key={t.id}
-                        type="button"
-                        $variant="outline"
-                        $size="lg"
-                        onClick={() => {
-                          setSwitchedTo(t.id);
-                          go("switched");
-                        }}
-                      >
-                        {copy.reasons.switchTo(t.name, formatMoney(t.monthlyPrice))}
-                      </Button>
-                    ))}
-                    <Button type="button" $variant="outline" $size="lg" onClick={() => go("pause")}>
-                      {copy.reasons.pauseInstead}
-                    </Button>
-                  </>
-                ) : r === "break" ? (
-                  <>
-                    <Body>{copy.reasons.breakBody}</Body>
-                    <Button type="button" $variant="outline" $size="lg" onClick={() => go("pause")}>
-                      {copy.reasons.pauseInstead}
-                    </Button>
-                  </>
-                ) : undefined,
-            }))}
+            options={membershipReasons.map((r) => ({ value: r, label: copy.reasons.options[r] }))}
           />
         </Template>
       );
+
+    case "offer": {
+      // One offer per answer. Opened without one (a stale link), the survey comes first.
+      if (!hasOffer) {
+        return (
+          <Template
+            screenKey="offer-none"
+            heading={copy.reasons.heading}
+            actions={
+              <Button type="button" $size="lg" onClick={() => go("reasons")}>
+                {copy.reasons.continue}
+              </Button>
+            }
+          />
+        );
+      }
+      const continueToCancel = (
+        <Button type="button" $variant="danger-outline" $size="lg" onClick={() => go("confirm")}>
+          {copy.offer.continueToCancel}
+        </Button>
+      );
+      const pauseInstead = (variant: "primary" | "outline") => (
+        <Button type="button" $variant={variant} $size="lg" onClick={() => go("pause")}>
+          {copy.offer.pauseInstead}
+        </Button>
+      );
+
+      if (reason === "emails") {
+        return (
+          <Template
+            screenKey="offer-emails"
+            heading={copy.offer.emails.heading}
+            line={copy.offer.emails.line}
+            actions={
+              <>
+                <Button
+                  type="button"
+                  $size="lg"
+                  onClick={() => {
+                    setSubscribed(false);
+                    go("unsubscribed");
+                  }}
+                >
+                  {copy.offer.emails.action}
+                </Button>
+                {continueToCancel}
+              </>
+            }
+          />
+        );
+      }
+
+      // Too expensive with a lower tier: the cheapest switch is the filled button; a Friend has no
+      // lower tier, so their offer is the break page.
+      if (reason === "budget" && lowerTiers.length > 0) {
+        return (
+          <Template
+            screenKey="offer-budget"
+            heading={copy.offer.budget.heading}
+            line={copy.offer.budget.line(formatDate(nextPayment))}
+            actions={
+              <>
+                {lowerTiers.map((t, i) => (
+                  <Button
+                    key={t.id}
+                    type="button"
+                    $variant={i === 0 ? "primary" : "outline"}
+                    $size="lg"
+                    onClick={() => {
+                      setSwitchedTo(t.id);
+                      go("switched");
+                    }}
+                  >
+                    {copy.offer.budget.switchTo(t.name, formatMoney(t.monthlyPrice))}
+                  </Button>
+                ))}
+                {pauseInstead("outline")}
+                {continueToCancel}
+              </>
+            }
+          />
+        );
+      }
+
+      return (
+        <Template
+          screenKey="offer-break"
+          heading={copy.offer.break.heading}
+          line={copy.offer.break.line}
+          actions={
+            <>
+              {pauseInstead("primary")}
+              {continueToCancel}
+            </>
+          }
+        />
+      );
+    }
 
     case "switched":
       return (

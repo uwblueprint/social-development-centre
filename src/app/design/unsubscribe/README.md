@@ -17,7 +17,7 @@ Whether the person is a member comes from their record (`demoMember.isMember` in
 Both flows are built from `parts.tsx`:
 
 1. **One template** (`Template`). SDC logo; green heading (it gets smaller as the screen narrows) with what happened right under it as one tight group (`line`: near-black, body size, centred, every screen the same); content; actions; then the undo, if any, after a divider. Sections are `--space-6` apart, the heading and its line `--space-2`, so grouping comes from spacing. Grey (`Note`) is only for small print: refunds, the undo question, what pausing means. Questions are centred over their answer list. Screens don't fade in (page entrances are static, `docs/design/motion.md`).
-2. **A question is one bordered list of answers** (`Options`: kit `RadioGroup`, one answer, optional). Choosing an answer slides its follow-up open under it (kit `Collapsible`) and closes the previous one. Follow-ups never open a new page. Text inside a follow-up is small and muted, so the answer above it reads first; messages the page is about are body size (`Lead`).
+2. **A question is one bordered list of answers** (`Options`: kit `RadioGroup`, one answer, optional). Nothing opens under an answer: what follows it is the next page. Messages the page is about are body size (`Lead`).
 3. **Results.** A change that moves the person on gets its own screen whose heading says what happened ("You're unsubscribed"). A saved setting that leaves them where they are gets a kit `Toast`. An undo is a muted question and a text button after a divider (`Template`'s `undo`).
 
 Buttons: green primary (the kit's `--color-primary`) for the main action, red outline for cancelling, outline for the rest.
@@ -28,7 +28,7 @@ Buttons: green primary (the kit's `--color-primary`) for the main action, red ou
 | --- | --- | --- |
 | `AuthScreen`, `AuthColumn`, `AuthHeading`, `AuthActions`, `LinkButton`, `SdcLogo` | `src/features/auth/AuthScreen.tsx` | The template, the green heading, the actions column |
 | `--color-brand-heading`, `--color-brand-tint`, `public/brand/sdc-logo.png` | `src/components/ui/tokens.ts`, `public/brand/` | The green heading and the logo |
-| `Button`, `Checkbox`, `Collapsible`, `RadioGroup` + `RadioGroupOption`, `Separator`, `Toast` | `src/components/ui/` | Everything else |
+| `Button`, `Checkbox`, `RadioGroup` + `RadioGroupOption`, `Separator`, `Toast` | `src/components/ui/` | Everything else |
 
 ## New here (`parts.tsx`)
 
@@ -37,10 +37,10 @@ Promote them to the kit if a third flow needs them.
 | Piece | Why it's new |
 | --- | --- |
 | `Template`, `Column`, `Heading` | The shared template. `Heading` sizes the green heading to its width (a container query); it belongs in `AuthHeading`, for devs to move. |
-| `Options` (with `OptionList`, `FollowUpBody`) | A radio question whose answers each slide open a follow-up. The kit has radios and collapsibles but not the two together. |
+| `Options` (with `OptionList`) | A centred question over one bordered list of radio answers. |
 | `ChoiceText`, `Lead` | Body-size answer labels and messages; the kit's labels are form-label size. |
 
-Layout-only: `Stack`, `Question`, `Note`, `Body`.
+Layout-only: `Stack`, `Question`, `Note`.
 
 ## Open with SDC
 

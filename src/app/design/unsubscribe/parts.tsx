@@ -3,7 +3,6 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import Link from "next/link";
 import { styled } from "next-yak";
-import { Collapsible, CollapsibleContent } from "@/components/ui/Collapsible";
 import { RadioGroup, RadioGroupOption } from "@/components/ui/RadioGroup";
 import { Separator } from "@/components/ui/Separator";
 import { AuthActions, AuthColumn, AuthHeading, AuthScreen, SdcLogo } from "@/features/auth/AuthScreen";
@@ -13,12 +12,13 @@ import { AuthActions, AuthColumn, AuthHeading, AuthScreen, SdcLogo } from "@/fea
  * (/design/cancel-membership), so both follow the same three patterns (see README.md):
  * 1. One template: logo, green heading with what happened right under it, content, actions, and an
  *    undo set apart by a divider.
- * 2. A question is one bordered list of answers; choosing one slides open its follow-up.
+ * 2. A question is one bordered list of answers. Nothing opens under an answer: what follows an
+ *    answer is the next step.
  * 3. A result shows as a new screen whose heading says what happened, or as a toast for a saved
  *    setting. An undo, when there is one, is a muted line with a text button.
  *
  * Motion follows docs/design/motion.md: screens and follow-up contents don't fade in (page entrances
- * are static); only the kit's Collapsible height reveal moves.
+ * are static); only the kit controls' own colour fades move.
  */
 
 /* ---- Template ---- */
@@ -88,14 +88,6 @@ export const Note = styled.p`
   }
 `;
 
-/** A follow-up's description: smaller than the answer above it, so the answer reads first. */
-export const Body = styled.p`
-  margin: 0;
-  font-size: var(--text-sm);
-  line-height: var(--leading-ui);
-  color: var(--color-text-muted);
-`;
-
 /** What happened, at body size, near-black and centred. The template's line under the heading. */
 export const Lead = styled.p`
   margin: 0;
@@ -125,7 +117,7 @@ export const TextLink = styled(Link)`
   }
 `;
 
-/* ---- Pattern 2: answers with follow-ups ---- */
+/* ---- Pattern 2: answers ---- */
 
 /** One bordered group of answers, divided by 1px lines (no shadow: shadows are for overlays). */
 export const OptionList = styled.div`
@@ -140,14 +132,6 @@ export const OptionList = styled.div`
 `;
 
 
-/** A follow-up's contents, inset under its answer. Padding also keeps focus rings inside the clip. */
-export const FollowUpBody = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-1) var(--space-3) var(--space-3);
-`;
-
 /** A checkbox or answer label at body size; the kit's labels are form-label size. */
 export const ChoiceText = styled.span`
   font-size: var(--text-md);
@@ -158,7 +142,6 @@ export const ChoiceText = styled.span`
 interface Option<T extends string> {
   value: T;
   label: string;
-  followUp?: ReactNode;
 }
 
 export function Options<T extends string>({
@@ -180,16 +163,7 @@ export function Options<T extends string>({
       <RadioGroup aria-labelledby={id} value={value ?? ""} onValueChange={(v) => onChange(v as T)}>
         <OptionList>
           {options.map((o) => (
-            <div key={o.value}>
-              <RadioGroupOption value={o.value} label={<ChoiceText>{o.label}</ChoiceText>} />
-              {o.followUp && (
-                <Collapsible open={value === o.value}>
-                  <CollapsibleContent>
-                    <FollowUpBody>{o.followUp}</FollowUpBody>
-                  </CollapsibleContent>
-                </Collapsible>
-              )}
-            </div>
+            <RadioGroupOption key={o.value} value={o.value} label={<ChoiceText>{o.label}</ChoiceText>} />
           ))}
         </OptionList>
       </RadioGroup>
