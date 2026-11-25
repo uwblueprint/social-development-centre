@@ -19,6 +19,12 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "Expected a list of changes" }, { status: 400 });
   }
 
+  // What came in, for the server log: "approve ×1, edit ×1". No member details.
+  console.info(
+    "[outbox] commit:",
+    changes.map((c) => `${c.kind} ×${c.kind === "edit" ? 1 : c.items.length}`).join(", "),
+  );
+
   const supabase = await createClient();
   const results: OutboxCommitResult[] = [];
   for (const change of changes) {
