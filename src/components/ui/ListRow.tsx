@@ -37,6 +37,6 @@ export const ListRow = styled.button`
     position: relative;
     z-index: var(--z-raised);
     outline: none;
-    box-shadow: var(--focus-ring);
+    box-shadow: var(--focus-ring-inset); /* full-bleed row: the ring is drawn inside so a clipping list can't cut it */
   }
 `;
