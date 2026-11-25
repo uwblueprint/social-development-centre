@@ -186,7 +186,7 @@ export function MemberDirectory({ members, tags, today }: { members: MemberRow[]
   async function reload(id: string) {
     const next = await loadMember(id).catch(() => null);
     if (next) setLoaded(next);
-    else if (next === null) toast({ title: "We couldn’t load this member. Try again." });
+    else toast({ title: "We couldn’t load this member. Try again." });
   }
   function openMember(id: string | null) {
     setOpenId(id);
@@ -391,7 +391,10 @@ export function MemberDirectory({ members, tags, today }: { members: MemberRow[]
                 type="button"
                 $variant="ghost"
                 $size="sm"
-                onClick={() => setFilters((f) => ({ ...f, endsFrom: today, endsTo: addDays(today, n) }))}
+                onClick={() => {
+                  setFilters((f) => ({ ...f, endsFrom: today, endsTo: addDays(today, n) }));
+                  setSelected(new Set());
+                }}
               >
                 Ends in the next {n} days
               </Button>

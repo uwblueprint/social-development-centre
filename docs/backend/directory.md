@@ -123,6 +123,6 @@ The contract the directory screens build against. Types in `types.ts`.
 - Membership type (paid, complimentary, gifted, sponsored), gifting, and the "Waiting for payment" /
   "Not renewed" statuses.
 - Editing a member's name and email; address.
-- Intake form answers on the member page (`intake_submissions.person_id` arrives with PR #47).
+- Intake form answers on the member page (intake submissions aren't linked to a person yet).
 - Tag colours; automatic tags (separate PRD).
 - Email previews in the activity list (the sent body isn't in `member_email_history` yet).
