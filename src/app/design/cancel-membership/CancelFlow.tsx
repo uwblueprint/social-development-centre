@@ -18,7 +18,7 @@ import {
   type MembershipReason,
   type PauseLength,
 } from "../unsubscribe/data";
-import { Lead, Note, Options, Stack, Template, TextLink, useFocusHeadingOn } from "../unsubscribe/parts";
+import { Lead, Note, OfferCard, OfferGrid, Options, Stack, Template, TextLink, useFocusHeadingOn } from "../unsubscribe/parts";
 import { cancelCopy as copy } from "./copy";
 
 /*
@@ -60,7 +60,6 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
   const nextPayment = demoMember.nextPaymentDate;
   const lowerTiers = tiers.filter((t) => t.monthlyPrice < tier.monthlyPrice).reverse();
 
-  const [navigated, setNavigated] = useState(false);
   const [reason, setReason] = useState<MembershipReason | null>(start.reason);
   const [pauseLength, setPauseLength] = useState<PauseLength>("1");
   const [switchedTo, setSwitchedTo] = useState(lowerTiers[0]?.id ?? tier.id);
@@ -76,17 +75,17 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
     const query = new URLSearchParams(params);
     query.set("step", next);
     setUndone(false);
-    setNavigated(true);
     router.push(`?${query}`, { scroll: false });
   }
-  /** Back a step: the browser's back when we got here in this flow, else the first step. */
-  function back(fallback: CancelStep) {
-    if (navigated) router.back();
-    else go(fallback);
-  }
-
   /** Answers with a retention offer. "No longer involved", or no answer, goes straight to the confirm step. */
   const hasOffer = reason === "emails" || reason === "budget" || reason === "break";
+
+  /** "Keep my membership": on every step of cancelling, bottom left. Filled only on the confirm step. */
+  const keep = (variant: "primary" | "outline") => (
+    <Button type="button" $variant={variant} onClick={() => go("kept")}>
+      {copy.keepMembership}
+    </Button>
+  );
 
   const restartDate = addMonths(DEMO_TODAY, Number(pauseLength));
   const switched = tierById(switchedTo);
@@ -97,13 +96,11 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
         <Template
           screenKey={step}
           heading={copy.pause.heading}
-          actions={
+          footer={
             <>
-              <Button type="button" $size="lg" onClick={() => go("paused")}>
+              {keep("outline")}
+              <Button type="button" onClick={() => go("paused")}>
                 {copy.pause.pause}
-              </Button>
-              <Button type="button" $variant="outline" $size="lg" onClick={() => back("offer")}>
-                {copy.back}
               </Button>
             </>
           }
@@ -149,10 +146,13 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
           heading={copy.reasons.heading}
           // The answer is optional: Continue always works, so the question never stands between
           // someone and cancelling.
-          actions={
-            <Button type="button" $size="lg" onClick={() => go(hasOffer ? "offer" : "confirm")}>
-              {copy.reasons.continue}
-            </Button>
+          footer={
+            <>
+              {keep("outline")}
+              <Button type="button" onClick={() => go(hasOffer ? "offer" : "confirm")}>
+                {copy.reasons.continue}
+              </Button>
+            </>
           }
         >
           <Options
@@ -166,7 +166,18 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
       );
 
     case "offer": {
-      // One offer per answer. Opened without one (a stale link), the survey comes first.
+      // Every offer page: the offer in a card (its button accepts it), then Keep my membership on the
+      // left and Continue to cancel on the right.
+      const footer = (
+        <>
+          {keep("outline")}
+          <Button type="button" $variant="danger-outline" onClick={() => go("confirm")}>
+            {copy.offer.continueToCancel}
+          </Button>
+        </>
+      );
+
+      // Opened without an offer (a stale link): the survey comes first.
       if (!hasOffer) {
         return (
           <Template
@@ -180,28 +191,16 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
           />
         );
       }
-      const continueToCancel = (
-        <Button type="button" $variant="danger-outline" $size="lg" onClick={() => go("confirm")}>
-          {copy.offer.continueToCancel}
-        </Button>
-      );
-      const pauseInstead = (variant: "primary" | "outline") => (
-        <Button type="button" $variant={variant} $size="lg" onClick={() => go("pause")}>
-          {copy.offer.pauseInstead}
-        </Button>
-      );
 
       if (reason === "emails") {
         return (
-          <Template
-            screenKey="offer-emails"
-            heading={copy.offer.emails.heading}
-            line={copy.offer.emails.line}
-            actions={
-              <>
+          <Template screenKey="offer-emails" heading={copy.offer.emails.heading} footer={footer}>
+            <OfferCard
+              title={copy.offer.emails.title}
+              description={copy.offer.emails.description}
+              action={
                 <Button
                   type="button"
-                  $size="lg"
                   onClick={() => {
                     setSubscribed(false);
                     go("unsubscribed");
@@ -209,57 +208,59 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
                 >
                   {copy.offer.emails.action}
                 </Button>
-                {continueToCancel}
-              </>
-            }
-          />
+              }
+            />
+          </Template>
         );
       }
 
-      // Too expensive with a lower tier: the cheapest switch is the filled button; a Friend has no
-      // lower tier, so their offer is the break page.
+      // Too expensive: one card per lower tier, side by side. A Friend has no lower tier, so they get
+      // the break offer instead.
       if (reason === "budget" && lowerTiers.length > 0) {
         return (
           <Template
             screenKey="offer-budget"
             heading={copy.offer.budget.heading}
             line={copy.offer.budget.line(formatDate(nextPayment))}
-            actions={
-              <>
-                {lowerTiers.map((t, i) => (
-                  <Button
-                    key={t.id}
-                    type="button"
-                    $variant={i === 0 ? "primary" : "outline"}
-                    $size="lg"
-                    onClick={() => {
-                      setSwitchedTo(t.id);
-                      go("switched");
-                    }}
-                  >
-                    {copy.offer.budget.switchTo(t.name, formatMoney(t.monthlyPrice))}
-                  </Button>
-                ))}
-                {pauseInstead("outline")}
-                {continueToCancel}
-              </>
-            }
-          />
+            footer={footer}
+            flow={lowerTiers.length > 1}
+          >
+            <OfferGrid>
+              {lowerTiers.map((t) => (
+                <OfferCard
+                  key={t.id}
+                  title={t.name}
+                  description={copy.offer.budget.price(formatMoney(t.monthlyPrice))}
+                  action={
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        setSwitchedTo(t.id);
+                        go("switched");
+                      }}
+                    >
+                      {copy.offer.budget.choose(t.name)}
+                    </Button>
+                  }
+                />
+              ))}
+            </OfferGrid>
+          </Template>
         );
       }
 
       return (
-        <Template
-          screenKey="offer-break"
-          heading={copy.offer.break.heading}
-          line={copy.offer.break.line}
-          actions={
-            <>
-              {pauseInstead("primary")}
-              {continueToCancel}
-            </>
-          }
-        />
+        <Template screenKey="offer-break" heading={copy.offer.break.heading} footer={footer}>
+          <OfferCard
+            title={copy.offer.break.title}
+            description={copy.offer.break.description}
+            action={
+              <Button type="button" onClick={() => go("pause")}>
+                {copy.offer.break.action}
+              </Button>
+            }
+          />
+        </Template>
       );
     }
 
@@ -317,16 +318,13 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
           screenKey={step}
           heading={copy.confirm.heading}
           line={copy.confirm.whatEnds}
-          // Keeping is the filled button, first; cancelling is the red outline under it.
-          actions={
+          // Keeping is the filled button, on the left like every step; cancelling is the red outline, right.
+          footer={
             <>
-              <Button type="button" $size="lg" onClick={() => go("kept")}>
-                {copy.confirm.keepMembership}
-              </Button>
+              {keep("primary")}
               <Button
                 type="button"
                 $variant="danger-outline"
-                $size="lg"
                 onClick={() => {
                   setAskedAboutEmails(subscribed);
                   go("cancelled");

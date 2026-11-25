@@ -2,7 +2,7 @@
 
 The email flow, reached from footer link 1 in every SDC email. Open at `/design/unsubscribe`; `page.tsx` lists the query parameters for every state. Cancelling a membership is its own flow: [`/design/cancel-membership`](../cancel-membership/README.md).
 
-The flow follows the [Unsub flow FigJam board](https://www.figma.com/board/jvbGjJ6Wb3CZIOjTB6x81Z/Unsub-flow). Copy is from [SDC Unsubscribe & Cancel Membership — Step Copy](https://claude.ai/artifact/9oi6VCBrW5R1xkz3uA9DzV) where it has the string; `copy.tsx` marks everything else "Not in doc". Demo data only. What the backend needs is in `docs/backend/unsubscribe.md`.
+The flow follows the [Unsub flow FigJam board](https://www.figma.com/board/jvbGjJ6Wb3CZIOjTB6x81Z/Unsub-flow). Copy is from [SDC Unsubscribe & Cancel Membership — Step Copy](https://claude.ai/artifact/9oi6VCBrW5R1xkz3uA9DzV) where it has the string; `copy.tsx` marks everything else "Not in doc". Always light, even on a dark-mode device: each flow's `layout.tsx` renders `LightOnly` (`parts.tsx`). Demo data only. What the backend needs is in `docs/backend/unsubscribe.md`.
 
 ## Screens
 
@@ -28,7 +28,7 @@ Buttons: green primary (the kit's `--color-primary`) for the main action, red ou
 | --- | --- | --- |
 | `AuthScreen`, `AuthColumn`, `AuthHeading`, `AuthActions`, `LinkButton`, `SdcLogo` | `src/features/auth/AuthScreen.tsx` | The template, the green heading, the actions column |
 | `--color-brand-heading`, `--color-brand-tint`, `public/brand/sdc-logo.png` | `src/components/ui/tokens.ts`, `public/brand/` | The green heading and the logo |
-| `Button`, `Checkbox`, `RadioGroup` + `RadioGroupOption`, `Separator`, `Toast` | `src/components/ui/` | Everything else |
+| `Button`, `Card`, `Checkbox`, `RadioGroup` + `RadioGroupOption`, `Separator`, `Toast` | `src/components/ui/` | Everything else |
 
 ## New here (`parts.tsx`)
 
@@ -38,9 +38,11 @@ Promote them to the kit if a third flow needs them.
 | --- | --- |
 | `Template`, `Column`, `Heading` | The shared template. `Heading` sizes the green heading to its width (a container query); it belongs in `AuthHeading`, for devs to move. |
 | `Options` (with `OptionList`) | A centred question over one bordered list of radio answers. |
+| `OfferCard`, `OfferGrid` | A retention offer in a kit `Card` with its accept button; side by side on wide screens. |
+| `LightOnly` | Keeps member-facing pages light. For devs: set `data-theme="light"` on the server for these routes instead, so a dark device never sees one dark frame. |
 | `ChoiceText`, `Lead` | Body-size answer labels and messages; the kit's labels are form-label size. |
 
-Layout-only: `Stack`, `Question`, `Note`.
+Layout-only: `Stack`, `Question`, `Note`, and `Template`'s `footer` row (Keep my membership left, the way forward right).
 
 ## Open with SDC
 

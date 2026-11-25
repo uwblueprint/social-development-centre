@@ -11,7 +11,6 @@ import type { MembershipReason, PauseLength } from "../unsubscribe/data";
 
 export const cancelCopy = {
   pageTitle: "Pause or cancel your membership", // Not in doc.
-  back: "Back", // Not in doc.
 
   /* Pause: presets and a live restart date (after Disney+). */
   pause: {
@@ -60,30 +59,39 @@ export const cancelCopy = {
     continue: "Continue", // Not in doc.
   },
 
-  /* Step 2, the retention offer: one page per answer that has something to offer. "No longer involved" (or no answer) skips it. */
+  /* Every step of cancelling offers this, bottom left (Shallot: "at each stage user should be able to keep membership"). */
+  keepMembership: "Keep my membership",
+
+  /*
+   * Step 2, the retention offer: one page per answer that has something to offer, each offer in a card
+   * whose button accepts it (Shallot). "No longer involved" (or no answer) skips it.
+   */
   offer: {
     // Too many emails → unsubscribe from emails instead (FigJam).
     emails: {
       heading: "Stop the emails, keep your membership", // Not in doc.
-      line: "You can stop getting emails from SDC and still be a member.", // Not in doc.
+      title: "Unsubscribe from emails", // Not in doc.
+      description: "You'll stop getting emails from SDC and stay a member.", // Not in doc.
       action: "Unsubscribe from emails instead", // Not in doc.
     },
-    // Too expensive → a lower tier, or a pause (FigJam: "Pause / discontinue completely").
+    // Too expensive → a card per lower tier (Shallot: title, "$xx per month", "Choose [tier] instead").
     budget: {
       heading: "Pay less instead", // Not in doc.
       line: (date: ReactNode) => (
         <>
-          Switch to a lower tier from your next payment on <strong>{date}</strong>, or take a break.
+          A lower tier starts from your next payment on <strong>{date}</strong>.
         </>
       ), // Not in doc.
-      switchTo: (tier: string, amount: string) => `Switch to ${tier} · ${amount} a month`, // The doc's "Switch to [lower tier]", with the price.
+      price: (amount: string) => `${amount} per month`, // Shallot.
+      choose: (tier: string) => `Choose ${tier} instead`, // Shallot.
     },
     // Need a break, or too expensive with no lower tier → pause.
     break: {
       heading: "Take a break instead", // Not in doc.
-      line: "Pause for up to 3 months. You won't be charged while paused.", // Not in doc.
+      title: "Pause for up to 3 months", // Not in doc.
+      description: "You won't be charged while paused.", // Not in doc.
+      action: "Pause instead", // Not in doc.
     },
-    pauseInstead: "Pause instead", // Not in doc.
     continueToCancel: "Continue to cancel", // Not in doc.
   },
 
@@ -110,7 +118,6 @@ export const cancelCopy = {
     refund: (lastBillingDate: string, email: string) =>
       `If you'd like a refund for your payment on ${lastBillingDate}, please email ${email}.`, // Shallot.
     refundEmail: "admin@sdc.com", // Shallot. Confirm the real address with SDC.
-    keepMembership: "Keep my membership",
   },
 
   cancelled: {

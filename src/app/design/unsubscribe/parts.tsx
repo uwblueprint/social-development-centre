@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 import Link from "next/link";
-import { styled } from "next-yak";
+import { css, styled } from "next-yak";
+import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
 import { RadioGroup, RadioGroupOption } from "@/components/ui/RadioGroup";
 import { Separator } from "@/components/ui/Separator";
 import { AuthActions, AuthColumn, AuthHeading, AuthScreen, SdcLogo } from "@/features/auth/AuthScreen";
@@ -21,12 +22,95 @@ import { AuthActions, AuthColumn, AuthHeading, AuthScreen, SdcLogo } from "@/fea
  * are static); only the kit controls' own colour fades move.
  */
 
+/* ---- Light mode ---- */
+
+/**
+ * Member-facing pages are always light, whatever the device or the admin theme switch says (Shallot):
+ * sets data-theme="light" on <html> while the page is open, and puts back what was there on leaving.
+ * It doesn't touch the saved admin preference. For devs: a dark-mode device can see one dark frame on
+ * first load before this runs; the product should set data-theme="light" on the server for these routes.
+ */
+export function LightOnly() {
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    const before = root.getAttribute("data-theme");
+    root.setAttribute("data-theme", "light");
+    return () => {
+      if (before === null) root.removeAttribute("data-theme");
+      else root.setAttribute("data-theme", before);
+    };
+  }, []);
+  return null;
+}
+
 /* ---- Template ---- */
 
-/** Sections sit further apart than AuthColumn's default, so the heading and its line read as one group. */
-const Column = styled(AuthColumn)`
+/**
+ * Sections sit further apart than AuthColumn's default, so the heading and its line read as one group.
+ * `$flow` widens the column to the flow width for side-by-side offer cards.
+ */
+const Column = styled(AuthColumn)<{ $flow?: boolean }>`
   gap: var(--space-6);
+  ${({ $flow }) =>
+    $flow &&
+    css`
+      max-width: var(--flow-width);
+    `}
 `;
+
+/**
+ * The page's bottom row: "Keep my membership" on the left, the way forward (Continue, Continue to
+ * cancel) on the right. Natural-width buttons, not full width. On a narrow phone the right button
+ * wraps under the left one and stays right-aligned.
+ */
+const FooterRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+
+  & > :last-child {
+    margin-left: auto;
+  }
+`;
+
+/* ---- Offers ---- */
+
+/** Offer cards: side by side on wide screens, stacked on phones (the kit's 767px breakpoint). */
+export const OfferGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: var(--space-4);
+  width: 100%;
+
+  @media (max-width: 767px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+`;
+
+/** The card's accept button fills the card's width. */
+const OfferFooter = styled(CardFooter)`
+  & > * {
+    flex: 1;
+  }
+`;
+
+/**
+ * One retention offer: a kit Card with a title, one line, and the button that accepts it. The title is
+ * the card's h3; offer pages have no h2, which WCAG allows (heading order is a best practice).
+ */
+export function OfferCard({ title, description, action }: { title: string; description: ReactNode; action: ReactNode }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <OfferFooter>{action}</OfferFooter>
+    </Card>
+  );
+}
 
 /** The heading and what happened, one group: closer than sections (--space-6), with room to breathe. */
 const HeadingGroup = styled.div`
@@ -187,6 +271,8 @@ const UndoLine = styled.div`
  * - `line`: what happened, in one or two sentences, right under the heading (near-black, `Lead`).
  *   Every screen uses this one treatment; grey (`Note`) is only for small print in `children`.
  * - `undo`: a muted question and a text button, after a divider below the actions.
+ * - `footer`: the bottom row, Keep my membership left and the way forward right (`FooterRow`).
+ * - `flow`: the wider column, for side-by-side offer cards.
  */
 export function Template({
   screenKey,
@@ -195,6 +281,8 @@ export function Template({
   children,
   actions,
   undo,
+  footer,
+  flow,
 }: {
   screenKey: string;
   heading: string;
@@ -202,10 +290,12 @@ export function Template({
   children?: ReactNode;
   actions?: ReactNode;
   undo?: ReactNode;
+  footer?: ReactNode;
+  flow?: boolean;
 }) {
   return (
     <AuthScreen>
-      <Column $wide key={screenKey}>
+      <Column $wide $flow={flow} key={screenKey}>
         <SdcLogo />
         <HeadingGroup>
           <Heading>
@@ -215,6 +305,7 @@ export function Template({
         </HeadingGroup>
         {children}
         {actions && <AuthActions>{actions}</AuthActions>}
+        {footer && <FooterRow>{footer}</FooterRow>}
         {undo && (
           <UndoSection>
             <Separator />
