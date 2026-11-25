@@ -52,6 +52,19 @@ export interface EmailEditorProps {
    * the attachments list instead of keeping files that would only exist in this browser.
    */
   files?: boolean;
+  /**
+   * Edits the email in place inside a host's own card (the Outbox's email view): no card border, no
+   * attachments, and the body set like the read view (--text-md, no space between paragraphs), so
+   * switching between reading and editing doesn't move anything. The toolbar slides in above the body.
+   */
+  embedded?: boolean;
+  /** With `embedded`, wraps the subject field in the host's own row (e.g. a "Subject" label column). */
+  subjectRow?: (field: React.ReactNode) => React.ReactNode;
+  /**
+   * Personalized text ("@First name" tags). Off where the email is stored as plain text with the values already
+   * in it (an Outbox send: the member's details are filled in before editing): no "@" list and no @ button.
+   */
+  personalize?: boolean;
 }
 
 let nextId = 0;
@@ -84,6 +97,9 @@ export function EmailEditor({
   subjectApart = false,
   hidePreview = false,
   files = true,
+  embedded = false,
+  subjectRow,
+  personalize = true,
 }: EmailEditorProps) {
   const subjectErrorId = React.useId();
   const bodyErrorId = React.useId();
@@ -237,6 +253,8 @@ export function EmailEditor({
   const subjectField = (
     <SubjectField
       readOnly={readOnly}
+      embedded={embedded}
+      personalize={personalize}
       label={subjectApart ? copy.subjectLabel : undefined}
       labelIcon={subjectApart ? Mail : undefined}
       content={initialSubject}
@@ -265,7 +283,9 @@ export function EmailEditor({
         <Block>
           {/* One email, one card: the subject is its top row, then the toolbar, body and footer. */}
           <MessageField
-            header={subjectApart ? undefined : subjectField}
+            header={subjectApart ? undefined : subjectRow ? subjectRow(subjectField) : subjectField}
+            embedded={embedded}
+            personalize={personalize}
             onLeaveToSubject={focusSubject}
             readOnly={readOnly}
             content={initialBody}
@@ -276,7 +296,7 @@ export function EmailEditor({
             invalid={!!(subjectError || bodyError)}
             errorId={bodyError ? bodyErrorId : undefined}
             uploadImage={uploadImage}
-            files={files}
+            files={files && !embedded}
             onAttachFiles={addAttachments}
             onImageErrors={setImageErrors}
             onReady={(e) => {
@@ -322,7 +342,7 @@ export function EmailEditor({
           )}
         </Block>
 
-        {files && (
+        {files && !embedded && (
           <Attachments
             items={attachments}
             errors={attachErrors}

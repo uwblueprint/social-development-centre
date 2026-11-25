@@ -1073,10 +1073,10 @@ export type Database = {
       duplicate_automatic_email: { Args: { p_id: string }; Returns: string }
       edit_send: {
         Args: {
-          p_body: Json
+          p_body: Json | null
           p_occurrence_id: string
           p_person_id: string
-          p_subject: string
+          p_subject: string | null
         }
         Returns: undefined
       }
