@@ -8,7 +8,10 @@ import { textToDoc } from "./_emailDoc";
 export interface OutboxInitial {
   /** Today in Waterloo Region, YYYY-MM-DD: every send's `day` counts from it. */
   today: string;
-  /** Today's daily run has finished, so today's emails count as sent. */
+  /**
+   * Today's daily run is over, so whatever is still scheduled for today or earlier goes with tomorrow's.
+   * True once email_runs has today's finished run, or from 11 am (the run is in the 10 o'clock hour).
+   */
   afterSend: boolean;
   members: Member[];
   templates: Record<string, Template>;
@@ -19,6 +22,8 @@ export interface OutboxInitial {
 const HISTORY_DAYS = 30;
 
 const torontoToday = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Toronto" }).format(new Date());
+const torontoHour = () =>
+  Number(new Intl.DateTimeFormat("en-CA", { timeZone: "America/Toronto", hour: "numeric", hourCycle: "h23" }).format(new Date()));
 const dayOf = (iso: string) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Toronto" }).format(new Date(iso));
 /** Whole days from `today` to a YYYY-MM-DD date. */
 const daysFrom = (today: string, date: string) => Math.round((Date.parse(`${date}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86_400_000);
@@ -54,7 +59,7 @@ export async function loadOutbox(): Promise<OutboxInitial> {
   const sentRows = sent.data ?? [];
   const tagName = new Map((tags.data ?? []).map((t) => [t.id, t.name]));
 
-  const afterSend = (run.data ?? []).length > 0;
+  const afterSend = (run.data ?? []).length > 0 || torontoHour() >= 11;
   const personIds = [...new Set([...upcomingRows, ...notSentRows, ...sentRows].map((r) => r.person_id))];
   if (personIds.length === 0) return { today, afterSend, members: [], templates: {}, sends: [] };
   const occurrenceIds = [...new Set([...upcomingRows, ...notSentRows].map((r) => r.occurrence_id))];
@@ -153,7 +158,14 @@ export async function loadOutbox(): Promise<OutboxInitial> {
   };
   for (const r of upcomingRows) {
     // Approved sends go out on their own, like scheduled ones; past due ones wait for review (no expiry).
-    push(r, { day: daysFrom(today, r.due_on), status: r.status === "scheduled" || r.status === "approved" ? "scheduled" : "review" });
+    const due = daysFrom(today, r.due_on);
+    if (r.status === "scheduled" || r.status === "approved") {
+      // It goes with the next run: today's if it hasn't happened yet, else tomorrow's (a join after 10:30 with no delay).
+      push(r, { day: due > 0 ? due : afterSend ? 1 : 0, status: "scheduled" });
+    } else {
+      // Waiting for review keeps its due day, so past due reads "N days late".
+      push(r, { day: due, status: "review" });
+    }
   }
   for (const r of notSentRows) {
     push(r, { day: daysFrom(today, dayOf(r.failed_at)), status: "couldnt", fail: r.reason === "bounced" ? "bounce" : "platform" });
