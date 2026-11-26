@@ -3,7 +3,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
 import { css, keyframes, styled } from "next-yak";
-import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
 import { RadioGroup, RadioGroupOption } from "@/components/ui/RadioGroup";
 import { Separator } from "@/components/ui/Separator";
@@ -225,19 +224,6 @@ export const Lead = styled.p`
 `;
 
 /**
- * A date range on its own line inside a `Lead`, larger and medium weight, so it reads like a
- * certificate: "April 2023 to November 2026" on the cancelled page.
- */
-export const Tenure = styled.span`
-  display: block;
-  margin: var(--space-2) 0;
-  font-size: var(--text-lg);
-  font-weight: var(--weight-medium);
-  line-height: var(--leading-heading);
-  color: var(--color-text);
-`;
-
-/**
  * A link inside a sentence: the sentence's colour, underlined so it isn't told apart by colour alone.
  * Same as the login page's ContactLink (src/app/login/SignInForm.tsx).
  */
@@ -321,58 +307,7 @@ const UndoLine = styled.div`
   gap: var(--space-2);
 `;
 
-/* ---- The cancelled page's layout options (?layout=) ---- */
-
-const KeepsakeContent = styled(CardContent)`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-2);
-  text-align: center;
-`;
-
-/**
- * Option 1: the membership as a keepsake card. A label, their name (the card's h3), their tier, and
- * the dates on their own larger line. Kit Card, Badge and Tenure; layout only.
- */
-export function MembershipCard({ label, name, tier, dates }: { label: string; name: string; tier: string; dates: string }) {
-  return (
-    <FullCard>
-      <KeepsakeContent>
-        <CardDescription>{label}</CardDescription>
-        <CardTitle>{name}</CardTitle>
-        <Badge $variant="outline">{tier}</Badge>
-        <Tenure>{dates}</Tenure>
-      </KeepsakeContent>
-    </FullCard>
-  );
-}
-
-const NoteBlock = styled.figure`
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin: 0;
-  text-align: center;
-`;
-
-const Quote = styled.blockquote`
-  margin: 0;
-`;
-
-/** Option 3: a short note signed by someone at SDC. The words near-black, the signature small print. */
-export function SignedNote({ children, signature }: { children: ReactNode; signature: string }) {
-  return (
-    <NoteBlock>
-      <Quote>
-        <Lead>{children}</Lead>
-      </Quote>
-      <figcaption>
-        <Note>{signature}</Note>
-      </figcaption>
-    </NoteBlock>
-  );
-}
+/* ---- The cancelled page ---- */
 
 const Big = styled.p`
   margin: 0;
@@ -384,7 +319,7 @@ const Big = styled.p`
   color: var(--color-brand-heading);
 `;
 
-const BigBlock = styled.div`
+const YearsContent = styled(CardContent)`
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -392,14 +327,32 @@ const BigBlock = styled.div`
   text-align: center;
 `;
 
-/** Option 2: the time they've been a member as one big number, with what it means and the dates under it. */
-export function BigNumber({ value, caption, dates }: { value: string; caption: string; dates: string }) {
+/** The way back in, at the bottom of the card, after a divider. */
+const YearsFooter = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: 0 var(--space-5) var(--space-3);
+`;
+
+/**
+ * The cancelled page's card: the time they've been a member as one big number, what it means, the
+ * dates in small print, then the way back in after a divider (`rejoin`: a muted line and a text
+ * button, like an undo).
+ */
+export function YearsCard({ value, caption, dates, rejoin }: { value: string; caption: string; dates: string; rejoin: ReactNode }) {
   return (
-    <BigBlock>
-      <Big>{value}</Big>
-      <Lead>{caption}</Lead>
-      <Note>{dates}</Note>
-    </BigBlock>
+    <FullCard>
+      <YearsContent>
+        <Big>{value}</Big>
+        <Lead>{caption}</Lead>
+        <Note>{dates}</Note>
+      </YearsContent>
+      <YearsFooter>
+        <Separator />
+        <UndoLine>{rejoin}</UndoLine>
+      </YearsFooter>
+    </FullCard>
   );
 }
 
@@ -411,7 +364,8 @@ export function BigNumber({ value, caption, dates }: { value: string; caption: s
  */
 const Screen = styled(AuthScreen)`
   place-items: start center;
-  padding-top: var(--space-8);
+  /* Lower on taller windows: 12% of the window's height, never less than 64px. */
+  padding-top: max(var(--space-8), 12vh);
   /* A screen sliding in starts 32px to the side: clip it so a phone doesn't scroll sideways mid-slide. */
   overflow-x: clip;
 

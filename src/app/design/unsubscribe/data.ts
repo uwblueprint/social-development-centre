@@ -27,7 +27,6 @@ export const tiers: Tier[] = [
 
 export interface DemoMember {
   firstName: string;
-  lastName: string;
   /**
    * A paying member. Comes from the member's record (looked up from the email link's token), never
    * from the URL. The demo person is always a member; set this to false to preview a subscriber.
@@ -42,7 +41,6 @@ export interface DemoMember {
 
 export const demoMember: DemoMember = {
   firstName: "Priya",
-  lastName: "Shah",
   isMember: true,
   email: "priya.shah@example.com",
   tierId: "sustainer",
