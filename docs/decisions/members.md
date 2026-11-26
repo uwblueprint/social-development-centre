@@ -8,6 +8,7 @@ decisions are in [directory.md](directory.md).
 - **Why:** the platform doesn't take or track payments (Auth Requirements), and complimentary Ride for Refuge members are members too. Donors are tagged instead ("$1,000+", "Paid 2026"), which Automatic Emails can read. Email subscription is its own state and never ends a membership.
 - **Data:** existing general members stay members.
 - **Status:** the Decision Log marks this "Needs validation" with SDC. If SDC wants a paid tier back, it returns as a tag or a column, not a second kind of member.
+- **Update (19 Nov 2026, in progress on `icema/payments`):** membership payments through PayPal are being added, so "the platform doesn't track payments" no longer holds. It is still one kind of member: payment is a subscription on the member, not a tier. Cancelling a subscription ends the membership; two failed payments suspend it. Pending SDC's sign-off; see [../backend/payments.md](../backend/payments.md).
 
 ## 1a. Membership tiers return as a column (17 Nov 2026)
 - **Decision:** members choose one tier (Gold $50, Silver $25, Bronze $10 to start; admins add, edit, delete and reorder them in Settings). This is the "column" option from decision 1: still one kind of member, with `memberships.tier_id` saying what they pay. The platform still doesn't take payments.

@@ -40,6 +40,7 @@ No backend work. When there's no connection, what's on screen stays readable; su
 - [Automatic emails](./automatic-emails.md) (storage, lifecycle, conditions, Outbox and the daily send)
 - [Search palette (Ctrl K)](./command-k.md) (the search route, row ids for highlighting, what's left)
 - [Outbox](./outbox.md) (design only: what the Outbox screen needs beyond the existing functions)
+- [Membership payments](./payments.md) (PayPal subscriptions, webhooks, Admin → Payments; sandbox setup and go-live)
 - [Settings](./settings.md) (your name and delete account are connected; the rest of the design has no backend yet)
 - [Notifications](./notifications.md) (the bell: storage, writers, seen and done, paging; payments and email alerts still to come)
 - [Signup links](./signup-links.md)
