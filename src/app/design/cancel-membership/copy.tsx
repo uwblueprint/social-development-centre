@@ -30,20 +30,19 @@ export const cancelCopy = {
   /* End screen after pausing. */
   paused: {
     heading: "Your membership is paused", // The doc's B3 confirmation.
-    body: (restartDate: ReactNode, amount: ReactNode) => (
+    body: (restartDate: ReactNode) => (
       <>
-        It restarts on <strong>{restartDate}</strong>, and you{"'"}ll be charged <strong>{amount}</strong> that day.
-        We{"'"}ll email you a week before.
+        It will renew on <strong>{restartDate}</strong>. We{"'"}ll email you one week before.
       </>
-    ),
+    ), // Shallot.
     restartQuestion: "Want to come back sooner?",
     restartNow: "Restart my membership now",
   },
 
-  /* "Your membership is active again": after "Keep my membership", and after restarting a pause. */
+  /* "Your membership is active again": after "Keep membership" (with confetti), and after restarting a pause. */
   active: {
     heading: "Your membership is active again", // Not in doc.
-    thanks: "Thank you for your support.", // Shallot: "a thank you note for your support".
+    thanks: "Thank you for your support!", // Shallot.
   },
 
   /* Step 1, the survey: one question, no follow-ups on this page. */
@@ -60,7 +59,7 @@ export const cancelCopy = {
   },
 
   /* Every step of cancelling offers this, bottom left (Shallot: "at each stage user should be able to keep membership"). */
-  keepMembership: "Keep my membership",
+  keepMembership: "Keep membership", // Shallot.
 
   /*
    * Step 2, the retention offer: one page per answer that has something to offer, each offer in a card
@@ -83,7 +82,9 @@ export const cancelCopy = {
         </>
       ), // Not in doc.
       price: (amount: string) => `${amount} per month`, // Shallot.
-      choose: (tier: string) => `Choose ${tier} instead`, // Shallot.
+      choose: "Continue", // Shallot.
+      // The accessible name, so screen readers can tell the cards' Continue buttons apart. Starts with the visible label (WCAG 2.5.3).
+      chooseLabel: (tier: string) => `Continue with ${tier}`,
     },
     // Need a break, or too expensive with no lower tier → pause.
     break: {
@@ -122,11 +123,12 @@ export const cancelCopy = {
 
   cancelled: {
     heading: "We're sorry to see you go", // Shallot.
-    line: (since: string) =>
-      `You've been an SDC supporter since ${since}. SDC runs on the generosity of members like you, so thank you for being part of it.`, // Shallot.
-    confirmationSent: (email: string) => `We've sent a confirmation to ${email}.`,
-    // Shallot. Only for people still getting emails; "unsubscribe here" links to the email flow.
-    unsubscribe: (link: ReactNode) => <>If you would no longer like to hear from SDC, you can {link}.</>,
-    unsubscribeLink: "unsubscribe here",
+    // Shallot: "You've been a supporter from [date] to [date], thank you for being a part of SDC".
+    line: (from: ReactNode, to: ReactNode) => (
+      <>
+        You{"'"}ve been a supporter from <strong>{from}</strong> to <strong>{to}</strong>. Thank you for being a part of
+        SDC.
+      </>
+    ),
   },
 };

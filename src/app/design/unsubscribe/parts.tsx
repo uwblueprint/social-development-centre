@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
-import { css, styled } from "next-yak";
+import { css, keyframes, styled } from "next-yak";
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
 import { RadioGroup, RadioGroupOption } from "@/components/ui/RadioGroup";
 import { Separator } from "@/components/ui/Separator";
@@ -18,8 +18,10 @@ import { AuthActions, AuthColumn, AuthHeading, AuthScreen, SdcLogo } from "@/fea
  * 3. A result shows as a new screen whose heading says what happened, or as a toast for a saved
  *    setting. An undo, when there is one, is a muted line with a text button.
  *
- * Motion follows docs/design/motion.md: screens and follow-up contents don't fade in (page entrances
- * are static); only the kit controls' own colour fades move.
+ * Motion: the logo and heading stay put from screen to screen; the heading's words cross-fade and
+ * what's under it slides in from the side it came from (Shallot). A first load doesn't move. This is
+ * a deliberate exception to docs/design/motion.md (page entrances are static, nudges 4px at most):
+ * confirm with the design-system owner before it ships.
  */
 
 /* ---- Light mode ---- */
@@ -59,7 +61,7 @@ const Column = styled(AuthColumn)<{ $flow?: boolean }>`
 `;
 
 /**
- * The page's bottom row: "Keep my membership" on the left, the way forward (Continue, Continue to
+ * The page's bottom row: "Keep membership" on the left, the way forward (Continue, Continue to
  * cancel) on the right. Natural-width buttons, not full width. On a narrow phone the right button
  * wraps under the left one and stays right-aligned.
  */
@@ -84,9 +86,9 @@ const OfferSpace = styled.div`
 `;
 
 /**
- * Offer cards side by side whenever they fit. They stack only below 488px of room: two cards of 236px
- * (a 20px card inset each side around a 196px "Choose Supporter instead" button) plus the 16px gap.
- * Narrower than that, the button label would be cut off. In practice: only on phones.
+ * Offer cards side by side whenever they fit, phones included. They stack only below 300px of room
+ * (a 320px phone): two cards of about 142px (a 20px card inset each side around a "Continue" button)
+ * plus the 16px gap.
  */
 const OfferColumns = styled.div`
   display: grid;
@@ -94,7 +96,7 @@ const OfferColumns = styled.div`
   grid-auto-columns: minmax(0, 1fr);
   gap: var(--space-4);
 
-  @container (max-width: 487px) {
+  @container (max-width: 299px) {
     grid-auto-flow: row;
   }
 `;
@@ -113,6 +115,11 @@ const OfferSubheading = styled.p`
   font-size: var(--text-md);
   line-height: var(--leading-ui);
   color: var(--color-text);
+`;
+
+/** An offer card fills the content's width, alone or in a row. */
+const FullCard = styled(Card)`
+  width: 100%;
 `;
 
 /** The card's accept button fills the card's width. */
@@ -140,24 +147,16 @@ export function OfferCard({
   action: ReactNode;
 }) {
   return (
-    <Card>
+    <FullCard>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         {subheading && <OfferSubheading>{subheading}</OfferSubheading>}
         {description && <CardDescription>{description}</CardDescription>}
       </CardHeader>
       <OfferFooter>{action}</OfferFooter>
-    </Card>
+    </FullCard>
   );
 }
-
-/** The heading and what happened, one group: closer than sections (--space-6), with room to breathe. */
-const HeadingGroup = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  width: 100%;
-`;
 
 /** The undo, after a divider: an afterthought, not the next step. */
 const UndoSection = styled.div`
@@ -305,16 +304,116 @@ const UndoLine = styled.div`
   gap: var(--space-2);
 `;
 
+/* ---- Moving between screens ---- */
+
 /**
- * Pattern 1: the template every screen fills. Keyed by `screenKey`, so each screen is a fresh tree.
+ * Top-aligned, not centred like AuthScreen, so the logo and heading sit at the same height on every
+ * screen however much is under them.
+ */
+const Screen = styled(AuthScreen)`
+  place-items: start center;
+  padding-top: var(--space-8);
+
+  @media (max-width: 480px) {
+    padding-top: var(--space-6);
+  }
+`;
+
+/** The heading, and the screen's contents under it. */
+const Stage = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
+`;
+
+const fadeIn = keyframes`
+  from {
+    opacity: 0;
+  }
+`;
+
+/** A shared-axis move: fade in while travelling 32px from the side it came from, decelerating. */
+const fromRight = keyframes`
+  from {
+    opacity: 0;
+    transform: translateX(var(--space-6));
+  }
+`;
+const fromLeft = keyframes`
+  from {
+    opacity: 0;
+    transform: translateX(calc(-1 * var(--space-6)));
+  }
+`;
+
+type Direction = "none" | "forward" | "back";
+
+/** The heading's words cross-fade in place when they change. */
+const HeadingText = styled(Heading)<{ $moved: boolean }>`
+  ${({ $moved }) =>
+    $moved &&
+    css`
+      animation: ${fadeIn} var(--duration-slow) var(--ease-out) both;
+    `}
+`;
+
+/**
+ * Everything under the heading: what happened, then the content and buttons. Slides in on a new
+ * screen: from the right going forward, from the left going back. Without a line under the heading,
+ * it starts a little lower so a question doesn't crowd the heading.
+ */
+const Body = styled.div<{ $dir: Direction; $hasLine: boolean }>`
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  width: 100%;
+  ${({ $hasLine }) =>
+    !$hasLine &&
+    css`
+      padding-top: var(--space-2);
+    `}
+  ${({ $dir }) =>
+    $dir === "forward" &&
+    css`
+      animation: ${fromRight} var(--duration-slow) var(--ease-out) both;
+    `}
+  ${({ $dir }) =>
+    $dir === "back" &&
+    css`
+      animation: ${fromLeft} var(--duration-slow) var(--ease-out) both;
+    `}
+`;
+
+/**
+ * Which way the new screen came from, by `order` (its place in the flow): a lower order is going
+ * back. The first screen shown doesn't move. Kept in state, React's pattern for comparing with the
+ * previous render.
+ */
+function useDirection(screenKey: string, order: number) {
+  const [last, setLast] = useState({ screenKey, order, dir: "none" as Direction });
+  if (last.screenKey !== screenKey) {
+    const dir: Direction = order < last.order ? "back" : "forward";
+    setLast({ screenKey, order, dir });
+    return dir;
+  }
+  return last.dir;
+}
+
+/**
+ * Pattern 1: the template every screen fills. The logo and heading stay where they are between
+ * screens; everything under the heading is keyed by `screenKey`, so each screen's contents are fresh.
+ * - `order`: the screen's place in the flow, so going back slides the other way.
  * - `line`: what happened, in one or two sentences, right under the heading (near-black, `Lead`).
  *   Every screen uses this one treatment; grey (`Note`) is only for small print in `children`.
  * - `undo`: a muted question and a text button, after a divider below the actions.
- * - `footer`: the bottom row, Keep my membership left and the way forward right (`FooterRow`).
+ * - `footer`: the bottom row, Keep membership left and the way forward right (`FooterRow`).
  * - `flow`: the wider column, for side-by-side offer cards.
  */
 export function Template({
   screenKey,
+  order = 0,
   heading,
   line,
   children,
@@ -324,6 +423,7 @@ export function Template({
   flow,
 }: {
   screenKey: string;
+  order?: number;
   heading: string;
   line?: ReactNode;
   children?: ReactNode;
@@ -332,27 +432,122 @@ export function Template({
   footer?: ReactNode;
   flow?: boolean;
 }) {
+  const dir = useDirection(screenKey, order);
   return (
-    <AuthScreen>
-      <Column $wide $flow={flow} key={screenKey}>
+    <Screen>
+      <Column $wide $flow={flow}>
         <SdcLogo />
-        <HeadingGroup>
-          <Heading>
+        <Stage>
+          <HeadingText key={heading} $moved={dir !== "none"}>
             <AuthHeading title={heading} />
-          </Heading>
-          {line && <Lead>{line}</Lead>}
-        </HeadingGroup>
-        {children}
-        {actions && <AuthActions>{actions}</AuthActions>}
-        {footer && <FooterRow>{footer}</FooterRow>}
-        {undo && (
-          <UndoSection>
-            <Separator />
-            <UndoLine>{undo}</UndoLine>
-          </UndoSection>
-        )}
+          </HeadingText>
+          <Body key={screenKey} $dir={dir} $hasLine={Boolean(line)}>
+            {line && <Lead>{line}</Lead>}
+            {children}
+            {actions && <AuthActions>{actions}</AuthActions>}
+            {footer && <FooterRow>{footer}</FooterRow>}
+            {undo && (
+              <UndoSection>
+                <Separator />
+                <UndoLine>{undo}</UndoLine>
+              </UndoSection>
+            )}
+          </Body>
+        </Stage>
       </Column>
-    </AuthScreen>
+    </Screen>
+  );
+}
+
+/* ---- Confetti ---- */
+
+/*
+ * A small burst for "Keep membership" (Shallot): 28 pieces rise out of the thank-you line, drift
+ * apart and fall away in about a second. Decorative, so hidden from screen readers and never in the
+ * way of a click. Reduced motion is handled globally: the pieces finish at once, invisible.
+ */
+
+const burst = keyframes`
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg);
+    animation-timing-function: var(--ease-out);
+  }
+  35% {
+    opacity: 1;
+    transform: translate(calc(var(--x) * 0.7), var(--rise)) rotate(calc(var(--spin) * 0.4));
+    animation-timing-function: var(--ease-in);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--x), var(--fall)) rotate(var(--spin));
+  }
+`;
+
+const ConfettiOrigin = styled.div`
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 0;
+  height: 0;
+  overflow: visible;
+  pointer-events: none;
+`;
+
+const Piece = styled.span`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--space-2);
+  height: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--piece-color);
+  opacity: 0;
+  /* About a second and a quarter: an entrance-length beat, two and a half times over. */
+  animation: ${burst} calc(var(--duration-enter) * 2.5) both;
+  animation-delay: var(--delay);
+`;
+
+const pieceColors = ["var(--sdc-300)", "var(--sdc-500)", "var(--sdc-700)", "var(--color-accent)", "var(--color-warning)", "var(--color-info)"];
+
+/** The same "random" numbers on the server and in the browser, so the page hydrates cleanly. */
+function seeded(n: number) {
+  const v = Math.sin(n * 12.9898) * 43758.5453;
+  return v - Math.floor(v);
+}
+
+/** Each piece's path, in multiples of --space-1 (4px). */
+const pieces = Array.from({ length: 28 }, (_, i) => {
+  const spread = (i / 27) * 2 - 1; // -1 (far left) to 1 (far right)
+  return {
+    color: pieceColors[i % pieceColors.length],
+    x: Math.round(spread * 40 + (seeded(i) - 0.5) * 16), // up to 160px out to each side
+    rise: -Math.round(14 + seeded(i + 50) * 14), // 56 to 112px up
+    fall: Math.round(20 + seeded(i + 100) * 20), // ends 80 to 160px below the line
+    spin: Math.round((seeded(i + 150) - 0.5) * 1440),
+    delay: Math.round(seeded(i + 200) * 120),
+  };
+});
+
+export function Confetti() {
+  return (
+    <ConfettiOrigin aria-hidden="true">
+      {pieces.map((p, i) => (
+        <Piece
+          key={i}
+          style={
+            {
+              "--piece-color": p.color,
+              "--x": `calc(${p.x} * var(--space-1))`,
+              "--rise": `calc(${p.rise} * var(--space-1))`,
+              "--fall": `calc(${p.fall} * var(--space-1))`,
+              "--spin": `${p.spin}deg`,
+              "--delay": `${p.delay}ms`,
+            } as CSSProperties
+          }
+        />
+      ))}
+    </ConfettiOrigin>
   );
 }
 

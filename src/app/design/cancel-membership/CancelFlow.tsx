@@ -18,7 +18,7 @@ import {
   type MembershipReason,
   type PauseLength,
 } from "../unsubscribe/data";
-import { Lead, Note, OfferCard, OfferGrid, Options, Stack, Template, TextLink, useFocusHeadingOn } from "../unsubscribe/parts";
+import { Confetti, Lead, Note, OfferCard, OfferGrid, Options, Stack, Template, useFocusHeadingOn } from "../unsubscribe/parts";
 import { cancelCopy as copy } from "./copy";
 
 /*
@@ -28,7 +28,7 @@ import { cancelCopy as copy } from "./copy";
  *
  *   1 Before you go (survey) ─Continue─► 2 Offer for that answer ─Continue to cancel─► 3 Cancel your membership?
  *        │ no answer, or "no longer involved": straight to 3                              ├─► We're sorry to see you go (end)
- *        │                                                                                └─ Keep my membership ─► active again (end)
+ *        │                                                                                └─ Keep membership ─► active again (end)
  *        2 too many emails → Unsubscribe from emails instead → Unsubscribed, membership kept (end)
  *        2 too expensive   → Switch to a lower tier → Switched (end), or Pause instead
  *        2 need a break    → Pause instead → Pause ─► Paused (end)
@@ -43,12 +43,13 @@ export type CancelStep = (typeof CANCEL_STEPS)[number];
 
 export interface CancelFlowStart {
   reason: MembershipReason | null;
-  /** Still subscribed to emails. False skips the email question after cancelling. */
-  subscribed: boolean;
   tierId: string;
 }
 
 const isStep = (s: string | null): s is CancelStep => CANCEL_STEPS.includes(s as CancelStep);
+
+/** Each step's place in the flow, so going back slides the other way: survey, offer, pause, confirm, then the end screens. */
+const ORDER: Record<CancelStep, number> = { reasons: 0, offer: 1, pause: 2, confirm: 3, paused: 4, switched: 4, unsubscribed: 4, kept: 4, cancelled: 4 };
 
 export function CancelFlow({ start }: { start: CancelFlowStart }) {
   const router = useRouter();
@@ -63,8 +64,6 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
   const [reason, setReason] = useState<MembershipReason | null>(start.reason);
   const [pauseLength, setPauseLength] = useState<PauseLength>("1");
   const [switchedTo, setSwitchedTo] = useState(lowerTiers[0]?.id ?? tier.id);
-  const [subscribed, setSubscribed] = useState(start.subscribed);
-  const [askedAboutEmails, setAskedAboutEmails] = useState(start.subscribed);
   const [undone, setUndone] = useState(false);
 
   // A new step, or an undo that changes the heading: move focus to the heading.
@@ -80,7 +79,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
   /** Answers with a retention offer. "No longer involved", or no answer, goes straight to the confirm step. */
   const hasOffer = reason === "emails" || reason === "budget" || reason === "break";
 
-  /** "Keep my membership": on every step of cancelling, bottom left. Filled only on the confirm step. */
+  /** "Keep membership": on every step of cancelling, bottom left. Filled only on the confirm step. */
   const keep = (variant: "primary" | "outline") => (
     <Button type="button" $variant={variant} onClick={() => go("kept")}>
       {copy.keepMembership}
@@ -94,7 +93,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
     case "pause":
       return (
         <Template
-          screenKey={step}
+          screenKey={step} order={ORDER[step]}
           heading={copy.pause.heading}
           footer={
             <>
@@ -123,9 +122,9 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
     case "paused":
       return (
         <Template
-          screenKey={step}
+          screenKey={step} order={ORDER[step]}
           heading={undone ? copy.active.heading : copy.paused.heading}
-          line={undone ? copy.active.thanks : copy.paused.body(formatDate(restartDate), formatMoney(tier.monthlyPrice))}
+          line={undone ? copy.active.thanks : copy.paused.body(formatDate(restartDate))}
           undo={
             !undone && (
               <>
@@ -142,7 +141,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
     case "reasons":
       return (
         <Template
-          screenKey={step}
+          screenKey={step} order={ORDER[step]}
           heading={copy.reasons.heading}
           // The answer is optional: Continue always works, so the question never stands between
           // someone and cancelling.
@@ -166,7 +165,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
       );
 
     case "offer": {
-      // Every offer page: the offer in a card (its button accepts it), then Keep my membership on the
+      // Every offer page: the offer in a card (its button accepts it), then Keep membership on the
       // left and Continue to cancel on the right.
       const footer = (
         <>
@@ -181,7 +180,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
       if (!hasOffer) {
         return (
           <Template
-            screenKey="offer-none"
+            screenKey="offer-none" order={ORDER.offer}
             heading={copy.reasons.heading}
             actions={
               <Button type="button" $size="lg" onClick={() => go("reasons")}>
@@ -194,17 +193,14 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
 
       if (reason === "emails") {
         return (
-          <Template screenKey="offer-emails" heading={copy.offer.emails.heading} footer={footer}>
+          <Template screenKey="offer-emails" order={ORDER.offer} heading={copy.offer.emails.heading} footer={footer}>
             <OfferCard
               title={copy.offer.emails.title}
               description={copy.offer.emails.description}
               action={
                 <Button
                   type="button"
-                  onClick={() => {
-                    setSubscribed(false);
-                    go("unsubscribed");
-                  }}
+                  onClick={() => go("unsubscribed")}
                 >
                   {copy.offer.emails.action}
                 </Button>
@@ -219,7 +215,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
       if (reason === "budget" && lowerTiers.length > 0) {
         return (
           <Template
-            screenKey="offer-budget"
+            screenKey="offer-budget" order={ORDER.offer}
             heading={copy.offer.budget.heading}
             line={copy.offer.budget.line(formatDate(nextPayment))}
             footer={footer}
@@ -234,12 +230,13 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
                   action={
                     <Button
                       type="button"
+                      aria-label={copy.offer.budget.chooseLabel(t.name)}
                       onClick={() => {
                         setSwitchedTo(t.id);
                         go("switched");
                       }}
                     >
-                      {copy.offer.budget.choose(t.name)}
+                      {copy.offer.budget.choose}
                     </Button>
                   }
                 />
@@ -250,7 +247,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
       }
 
       return (
-        <Template screenKey="offer-break" heading={copy.offer.break.heading} footer={footer}>
+        <Template screenKey="offer-break" order={ORDER.offer} heading={copy.offer.break.heading} footer={footer}>
           <OfferCard
             title={copy.offer.break.title}
             description={copy.offer.break.description}
@@ -267,7 +264,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
     case "switched":
       return (
         <Template
-          screenKey={step}
+          screenKey={step} order={ORDER[step]}
           heading={undone ? copy.switched.stayed(tier.name) : copy.switched.heading(switched.name)}
           line={!undone && copy.switched.body(formatDate(nextPayment), formatMoney(switched.monthlyPrice))}
           undo={
@@ -288,7 +285,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
     case "unsubscribed":
       return (
         <Template
-          screenKey={step}
+          screenKey={step} order={ORDER[step]}
           heading={undone ? copy.resubscribed : shared.unsubscribed}
           // Resubscribing changes nothing about the membership, so this line stays.
           line={shared.emails.membership(tier.name, formatDate(nextPayment), formatMoney(tier.monthlyPrice))}
@@ -299,10 +296,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
                 <Button
                   type="button"
                   $variant="ghost"
-                  onClick={() => {
-                    setSubscribed(true);
-                    setUndone(true);
-                  }}
+                  onClick={() => setUndone(true)}
                 >
                   {shared.resubscribe}
                 </Button>
@@ -315,7 +309,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
     case "confirm":
       return (
         <Template
-          screenKey={step}
+          screenKey={step} order={ORDER[step]}
           heading={copy.confirm.heading}
           line={copy.confirm.whatEnds}
           // Keeping is the filled button, on the left like every step; cancelling is the red outline, right.
@@ -325,10 +319,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
               <Button
                 type="button"
                 $variant="danger-outline"
-                onClick={() => {
-                  setAskedAboutEmails(subscribed);
-                  go("cancelled");
-                }}
+                onClick={() => go("cancelled")}
               >
                 {shared.cancelMembership}
               </Button>
@@ -340,26 +331,21 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
       );
 
     case "kept":
-      // "Keep my membership": nothing changed, so a short thank-you and no actions.
-      return <Template screenKey={step} heading={copy.active.heading} line={copy.active.thanks} />;
+      // "Keep membership": nothing changed, so a thank-you, a little confetti, and no actions.
+      return (
+        <Template screenKey={step} order={ORDER[step]} heading={copy.active.heading} line={copy.active.thanks}>
+          <Confetti />
+        </Template>
+      );
 
     case "cancelled":
       return (
         <Template
-          screenKey={step}
+          screenKey={step} order={ORDER[step]}
           heading={copy.cancelled.heading}
-          line={copy.cancelled.line(formatMonthYear(demoMember.memberSince))}
-        >
-          {/* Small print, no buttons: the unsubscribe line only if they were still getting emails. */}
-          <Stack>
-            <Note>{copy.cancelled.confirmationSent(demoMember.email)}</Note>
-            {askedAboutEmails && (
-              <Note>
-                {copy.cancelled.unsubscribe(<TextLink href="/design/unsubscribe">{copy.cancelled.unsubscribeLink}</TextLink>)}
-              </Note>
-            )}
-          </Stack>
-        </Template>
+          // From when they joined to the month their membership ends (it runs to the end of this month).
+          line={copy.cancelled.line(formatMonthYear(demoMember.memberSince), formatMonthYear(DEMO_TODAY))}
+        />
       );
   }
 }

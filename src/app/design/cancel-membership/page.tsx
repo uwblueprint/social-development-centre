@@ -13,9 +13,8 @@ const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v
  * state opens directly:
  *
  * - `?step=` reasons ("Before you go", default) | offer (needs `reason`) | pause | paused | switched |
- *   unsubscribed | confirm | kept ("Keep my membership") | cancelled. The flow reads the step from the URL itself, so back and forward work.
+ *   unsubscribed | confirm | kept ("Keep membership") | cancelled. The flow reads the step from the URL itself, so back and forward work.
  * - `?reason=emails|budget|break|done` chooses that answer; with `step=offer`, opens its offer.
- * - `?subscribed=false` for someone who no longer gets emails: no email question after cancelling.
  * - `?tier=friend|supporter|sustainer` sets the demo member's tier (default sustainer, so "too expensive" offers two cheaper tiers). A Friend has
  *   no lower tier, so "too expensive" offers only a pause.
  */
@@ -26,7 +25,6 @@ export default async function CancelMembershipDesign({ searchParams }: PageProps
 
   const start: CancelFlowStart = {
     reason: membershipReasons.find((r) => r === reason) ?? null,
-    subscribed: first(params.subscribed) !== "false",
     tierId: tiers.some((t) => t.id === tierParam) ? tierParam! : demoMember.tierId,
   };
   // Keyed by everything but the step, so moving between steps keeps the flow's state.

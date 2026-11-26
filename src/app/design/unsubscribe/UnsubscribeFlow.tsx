@@ -77,12 +77,12 @@ function Flow({ start }: { start: EmailFlowStart }) {
   }
 
   // "Sounds good": nothing left to do.
-  if (screen === "closed") return <Template screenKey="closed" heading={copy.unsubscribed} line={copy.emails.closeTab} />;
+  if (screen === "closed") return <Template screenKey="closed" order={2} heading={copy.unsubscribed} line={copy.emails.closeTab} />;
 
   if (screen === "unsubscribed") {
     return (
       <Template
-        screenKey="unsubscribed"
+        screenKey="unsubscribed" order={1}
         heading={copy.unsubscribed}
         // FigJam: after unsubscribing, members hear their membership is still active.
         line={isMember && copy.emails.membership(tier.name, formatDate(demoMember.nextPaymentDate), formatMoney(tier.monthlyPrice))}
@@ -118,7 +118,7 @@ function Flow({ start }: { start: EmailFlowStart }) {
 
   return (
     <Template
-      screenKey="preferences"
+      screenKey="preferences" order={0}
       heading={copy.emails.heading}
       line={<span id="preferences-line">{copy.emails.line}</span>}
       actions={
