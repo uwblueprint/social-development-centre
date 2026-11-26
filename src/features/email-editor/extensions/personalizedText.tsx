@@ -15,6 +15,8 @@ import { isAvailable, MOMENT_LABELS, variableById, type PersonalizationVariable 
 import { ghostTabKeyStyle, PersonalizeList, type PersonalizeListHandle, type PersonalizeListProps } from "../components/PersonalizeList";
 
 export interface PersonalizedTextOptions {
+  /** Typing "@" opens the personalized-text list. Off where an email is stored as plain text (the Outbox). */
+  suggest: boolean;
   /** The variables offered for what was typed after "@". Read on every keystroke so it follows the email moment. */
   getItems: (query: string) => PersonalizationVariable[];
 }
@@ -31,7 +33,7 @@ export const PersonalizedText = Node.create<PersonalizedTextOptions>({
   selectable: true,
 
   addOptions() {
-    return { getItems: () => [] };
+    return { getItems: () => [], suggest: true };
   },
 
   addAttributes() {
@@ -68,6 +70,7 @@ export const PersonalizedText = Node.create<PersonalizedTextOptions>({
         char: "@",
         pluginKey: suggestionKey,
         allowSpaces: false,
+        allow: () => this.options.suggest,
         items: ({ query }) => this.options.getItems(query),
         command: ({ editor, range, props }) => {
           editor

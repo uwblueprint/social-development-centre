@@ -1,5 +1,5 @@
 \set ON_ERROR_STOP 1
--- Referral rules: supabase/migrations/20261112000000_referrals.sql, docs/backend/referrals.md.
+-- Referral rules: supabase/migrations/20261120000000_referrals.sql, docs/backend/referrals.md.
 -- Referral backend tests. Run after replay.sh. Every check raises on failure.
 create schema t; create or replace function t.eq(label text, got anyelement, want anyelement) returns void language plpgsql as $$
 begin

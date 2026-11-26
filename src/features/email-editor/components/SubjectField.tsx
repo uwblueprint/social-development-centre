@@ -50,6 +50,10 @@ export interface SubjectFieldProps {
   errorId?: string;
   onReady?: (editor: Editor) => void;
   readOnly?: boolean;
+  /** Sits in the host's own row: no padding of its own, and the host's text size, weight and line height. */
+  embedded?: boolean;
+  /** Typing "@" offers personalized text. Off for plain-text emails. */
+  personalize?: boolean;
   /** A muted leading label with a divider, for when the subject sits in its own box. It replaces the placeholder. */
   label?: string;
   /** A small muted icon before the label. */
@@ -68,6 +72,8 @@ export function SubjectField({
   readOnly = false,
   label,
   labelIcon,
+  embedded = false,
+  personalize = true,
 }: SubjectFieldProps) {
   const [count, setCount] = React.useState(0);
 
@@ -78,7 +84,7 @@ export function SubjectField({
       SubjectDocument,
       Paragraph,
       Text,
-      PersonalizedText.configure({ getItems }),
+      PersonalizedText.configure({ getItems, suggest: personalize }),
       CharacterCount.configure({ limit: EMAIL_LIMITS.subjectMax }),
       Placeholder.configure({ placeholder: label ? "" : copy.subjectLabel }),
       SingleLine.configure({ onEnter }),
@@ -133,7 +139,7 @@ export function SubjectField({
 
   return (
     <div>
-      <Line data-labeled={label ? "" : undefined}>
+      <Line data-labeled={label ? "" : undefined} data-embedded={embedded || undefined}>
         {label && (
           <>
             <LeadLabel>
@@ -148,7 +154,7 @@ export function SubjectField({
         </Editable>
       </Line>
       {(long || atMax) && (
-        <Meta>
+        <Meta data-embedded={embedded || undefined}>
           <Tone data-tone={atMax ? "danger" : "warning"}>
             <ErrorIcon />
             {atMax ? copy.subjectMax : copy.subjectLong}
@@ -219,6 +225,11 @@ const Line = styled.div`
   .ProseMirror p {
     margin: 0;
   }
+  &[data-embedded] .ProseMirror {
+    padding: 0;
+    font: inherit;
+    line-height: inherit;
+  }
   .ProseMirror p.is-editor-empty:first-child::before {
     content: attr(data-placeholder);
     float: left;
@@ -235,6 +246,10 @@ const Meta = styled.div`
   padding: 0 var(--space-4) var(--space-2);
   font-size: var(--text-xs);
   line-height: var(--leading-ui);
+
+  &[data-embedded] {
+    padding: var(--space-1) 0 0;
+  }
 
   [data-tone="warning"] {
     color: var(--color-warning);
