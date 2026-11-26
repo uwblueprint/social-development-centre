@@ -282,19 +282,22 @@ interface Option<T extends string> {
 export function Options<T extends string>({
   id,
   question,
+  plain,
   options,
   value,
   onChange,
 }: {
   id: string;
   question: string;
+  /** Show `question` as a body-size sentence (`Lead`), not a medium-weight question: for an explanation above the list. */
+  plain?: boolean;
   options: Option<T>[];
   value: T | null;
   onChange: (value: T) => void;
 }) {
   return (
     <Stack>
-      <Question id={id}>{question}</Question>
+      {plain ? <Lead id={id}>{question}</Lead> : <Question id={id}>{question}</Question>}
       <RadioGroup aria-labelledby={id} value={value ?? ""} onValueChange={(v) => onChange(v as T)}>
         <OptionList>
           {options.map((o) => (

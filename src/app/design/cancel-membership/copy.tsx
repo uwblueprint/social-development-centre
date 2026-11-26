@@ -12,16 +12,19 @@ import type { MembershipReason, PauseLength } from "../unsubscribe/data";
 export const cancelCopy = {
   pageTitle: "Pause or cancel your membership", // Not in doc.
 
-  /* Pause: presets and a live restart date (after Disney+). */
+  /*
+   * Pause: the offer for "I need a break" (and for a Friend who finds it too expensive), straight from
+   * the survey. Presets and a live restart date (after Disney+).
+   */
   pause: {
-    heading: "Pause your membership", // Not in doc.
-    question: "How long?",
+    heading: "Pause membership instead?", // Shallot.
     lengths: { "1": "1 month", "2": "2 months", "3": "3 months" } satisfies Record<PauseLength, string>, // Not in doc (copy doc: up to 3 months).
     restartsOn: (date: ReactNode) => (
       <>
         Your membership restarts on <strong>{date}</strong>.
       </>
     ), // Not in doc.
+    // Shallot: in place of "How long?", above the lengths.
     whatHappens:
       "You won't be charged while paused. Your voting rights and member benefits are on hold until your membership restarts.",
     pause: "Pause membership",
@@ -85,13 +88,6 @@ export const cancelCopy = {
       choose: "Continue", // Shallot.
       // The accessible name, so screen readers can tell the cards' Continue buttons apart. Starts with the visible label (WCAG 2.5.3).
       chooseLabel: (tier: string) => `Continue with ${tier}`,
-    },
-    // Need a break, or too expensive with no lower tier → pause.
-    break: {
-      heading: "Take a break instead", // Not in doc.
-      title: "Pause for up to 3 months", // Not in doc.
-      description: "You won't be charged while paused.", // Not in doc.
-      action: "Pause instead", // Not in doc.
     },
     continueToCancel: "Continue to cancel", // Not in doc.
   },

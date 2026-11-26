@@ -49,7 +49,7 @@ export interface CancelFlowStart {
 const isStep = (s: string | null): s is CancelStep => CANCEL_STEPS.includes(s as CancelStep);
 
 /** Each step's place in the flow, so going back slides the other way: survey, offer, pause, confirm, then the end screens. */
-const ORDER: Record<CancelStep, number> = { reasons: 0, offer: 1, pause: 2, confirm: 3, paused: 4, switched: 4, unsubscribed: 4, kept: 4, cancelled: 4 };
+const ORDER: Record<CancelStep, number> = { reasons: 0, offer: 1, pause: 1, confirm: 3, paused: 4, switched: 4, unsubscribed: 4, kept: 4, cancelled: 4 };
 
 export function CancelFlow({ start }: { start: CancelFlowStart }) {
   const router = useRouter();
@@ -78,6 +78,8 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
   }
   /** Answers with a retention offer. "No longer involved", or no answer, goes straight to the confirm step. */
   const hasOffer = reason === "emails" || reason === "budget" || reason === "break";
+  /** The offer is a pause: "I need a break", or too expensive with no lower tier (a Friend). */
+  const offersPause = reason === "break" || (reason === "budget" && lowerTiers.length === 0);
 
   /** "Keep membership": on every step of cancelling, bottom left. Filled only on the confirm step. */
   const keep = (variant: "primary" | "outline") => (
@@ -87,37 +89,52 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
   );
 
   const restartDate = addMonths(DEMO_TODAY, Number(pauseLength));
+
+  /** "Continue to cancel": bottom right of every offer, with Keep membership bottom left. */
+  const offerFooter = (
+    <>
+      {keep("outline")}
+      <Button type="button" $variant="danger-outline" onClick={() => go("confirm")}>
+        {copy.offer.continueToCancel}
+      </Button>
+    </>
+  );
+
+  /**
+   * The pause offer: for "I need a break", and for a Friend who finds it too expensive (no lower tier).
+   * What pausing means, the lengths, the live restart date, then Pause membership right under them.
+   */
+  const pausePage = () => (
+    <Template
+      screenKey="pause"
+      order={ORDER.pause}
+      heading={copy.pause.heading}
+      actions={
+        <Button type="button" onClick={() => go("paused")}>
+          {copy.pause.pause}
+        </Button>
+      }
+      footer={offerFooter}
+    >
+      <Stack>
+        <Options
+          id="pause-question"
+          question={copy.pause.whatHappens}
+          plain
+          value={pauseLength}
+          onChange={setPauseLength}
+          options={pauseLengths.map((l) => ({ value: l, label: copy.pause.lengths[l] }))}
+        />
+        {/* After Disney+: the restart date updates as they choose, before they press Pause. */}
+        <Lead aria-live="polite">{copy.pause.restartsOn(formatDate(restartDate))}</Lead>
+      </Stack>
+    </Template>
+  );
   const switched = tierById(switchedTo);
 
   switch (step) {
     case "pause":
-      return (
-        <Template
-          screenKey={step} order={ORDER[step]}
-          heading={copy.pause.heading}
-          footer={
-            <>
-              {keep("outline")}
-              <Button type="button" onClick={() => go("paused")}>
-                {copy.pause.pause}
-              </Button>
-            </>
-          }
-        >
-          <Options
-            id="pause-question"
-            question={copy.pause.question}
-            value={pauseLength}
-            onChange={setPauseLength}
-            options={pauseLengths.map((l) => ({ value: l, label: copy.pause.lengths[l] }))}
-          />
-          <Stack>
-            {/* After Disney+: the restart date updates as they choose, before they press Pause. */}
-            <Lead aria-live="polite">{copy.pause.restartsOn(formatDate(restartDate))}</Lead>
-            <Note>{copy.pause.whatHappens}</Note>
-          </Stack>
-        </Template>
-      );
+      return pausePage();
 
     case "paused":
       return (
@@ -148,7 +165,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
           footer={
             <>
               {keep("outline")}
-              <Button type="button" onClick={() => go(hasOffer ? "offer" : "confirm")}>
+              <Button type="button" onClick={() => go(offersPause ? "pause" : hasOffer ? "offer" : "confirm")}>
                 {copy.reasons.continue}
               </Button>
             </>
@@ -167,14 +184,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
     case "offer": {
       // Every offer page: the offer in a card (its button accepts it), then Keep membership on the
       // left and Continue to cancel on the right.
-      const footer = (
-        <>
-          {keep("outline")}
-          <Button type="button" $variant="danger-outline" onClick={() => go("confirm")}>
-            {copy.offer.continueToCancel}
-          </Button>
-        </>
-      );
+      const footer = offerFooter;
 
       // Opened without an offer (a stale link): the survey comes first.
       if (!hasOffer) {
@@ -210,53 +220,39 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
         );
       }
 
-      // Too expensive: one card per lower tier, side by side. A Friend has no lower tier, so they get
-      // the break offer instead.
-      if (reason === "budget" && lowerTiers.length > 0) {
-        return (
-          <Template
-            screenKey="offer-budget" order={ORDER.offer}
-            heading={copy.offer.budget.heading}
-            line={copy.offer.budget.line(formatDate(nextPayment))}
-            footer={footer}
-            flow={lowerTiers.length > 1}
-          >
-            <OfferGrid>
-              {lowerTiers.map((t) => (
-                <OfferCard
-                  key={t.id}
-                  title={t.name}
-                  subheading={copy.offer.budget.price(formatMoney(t.monthlyPrice))}
-                  action={
-                    <Button
-                      type="button"
-                      aria-label={copy.offer.budget.chooseLabel(t.name)}
-                      onClick={() => {
-                        setSwitchedTo(t.id);
-                        go("switched");
-                      }}
-                    >
-                      {copy.offer.budget.choose}
-                    </Button>
-                  }
-                />
-              ))}
-            </OfferGrid>
-          </Template>
-        );
-      }
+      // The pause offer has its own page (a stale ?step=offer link for it lands there too).
+      if (offersPause) return pausePage();
 
+      // Too expensive: one card per lower tier, side by side.
       return (
-        <Template screenKey="offer-break" order={ORDER.offer} heading={copy.offer.break.heading} footer={footer}>
-          <OfferCard
-            title={copy.offer.break.title}
-            description={copy.offer.break.description}
-            action={
-              <Button type="button" onClick={() => go("pause")}>
-                {copy.offer.break.action}
-              </Button>
-            }
-          />
+        <Template
+          screenKey="offer-budget" order={ORDER.offer}
+          heading={copy.offer.budget.heading}
+          line={copy.offer.budget.line(formatDate(nextPayment))}
+          footer={footer}
+          flow={lowerTiers.length > 1}
+        >
+          <OfferGrid>
+            {lowerTiers.map((t) => (
+              <OfferCard
+                key={t.id}
+                title={t.name}
+                subheading={copy.offer.budget.price(formatMoney(t.monthlyPrice))}
+                action={
+                  <Button
+                    type="button"
+                    aria-label={copy.offer.budget.chooseLabel(t.name)}
+                    onClick={() => {
+                      setSwitchedTo(t.id);
+                      go("switched");
+                    }}
+                  >
+                    {copy.offer.budget.choose}
+                  </Button>
+                }
+              />
+            ))}
+          </OfferGrid>
         </Template>
       );
     }
