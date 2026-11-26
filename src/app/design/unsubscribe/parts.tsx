@@ -224,6 +224,19 @@ export const Lead = styled.p`
 `;
 
 /**
+ * A date range on its own line inside a `Lead`, larger and medium weight, so it reads like a
+ * certificate: "April 2023 to November 2026" on the cancelled page.
+ */
+export const Tenure = styled.span`
+  display: block;
+  margin: var(--space-2) 0;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-heading);
+  color: var(--color-text);
+`;
+
+/**
  * A link inside a sentence: the sentence's colour, underlined so it isn't told apart by colour alone.
  * Same as the login page's ContactLink (src/app/login/SignInForm.tsx).
  */

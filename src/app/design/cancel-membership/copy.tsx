@@ -124,11 +124,9 @@ export const cancelCopy = {
   cancelled: {
     heading: "We're sorry to see you go", // Shallot.
     // Shallot: "You've been a supporter from [date] to [date], thank you for being a part of SDC".
-    line: (from: ReactNode, to: ReactNode) => (
-      <>
-        You{"'"}ve been a supporter from <strong>{from}</strong> to <strong>{to}</strong>. Thank you for being a part of
-        SDC.
-      </>
-    ),
+    // The dates sit on their own line, larger, like a certificate (Shallot).
+    supporterFrom: "You've been a supporter from",
+    dates: (from: string, to: string) => `${from} to ${to}`,
+    thanks: "Thank you for being a part of SDC.",
   },
 };

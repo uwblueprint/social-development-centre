@@ -29,7 +29,7 @@ Then the ends:
 - **Pause your membership** (`?step=pause`). 1, 2 or 3 months as one list (the copy doc's maximum), the restart date in bold, updating as they choose (after Disney+), what pausing means, then Keep membership or Pause membership.
 - **End screens for each offer** (`?step=paused|switched|unsubscribed`). The outcome as the heading, the details with dates and amounts in bold, and a muted undo line ("Switched" also says "Awesome! You can close this tab now."). Undoing changes the heading ("Your membership is active again" with "Thank you for your support!", "You'll stay a Sustainer member", "You're subscribed again") and moves focus to it.
 - **Your membership is active again** (`?step=kept`). After Keep membership: "Thank you for your support!" with a small confetti burst (`Confetti`: decorative, hidden from screen readers, gone at once with reduced motion). Nothing else to do.
-- **We're sorry to see you go** (`?step=cancelled`). "You've been a supporter from **April 2023** to **November 2026**. Thank you for being a part of SDC." (joined, to the month the membership ends). No small print, no buttons.
+- **We're sorry to see you go** (`?step=cancelled`). "You've been a supporter from", then "April 2023 to November 2026" on its own line, larger (`Tenure`), then "Thank you for being a part of SDC." (joined, to the month the membership ends). No small print, no buttons.
 
 Every step is in the URL, so the phone's back button goes back a step instead of leaving the flow. The flow reads the step from the URL; `page.tsx` keys the flow by everything but the step, so moving between steps keeps what they chose.
 

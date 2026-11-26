@@ -18,7 +18,7 @@ import {
   type MembershipReason,
   type PauseLength,
 } from "../unsubscribe/data";
-import { Confetti, Lead, Note, OfferCard, OfferGrid, Options, Stack, Template, useFocusHeadingOn } from "../unsubscribe/parts";
+import { Confetti, Lead, Note, OfferCard, OfferGrid, Options, Stack, Template, Tenure, useFocusHeadingOn } from "../unsubscribe/parts";
 import { cancelCopy as copy } from "./copy";
 
 /*
@@ -344,7 +344,13 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
           screenKey={step} order={ORDER[step]}
           heading={copy.cancelled.heading}
           // From when they joined to the month their membership ends (it runs to the end of this month).
-          line={copy.cancelled.line(formatMonthYear(demoMember.memberSince), formatMonthYear(DEMO_TODAY))}
+          line={
+            <>
+              {copy.cancelled.supporterFrom}
+              <Tenure>{copy.cancelled.dates(formatMonthYear(demoMember.memberSince), formatMonthYear(DEMO_TODAY))}</Tenure>
+              {copy.cancelled.thanks}
+            </>
+          }
         />
       );
   }
