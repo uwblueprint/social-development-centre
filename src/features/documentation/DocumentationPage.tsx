@@ -82,7 +82,7 @@ function renderGuide(
 export async function DocumentationPage({
   portal,
 }: {
-  portal: "admin" | "partner";
+  portal: string;
 }) {
   const ids = (await readdir(GUIDE_DIR))
     .filter((f) => f.startsWith(`${portal}-`) && f.endsWith(".md"))
