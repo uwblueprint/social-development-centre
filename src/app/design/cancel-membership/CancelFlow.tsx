@@ -30,8 +30,8 @@ import { cancelCopy as copy } from "./copy";
  *        │ no answer, or "no longer involved": straight to 3                              ├─► We're sorry to see you go (end)
  *        │                                                                                └─ Keep membership ─► active again (end)
  *        2 too many emails → Unsubscribe from emails instead → Unsubscribed, membership kept (end)
- *        2 too expensive   → Switch to a lower tier → Switched (end), or Pause instead
- *        2 need a break    → Pause instead → Pause ─► Paused (end)
+ *        2 too expensive   → Pay less instead: Continue on a tier card → Switched (end); a Friend gets the pause page
+ *        2 need a break    → Pause membership instead? ─Pause membership─► Paused (end)
  *
  * Every step is in the URL (`?step=`), so the phone's back button goes back a step, not out of the
  * flow. Saying yes to an alternative ends on its own screen, like the email flow's "You can close this
