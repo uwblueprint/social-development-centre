@@ -3,7 +3,8 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
 import { css, keyframes, styled } from "next-yak";
-import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
 import { RadioGroup, RadioGroupOption } from "@/components/ui/RadioGroup";
 import { Separator } from "@/components/ui/Separator";
 import { AuthActions, AuthColumn, AuthHeading, AuthScreen, SdcLogo } from "@/features/auth/AuthScreen";
@@ -320,6 +321,88 @@ const UndoLine = styled.div`
   gap: var(--space-2);
 `;
 
+/* ---- The cancelled page's layout options (?layout=) ---- */
+
+const KeepsakeContent = styled(CardContent)`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  text-align: center;
+`;
+
+/**
+ * Option 1: the membership as a keepsake card. A label, their name (the card's h3), their tier, and
+ * the dates on their own larger line. Kit Card, Badge and Tenure; layout only.
+ */
+export function MembershipCard({ label, name, tier, dates }: { label: string; name: string; tier: string; dates: string }) {
+  return (
+    <FullCard>
+      <KeepsakeContent>
+        <CardDescription>{label}</CardDescription>
+        <CardTitle>{name}</CardTitle>
+        <Badge $variant="outline">{tier}</Badge>
+        <Tenure>{dates}</Tenure>
+      </KeepsakeContent>
+    </FullCard>
+  );
+}
+
+const NoteBlock = styled.figure`
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  text-align: center;
+`;
+
+const Quote = styled.blockquote`
+  margin: 0;
+`;
+
+/** Option 3: a short note signed by someone at SDC. The words near-black, the signature small print. */
+export function SignedNote({ children, signature }: { children: ReactNode; signature: string }) {
+  return (
+    <NoteBlock>
+      <Quote>
+        <Lead>{children}</Lead>
+      </Quote>
+      <figcaption>
+        <Note>{signature}</Note>
+      </figcaption>
+    </NoteBlock>
+  );
+}
+
+const Big = styled.p`
+  margin: 0;
+  /* Half again the heading size, so the number is the first thing read. */
+  font-size: calc(var(--text-xl) * 1.5);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-none);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-brand-heading);
+`;
+
+const BigBlock = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  text-align: center;
+`;
+
+/** Option 2: the time they've been a member as one big number, with what it means and the dates under it. */
+export function BigNumber({ value, caption, dates }: { value: string; caption: string; dates: string }) {
+  return (
+    <BigBlock>
+      <Big>{value}</Big>
+      <Lead>{caption}</Lead>
+      <Note>{dates}</Note>
+    </BigBlock>
+  );
+}
+
 /* ---- Moving between screens ---- */
 
 /**
@@ -329,6 +412,8 @@ const UndoLine = styled.div`
 const Screen = styled(AuthScreen)`
   place-items: start center;
   padding-top: var(--space-8);
+  /* A screen sliding in starts 32px to the side: clip it so a phone doesn't scroll sideways mid-slide. */
+  overflow-x: clip;
 
   @media (max-width: 480px) {
     padding-top: var(--space-6);

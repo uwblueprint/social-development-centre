@@ -124,5 +124,24 @@ export const cancelCopy = {
     supporterFrom: "You've been a supporter from",
     dates: (from: string, to: string) => `${from} to ${to}`,
     thanks: "Thank you for being a part of SDC.",
+
+    /*
+     * Layout options for this page (?layout=), from the design review. Every string below is a draft
+     * (Claude, not in doc): confirm with SDC before build.
+     */
+    // Option 1: a membership card, like a keepsake.
+    card: {
+      label: "SDC membership",
+      name: (first: string, last: string) => `${first} ${last}`,
+    },
+    // Option 3: a short signed note.
+    note: "Members like you keep SDC independent and make our work across Waterloo Region possible. Thank you for standing with us.",
+    signature: "[Executive director's name], Executive Director", // Placeholder: SDC to supply the name.
+    // Option 4: the way back in, quietly, at the bottom.
+    rejoinQuestion: "You're welcome back anytime.",
+    rejoin: "Rejoin SDC",
+    // Option 2: the time they've been a member as a big number.
+    years: (n: number) => (n === 1 ? "1 year" : `${n} years`),
+    yearsCaption: "as an SDC supporter",
   },
 };

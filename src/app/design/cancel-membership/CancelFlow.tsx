@@ -17,8 +17,23 @@ import {
   tiers,
   type MembershipReason,
   type PauseLength,
+  wholeYears,
 } from "../unsubscribe/data";
-import { Confetti, Lead, Note, OfferCard, OfferGrid, Options, Stack, Template, Tenure, useFocusHeadingOn } from "../unsubscribe/parts";
+import {
+  BigNumber,
+  Confetti,
+  Lead,
+  MembershipCard,
+  Note,
+  OfferCard,
+  OfferGrid,
+  Options,
+  SignedNote,
+  Stack,
+  Template,
+  Tenure,
+  useFocusHeadingOn,
+} from "../unsubscribe/parts";
 import { cancelCopy as copy } from "./copy";
 
 /*
@@ -334,20 +349,74 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
         </Template>
       );
 
-    case "cancelled":
+    case "cancelled": {
+      const from = formatMonthYear(demoMember.memberSince);
+      // Their membership runs to the end of this month.
+      const to = formatMonthYear(DEMO_TODAY);
+      const dates = copy.cancelled.dates(from, to);
+      const layout = params.get("layout");
+      // Option 4: the way back in, in the undo spot. Rejoining opens "active again", confetti and all.
+      const rejoin = (
+        <>
+          <Note>{copy.cancelled.rejoinQuestion}</Note>
+          <Button type="button" $variant="ghost" onClick={() => go("kept")}>
+            {copy.cancelled.rejoin}
+          </Button>
+        </>
+      );
+      const card = (
+        <MembershipCard
+          label={copy.cancelled.card.label}
+          name={copy.cancelled.card.name(demoMember.firstName, demoMember.lastName)}
+          tier={tier.name}
+          dates={dates}
+        />
+      );
+
+      // Options 1 + 3, 1 + 4: the card, then a signed note or the way back in.
+      if (layout === "card-note" || layout === "card-rejoin") {
+        return (
+          <Template
+            screenKey={step}
+            order={ORDER[step]}
+            heading={copy.cancelled.heading}
+            line={copy.cancelled.thanks}
+            undo={layout === "card-rejoin" && rejoin}
+          >
+            {card}
+            {layout === "card-note" && <SignedNote signature={copy.cancelled.signature}>{copy.cancelled.note}</SignedNote>}
+          </Template>
+        );
+      }
+
+      // Options 2 + 4: the years as a big number, then the way back in.
+      if (layout === "years-rejoin") {
+        return (
+          <Template screenKey={step} order={ORDER[step]} heading={copy.cancelled.heading} undo={rejoin}>
+            <BigNumber
+              value={copy.cancelled.years(wholeYears(demoMember.memberSince, DEMO_TODAY))}
+              caption={copy.cancelled.yearsCaption}
+              dates={dates}
+            />
+            <Lead>{copy.cancelled.thanks}</Lead>
+          </Template>
+        );
+      }
+
       return (
         <Template
-          screenKey={step} order={ORDER[step]}
+          screenKey={step}
+          order={ORDER[step]}
           heading={copy.cancelled.heading}
-          // From when they joined to the month their membership ends (it runs to the end of this month).
           line={
             <>
               {copy.cancelled.supporterFrom}
-              <Tenure>{copy.cancelled.dates(formatMonthYear(demoMember.memberSince), formatMonthYear(DEMO_TODAY))}</Tenure>
+              <Tenure>{dates}</Tenure>
               {copy.cancelled.thanks}
             </>
           }
         />
       );
+    }
   }
 }

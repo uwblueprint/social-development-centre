@@ -27,6 +27,7 @@ export const tiers: Tier[] = [
 
 export interface DemoMember {
   firstName: string;
+  lastName: string;
   /**
    * A paying member. Comes from the member's record (looked up from the email link's token), never
    * from the URL. The demo person is always a member; set this to false to preview a subscriber.
@@ -41,6 +42,7 @@ export interface DemoMember {
 
 export const demoMember: DemoMember = {
   firstName: "Priya",
+  lastName: "Shah",
   isMember: true,
   email: "priya.shah@example.com",
   tierId: "sustainer",
@@ -99,6 +101,14 @@ export const formatDate = (iso: string) => dateFormat.format(parse(iso));
 const monthYearFormat = new Intl.DateTimeFormat("en-CA", { month: "long", year: "numeric", timeZone: "UTC" });
 /** "April 2023": how long someone has been a member. */
 export const formatMonthYear = (iso: string) => monthYearFormat.format(parse(iso));
+
+/** Whole years from one ISO date to another (3 for April 2023 to November 2026). */
+export function wholeYears(fromIso: string, toIso: string): number {
+  const from = parse(fromIso);
+  const to = parse(toIso);
+  const months = (to.getFullYear() - from.getFullYear()) * 12 + (to.getMonth() - from.getMonth()) - (to.getDate() < from.getDate() ? 1 : 0);
+  return Math.floor(months / 12);
+}
 
 const moneyFormat = new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 2, minimumFractionDigits: 0 });
 export const formatMoney = (dollars: number) => moneyFormat.format(dollars);
