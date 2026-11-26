@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { unsubscribeCopy as shared } from "../unsubscribe/copy";
 import {
@@ -24,7 +24,6 @@ import {
   Lead,
   Note,
   OfferCard,
-  OfferGrid,
   Options,
   Stack,
   Template,
@@ -64,7 +63,6 @@ const isStep = (s: string | null): s is CancelStep => CANCEL_STEPS.includes(s as
 const ORDER: Record<CancelStep, number> = { reasons: 0, offer: 1, pause: 1, confirm: 3, paused: 4, switched: 4, unsubscribed: 4, kept: 4, cancelled: 4 };
 
 export function CancelFlow({ start }: { start: CancelFlowStart }) {
-  const router = useRouter();
   const params = useSearchParams();
   const urlStep = params.get("step");
   const step: CancelStep = isStep(urlStep) ? urlStep : "reasons";
@@ -86,7 +84,10 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
     const query = new URLSearchParams(params);
     query.set("step", next);
     setUndone(false);
-    router.push(`?${query}`, { scroll: false });
+    // The browser's own history, not router.push: the step lives only in this client component, so
+    // there's no server round trip and the next screen appears on the same frame as the click.
+    // Back and forward still work, and useSearchParams follows along.
+    window.history.pushState(null, "", `?${query}`);
   }
   /** Answers with a retention offer. "No longer involved", or no answer, goes straight to the confirm step. */
   const hasOffer = reason === "emails" || reason === "budget" || reason === "break";
@@ -235,36 +236,32 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
       // The pause offer has its own page (a stale ?step=offer link for it lands there too).
       if (offersPause) return pausePage();
 
-      // Too expensive: one card per lower tier, side by side.
+      // Too expensive: one card, the next tier down, laid out like the emails offer.
+      const cheaper = lowerTiers[0];
       return (
         <Template
-          screenKey="offer-budget" order={ORDER.offer}
+          screenKey="offer-budget"
+          order={ORDER.offer}
           heading={copy.offer.budget.heading}
           line={copy.offer.budget.line(formatDate(nextPayment))}
           footer={footer}
-          flow={lowerTiers.length > 1}
         >
-          <OfferGrid>
-            {lowerTiers.map((t) => (
-              <OfferCard
-                key={t.id}
-                title={t.name}
-                subheading={copy.offer.budget.price(formatMoney(t.monthlyPrice))}
-                action={
-                  <Button
-                    type="button"
-                    aria-label={copy.offer.budget.chooseLabel(t.name)}
-                    onClick={() => {
-                      setSwitchedTo(t.id);
-                      go("switched");
-                    }}
-                  >
-                    {copy.offer.budget.choose}
-                  </Button>
-                }
-              />
-            ))}
-          </OfferGrid>
+          <OfferCard
+            title={cheaper.name}
+            subheading={copy.offer.budget.price(formatMoney(cheaper.monthlyPrice))}
+            action={
+              <Button
+                type="button"
+                aria-label={copy.offer.budget.chooseLabel(cheaper.name)}
+                onClick={() => {
+                  setSwitchedTo(cheaper.id);
+                  go("switched");
+                }}
+              >
+                {copy.offer.budget.choose}
+              </Button>
+            }
+          />
         </Template>
       );
     }

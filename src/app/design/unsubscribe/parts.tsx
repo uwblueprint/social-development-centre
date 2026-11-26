@@ -18,7 +18,7 @@ import { AuthActions, AuthColumn, AuthHeading, AuthScreen, SdcLogo } from "@/fea
  * 3. A result shows as a new screen whose heading says what happened, or as a toast for a saved
  *    setting. An undo, when there is one, is a muted line with a text button.
  *
- * Motion: the logo and heading stay put from screen to screen; the heading's words cross-fade and
+ * Motion: the logo and heading stay put from screen to screen (the heading's words just change);
  * what's under it slides in from the side it came from (Shallot). A first load doesn't move. This is
  * a deliberate exception to docs/design/motion.md (page entrances are static, nudges 4px at most):
  * confirm with the design-system owner before it ships.
@@ -49,15 +49,9 @@ export function LightOnly() {
 
 /**
  * Sections sit further apart than AuthColumn's default, so the heading and its line read as one group.
- * `$flow` widens the column to the flow width for side-by-side offer cards.
  */
-const Column = styled(AuthColumn)<{ $flow?: boolean }>`
+const Column = styled(AuthColumn)`
   gap: var(--space-6);
-  ${({ $flow }) =>
-    $flow &&
-    css`
-      max-width: var(--flow-width);
-    `}
 `;
 
 /**
@@ -78,36 +72,6 @@ const FooterRow = styled.div`
 `;
 
 /* ---- Offers ---- */
-
-/** Measures the space the offer cards have, so they stack by their own width, not the window's. */
-const OfferSpace = styled.div`
-  container-type: inline-size;
-  width: 100%;
-`;
-
-/**
- * Offer cards side by side whenever they fit, phones included. They stack only below 300px of room
- * (a 320px phone): two cards of about 142px (a 20px card inset each side around a "Continue" button)
- * plus the 16px gap.
- */
-const OfferColumns = styled.div`
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(0, 1fr);
-  gap: var(--space-4);
-
-  @container (max-width: 299px) {
-    grid-auto-flow: row;
-  }
-`;
-
-export function OfferGrid({ children }: { children: ReactNode }) {
-  return (
-    <OfferSpace>
-      <OfferColumns>{children}</OfferColumns>
-    </OfferSpace>
-  );
-}
 
 /** A card's subheading (a tier's price): body size and near-black, so it reads as part of the offer, not small print. */
 const OfferSubheading = styled.p`
@@ -382,12 +346,6 @@ const Stage = styled.div`
   width: 100%;
 `;
 
-const fadeIn = keyframes`
-  from {
-    opacity: 0;
-  }
-`;
-
 /** A shared-axis move: fade in while travelling 32px from the side it came from, decelerating. */
 const fromRight = keyframes`
   from {
@@ -403,15 +361,6 @@ const fromLeft = keyframes`
 `;
 
 type Direction = "none" | "forward" | "back";
-
-/** The heading's words cross-fade in place when they change. */
-const HeadingText = styled(Heading)<{ $moved: boolean }>`
-  ${({ $moved }) =>
-    $moved &&
-    css`
-      animation: ${fadeIn} var(--duration-slow) var(--ease-out) both;
-    `}
-`;
 
 /**
  * Everything under the heading: what happened, then the content and buttons. Slides in on a new
@@ -464,7 +413,6 @@ function useDirection(screenKey: string, order: number) {
  *   Every screen uses this one treatment; grey (`Note`) is only for small print in `children`.
  * - `undo`: a muted question and a text button, after a divider below the actions.
  * - `footer`: the bottom row, Keep membership left and the way forward right (`FooterRow`).
- * - `flow`: the wider column, for side-by-side offer cards.
  */
 export function Template({
   screenKey,
@@ -475,7 +423,6 @@ export function Template({
   actions,
   undo,
   footer,
-  flow,
 }: {
   screenKey: string;
   order?: number;
@@ -485,17 +432,17 @@ export function Template({
   actions?: ReactNode;
   undo?: ReactNode;
   footer?: ReactNode;
-  flow?: boolean;
 }) {
   const dir = useDirection(screenKey, order);
   return (
     <Screen>
-      <Column $wide $flow={flow}>
+      <Column $wide>
         <SdcLogo />
         <Stage>
-          <HeadingText key={heading} $moved={dir !== "none"}>
+          {/* The heading's words change in place, no fade: fading the heading out and back in made it blink. */}
+          <Heading>
             <AuthHeading title={heading} />
-          </HeadingText>
+          </Heading>
           <Body key={screenKey} $dir={dir} $hasLine={Boolean(line)}>
             {line && <Lead>{line}</Lead>}
             {children}
@@ -517,25 +464,34 @@ export function Template({
 /* ---- Confetti ---- */
 
 /*
- * A small burst for "Keep membership" (Shallot): 28 pieces rise out of the thank-you line, drift
- * apart and fall away in about a second. Decorative, so hidden from screen readers and never in the
- * way of a click. Reduced motion is handled globally: the pieces finish at once, invisible.
+ * A small burst for "Keep membership" and "Rejoin SDC" (Shallot): 28 paper pieces shoot up out of
+ * the thank-you line, hang for a moment, then flutter down and fade.
+ *
+ * Exempt from docs/design/motion.md (Shallot: "allow confetti to bypass rules"): its own duration and
+ * curves, chosen to read as paper under gravity, not UI. Still decorative, so hidden from screen
+ * readers and never in the way of a click; reduced motion is still honoured (handled globally: the
+ * pieces finish at once, invisible), because that's accessibility, not style.
  */
 
 const burst = keyframes`
   0% {
     opacity: 1;
-    transform: translate(0, 0) rotate(0deg);
-    animation-timing-function: var(--ease-out);
+    transform: translate(0, 0) rotate(0deg) rotateY(0deg);
+    /* Shot upward: fast out, slowing to the top of the arc. */
+    animation-timing-function: cubic-bezier(0.15, 0.7, 0.3, 1);
   }
-  35% {
+  30% {
     opacity: 1;
-    transform: translate(calc(var(--x) * 0.7), var(--rise)) rotate(calc(var(--spin) * 0.4));
-    animation-timing-function: var(--ease-in);
+    transform: translate(calc(var(--x) * 0.6), var(--rise)) rotate(calc(var(--spin) * 0.3)) rotateY(180deg);
+    /* Falling: picks up speed, but paper never falls hard. */
+    animation-timing-function: cubic-bezier(0.45, 0, 0.75, 0.6);
+  }
+  80% {
+    opacity: 1;
   }
   100% {
     opacity: 0;
-    transform: translate(var(--x), var(--fall)) rotate(var(--spin));
+    transform: translate(var(--x), var(--fall)) rotate(var(--spin)) rotateY(900deg);
   }
 `;
 
@@ -558,8 +514,8 @@ const Piece = styled.span`
   border-radius: var(--radius-sm);
   background: var(--piece-color);
   opacity: 0;
-  /* About a second and a quarter: an entrance-length beat, two and a half times over. */
-  animation: ${burst} calc(var(--duration-enter) * 2.5) both;
+  /* Its own length (exempt from the motion tokens): long enough to see the pieces land. */
+  animation: ${burst} 1.6s both;
   animation-delay: var(--delay);
 `;
 
