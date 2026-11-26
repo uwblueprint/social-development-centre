@@ -73,6 +73,7 @@ export type TimelineKind =
   | "referred_someone"
   | "referral_joined"
   | "tag_added"
+  | "tier_chosen"
   | "tag_removed"
   | "note"
   | "email"
@@ -90,7 +91,7 @@ export interface TimelineEntry {
   noteId: string | null;
   sendId: string | null;
   emailStatus: SendStatus | null;
-  /** Note text, email name, unsubscribe reason or bounce detail, depending on kind. */
+  /** Note text, email name, chosen tier's name, unsubscribe reason or bounce detail, depending on kind. */
   body: string | null;
   /** Who did it, by name or email, when it was an admin. */
   by: string | null;
