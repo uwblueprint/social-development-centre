@@ -1,0 +1,219 @@
+"use client";
+
+import * as React from "react";
+import { styled } from "next-yak";
+import { Copy, Download, Link2, Plus } from "lucide-react";
+import { ListPage, ListPageHeader } from "@/components/patterns/ListPage";
+import { Button } from "@/components/ui/Button";
+import { Dialog } from "@/components/ui/Dialog";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Icon } from "@/components/ui/Icon";
+import { List, ListRow } from "@/components/ui/ListRow";
+import { Table, type TableColumn } from "@/components/ui/Table";
+import { Tooltip } from "@/components/ui/Tooltip";
+import { TruncatedText } from "@/components/ui/TruncatedText";
+import { CreateLinkDialog } from "./CreateLinkDialog";
+import { downloadSignupLinksCsv } from "./csv";
+import { conversion, type SignupLink } from "./links";
+import { LinkDialogContent } from "./LinkDialog";
+import { useCopyLink } from "./useLinkActions";
+
+const Number = styled.span`
+  font-variant-numeric: tabular-nums;
+`;
+
+/* The last column's content sits on the table's right edge, under the header button. */
+const Actions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-1);
+`;
+
+const VisuallyHidden = styled.span`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+`;
+
+/* Phones (the repo's 767px breakpoint) get a list instead of the table; desktop keeps the table. */
+const DesktopOnly = styled.div`
+  @media (max-width: 767px) {
+    display: none;
+  }
+`;
+
+/* ListRow pads its text by --space-2; cancel it so the names line up with the heading, as the table does. */
+const MobileOnly = styled.div`
+  margin-inline: calc(var(--space-2) * -1);
+
+  @media (min-width: 768px) {
+    display: none;
+  }
+`;
+
+const CardText = styled.span`
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+`;
+
+const CardStats = styled.span`
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+`;
+
+/**
+ * The name is the row's one tab stop: Enter or Space opens the link dialog. A click anywhere else on
+ * the row opens it too (the Table's onRowClick). Text-like, so it is the ghost variant with its box
+ * taken away; the row's hover box does the hovering.
+ */
+const NameButton = styled(Button)`
+  display: block;
+  width: 100%;
+  height: auto;
+  padding: 0;
+  overflow: hidden;
+  text-align: left;
+  font-size: inherit;
+  line-height: inherit;
+  border-radius: var(--radius-sm);
+
+  &:hover:not(:disabled),
+  &:active:not(:disabled) {
+    background: transparent;
+    transform: none;
+  }
+`;
+
+function count(n: number, one: string, many: string) {
+  return `${n.toLocaleString("en-CA")} ${n === 1 ? one : many}`;
+}
+
+/** The admin portal's toast provider (AdminShell) shows the copy confirmations. */
+export function SignupLinksPage({ links }: { links: SignupLink[] }) {
+  const copyLink = useCopyLink();
+  const [createOpen, setCreateOpen] = React.useState(false);
+  // A new key each time the dialog opens, so it starts empty.
+  const [createKey, setCreateKey] = React.useState(0);
+  const [qrLink, setQrLink] = React.useState<SignupLink | null>(null);
+
+  function openCreate() {
+    setCreateKey((key) => key + 1);
+    setCreateOpen(true);
+  }
+
+  const columns: TableColumn<SignupLink>[] = [
+    {
+      key: "name",
+      header: "Name",
+      width: "400px",
+      render: (l) => (
+        <NameButton type="button" $variant="ghost" onClick={() => setQrLink(l)}>
+          <TruncatedText tooltip>{l.name}</TruncatedText>
+        </NameButton>
+      ),
+    },
+    { key: "clicks", header: "Clicks", width: "120px", render: (l) => <Number>{l.clicks.toLocaleString("en-CA")}</Number> },
+    { key: "joins", header: "Joins", width: "120px", render: (l) => <Number>{l.joins.toLocaleString("en-CA")}</Number> },
+    { key: "conversion", header: "Conversion", width: "144px", render: (l) => <Number>{conversion(l)}</Number> },
+    {
+      key: "actions",
+      header: <VisuallyHidden>Actions</VisuallyHidden>,
+      width: "112px",
+      render: (l) => (
+        <Actions>
+          <Tooltip content="Copy link" pinOnClick={false}>
+            <Button
+              type="button"
+              $variant="ghost"
+              $size="sm"
+              aria-label="Copy link"
+              onClick={(event) => {
+                event.stopPropagation();
+                copyLink(l);
+              }}
+            >
+              <Icon icon={Copy} />
+            </Button>
+          </Tooltip>
+        </Actions>
+      ),
+    },
+  ];
+
+  const empty = (
+    <EmptyState
+      icon={Link2}
+      title="No signup links yet"
+      description="Create a link or QR code for each event to see how many people it brings in and how many join."
+      action={
+        <Button type="button" $variant="secondary" onClick={openCreate}>
+          Create link
+        </Button>
+      }
+    />
+  );
+
+  return (
+    <ListPage>
+      <ListPageHeader
+        title="Signup links"
+        actions={
+          <>
+            <Button type="button" $variant="secondary" onClick={() => downloadSignupLinksCsv(links)}>
+              <Icon icon={Download} />
+              Export CSV
+            </Button>
+            <Button type="button" onClick={openCreate}>
+              <Icon icon={Plus} />
+              Create link
+            </Button>
+          </>
+        }
+      />
+      <DesktopOnly>
+        <Table
+          columns={columns}
+          rows={links}
+          getRowId={(l) => l.id}
+          aria-label="Signup links"
+          empty={empty}
+          emptyBelowHeader
+          onRowClick={setQrLink}
+          rowFocusable={false}
+        />
+      </DesktopOnly>
+      <MobileOnly>
+        {links.length === 0 ? (
+          empty
+        ) : (
+          <List>
+            {links.map((l) => (
+              <ListRow key={l.id} onClick={() => setQrLink(l)}>
+                <CardText>
+                  <TruncatedText>{l.name}</TruncatedText>
+                  <CardStats>
+                    {count(l.clicks, "click", "clicks")} · {count(l.joins, "join", "joins")} · {conversion(l)}
+                  </CardStats>
+                </CardText>
+              </ListRow>
+            ))}
+          </List>
+        )}
+      </MobileOnly>
+      <CreateLinkDialog
+        key={createKey}
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+      />
+      <Dialog open={qrLink !== null} onOpenChange={(open) => !open && setQrLink(null)}>
+        {qrLink && <LinkDialogContent link={qrLink} />}
+      </Dialog>
+    </ListPage>
+  );
+}

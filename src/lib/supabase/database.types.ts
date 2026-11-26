@@ -872,6 +872,87 @@ export type Database = {
           },
         ]
       }
+      signup_link_events: {
+        Row: {
+          at: string
+          id: number
+          kind: string
+          link_id: string
+          person_id: string | null
+          visit_id: string
+        }
+        Insert: {
+          at?: string
+          id?: never
+          kind: string
+          link_id: string
+          person_id?: string | null
+          visit_id: string
+        }
+        Update: {
+          at?: string
+          id?: never
+          kind?: string
+          link_id?: string
+          person_id?: string | null
+          visit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signup_link_events_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "signup_link_counts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signup_link_events_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "signup_links"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signup_link_events_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      signup_links: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signup_links_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscription_events: {
         Row: {
           at: string
@@ -1044,6 +1125,17 @@ export type Database = {
         }
         Relationships: []
       }
+      signup_link_counts: {
+        Row: {
+          clicks: number | null
+          created_at: string | null
+          id: string | null
+          joins: number | null
+          name: string | null
+          slug: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       admin_notifications_new_count: { Args: never; Returns: number }
@@ -1117,6 +1209,16 @@ export type Database = {
         Args: { p_email: string; p_portal: string }
         Returns: boolean
       }
+      create_signup_link: {
+        Args: { p_name: string; p_slug: string }
+        Returns: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          slug: string
+        }
+      }
       create_tag: { Args: { p_name: string }; Returns: string }
       current_person_id: { Args: never; Returns: string }
       delete_note: { Args: { p_note_id: string }; Returns: undefined }
@@ -1171,6 +1273,14 @@ export type Database = {
         }[]
       }
       referral_page: { Args: { p_token: string }; Returns: { first_name: string }[] }
+      record_signup_link_click: {
+        Args: { p_source: string; p_visit_id: string }
+        Returns: undefined
+      }
+      record_signup_link_join: {
+        Args: { p_source: string; p_visit_id: string }
+        Returns: undefined
+      }
       remove_admin: { Args: { p_person_id: string }; Returns: string }
       remove_member: { Args: { p_person_id: string }; Returns: undefined }
       rename_tag: { Args: { p_name: string; p_tag_id: string }; Returns: string }
