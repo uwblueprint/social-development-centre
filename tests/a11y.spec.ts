@@ -80,3 +80,14 @@ test("the sign-in error state has no WCAG 2.2 AA violations", async ({ page }) =
   await expect(page.getByText("Invalid email address")).toBeVisible();
   await checkA11y(page);
 });
+
+test("a referral link that doesn't work has no WCAG 2.2 AA violations", async ({ page }) => {
+  for (const width of widths) {
+    await page.setViewportSize({ width, height: 800 });
+    // Public (no sign-in), and a malformed token never reaches the database.
+    await page.goto("/refer/not-a-token");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("This link doesn’t work");
+    await settle(page);
+    await checkA11y(page);
+  }
+});

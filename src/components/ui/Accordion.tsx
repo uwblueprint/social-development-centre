@@ -5,13 +5,13 @@ import { Accordion as AccordionPrimitive } from "radix-ui";
 import type { ReactNode } from "react";
 
 const openAnim = keyframes`
-  from { height: 0; }
-  to { height: var(--radix-accordion-content-height); }
+  from { height: 0; overflow: hidden; }
+  to { height: var(--radix-accordion-content-height); overflow: hidden; }
 `;
 
 const closeAnim = keyframes`
-  from { height: var(--radix-accordion-content-height); }
-  to { height: 0; }
+  from { height: var(--radix-accordion-content-height); overflow: hidden; }
+  to { height: 0; overflow: hidden; }
 `;
 
 export const Accordion = AccordionPrimitive.Root;
@@ -73,8 +73,8 @@ const PlusMinus = styled.svg`
   }
 `;
 
+/* Clips only while the height animates: at rest, children's focus rings reach past the box. */
 export const AccordionContent = styled(AccordionPrimitive.Content)`
-  overflow: hidden;
   font-size: var(--text-sm);
   color: var(--color-text-muted);
 

@@ -182,7 +182,7 @@ globalStyle`
     /* Outline buttons hover to a light green fill instead of grey. */
     --color-outline-hover: var(--sdc-50);
 
-    --color-focus: var(--taupe-900);
+    --color-focus: var(--color-primary); /* keyboard focus ring and typed-field border: the brand primary in both themes */
     --color-overlay: rgb(29 24 22 / 0.4);
 
     --radius-sm: 4px;
@@ -242,6 +242,10 @@ globalStyle`
     --dialog-width-narrow: 364px;
     /* Full-page flows (an email, a form): one readable column, matching the People page (owner). */
     --flow-width: 720px;
+    /* The list column beside a detail or calendar view (Outbox recipients): fits a checkbox, a name and a one-line subject. */
+    --list-pane-width: 360px;
+    /* A month-calendar day cell's minimum height: room for the date and three or four email entries; rows grow to fill the page. */
+    --calendar-day-min-height: 120px;
 
     /*
      * Dashed borders (disabled controls, drop targets): drawn as 4px dashes with 4px gaps, because the
@@ -258,6 +262,9 @@ globalStyle`
     --dashed-border-repeat: repeat-x, repeat-x, repeat-y, repeat-y;
 
     --focus-ring: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-focus);
+    --focus-ring-inset: inset 0 0 0 2px var(--color-focus); /* the ring for controls that fill a clipping container edge to edge (table rows, list rows, calendar cells): drawn inside, so nothing clips it */
+    --focus-field: inset 0 0 0 1px var(--color-focus); /* typed fields (input, textarea, search): a 2px border while you type, not the outer ring, which is for keyboard focus on buttons and links */
+    --focus-field-invalid: inset 0 0 0 2px var(--color-danger); /* the same for a field with an error: its 2px danger border thickens to 3px */
     /* Motion is calm and rare. See docs/design/motion.md. Nothing overshoots, springs or slides a pill. */
     --duration-fast: 100ms; /* colour fades on hover, press and state change (borders, fills, text) */
     --duration: 160ms; /* overlays in (menu, select, popover, tooltip, dialog), switch thumb, toast */
@@ -389,7 +396,7 @@ globalStyle`
       --tag-rose-bg-strong: color-mix(in srgb, #881337 75%, var(--color-bg));
       --tag-rose-text: #fecdd3;
 
-      --color-focus: var(--taupe-100);
+      --color-focus: var(--color-primary);
     --illustration-page-bg: var(--taupe-900);
     --illustration-line: var(--taupe-500);
     --illustration-ground: var(--taupe-900);
@@ -496,7 +503,7 @@ globalStyle`
     --tag-rose-bg-strong: color-mix(in srgb, #881337 75%, var(--color-bg));
     --tag-rose-text: #fecdd3;
 
-    --color-focus: var(--taupe-100);
+    --color-focus: var(--color-primary);
     --illustration-page-bg: var(--taupe-900);
     --illustration-line: var(--taupe-500);
     --illustration-ground: var(--taupe-900);
@@ -541,5 +548,28 @@ globalStyle`
       transition-duration: 0.01ms !important;
       transition-delay: 0ms !important;
     }
+  }
+
+  /*
+   * Overlay enter/exit keyframes (used by overlayMotion.ts). They live here, in the global stylesheet,
+   * because next-yak doesn't emit keyframes declared in a mixin-only .ts module: the exit animation
+   * never ran, so Radix waited forever for animationend and closed popovers, menus and tooltips stayed
+   * on screen.
+   */
+  @keyframes overlay-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes overlay-fade-in-below {
+    from { opacity: 0; transform: translateY(calc(var(--space-1) * -1)); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes overlay-fade-in-above {
+    from { opacity: 0; transform: translateY(var(--space-1)); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes overlay-fade-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
   }
 `;

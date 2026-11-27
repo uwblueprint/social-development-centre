@@ -42,6 +42,8 @@ export const EVERYONE: Audience = { rows: [], only: [], require: [], never: [], 
 export interface AutomaticEmail {
   id: string;
   name: string;
+  /** One line saying what the email is, shown under its name on the list. Blank until written. */
+  description?: string;
   trigger: Trigger;
   /** The tag a tag_added email starts from (an id), or null until one is picked. */
   tag: string | null;
@@ -52,6 +54,8 @@ export interface AutomaticEmail {
   daysEdited?: boolean;
   audience: Audience;
   mode: Mode;
+  /** Also send to members who unsubscribed: only for emails SDC is legally required to send. Bounced addresses never get it. */
+  sendToUnsubscribed?: boolean;
   state: EmailState;
   /** The subject as plain text ("Welcome, [First name]"), for the list and checks. Mirrors subjectDoc. */
   subject: string;

@@ -12,6 +12,7 @@ The rules behind the component kit.
 - State is never color alone: pair it with an icon, a label, or a change in shape.
 - Every control is reachable and usable by keyboard, pointer and touch. Keyboard shortcuts are accelerators, never the only path.
 - Disabled things explain why (see `disabledReason`), and there's a meaningful difference between *disabled* (can't use it, state unknown) and *read-only* (can see the state, can't change it).
+- The focus ring is the primary colour (`--color-focus`), shown on keyboard focus only (typed fields show their border on any focus). Focus rings are never clipped: scroll containers reserve 4px of inner space (padding, given back as negative margin), and full-bleed rows and cells use the inset ring (`--focus-ring-inset`).
 
 ## 3. Quiet type, clear hierarchy
 - One family (Switzer, from Fontshare, weights 400 and 500; Geist, bundled, as the fallback) for UI and headings; JetBrains Mono for keyboard shortcuts, codes and IDs.
@@ -32,3 +33,6 @@ The rules behind the component kit.
 ## 7. Content is part of the component
 - Sentence case. Buttons start with a verb. Errors say what happened and how to fix it. Empty states say what goes here and how to add it.
 - Each component doc carries its own content rules, so designers, engineers and AI agents share one reference.
+
+## 8. One navigation pattern
+- Navigation is always a left sidebar. No design has a top nav.

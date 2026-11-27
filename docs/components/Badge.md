@@ -13,12 +13,13 @@ A small inline label for a status or category.
 ```tsx
 import { Badge } from "@/components/ui/Badge";
 ```
-- `$variant?: "neutral" | "primary" | "success" | "warning" | "danger" | "info" | "outline"` — default `neutral`.
+- `$variant?: "neutral" | "primary" | "success" | "warning" | "danger" | "info" | "outline" | "count"` — default `neutral`.
 - `$category?: 1 | 2 | 3 | 4 | 5` — a non-status color for a kind of thing (opportunity types: event, petition, volunteer, job, other). Uses `--color-category-{n}` text on `--color-category-{n}-subtle` with a `-border` hairline; overrides `$variant`. Hues (blue, violet, fuchsia, pink, lime) avoid the status and accent hues so a type never reads as a status; every pair is 5.5:1 or better.
 - Children can start with an `<Icon size={12} />` (12–14px); it keeps the badge's text color and never shrinks.
   - `neutral`: no fill, `--color-border` outline, muted text. Categories and counts.
   - `success` / `warning` / `danger` / `info`: the `-subtle` fill, the status color as text and a matching `--color-*-border` hairline.
   - `outline`: like `neutral` but with `--color-text` text, for a count or category that needs more weight.
+  - `count`: a solid `--color-danger` circle (a pill from two digits) with `--color-on-danger` text, no border, for an unread or attention count on a tab or nav item, e.g. `<Badge $variant="count" aria-hidden="true">3</Badge>`. The number only; never status words. Keep it `aria-hidden` and put the count in the control's accessible name (a tab's `aria-label`, "Couldn't send, 3 emails"). Contrast 6.5:1 in light, 6.4:1 in dark (white on #b91c1c; --taupe-900 on #f87171).
   - `primary`: filled dark. Rare; one per screen at most.
 - Compact on purpose: `--text-xs` with half of `--space-3` horizontal padding, so it doesn't compete with the text beside it.
 - Plain `<span>` props otherwise.

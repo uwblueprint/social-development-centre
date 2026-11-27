@@ -17,20 +17,17 @@ import { EmailImage } from "../extensions/emailImage";
 import { PersonalizedText } from "../extensions/personalizedText";
 import type { PersonalizationVariable } from "../variables";
 import { LinkEditor, LinkMenu, type LinkUi } from "./LinkPopovers";
+import { plainJson } from "../plainJson";
 import { pickFiles } from "./shortcuts";
 import { Toolbar } from "./Toolbar";
 import { BodyKeyboard, EscapeBlur, FOCUS_TOOLBAR, LEAVE_TO_SUBJECT } from "../extensions/keyboardNav";
 
-export interface EmailFooter {
-  /*
-   * What CASL and CAN-SPAM expect at the bottom of every commercial email, in reading order:
-   * why they got it, who sent it, where to reach them, then the way out.
-   */
-  reason: string;
-  organization: string;
-  address: string;
-  contact: string;
-}
+/**
+ * The footer every email ends with, as the page draws it (the saved one: features/email-footer). What CASL and
+ * CAN-SPAM expect at the bottom of every commercial email: why they got it, who sent it, where to reach them,
+ * then the way out.
+ */
+export type EmailFooter = React.ReactNode;
 
 export interface MessageFieldProps {
   content?: JSONContent;
@@ -52,6 +49,10 @@ export interface MessageFieldProps {
   readOnly?: boolean;
   /** False until images and attachments can be uploaded: no Image or Attach button, and dropped or pasted files are ignored. */
   files?: boolean;
+  /** No card of its own and no attach button; the body is set like the host's read view. See EmailEditor's `embedded`. */
+  embedded?: boolean;
+  /** Personalized text ("@" and the toolbar's @ button). Off for plain-text emails. */
+  personalize?: boolean;
   /** The card's top row, above the toolbar: the subject. */
   header?: ReactNode;
   /** Shift+Tab at the very start of the message: focus goes back to the subject. */
@@ -95,6 +96,8 @@ export function MessageField({
   onReady,
   readOnly = false,
   files = true,
+  embedded = false,
+  personalize = true,
   header,
   onLeaveToSubject,
 }: MessageFieldProps) {
@@ -214,7 +217,7 @@ export function MessageField({
       }),
       EmailHighlight,
       Placeholder.configure({ placeholder: copy.bodyPlaceholder }),
-      PersonalizedText.configure({ getItems }),
+      PersonalizedText.configure({ getItems, suggest: personalize }),
       EmailBlockquote,
       EmailImage,
       EditorShortcuts,
@@ -288,7 +291,7 @@ export function MessageField({
       onReady?.(e);
     },
     onFocus: ({ editor: e }) => onFocusEditor(e),
-    onUpdate: ({ editor: e }) => onChange(e.getJSON(), e.isEmpty, e.getText().length),
+    onUpdate: ({ editor: e }) => onChange(plainJson(e.getJSON()), e.isEmpty, e.getText().length),
   });
 
   // Published emails are read-only until they're unpublished, and that can change while the editor is open.
@@ -333,6 +336,7 @@ export function MessageField({
     <Wrapper>
       <Card
         data-invalid={invalid || undefined}
+        data-embedded={embedded || undefined}
         // Drops on the toolbar or footer: images go to the end of the message, other files to Attachments.
         onDragOver={(e) => {
           if (!readOnly && files && Array.from(e.dataTransfer.types).includes("Files")) e.preventDefault();
@@ -350,10 +354,10 @@ export function MessageField({
         {!readOnly && (
           <Toolbar
             editor={editor}
-            personalizeItems={personalizeItems}
+            personalizeItems={personalize ? personalizeItems : []}
             onPersonalize={onPersonalize}
             onImage={files ? () => pickFiles(IMAGE_TYPES.join(","), (picked) => void insertImages(picked)) : undefined}
-            onAttach={files ? () => pickFiles(ATTACHMENT_EXTENSIONS.map((x) => `.${x}`).join(","), (picked) => onAttachFiles?.(picked)) : undefined}
+            onAttach={files && !embedded ? () => pickFiles(ATTACHMENT_EXTENSIONS.map((x) => `.${x}`).join(","), (picked) => onAttachFiles?.(picked)) : undefined}
             onLink={(button) => setLinkUi({ kind: "edit", rect: button.getBoundingClientRect() })}
           />
         )}
@@ -378,14 +382,7 @@ export function MessageField({
               onPointerLeave={closeFooterTip}
               onBlur={closeFooterTip}
             >
-              <div>
-                {footer.organization}
-                <br />
-                {`${footer.address} · ${footer.contact}`}
-              </div>
-              <FooterSmall>
-                {footer.reason} <u>Unsubscribe from emails</u> · <u>Cancel membership</u>
-              </FooterSmall>
+              <div>{footer}</div>
             </Footer>
           </TooltipTrigger>
           <TooltipContent>{copy.footerTip}</TooltipContent>
@@ -430,6 +427,15 @@ const Card = styled.div`
   &[data-invalid],
   &[data-invalid]:focus-within {
     border-color: var(--color-danger);
+  }
+
+  /* Inside the host's card: the host draws the edge (and its focus and error colours). */
+  &[data-embedded],
+  &[data-embedded]:focus-within {
+    box-shadow: none;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
   }
 `;
 
@@ -499,6 +505,19 @@ const Area = styled.div`
     color: var(--color-text-subtle);
     pointer-events: none;
   }
+
+  /* Embedded: the read view's text, so nothing moves when editing starts (an empty paragraph is the blank line). */
+  [data-embedded] & .ProseMirror {
+    min-height: 0;
+    font-size: var(--text-md);
+  }
+  [data-embedded] & .ProseMirror p,
+  [data-embedded] & .ProseMirror ul,
+  [data-embedded] & .ProseMirror ol,
+  [data-embedded] & .ProseMirror blockquote,
+  [data-embedded] & .ProseMirror li > p {
+    margin: 0;
+  }
 `;
 
 /* Where a dropped image will land: a line in the primary (SDC green) colour. */
@@ -555,9 +574,11 @@ const Footer = styled.div`
   line-height: var(--leading-footer);
   user-select: none;
   cursor: default;
+
+  /* Embedded: a full-width hairline, like the host's read footer. */
+  [data-embedded] & {
+    margin: 0;
+    padding: var(--space-3) var(--space-4) var(--space-4);
+  }
 `;
 
-const FooterSmall = styled.div`
-  font-size: var(--text-xs);
-  color: var(--color-text-subtle);
-`;

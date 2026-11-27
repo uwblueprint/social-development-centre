@@ -185,6 +185,8 @@ export function Toolbar({ editor, personalizeItems, onPersonalize, onImage, onAt
           <Icon icon={LinkIcon} />
         </ToolButton>
       </Tooltip>
+      {personalizeItems.length > 0 && (
+      <>
       <Divider aria-hidden="true" />
       <DropdownMenu>
         <Tooltip content={tip(copy.toolbar.personalizeTip)} delayDuration={TOOLTIP_DELAY} pinOnClick={false}>
@@ -209,6 +211,8 @@ export function Toolbar({ editor, personalizeItems, onPersonalize, onImage, onAt
           })}
         </DropdownMenuContent>
       </DropdownMenu>
+      </>
+      )}
     </Bar>
   );
 }
@@ -225,6 +229,11 @@ const Bar = styled.div`
   background: var(--color-surface);
   border-top: 1px solid var(--color-border-strong);
   border-bottom: 1px solid var(--color-border);
+
+  /* Embedded: the host card's own hairlines. */
+  [data-embedded] > & {
+    border-top-color: var(--color-border);
+  }
 
   /* With the subject in its own box, the band is the card's top edge: round with it, no second line. */
   &:first-child {

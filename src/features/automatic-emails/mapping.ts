@@ -6,6 +6,7 @@ import { DELAY_MAX, EVERYONE, type Audience, type AutomaticEmail, type CondKind,
 export interface AutomaticEmailRow {
   id: string;
   name: string;
+  description: string;
   state: string;
   trigger: string;
   trigger_tag_id: string | null;
@@ -13,6 +14,7 @@ export interface AutomaticEmailRow {
   delay_unit: string;
   conditions: Json;
   mode: string;
+  send_to_unsubscribed: boolean;
   subject: string;
   subject_doc: Json;
   body: Json;
@@ -20,7 +22,7 @@ export interface AutomaticEmailRow {
 }
 
 export const AUTOMATIC_EMAIL_COLUMNS =
-  "id, name, state, trigger, trigger_tag_id, delay_amount, delay_unit, conditions, mode, subject, subject_doc, body, published_at";
+  "id, name, description, state, trigger, trigger_tag_id, delay_amount, delay_unit, conditions, mode, send_to_unsubscribed, subject, subject_doc, body, published_at";
 
 type Counts = Pick<AutomaticEmail, "edited" | "approved" | "waiting">;
 const NO_COUNTS: Counts = { edited: 0, approved: 0, waiting: 0 };
@@ -49,6 +51,7 @@ export function emailFromRow(row: AutomaticEmailRow, counts: Counts = NO_COUNTS)
   return {
     id: row.id,
     name: row.name,
+    description: row.description,
     trigger: row.trigger as Trigger,
     tag: row.trigger_tag_id,
     delay: same ? "same" : "days",
@@ -57,6 +60,7 @@ export function emailFromRow(row: AutomaticEmailRow, counts: Counts = NO_COUNTS)
     daysEdited: !same,
     audience: row.conditions ? audienceFrom(row.conditions) : EVERYONE,
     mode: row.mode === "review" ? "review" : "auto",
+    sendToUnsubscribed: row.send_to_unsubscribed,
     state: row.state === "published" || row.state === "trash" ? row.state : "draft",
     subject: row.subject,
     subjectDoc: isDoc(row.subject_doc) ? row.subject_doc : undefined,
@@ -73,6 +77,7 @@ export function patchFromEmail(e: AutomaticEmail): Record<string, Json> {
   const { op, from, to } = e.audience.joined;
   return {
     name: e.name,
+    description: e.description ?? "",
     trigger: e.trigger,
     trigger_tag_id: e.trigger === "tag_added" ? e.tag : null,
     ...(amount !== null && { delay_amount: amount, delay_unit: e.unit satisfies Unit }),
@@ -85,6 +90,7 @@ export function patchFromEmail(e: AutomaticEmail): Record<string, Json> {
       joined: { op, ...(from && { from }), ...(to && { to }) },
     },
     mode: e.mode,
+    send_to_unsubscribed: e.sendToUnsubscribed ?? false,
     subject: e.subject,
     subject_doc: (e.subjectDoc ?? {}) as Json,
     body: (e.body ?? {}) as Json,

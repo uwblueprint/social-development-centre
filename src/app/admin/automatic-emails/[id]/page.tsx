@@ -4,6 +4,7 @@ import { requireAdmin } from "@/features/auth/session";
 import { AutomaticEmailScreen } from "@/features/automatic-emails/components/AutomaticEmails";
 import { displayName } from "@/features/automatic-emails/model";
 import { getAutomaticEmail, getFallbacks, listTagOptions } from "@/features/automatic-emails/queries";
+import { getEmailFooter } from "@/features/email-footer/queries";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -17,7 +18,12 @@ export default async function AutomaticEmailRoute({ params }: PageProps<"/admin/
   await requireAdmin();
   const { id } = await params;
   if (!UUID.test(id)) notFound();
-  const [page, tags, fallbacks] = await Promise.all([getAutomaticEmail(id), listTagOptions(), getFallbacks()]);
+  const [page, tags, fallbacks, footer] = await Promise.all([
+    getAutomaticEmail(id),
+    listTagOptions(),
+    getFallbacks(),
+    getEmailFooter(),
+  ]);
   if (!page) notFound();
-  return <AutomaticEmailScreen email={page.email} tags={tags} recipients={page.recipients} fallbacks={fallbacks} />;
+  return <AutomaticEmailScreen email={page.email} tags={tags} recipients={page.recipients} fallbacks={fallbacks} footer={footer} />;
 }

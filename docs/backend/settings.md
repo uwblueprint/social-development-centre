@@ -3,13 +3,13 @@
 `/admin/settings` (the product) and `/design/settings` (the full design on demo data). Decisions: [../decisions/account.md](../decisions/account.md).
 
 ## Connected today
-Two things on the page work against the database. Everything else in the design has no backend yet.
+Three things on the page work against the database. Everything else in the design has no backend yet.
 
 ### Your name
 - Table `people`: `first_name`, `last_name` (`full_name` is generated from them).
 - Read: `getAccount()` (`src/features/account/queries.ts`) reads the signed-in admin's names.
 - Write: server action `updateName` (`src/features/account/actions.ts`) → database function `update_own_name(p_first_name, p_last_name)` (`supabase/migrations/20261110000000_update_own_name.sql`).
-  - Both names are required, trimmed, and at most 100 characters. The action checks first and returns `fieldErrors.firstName` / `fieldErrors.lastName`; the function raises `22023` for the same cases and `42501` when there is no signed-in person, so a bad call can't blank a name.
+  - First name is required; last name is optional (one-word names are stored with `last_name` null, and an empty one is saved as null). Both are trimmed and at most 100 characters. The action checks first and returns `fieldErrors.firstName` / `fieldErrors.lastName`; the function raises `22023` for the same cases and `42501` when there is no signed-in person, so a bad call can't blank a name.
   - It only ever changes the caller's own row.
   - Revalidates `/admin` so the sidebar and Admins list show the new name.
 
@@ -19,8 +19,14 @@ Two things on the page work against the database. Everything else in the design 
 - On success the action signs you out of this browser and redirects to `/goodbye` (public: `signInPathFor` lets it through). It never returns on success.
 - Any other failure returns "We couldn’t remove this admin. Try again.", shown inside the dialog.
 
+### Email footer
+- **One footer for all of SDC, not one per admin** (owner, 21 Nov 2026). Stored once in `email_footer` (a single row; `supabase/migrations/20261124000000_email_footer.sql`), never looked up by the signed-in or sending admin. Any admin can change it.
+- It's a small rich-text document (TipTap JSON, `src/features/email-footer/doc.ts`): plain lines with bold, italic and underline, plus two fixed links, Unsubscribe and Cancel membership, which can be moved but not removed or doubled. No row yet means the default footer (`defaultFooterDoc`).
+- Read: `getEmailFooter()` (`src/features/email-footer/queries.ts`). Write: server action `saveEmailFooter` → `set_email_footer(p_doc)`, which checks the caller is an admin and that the document has exactly one of each fixed link (`22023` otherwise), so a bad call can't drop the unsubscribe link.
+- **Sends read the current footer when they go out.** Every email sent after a change ends with the new footer, including emails already scheduled or waiting in the Outbox: the daily run reads `email_footer` and `render.ts` renders it, with the unsubscribe link filled in. Cancel membership has no page yet, so it's left out of sent emails (`SENT_LINKS`).
+- The previews show the same saved footer: the automatic email editor, its preview dialog and the Outbox's email view (`FooterContent`).
+
 ## Design only, no backend yet
 These are on `/design/settings` and need storage and server actions before they can ship:
-- **Reply-to address**, **email signature**, and the six **email alerts** (each is a list of admin emails; an empty list means off). Alerts need a sender per event: the member triggers in `member_events`, the Outbox timers in the emails engine, and `add_admin` for a new admin.
-- The signature is plain text (a sign-off, a name and SDC's mailing address). The emails engine appends the unsubscribe, cancel and refer links itself.
-- Save button label: **Save** when only your name or signature changed, **Save for all admins** when a reply-to or an alert changed.
+- **Reply-to address** and the six **email alerts** (each is a list of admin emails; an empty list means off). Alerts need a sender per event: the member triggers in `member_events`, the Outbox timers in the emails engine, and `add_admin` for a new admin.
+- Save button label: **Save** when only your name or the footer changed, **Save for all admins** when a reply-to or an alert changed.

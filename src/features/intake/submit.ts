@@ -12,6 +12,8 @@ import type { IntakeAnswers } from "./types";
 export interface IntakeSubmission {
   submissionId: string;
   formSource: IntakeFormSource;
+  /** From a friend's referral link (`?r=`); unknown ids are ignored by `submit_intake`. */
+  referralId?: string;
   /** UTC ISO 8601 with a Z. */
   submittedAt: string;
   firstName: string;

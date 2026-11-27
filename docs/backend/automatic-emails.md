@@ -89,11 +89,13 @@ Stored on `automatic_emails.conditions` and validated on save (`22023` if malfor
 | Column | Notes |
 |---|---|
 | `name`, `subject` | Blank allowed while a draft is set up; publishing requires both. |
+| `description` | One line (≤ 80 characters) saying what the email is, shown under its name on the list. Blank by default; publishing doesn't require it. Duplicates keep it (`20261121000100_automatic_email_description.sql`). |
 | `state` | `draft`, `published`, `trash`. Only drafts can be edited. |
 | `trigger` | Events: `join_any`, `join_no_referral`, `join_referral`, `refers`, `referral_joins` (both referral triggers send to the referrer), `tag_added` (with `trigger_tag_id`). |
 | `delay_amount`, `delay_unit` | `days` ≤ 365, `weeks` ≤ 52, `months` ≤ 24, `years` ≤ 5. Calendar months and years: 31 Jan + 1 month = 28 Feb. |
 | `conditions` | See above. |
 | `mode` | `auto`, or `review` (each send waits in the Outbox for approval). |
+| `send_to_unsubscribed` | Off by default. On, the email also reaches members who unsubscribed (they're still members), for emails SDC is legally required to send. Bounced addresses are still skipped. `email_candidate_state.emailable` applies it, so the Outbox, approving and the daily run all agree (`20261121000200_send_to_unsubscribed.sql`). |
 | `alert_enabled`, `alert_to`, `alert_when` | Review mode only. `alert_to` defaults to suhanya@waterlooregion.org (PM, 3 Nov 2026). `alert_when`: `waiting`, `due_soon`, `past_due`. |
 | `body` | Opaque JSON from the Email Editor (its own PRD). |
 
@@ -196,8 +198,9 @@ sdcentre@uwblueprint.org, the same Gmail account Supabase Auth uses for sign-in 
   really receive mail; everyone else is logged. Previews and local runs read the dev database, so
   this is what keeps them from emailing members.
 - **Rendering** (`render.ts`): until the Email Editor defines the body, a body is `{ "text": "..." }`.
-  `[First name]` fills in, or "there" when the member has no first name. Every email gets the
-  prototype's footer, an unsubscribe link and a `List-Unsubscribe` header.
+  `[First name]` fills in, or "there" when the member has no first name. Every email ends with the
+  footer saved in Settings, read when the email goes out so waiting emails get the latest one
+  ([settings.md](./settings.md)), with its unsubscribe link and a `List-Unsubscribe` header.
 - SMTP has no idempotency key. If the run dies between sending and recording, that one email can
   go again the next day.
 

@@ -1,16 +1,18 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { sendSignInLink } from "@/features/auth/actions";
 import { requireAdmin } from "@/features/auth/session";
 import { normalizeEmail } from "@/lib/email";
 import type { ActionState } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
+import { getMember } from "./queries";
+import type { MemberDetail } from "./types";
 
 type NewMember = { fullName: string; email: string };
 
 /**
- * Adds them to SDC's list if they're new and makes them a member. They get a sign-in link.
+ * Adds them to SDC's list if they're new and makes them a member. No sign-in link: members don't sign in
+ * (the member self-serve page was ruled out, 23 Oct); join emails come from Automatic Emails.
  * Optional fields: `joinedAt` (YYYY-MM-DD, defaults to today) and `joinEmails` (checkbox, on by
  * default; off when backfilling existing members, so join emails don't go out).
  */
@@ -40,15 +42,7 @@ export async function addMember(_prev: ActionState<NewMember>, formData: FormDat
     return { status: "error", fieldErrors: { email: "This person is already a member." }, data: values };
   }
   revalidatePath("/admin/members");
-
-  const name = values.fullName || email;
-  if ((await sendSignInLink("member", email)) !== "sent") {
-    return {
-      status: "error",
-      message: `${name} is now a member, but the sign-in link didn’t send. Use Resend link to try again.`,
-    };
-  }
-  return { status: "success", message: `${name} is now a member. We sent a sign-in link to ${email}.` };
+  return { status: "success", message: `Added ${values.fullName || email}.`, data: { ...values, email } };
 }
 
 /** They stay on SDC's list (tags, history, email subscription) and can't sign in to the members' area. */
@@ -61,6 +55,26 @@ export async function removeMember(personId: string): Promise<ActionState> {
     return { status: "error", message: "We couldn’t remove this member. Try again." };
   }
   revalidatePath("/admin/members");
+  return { status: "success" };
+}
+
+/** One member's page, for the panel that opens from the list. */
+export async function loadMember(personId: string): Promise<MemberDetail | null> {
+  await requireAdmin();
+  return getMember(personId);
+}
+
+/** Moves when their membership ends (YYYY-MM-DD), e.g. after a renewal. Not before they joined. */
+export async function setMembershipEnd(personId: string, endsAt: string): Promise<ActionState> {
+  await requireAdmin();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(endsAt)) return { status: "error", fieldErrors: { endsAt: "Choose a date." } };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_membership_end", { p_person_id: personId, p_ends_at: endsAt });
+  if (error?.code === "22023") {
+    return { status: "error", fieldErrors: { endsAt: "Choose a date on or after the day they joined." } };
+  }
+  if (error) return failed("set_membership_end", error);
+  refresh(personId);
   return { status: "success" };
 }
 
