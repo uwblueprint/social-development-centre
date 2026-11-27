@@ -719,10 +719,9 @@ function PageHeading({
 /* ---- The flow card (cancel membership) ---- */
 
 /*
- * Shallot: every step of cancelling shares one frame, so the offers read as steps of one flow, not
- * standalone pages. No outline (Shallot): three sections, a header (back arrow, the flow's name and
- * the progress bar, which separates it from the step) that stays put, the step's content, and a
- * footer with the step's two buttons. The frame is as tall as its step; when a
+ * Shallot: every step of cancelling sits in one card, so the offers read as steps of one flow, not
+ * standalone pages. Three sections: a header (back arrow and the flow's name) that stays put, the
+ * step's content, and a footer with the step's two buttons. The card is as tall as its step; when a
  * step is taller than the window (phones), the footer sticks to the bottom of the screen so its
  * buttons are always in reach. The end screens aren't in the card: by then they're not cancelling.
  */
@@ -737,18 +736,27 @@ const FramedMiddle = styled.div`
   }
 `;
 
-const FlowCard = styled.div`
+const FlowCard = styled(Card)`
   display: flex;
   flex-direction: column;
   width: 100%;
   max-width: 624px;
 `;
 
-/** The back arrow and the flow's name, the progress bar under them: the bar separates them from the step. */
+/**
+ * The back arrow and the flow's name, the progress bar under them. The same space above, between and
+ * below; the same side padding as the content, so the bar and the arrow line up with the heading.
+ */
 const FlowHeader = styled.div`
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  padding: var(--space-4) var(--space-6);
+  border-bottom: 1px solid var(--color-border);
+
+  @media (max-width: 480px) {
+    padding: var(--space-4);
+  }
 `;
 
 const FlowHeaderRow = styled.div`
@@ -774,22 +782,30 @@ const FlowName = styled.p`
 `;
 
 const FlowContent = styled.div`
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
-  padding-block: var(--space-7) var(--space-6);
+  padding: var(--space-6);
+  /* The slide-in starts to the side: keep it inside the card. */
+  overflow-x: clip;
 
   @media (max-width: 480px) {
-    padding-block: var(--space-6) var(--space-5);
+    padding: var(--space-5) var(--space-4);
   }
 `;
 
-/** On the page's background, so when it sticks to the bottom of a phone screen the content scrolls under it. */
 const FlowFooter = styled.div`
   position: sticky;
   bottom: 0;
-  padding-block: var(--space-4);
-  background: var(--color-bg);
+  padding: var(--space-4) var(--space-6);
+  border-top: 1px solid var(--color-border);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  background: var(--color-surface-raised);
+
+  @media (max-width: 480px) {
+    padding: var(--space-3) var(--space-4);
+  }
 `;
 
 /* ---- Moving between screens ---- */
