@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import Link from "next/link";
 import { ArrowLeft, Check } from "lucide-react";
 import { css, keyframes, styled } from "next-yak";
 import { Badge } from "@/components/ui/Badge";
@@ -10,7 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Icon } from "@/components/ui/Icon";
 import { RadioGroup, RadioGroupOption } from "@/components/ui/RadioGroup";
 import { Separator } from "@/components/ui/Separator";
-import { AuthActions, AuthColumn, AuthHeading, AuthScreen, SdcLogo } from "@/features/auth/AuthScreen";
+import { AuthActions, SdcLogo } from "@/features/auth/AuthScreen";
 
 /*
  * Pieces shared by the email flow (/design/unsubscribe) and the cancel-membership flow
@@ -50,13 +49,6 @@ export function LightOnly() {
 }
 
 /* ---- Template ---- */
-
-/**
- * Sections sit further apart than AuthColumn's default, so the heading and its line read as one group.
- */
-const Column = styled(AuthColumn)`
-  gap: var(--space-6);
-`;
 
 /**
  * The page's bottom row: "Keep membership" on the left, the way forward (Continue, Continue to
@@ -191,7 +183,6 @@ export const InfoPanel = styled.p`
   background: var(--color-info-subtle);
   color: var(--color-text);
   line-height: var(--leading-ui);
-  text-align: center;
 `;
 
 const Benefits = styled.ul`
@@ -239,21 +230,7 @@ const UndoSection = styled.div`
   width: 100%;
 `;
 
-/**
- * The green heading, sized to the width it has: full size in the 440px column, smaller as the
- * screen narrows (about 23px on a 360px phone). A container query, so every screen gets it from
- * the template. For devs: this belongs in AuthHeading itself (src/features/auth/AuthScreen.tsx).
- */
-export const Heading = styled.div`
-  container-type: inline-size;
-  width: 100%;
-
-  & h1 {
-    font-size: clamp(var(--text-lg), 7cqi, var(--text-xl));
-  }
-`;
-
-/** Content under the heading, full width. Messages in it are centred like the heading; questions and answer lists stay left-aligned. */
+/** Content under the heading, full width, left-aligned like the heading. */
 export const Stack = styled.div`
   display: flex;
   flex-direction: column;
@@ -261,19 +238,17 @@ export const Stack = styled.div`
   width: 100%;
 `;
 
-/** A question above a list of answers, centred like the heading. */
+/** A question above a list of answers. */
 export const Question = styled.h2`
   margin: 0;
-  text-align: center;
   font-size: var(--text-md);
   font-weight: var(--weight-medium);
   line-height: var(--leading-heading);
 `;
 
-/** Small print, centred under the heading. Muted, 4.5:1. */
+/** Small print. Muted, 4.5:1. */
 export const Note = styled.p`
   margin: 0;
-  text-align: center;
   font-size: var(--text-sm);
   line-height: var(--leading-ui);
   color: var(--color-text-muted);
@@ -283,32 +258,15 @@ export const Note = styled.p`
   }
 `;
 
-/** What happened, at body size, near-black and centred. The template's line under the heading. */
+/** A sentence that matters (the restart date, what a plan gives): body size, near-black. */
 export const Lead = styled.p`
   margin: 0;
-  text-align: center;
   font-size: var(--text-md);
   line-height: var(--leading-ui);
   color: var(--color-text);
 
   &:focus {
     outline: none;
-  }
-`;
-
-/**
- * A link inside a sentence: the sentence's colour, underlined so it isn't told apart by colour alone.
- * Same as the login page's ContactLink (src/app/login/SignInForm.tsx).
- */
-export const TextLink = styled(Link)`
-  color: inherit;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  border-radius: var(--radius-sm);
-
-  &:focus-visible {
-    outline: none;
-    box-shadow: var(--focus-ring);
   }
 `;
 
@@ -376,7 +334,7 @@ const UndoLine = styled.div`
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: var(--space-2);
 `;
 
@@ -429,23 +387,67 @@ export function YearsCard({ value, caption, dates, rejoin }: { value: string; ca
   );
 }
 
-/* ---- Moving between screens ---- */
+/* ---- The page: matches the sign-in pages ---- */
 
-/**
- * Top-aligned, not centred like AuthScreen, so the logo and heading sit at the same height on every
- * screen however much is under them.
+/*
+ * The same frame as the sign-in and "Check your inbox" pages (SignInParts.tsx on
+ * gaurav/sign-in-magic-link): the logo centred at the top, one left-aligned column, a big emoji over a
+ * display-size heading, and Waterloo Region's skyline along the bottom. One difference: the column
+ * starts at a fixed height instead of being centred, so the heading stays put between steps.
+ * For devs: once that branch is merged, both should use one shared frame.
  */
-const Screen = styled(AuthScreen)`
+
+const Page = styled.main`
   position: relative;
-  place-items: start center;
-  /* Lower on taller windows: 12% of the window's height, never less than 64px. */
-  padding-top: max(var(--space-8), 12vh);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  /* One column no wider than the screen, so the wide skyline never makes the page scroll sideways. */
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 100dvh;
+  padding: var(--space-5) var(--space-4) 0;
+  background: var(--color-bg);
   /* A screen sliding in starts 32px to the side: clip it so a phone doesn't scroll sideways mid-slide. */
   overflow-x: clip;
+`;
+
+const LogoSlot = styled.div`
+  justify-self: center;
+`;
+
+/** Top-aligned, so the heading sits at the same height on every step. */
+const Middle = styled.div`
+  display: grid;
+  place-items: start center;
+  padding-block: var(--space-7) var(--space-8);
 
   @media (max-width: 480px) {
-    padding-top: var(--space-6);
+    padding-block: var(--space-6);
   }
+`;
+
+/**
+ * The skyline is a mask over a token colour, so it's a quiet line drawing in light mode and stays
+ * visible in dark mode (public/illustrations/waterloo-skyline.png, 1600×182, from the sign-in branch).
+ * Decorative, so screen readers skip it.
+ */
+const Skyline = styled.div`
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  aspect-ratio: 1600 / 182;
+  background-color: var(--color-border-strong);
+  mask: url("/illustrations/waterloo-skyline.png") center bottom / contain no-repeat;
+  -webkit-mask: url("/illustrations/waterloo-skyline.png") center bottom / contain no-repeat;
+`;
+
+/** The column: 624px like the sign-in pages, everything left-aligned. */
+const Column = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-6);
+  width: 100%;
+  max-width: 624px;
 `;
 
 /** The back arrow, top left of the page: small, grey, quiet. */
@@ -457,13 +459,113 @@ const BackButton = styled(Button)`
   color: var(--color-text-muted);
 `;
 
-/** The heading, and the screen's contents under it. */
-const Stage = styled.div`
+const HeadingGroup = styled.div`
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: var(--space-4);
   width: 100%;
 `;
+
+const pop = keyframes`
+  from {
+    transform: scale(0.4) rotate(-12deg);
+    opacity: 0;
+  }
+`;
+
+const wave = keyframes`
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(16deg); }
+  40% { transform: rotate(-8deg); }
+  60% { transform: rotate(14deg); }
+  80% { transform: rotate(-4deg); }
+`;
+
+/** The emoji says the mood at a glance; the heading under it says the same thing in words. Pops in on each new step. */
+const Emoji = styled.span<{ $wave?: boolean }>`
+  display: inline-block;
+  font-size: var(--text-display);
+  line-height: var(--leading-none);
+  transform-origin: 70% 80%;
+  animation: ${pop} var(--duration-slow) var(--ease-out) both;
+
+  ${({ $wave }) =>
+    $wave &&
+    css`
+      animation:
+        ${pop} var(--duration-slow) var(--ease-out) both,
+        ${wave} 1.2s var(--ease-out) 0.3s 1;
+    `}
+`;
+
+const Title = styled.h1`
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-display);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-display);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-brand-heading);
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+
+  &:focus {
+    outline: none;
+  }
+`;
+
+/** What happened, under the heading: large and muted, with the facts (dates, amounts) near-black. */
+const Description = styled.p`
+  margin: 0;
+  font-size: var(--text-lg);
+  line-height: var(--leading-body);
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+
+  strong {
+    font-weight: var(--weight-medium);
+    color: var(--color-text);
+  }
+`;
+
+/**
+ * Emoji glyphs carry empty space on their left, so the picture looks indented from the heading under
+ * it. Measure where the ink starts in both and shift the emoji so the left edges line up (from the
+ * sign-in pages).
+ */
+function alignInk(emojiEl: HTMLElement | null, titleEl: HTMLElement | null, emoji: string, title: string) {
+  if (!emojiEl || !titleEl) return;
+  const context = document.createElement("canvas").getContext("2d");
+  if (!context) return;
+  const inkStart = (el: HTMLElement, text: string) => {
+    const style = getComputedStyle(el);
+    context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+    return -context.measureText(text).actualBoundingBoxLeft;
+  };
+  const shift = inkStart(emojiEl, emoji) - inkStart(titleEl, title.charAt(0));
+  emojiEl.style.marginInlineStart = `${-shift}px`;
+}
+
+function PageHeading({ emoji, title, wave: waving }: { emoji: string; title: string; wave?: boolean }) {
+  const emojiRef = useRef<HTMLSpanElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  useLayoutEffect(() => alignInk(emojiRef.current, titleRef.current, emoji, title), [emoji, title]);
+  return (
+    <HeadingGroup>
+      {/* Keyed by the emoji, so a new one pops in. */}
+      <Emoji key={emoji} ref={emojiRef} aria-hidden="true" $wave={waving}>
+        {emoji}
+      </Emoji>
+      <Title ref={titleRef} tabIndex={-1}>
+        {title}
+      </Title>
+    </HeadingGroup>
+  );
+}
+
+/* ---- Moving between screens ---- */
 
 /** A shared-axis move: fade in while travelling 32px from the side it came from, decelerating. */
 const fromRight = keyframes`
@@ -540,6 +642,8 @@ export function Template({
   order = 0,
   onBack,
   backLabel = "Back",
+  emoji,
+  wave: waving,
   heading,
   line,
   children,
@@ -551,6 +655,10 @@ export function Template({
   order?: number;
   onBack?: () => void;
   backLabel?: string;
+  /** One emoji above the heading that says the mood (decorative: the heading says it in words). */
+  emoji: string;
+  /** The emoji waves once on arrival, for goodbyes. */
+  wave?: boolean;
   heading: string;
   line?: ReactNode;
   children?: ReactNode;
@@ -560,21 +668,20 @@ export function Template({
 }) {
   const dir = useDirection(screenKey, order);
   return (
-    <Screen>
+    <Page>
       {onBack && (
         <BackButton type="button" $variant="ghost" $size="sm" aria-label={backLabel} onClick={onBack}>
           <Icon icon={ArrowLeft} size={20} />
         </BackButton>
       )}
-      <Column $wide>
+      <LogoSlot>
         <SdcLogo />
-        <Stage>
-          {/* The heading's words change in place, no fade: fading the heading out and back in made it blink. */}
-          <Heading>
-            <AuthHeading title={heading} />
-          </Heading>
+      </LogoSlot>
+      <Middle>
+        <Column>
+          <PageHeading emoji={emoji} title={heading} wave={waving} />
           <Body key={screenKey} $dir={dir} $hasLine={Boolean(line)}>
-            {line && <Lead>{line}</Lead>}
+            {line && <Description>{line}</Description>}
             {children}
             {actions && <AuthActions>{actions}</AuthActions>}
             {footer && <FooterRow>{footer}</FooterRow>}
@@ -585,9 +692,10 @@ export function Template({
               </UndoSection>
             )}
           </Body>
-        </Stage>
-      </Column>
-    </Screen>
+        </Column>
+      </Middle>
+      <Skyline aria-hidden="true" />
+    </Page>
   );
 }
 
