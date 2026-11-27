@@ -169,6 +169,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
    */
   const pausePage = () => (
     <Template
+          frame={copy.flowName}
           onBack={back}
           backLabel={shared.back}
       screenKey="pause"
@@ -204,6 +205,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
     case "paused":
       return (
         <Template
+          frame={copy.flowName}
           onBack={back}
           backLabel={shared.back}
           emoji={undone ? undefined : copy.emoji.paused}
@@ -226,6 +228,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
     case "reasons":
       return (
         <Template
+          frame={copy.flowName}
           onBack={back}
           backLabel={shared.back}
           screenKey={step} order={ORDER[step]}
@@ -260,6 +263,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
       if (!hasOffer) {
         return (
           <Template
+          frame={copy.flowName}
           onBack={back}
           backLabel={shared.back}
             screenKey="offer-none" order={ORDER.offer}
@@ -277,6 +281,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
         return (
           // No card (Shallot): the offer is the heading, what it means under it, then the button.
           <Template
+          frame={copy.flowName}
             onBack={back}
             backLabel={shared.back}
             screenKey="offer-emails"
@@ -302,6 +307,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
       const cheaper = lowerTiers[0];
       return (
         <Template
+          frame={copy.flowName}
           onBack={back}
           backLabel={shared.back}
           screenKey="offer-budget"
@@ -344,6 +350,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
       const daysLeft = daysBetween(DEMO_TODAY, nextPayment);
       return (
         <Template
+          frame={copy.flowName}
           onBack={back}
           backLabel={shared.back}
           screenKey={staying ? "plan-keep" : "plan-change"}
@@ -380,6 +387,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
     case "switched":
       return (
         <Template
+          frame={copy.flowName}
           onBack={back}
           backLabel={shared.back}
           emoji={undone ? undefined : copy.emoji.switched}
@@ -402,6 +410,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
     case "unsubscribed":
       return (
         <Template
+          frame={copy.flowName}
           onBack={back}
           backLabel={shared.back}
           emoji={undone ? undefined : copy.emoji.unsubscribed}
@@ -429,6 +438,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
     case "confirm":
       return (
         <Template
+          frame={copy.flowName}
           onBack={back}
           backLabel={shared.back}
           screenKey={step} order={ORDER[step]}
@@ -461,6 +471,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
       return (
         // The check draws and fills, then confetti bursts from the heading.
         <Template
+          frame={copy.flowName}
           check
           confetti
           onBack={back}
@@ -478,7 +489,8 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
       const length = copy.cancelled.length(Math.floor(months / 12), months);
       return (
         // "Your membership has been cancelled" over the photo card (Shallot).
-        <Template onBack={back} backLabel={shared.back} screenKey={step} order={ORDER[step]} heading={copy.cancelled.heading}>
+        <Template
+          frame={copy.flowName} onBack={back} backLabel={shared.back} screenKey={step} order={ORDER[step]} heading={copy.cancelled.heading}>
           <PhotoCard photo={sdcPhoto} title={copy.cancelled.overlay}>
             <Lead>
               {copy.cancelled.membership(formatMonthYear(demoMember.memberSince), formatMonthYear(DEMO_TODAY), length)}

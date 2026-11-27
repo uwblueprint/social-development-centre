@@ -710,6 +710,87 @@ function PageHeading({
   );
 }
 
+/* ---- The flow card (cancel membership) ---- */
+
+/*
+ * Shallot: every step of cancelling sits in one card, so the offers read as steps of one flow, not
+ * standalone pages. Three sections: a header (back arrow and the flow's name) that stays put, the
+ * step's content, and a footer with the step's two buttons. The card fills the window's height so the
+ * footer sits in the same place on every step; when a step is taller than the window (phones), the
+ * footer sticks to the bottom of the screen so its buttons are always in reach.
+ */
+
+/** Stretches the card to the bottom of the window instead of sitting at the top. */
+const FramedMiddle = styled.div`
+  display: grid;
+  justify-items: center;
+  padding-block: var(--space-6) var(--space-7);
+
+  @media (max-width: 480px) {
+    padding-block: var(--space-5);
+  }
+`;
+
+const FlowCard = styled(Card)`
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 624px;
+`;
+
+/** Back arrow left, the flow's name centred, an empty cell right so the name stays centred with or without the arrow. */
+const FlowHeader = styled.div`
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+`;
+
+const FlowBack = styled(Button)`
+  justify-self: start;
+  padding: 0 var(--space-2);
+  color: var(--color-text-muted);
+`;
+
+/** The flow's name: says where the person is on every step. Not a heading: each step's h1 is. */
+const FlowName = styled.p`
+  grid-column: 2;
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-ui);
+  color: var(--color-text);
+`;
+
+const FlowContent = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-5) var(--space-6) var(--space-7);
+  /* The slide-in starts to the side: keep it inside the card. */
+  overflow-x: clip;
+
+  @media (max-width: 480px) {
+    padding: var(--space-4) var(--space-4) var(--space-6);
+  }
+`;
+
+const FlowFooter = styled.div`
+  position: sticky;
+  bottom: 0;
+  padding: var(--space-4) var(--space-6);
+  border-top: 1px solid var(--color-border);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  background: var(--color-surface-raised);
+
+  @media (max-width: 480px) {
+    padding: var(--space-3) var(--space-4);
+  }
+`;
+
 /* ---- Moving between screens ---- */
 
 /** A shared-axis move: fade in while travelling 32px from the side it came from, decelerating. */
@@ -797,7 +878,10 @@ export function Template({
   actions,
   undo,
   footer,
+  frame,
 }: {
+  /** The flow's name: puts the screen in a card with it in the header, the back arrow beside it and `footer` in the card's footer. */
+  frame?: string;
   screenKey: string;
   order?: number;
   onBack?: () => void;
@@ -819,39 +903,73 @@ export function Template({
   footer?: ReactNode;
 }) {
   const dir = useDirection(screenKey, order);
+  const heads = heading && <PageHeading title={heading} emoji={emoji} check={check} confetti={confetti} />;
+  const body = (inCard: boolean) => (
+    <Body key={screenKey} $dir={dir} $hasLine={Boolean(line)}>
+      {line &&
+        (lineAction ? (
+          <LineGroup>
+            <Description>{line}</Description>
+            <div>{lineAction}</div>
+          </LineGroup>
+        ) : (
+          <Description>{line}</Description>
+        ))}
+      {children}
+      {actions && <AuthActions>{actions}</AuthActions>}
+      {!inCard && footer && <FooterRow>{footer}</FooterRow>}
+      {undo && (
+        <UndoSection>
+          <Separator />
+          <UndoLine>{undo}</UndoLine>
+        </UndoSection>
+      )}
+    </Body>
+  );
+  const back = (Button: typeof BackButton | typeof FlowBack) =>
+    onBack && (
+      <Button type="button" $variant="ghost" $size="sm" aria-label={backLabel} onClick={onBack}>
+        <Icon icon={ArrowLeft} size={20} />
+      </Button>
+    );
+
+  if (frame) {
+    return (
+      <Page>
+        <LogoSlot>
+          <SdcLogo />
+        </LogoSlot>
+        <FramedMiddle>
+          <FlowCard>
+            <FlowHeader>
+              {back(FlowBack)}
+              <FlowName>{frame}</FlowName>
+            </FlowHeader>
+            <FlowContent>
+              {heads}
+              {body(true)}
+            </FlowContent>
+            {footer && (
+              <FlowFooter>
+                <FooterRow>{footer}</FooterRow>
+              </FlowFooter>
+            )}
+          </FlowCard>
+        </FramedMiddle>
+      </Page>
+    );
+  }
+
   return (
     <Page>
-      {onBack && (
-        <BackButton type="button" $variant="ghost" $size="sm" aria-label={backLabel} onClick={onBack}>
-          <Icon icon={ArrowLeft} size={20} />
-        </BackButton>
-      )}
+      {back(BackButton)}
       <LogoSlot>
         <SdcLogo />
       </LogoSlot>
       <Middle>
         <Column>
-          {heading && <PageHeading title={heading} emoji={emoji} check={check} confetti={confetti} />}
-          <Body key={screenKey} $dir={dir} $hasLine={Boolean(line)}>
-            {line &&
-              (lineAction ? (
-                <LineGroup>
-                  <Description>{line}</Description>
-                  <div>{lineAction}</div>
-                </LineGroup>
-              ) : (
-                <Description>{line}</Description>
-              ))}
-            {children}
-            {actions && <AuthActions>{actions}</AuthActions>}
-            {footer && <FooterRow>{footer}</FooterRow>}
-            {undo && (
-              <UndoSection>
-                <Separator />
-                <UndoLine>{undo}</UndoLine>
-              </UndoSection>
-            )}
-          </Body>
+          {heads}
+          {body(false)}
         </Column>
       </Middle>
     </Page>

@@ -11,6 +11,8 @@ import type { MembershipReason, PauseLength } from "../unsubscribe/data";
 
 export const cancelCopy = {
   pageTitle: "Pause or cancel your membership", // Not in doc.
+  // The name in the card header on every step, so each step reads as part of cancelling. Shallot.
+  flowName: "Cancel membership",
 
   /* The emoji over the heading once someone accepts an offer (Shallot). Drafts. */
   emoji: {
