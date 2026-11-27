@@ -2,7 +2,7 @@
 
 import { OfflineWatcher } from "@/app/_components/OfflineWatcher";
 import type { ReactNode } from "react";
-import { Mail, Send, Settings, UserCog, UsersRound } from "lucide-react";
+import { Mail, Send, Settings, ReceiptText, UserCog, UsersRound } from "lucide-react";
 import { AppToastProvider } from "@/components/ui/Toast";
 import { SidebarLayout, type SidebarNavItem } from "@/components/patterns/Sidebar";
 import type { AdminSection } from "../_data/types";
@@ -11,6 +11,7 @@ import { signOut } from "@/features/auth/actions";
 /** `description` shows as a delayed tooltip on the sidebar item; it replaces the old page descriptions. */
 const sections: { key: AdminSection; label: string; description: string; icon: SidebarNavItem["icon"] }[] = [
   { key: "members", label: "Members", description: "People in SDC's community who can sign in to the members' area.", icon: UsersRound },
+  { key: "payments", label: "Payments", description: "Who has paid for their membership through PayPal, and payments to sort out.", icon: ReceiptText },
   // Gaurav's left nav (#75): label, description and place.
   { key: "outbox", label: "Outbox", description: "Review emails before they send.", icon: Send },
   { key: "automatic-emails", label: "Automatic emails", description: "Set up an email once and it sends itself, like a thank-you when someone joins or a check-in a month later.", icon: Mail },
