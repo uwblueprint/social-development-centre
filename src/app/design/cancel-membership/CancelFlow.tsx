@@ -22,7 +22,6 @@ import {
   wholeMonths,
 } from "../unsubscribe/data";
 import {
-  Confetti,
   InlineLink,
   Lead,
   Note,
@@ -272,20 +271,21 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
 
       if (reason === "emails") {
         return (
-          <Template onBack={back} backLabel={shared.back} screenKey="offer-emails" order={ORDER.offer} heading={copy.offer.emails.heading} footer={footer}>
-            <OfferCard
-              title={copy.offer.emails.title}
-              description={copy.offer.emails.description}
-              action={
-                <Button
-                  type="button"
-                  onClick={() => go("unsubscribed")}
-                >
-                  {copy.offer.emails.action}
-                </Button>
-              }
-            />
-          </Template>
+          // No card (Shallot): the offer is the heading, what it means under it, then the button.
+          <Template
+            onBack={back}
+            backLabel={shared.back}
+            screenKey="offer-emails"
+            order={ORDER.offer}
+            heading={copy.offer.emails.heading}
+            line={copy.offer.emails.line}
+            actions={
+              <Button type="button" onClick={() => go("unsubscribed")}>
+                {copy.offer.emails.action}
+              </Button>
+            }
+            footer={footer}
+          />
         );
       }
 
@@ -450,9 +450,17 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
     case "kept":
       // "Keep membership": nothing changed, so a thank-you, a little confetti, and no actions.
       return (
-        <Template check onBack={back} backLabel={shared.back} screenKey={step} order={ORDER[step]} heading={copy.active.heading} line={copy.active.thanks}>
-          <Confetti />
-        </Template>
+        // The check draws and fills, then confetti bursts from the heading.
+        <Template
+          check
+          confetti
+          onBack={back}
+          backLabel={shared.back}
+          screenKey={step}
+          order={ORDER[step]}
+          heading={copy.active.heading}
+          line={copy.active.thanks}
+        />
       );
 
     case "cancelled": {

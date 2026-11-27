@@ -79,10 +79,9 @@ export const cancelCopy = {
   offer: {
     // Too many emails → unsubscribe from emails instead (FigJam).
     emails: {
-      heading: "Stop the emails, keep your membership", // Not in doc.
-      title: "Unsubscribe from emails", // Not in doc.
-      description: "You'll stop getting emails from SDC and stay a member.", // Not in doc.
-      action: "Unsubscribe from emails instead", // Not in doc.
+      heading: "Unsubscribe from emails instead?", // Shallot.
+      line: "You'll stop getting emails from SDC and stay a member.", // Shallot.
+      action: "Unsubscribe from emails", // Not in doc.
     },
     // Too expensive → a card per lower tier (Shallot: title, "$xx per month", "Choose [tier] instead").
     budget: {

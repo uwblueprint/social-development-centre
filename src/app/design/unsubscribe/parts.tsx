@@ -657,7 +657,26 @@ function DrawnCheck() {
   );
 }
 
-function PageHeading({ title, emoji, check }: { title: string; emoji?: string; check?: boolean }) {
+/** The heading's words only (as wide as the longest line), so confetti bursts from the middle of them. */
+const TitleWords = styled.span`
+  position: relative;
+  display: inline-block;
+`;
+
+/** The drawn check takes the length of the draw plus the fill. */
+const AFTER_CHECK = "calc(var(--duration-enter) + var(--duration-slow))";
+
+function PageHeading({
+  title,
+  emoji,
+  check,
+  confetti,
+}: {
+  title: string;
+  emoji?: string;
+  check?: boolean;
+  confetti?: boolean;
+}) {
   const emojiRef = useRef<HTMLSpanElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   useLayoutEffect(() => {
@@ -675,7 +694,11 @@ function PageHeading({ title, emoji, check }: { title: string; emoji?: string; c
         )}
       </EmojiSlot>
       <Title ref={titleRef} tabIndex={-1}>
-        {title}
+        <TitleWords>
+          {title}
+          {/* After the check has drawn and filled, when there is one. */}
+          {confetti && <Confetti start={check ? AFTER_CHECK : "0ms"} />}
+        </TitleWords>
       </Title>
     </HeadingGroup>
   );
@@ -761,6 +784,7 @@ export function Template({
   emoji,
   heading,
   check,
+  confetti,
   line,
   children,
   actions,
@@ -777,6 +801,8 @@ export function Template({
   heading?: string;
   /** The drawn check in the emoji's place ("Your membership is active again"). */
   check?: boolean;
+  /** A confetti burst from the middle of the heading's words (after the check, if there is one). */
+  confetti?: boolean;
   line?: ReactNode;
   children?: ReactNode;
   actions?: ReactNode;
@@ -796,7 +822,7 @@ export function Template({
       </LogoSlot>
       <Middle>
         <Column>
-          {heading && <PageHeading title={heading} emoji={emoji} check={check} />}
+          {heading && <PageHeading title={heading} emoji={emoji} check={check} confetti={confetti} />}
           <Body key={screenKey} $dir={dir} $hasLine={Boolean(line)}>
             {line && <Description>{line}</Description>}
             {children}
@@ -849,9 +875,10 @@ const burst = keyframes`
   }
 `;
 
-const ConfettiOrigin = styled.div`
+/** The middle of whatever it's placed in (the heading's words). */
+const ConfettiOrigin = styled.span`
   position: absolute;
-  top: 0;
+  top: 50%;
   left: 50%;
   width: 0;
   height: 0;
@@ -868,9 +895,10 @@ const Piece = styled.span`
   border-radius: var(--radius-sm);
   background: var(--piece-color);
   opacity: 0;
-  /* Its own length (exempt from the motion tokens): long enough to see the pieces land. */
-  animation: ${burst} 1.6s both;
-  animation-delay: var(--delay);
+  /* Its own length (exempt from the motion tokens): long enough to see the pieces land. Hidden until
+     it starts (forwards, not both), so a delayed burst doesn't sit in a pile first. */
+  animation: ${burst} 1.6s forwards;
+  animation-delay: calc(var(--start) + var(--delay));
 `;
 
 const pieceColors = ["var(--sdc-300)", "var(--sdc-500)", "var(--sdc-700)", "var(--color-accent)", "var(--color-warning)", "var(--color-info)"];
@@ -894,9 +922,10 @@ const pieces = Array.from({ length: 28 }, (_, i) => {
   };
 });
 
-export function Confetti() {
+/** `start`: when the burst begins, e.g. after the drawn check (a CSS time). */
+export function Confetti({ start = "0ms" }: { start?: string }) {
   return (
-    <ConfettiOrigin aria-hidden="true">
+    <ConfettiOrigin aria-hidden="true" style={{ "--start": start } as CSSProperties}>
       {pieces.map((p, i) => (
         <Piece
           key={i}
