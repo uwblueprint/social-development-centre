@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Potluck keynote, version C: dusk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --night: #0d0b13;
+    --cream: #fbf4e6;
+    --face: #1b1530;
+    --out: #5d5a6b;
+    --spring: cubic-bezier(0.175, 0.885, 0.32, 1.1);
+    --slow: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--night); }
+  body { font-family: "Instrument Serif", Georgia, serif; color: var(--cream); }
+  #stage { position: fixed; left: 50%; top: 50%; width: 1920px; height: 1080px; transform-origin: center; }
+  .slide { position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity 0.5s var(--slow); background: radial-gradient(ellipse 1100px 520px at 50% 100%, rgba(255, 122, 48, 0.2), rgba(255, 122, 48, 0) 70%), var(--night); }
+  .slide.on { opacity: 1; }
+
+  .stk { position: absolute; transition: left 1s var(--spring), top 1s var(--spring), transform 1s var(--spring), opacity 0.5s var(--slow), filter 6s var(--slow); }
+  .stk svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  .stk .ring { stroke: var(--c); transition: stroke 3s var(--slow); }
+  .stk.sleep .ring { stroke: var(--out); }
+  .stk .awake, .stk .sleepy { transition: opacity 1.2s var(--slow); }
+  .stk .sleepy { opacity: 0; }
+  .stk.sleep .awake { opacity: 0; }
+  .stk.sleep .sleepy { opacity: 1; }
+  .stk .amt { font-family: "Instrument Serif", serif; font-size: 27px; fill: var(--face); text-anchor: middle; }
+  @keyframes bob { from { translate: 0 -7px; } to { translate: 0 7px; } }
+  .bob { animation: bob var(--t, 4s) ease-in-out var(--dl, 0s) infinite alternate; }
+
+  .table { position: absolute; left: 120px; top: 880px; width: 1680px; height: 54px; border-radius: 18px; background: #2a1d20; box-shadow: 0 -2px 0 0 rgba(255, 164, 98, 0.5), 0 0 90px 10px rgba(255, 122, 48, 0.18); }
+  .big { position: absolute; left: 0; right: 0; text-align: center; letter-spacing: -0.03em; line-height: 1; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="slide" id="s1"></div>
+  <div class="slide" id="s2"></div>
+  <div class="slide" id="s3"></div>
+  <div class="slide" id="s4"></div>
+</div>
+<script>
+const stage = document.getElementById("stage");
+const slides = [...document.querySelectorAll(".slide")];
+const fit = () => { stage.style.transform = `translate(-50%, -50%) scale(${Math.min(innerWidth / 1920, innerHeight / 1080)})`; };
+addEventListener("resize", fit); fit();
+
+const PAL = ["#ff8a3d", "#7be0b0", "#8ec5ff", "#c3a6ff", "#ffd24d", "#ff7fa8"];
+const timers = [];
+const later = (fn, ms) => timers.push(setTimeout(fn, ms));
+const every = (fn, ms) => timers.push(setInterval(fn, ms));
+const rnd = (a, b) => a + Math.random() * (b - a);
+const reflow = (el) => el.offsetWidth;
+
+function place(el, parent, x, y, w, h) {
+  Object.assign(el.style, { left: x + "px", top: y + "px", width: w + "px", height: h + "px" });
+  parent.appendChild(el);
+  return el;
+}
+/* a face sticker: light fill, thick colored outline, awake and sleepy expressions */
+function face(parent, { x, y, size, color }) {
+  const d = document.createElement("div"); d.className = "stk"; d.style.setProperty("--c", color);
+  d.innerHTML = `<svg viewBox="0 0 100 100"><circle class="ring" cx="50" cy="50" r="42" fill="#fbf4e6" stroke-width="10"/>
+    <g class="awake"><circle cx="37" cy="44" r="5.5" fill="#1b1530"/><circle cx="63" cy="44" r="5.5" fill="#1b1530"/><path d="M35 60 Q50 76 65 60" stroke="#1b1530" stroke-width="5.5" fill="none" stroke-linecap="round"/></g>
+    <g class="sleepy" stroke="#1b1530" stroke-width="5.5" stroke-linecap="round" fill="none"><path d="M30 46 H44"/><path d="M56 46 H70"/><path d="M40 68 H60"/></g></svg>`;
+  return place(d, parent, x, y, size, size);
+}
+/* a gift sticker: a covered dish with an amount */
+function dish(parent, { x, y, w, color, amount }) {
+  const d = document.createElement("div"); d.className = "stk"; d.style.setProperty("--c", color);
+  d.innerHTML = `<svg viewBox="0 0 100 72"><circle class="ring" cx="50" cy="12" r="6" fill="#fbf4e6" stroke-width="6"/>
+    <path class="ring" d="M9 62 A41 41 0 0 1 91 62 Z" fill="#fbf4e6" stroke-width="9" stroke-linejoin="round"/>
+    <text class="amt" x="50" y="54">${amount}</text></svg>`;
+  return place(d, parent, x, y, w, w * 0.72);
+}
+
+/* 1. A hundred people at a time */
+function build1(s) {
+  const table = document.createElement("div"); table.className = "table"; s.appendChild(table);
+  const coin = face(s, { x: 810, y: 300, size: 300, color: "#ffc83d" });
+  coin.querySelector(".awake").innerHTML = '<text x="50" y="66" text-anchor="middle" font-size="52" font-family="Instrument Serif" fill="#1b1530">$</text>';
+  coin.style.transform = "scale(0.2)"; coin.style.opacity = 0; reflow(coin);
+  coin.style.transform = "none"; coin.style.opacity = 1;
+  later(() => { coin.style.transform = "scale(1.5)"; coin.style.opacity = 0; }, 1500);
+  const N = 11;
+  for (let i = 0; i < N; i++) {
+    const w = 140, tx = 150 + i * 150, big = i % 4 === 1;
+    const d = dish(s, { x: tx, y: -200, w, color: PAL[i % PAL.length], amount: big ? "$60" : "$5" });
+    later(() => { d.style.top = 880 - w * 0.72 + 4 + "px"; d.classList.add("bob"); d.style.setProperty("--t", rnd(3, 5) + "s"); d.style.setProperty("--dl", -rnd(0, 3) + "s"); }, 1600 + i * 110);
+  }
+}
+
+/* 2. Stephen, then the glow goes out */
+function build2(s) {
+  const st = face(s, { x: 760, y: 280, size: 400, color: "#ff8a3d" });
+  st.style.filter = "drop-shadow(0 0 130px rgba(255,138,61,0.6))";
+  st.style.transform = "scale(0.5)"; st.style.opacity = 0; reflow(st); st.style.transform = "none"; st.style.opacity = 1;
+  st.classList.add("bob");
+  const gift = dish(s, { x: 1040, y: -160, w: 190, color: "#ffd24d", amount: "$50" });
+  later(() => { gift.style.top = "250px"; }, 500);
+  later(() => { gift.style.transform = "scale(0.1)"; gift.style.opacity = 0; }, 1900);
+  later(() => {
+    st.classList.add("sleep");
+    st.style.filter = "drop-shadow(0 0 0 rgba(255,138,61,0))";
+    st.style.transform = "translateY(26px) rotate(-4deg)";
+  }, 3300);
+}
+
+/* 3. Times a hundred */
+function build3(s) {
+  const cols = 10, size = 56, pitch = 76, left = (1920 - cols * pitch) / 2 + 10, top = 60, all = [];
+  for (let i = 0; i < 100; i++) {
+    const f = face(s, { x: left + (i % cols) * pitch, y: top + Math.floor(i / cols) * pitch, size, color: PAL[(i * 5 + Math.floor(i / 10)) % PAL.length] });
+    f.style.transform = "scale(0)"; reflow(f);
+    later(() => { f.style.transform = "none"; }, 100 + i * 14);
+    all.push(f);
+  }
+  const t = document.createElement("div"); t.className = "big"; t.textContent = "10:00";
+  Object.assign(t.style, { top: "840px", fontSize: "190px", fontVariantNumeric: "tabular-nums" }); s.appendChild(t);
+  let secs = 600;
+  later(() => every(() => { secs--; t.textContent = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`; }, 1000), 1700);
+  const order = all.map((_, i) => i).sort(() => Math.random() - 0.5);
+  let n = 0;
+  later(() => every(() => { const f = all[order[n++]]; if (f) f.classList.add("sleep"); }, 450), 2400);
+}
+
+/* 4. The name, and everyone back at the table */
+function build4(s) {
+  const t = document.createElement("div"); t.className = "big"; t.textContent = "Potluck";
+  Object.assign(t.style, { top: "130px", fontSize: "400px", opacity: 0, transform: "translateY(40px)", transition: "opacity 1.4s var(--slow), transform 1.4s var(--slow)" }); s.appendChild(t);
+  reflow(t); t.style.opacity = 1; t.style.transform = "none";
+  const table = document.createElement("div"); table.className = "table"; s.appendChild(table);
+  const N = 9, size = 150;
+  for (let i = 0; i < N; i++) {
+    const f = face(s, { x: 195 + i * 188, y: 1100, size, color: i === 4 ? "#ff8a3d" : PAL[i % PAL.length] });
+    if (i === 4) f.style.filter = "drop-shadow(0 0 70px rgba(255,138,61,0.6))";
+    later(() => { f.style.top = 880 - size + 8 + "px"; f.classList.add("bob"); f.style.setProperty("--t", rnd(3, 5) + "s"); f.style.setProperty("--dl", -rnd(0, 3) + "s"); }, 1200 + i * 130);
+  }
+}
+
+const builders = [build1, build2, build3, build4];
+let cur = -1;
+function go(i) {
+  i = Math.max(0, Math.min(builders.length - 1, i));
+  timers.splice(0).forEach((t) => { clearTimeout(t); clearInterval(t); });
+  slides.forEach((s, j) => s.classList.toggle("on", j === i));
+  slides[i].innerHTML = "";
+  cur = i;
+  builders[i](slides[i]);
+  history.replaceState(null, "", "#" + (i + 1));
+}
+addEventListener("keydown", (e) => { if (["ArrowRight", " ", "PageDown"].includes(e.key)) go(cur + 1); if (["ArrowLeft", "PageUp"].includes(e.key)) go(cur - 1); if (e.key.toLowerCase() === "r") go(cur); });
+addEventListener("click", () => go(cur + 1));
+addEventListener("hashchange", () => { const n = (parseInt(location.hash.slice(1)) || 1) - 1; if (n !== cur) go(n); });
+go((parseInt(location.hash.slice(1)) || 1) - 1);
+</script>
+</body>
+</html>
