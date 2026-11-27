@@ -502,9 +502,10 @@ const Emoji = styled.span<{ $wave?: boolean }>`
 const Title = styled.h1`
   margin: 0;
   font-family: var(--font-display);
-  font-size: var(--text-display);
+  /* The size these flows had before (Shallot: the sign-in pages' --text-display is too big here). */
+  font-size: var(--text-xl);
   font-weight: var(--weight-medium);
-  line-height: var(--leading-display);
+  line-height: var(--leading-heading);
   letter-spacing: var(--tracking-tight);
   color: var(--color-brand-heading);
   overflow-wrap: anywhere;
