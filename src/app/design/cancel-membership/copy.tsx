@@ -12,24 +12,6 @@ import type { MembershipReason, PauseLength } from "../unsubscribe/data";
 export const cancelCopy = {
   pageTitle: "Pause or cancel your membership", // Not in doc.
 
-  /*
-   * The emoji above each step's heading, like the sign-in pages (decorative: the heading says it in
-   * words). Drafts: Shallot to confirm.
-   */
-  emoji: {
-    reasons: "💭", // Before you go
-    emails: "📭", // Stop the emails, keep your membership
-    budget: "🏷️", // Pay less instead
-    plan: "🧾", // Confirm your plan change
-    pause: "🌴", // Pause membership instead?
-    paused: "😴", // Your membership is paused
-    switched: "🎉", // You've switched to [tier]
-    unsubscribed: "📭", // You're unsubscribed
-    resubscribed: "📬", // You're subscribed again
-    confirm: "🤔", // Cancel your membership?
-    active: "💚", // Your membership is active again, Keep your plan, You'll stay a [tier] member
-    cancelled: "👋", // We're sorry to see you go (waves once)
-  },
 
   /*
    * Pause: the offer for "I need a break" (and for a Friend who finds it too expensive), straight from

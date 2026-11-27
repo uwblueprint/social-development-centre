@@ -81,14 +81,14 @@ function Flow({ start }: { start: EmailFlowStart }) {
   }
 
   // "Sounds good": nothing left to do.
-  if (screen === "closed") return <Template onBack={back} backLabel={copy.back} emoji={copy.emoji.closed} screenKey="closed" order={2} heading={copy.unsubscribed} line={copy.emails.closeTab} />;
+  if (screen === "closed") return <Template onBack={back} backLabel={copy.back} screenKey="closed" order={2} heading={copy.unsubscribed} line={copy.emails.closeTab} />;
 
   if (screen === "unsubscribed") {
     return (
       <Template
         onBack={back}
         backLabel={copy.back}
-        emoji={copy.emoji.unsubscribed} screenKey="unsubscribed" order={1}
+        screenKey="unsubscribed" order={1}
         heading={copy.unsubscribed}
         // FigJam: after unsubscribing, members hear their membership is still active.
         line={isMember && copy.emails.membership(tier.name, formatDate(demoMember.nextPaymentDate), formatMoney(tier.monthlyPrice))}
@@ -124,7 +124,7 @@ function Flow({ start }: { start: EmailFlowStart }) {
 
   return (
     <Template
-      emoji={copy.emoji.preferences} screenKey="preferences" order={0}
+      screenKey="preferences" order={0}
       heading={copy.emails.heading}
       line={<span id="preferences-line">{copy.emails.line}</span>}
       actions={

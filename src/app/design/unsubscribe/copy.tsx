@@ -14,12 +14,6 @@ import type { EmailType } from "./data";
 export const unsubscribeCopy = {
   pageTitle: "Email preferences", // Not in doc.
 
-  /* The emoji above each screen's heading, like the sign-in pages. Drafts: Shallot to confirm. */
-  emoji: {
-    preferences: "📬", // Update your email preferences
-    unsubscribed: "📭", // You're unsubscribed
-    closed: "👍", // You can close this tab now
-  },
 
   /* Shared with the cancel-membership flow. */
   undoUnsubscribe: "Unsubscribed by mistake?",

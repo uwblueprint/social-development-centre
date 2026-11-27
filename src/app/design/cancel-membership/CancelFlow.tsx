@@ -160,7 +160,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
     <Template
           onBack={back}
           backLabel={shared.back}
-      emoji={copy.emoji.pause} screenKey="pause"
+      screenKey="pause"
       order={ORDER.pause}
       heading={copy.pause.heading}
       actions={
@@ -195,7 +195,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
         <Template
           onBack={back}
           backLabel={shared.back}
-          emoji={undone ? copy.emoji.active : copy.emoji.paused} screenKey={step} order={ORDER[step]}
+          screenKey={step} order={ORDER[step]}
           heading={undone ? copy.active.heading : copy.paused.heading}
           line={undone ? copy.active.thanks : copy.paused.body(formatDate(restartDate))}
           undo={
@@ -216,7 +216,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
         <Template
           onBack={back}
           backLabel={shared.back}
-          emoji={copy.emoji.reasons} screenKey={step} order={ORDER[step]}
+          screenKey={step} order={ORDER[step]}
           heading={copy.reasons.heading}
           // The answer is optional: Continue always works, so the question never stands between
           // someone and cancelling.
@@ -250,7 +250,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
           <Template
           onBack={back}
           backLabel={shared.back}
-            emoji={copy.emoji.reasons} screenKey="offer-none" order={ORDER.offer}
+            screenKey="offer-none" order={ORDER.offer}
             heading={copy.reasons.heading}
             actions={
               <Button type="button" $size="lg" onClick={() => go("reasons")}>
@@ -263,7 +263,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
 
       if (reason === "emails") {
         return (
-          <Template onBack={back} backLabel={shared.back} emoji={copy.emoji.emails} screenKey="offer-emails" order={ORDER.offer} heading={copy.offer.emails.heading} footer={footer}>
+          <Template onBack={back} backLabel={shared.back} screenKey="offer-emails" order={ORDER.offer} heading={copy.offer.emails.heading} footer={footer}>
             <OfferCard
               title={copy.offer.emails.title}
               description={copy.offer.emails.description}
@@ -290,7 +290,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
         <Template
           onBack={back}
           backLabel={shared.back}
-          emoji={copy.emoji.budget} screenKey="offer-budget"
+          screenKey="offer-budget"
           order={ORDER.offer}
           heading={copy.offer.budget.heading}
           line={copy.offer.budget.line(formatDate(nextPayment))}
@@ -332,7 +332,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
         <Template
           onBack={back}
           backLabel={shared.back}
-          emoji={staying ? copy.emoji.active : copy.emoji.plan} screenKey={staying ? "plan-keep" : "plan-change"}
+          screenKey={staying ? "plan-keep" : "plan-change"}
           order={ORDER.plan}
           heading={staying ? copy.plan.keepHeading : copy.plan.heading}
           footer={
@@ -368,7 +368,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
         <Template
           onBack={back}
           backLabel={shared.back}
-          emoji={undone ? copy.emoji.active : copy.emoji.switched} screenKey={step} order={ORDER[step]}
+          screenKey={step} order={ORDER[step]}
           heading={undone ? copy.switched.stayed(tier.name) : copy.switched.heading(switched.name)}
           line={!undone && copy.switched.body(formatDate(nextPayment), formatMoney(switched.monthlyPrice))}
           undo={
@@ -389,7 +389,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
         <Template
           onBack={back}
           backLabel={shared.back}
-          emoji={undone ? copy.emoji.resubscribed : copy.emoji.unsubscribed} screenKey={step} order={ORDER[step]}
+          screenKey={step} order={ORDER[step]}
           heading={undone ? copy.resubscribed : shared.unsubscribed}
           // Resubscribing changes nothing about the membership, so this line stays.
           line={shared.emails.membership(tier.name, formatDate(nextPayment), formatMoney(tier.monthlyPrice))}
@@ -415,7 +415,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
         <Template
           onBack={back}
           backLabel={shared.back}
-          emoji={copy.emoji.confirm} screenKey={step} order={ORDER[step]}
+          screenKey={step} order={ORDER[step]}
           heading={copy.confirm.heading}
           line={copy.confirm.whatEnds}
           // Keeping is the filled button, on the left like every step; cancelling is the red outline, right.
@@ -439,7 +439,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
     case "kept":
       // "Keep membership": nothing changed, so a thank-you, a little confetti, and no actions.
       return (
-        <Template onBack={back} backLabel={shared.back} emoji={copy.emoji.active} screenKey={step} order={ORDER[step]} heading={copy.active.heading} line={copy.active.thanks}>
+        <Template onBack={back} backLabel={shared.back} screenKey={step} order={ORDER[step]} heading={copy.active.heading} line={copy.active.thanks}>
           <Confetti />
         </Template>
       );
@@ -448,7 +448,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
       // From when they joined to the month their membership ends (it runs to the end of this month).
       const dates = copy.cancelled.dates(formatMonthYear(demoMember.memberSince), formatMonthYear(DEMO_TODAY));
       return (
-        <Template onBack={back} backLabel={shared.back} emoji={copy.emoji.cancelled} wave screenKey={step} order={ORDER[step]} heading={copy.cancelled.heading} line={copy.cancelled.thanks}>
+        <Template onBack={back} backLabel={shared.back} screenKey={step} order={ORDER[step]} heading={copy.cancelled.heading} line={copy.cancelled.thanks}>
           <YearsCard
             value={copy.cancelled.years(wholeYears(demoMember.memberSince, DEMO_TODAY))}
             caption={copy.cancelled.yearsCaption}

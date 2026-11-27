@@ -391,17 +391,17 @@ export function YearsCard({ value, caption, dates, rejoin }: { value: string; ca
 
 /*
  * The same frame as the sign-in and "Check your inbox" pages (SignInParts.tsx on
- * gaurav/sign-in-magic-link): the logo centred at the top, one left-aligned column, a big emoji over a
- * display-size heading, and Waterloo Region's skyline along the bottom. One difference: the column
- * starts at a fixed height instead of being centred, so the heading stays put between steps.
+ * gaurav/sign-in-magic-link): the logo centred at the top and one left-aligned column. Differences
+ * (Shallot): no emoji over the heading, no skyline along the bottom, the heading at --text-xl, and the
+ * column starts at a fixed height instead of being centred, so the heading stays put between steps.
  * For devs: once that branch is merged, both should use one shared frame.
  */
 
 const Page = styled.main`
   position: relative;
   display: grid;
-  grid-template-rows: auto 1fr auto;
-  /* One column no wider than the screen, so the wide skyline never makes the page scroll sideways. */
+  grid-template-rows: auto 1fr;
+  /* One column no wider than the screen. */
   grid-template-columns: minmax(0, 1fr);
   min-height: 100dvh;
   padding: var(--space-5) var(--space-4) 0;
@@ -423,21 +423,6 @@ const Middle = styled.div`
   @media (max-width: 480px) {
     padding-block: var(--space-6);
   }
-`;
-
-/**
- * The skyline is a mask over a token colour, so it's a quiet line drawing in light mode and stays
- * visible in dark mode (public/illustrations/waterloo-skyline.png, 1600×182, from the sign-in branch).
- * Decorative, so screen readers skip it.
- */
-const Skyline = styled.div`
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  aspect-ratio: 1600 / 182;
-  background-color: var(--color-border-strong);
-  mask: url("/illustrations/waterloo-skyline.png") center bottom / contain no-repeat;
-  -webkit-mask: url("/illustrations/waterloo-skyline.png") center bottom / contain no-repeat;
 `;
 
 /** The column: 624px like the sign-in pages, everything left-aligned. */
@@ -465,38 +450,6 @@ const HeadingGroup = styled.div`
   align-items: flex-start;
   gap: var(--space-4);
   width: 100%;
-`;
-
-const pop = keyframes`
-  from {
-    transform: scale(0.4) rotate(-12deg);
-    opacity: 0;
-  }
-`;
-
-const wave = keyframes`
-  0%, 100% { transform: rotate(0deg); }
-  20% { transform: rotate(16deg); }
-  40% { transform: rotate(-8deg); }
-  60% { transform: rotate(14deg); }
-  80% { transform: rotate(-4deg); }
-`;
-
-/** The emoji says the mood at a glance; the heading under it says the same thing in words. Pops in on each new step. */
-const Emoji = styled.span<{ $wave?: boolean }>`
-  display: inline-block;
-  font-size: var(--text-display);
-  line-height: var(--leading-none);
-  transform-origin: 70% 80%;
-  animation: ${pop} var(--duration-slow) var(--ease-out) both;
-
-  ${({ $wave }) =>
-    $wave &&
-    css`
-      animation:
-        ${pop} var(--duration-slow) var(--ease-out) both,
-        ${wave} 1.2s var(--ease-out) 0.3s 1;
-    `}
 `;
 
 const Title = styled.h1`
@@ -531,37 +484,10 @@ const Description = styled.p`
   }
 `;
 
-/**
- * Emoji glyphs carry empty space on their left, so the picture looks indented from the heading under
- * it. Measure where the ink starts in both and shift the emoji so the left edges line up (from the
- * sign-in pages).
- */
-function alignInk(emojiEl: HTMLElement | null, titleEl: HTMLElement | null, emoji: string, title: string) {
-  if (!emojiEl || !titleEl) return;
-  const context = document.createElement("canvas").getContext("2d");
-  if (!context) return;
-  const inkStart = (el: HTMLElement, text: string) => {
-    const style = getComputedStyle(el);
-    context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
-    return -context.measureText(text).actualBoundingBoxLeft;
-  };
-  const shift = inkStart(emojiEl, emoji) - inkStart(titleEl, title.charAt(0));
-  emojiEl.style.marginInlineStart = `${-shift}px`;
-}
-
-function PageHeading({ emoji, title, wave: waving }: { emoji: string; title: string; wave?: boolean }) {
-  const emojiRef = useRef<HTMLSpanElement>(null);
-  const titleRef = useRef<HTMLHeadingElement>(null);
-  useLayoutEffect(() => alignInk(emojiRef.current, titleRef.current, emoji, title), [emoji, title]);
+function PageHeading({ title }: { title: string }) {
   return (
     <HeadingGroup>
-      {/* Keyed by the emoji, so a new one pops in. */}
-      <Emoji key={emoji} ref={emojiRef} aria-hidden="true" $wave={waving}>
-        {emoji}
-      </Emoji>
-      <Title ref={titleRef} tabIndex={-1}>
-        {title}
-      </Title>
+      <Title tabIndex={-1}>{title}</Title>
     </HeadingGroup>
   );
 }
@@ -643,8 +569,6 @@ export function Template({
   order = 0,
   onBack,
   backLabel = "Back",
-  emoji,
-  wave: waving,
   heading,
   line,
   children,
@@ -656,10 +580,6 @@ export function Template({
   order?: number;
   onBack?: () => void;
   backLabel?: string;
-  /** One emoji above the heading that says the mood (decorative: the heading says it in words). */
-  emoji: string;
-  /** The emoji waves once on arrival, for goodbyes. */
-  wave?: boolean;
   heading: string;
   line?: ReactNode;
   children?: ReactNode;
@@ -680,7 +600,7 @@ export function Template({
       </LogoSlot>
       <Middle>
         <Column>
-          <PageHeading emoji={emoji} title={heading} wave={waving} />
+          <PageHeading title={heading} />
           <Body key={screenKey} $dir={dir} $hasLine={Boolean(line)}>
             {line && <Description>{line}</Description>}
             {children}
@@ -695,7 +615,6 @@ export function Template({
           </Body>
         </Column>
       </Middle>
-      <Skyline aria-hidden="true" />
     </Page>
   );
 }
