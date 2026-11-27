@@ -365,6 +365,35 @@ export type Database = {
           },
         ]
       }
+      email_settings: {
+        Row: {
+          id: boolean
+          refer_link_text: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: boolean
+          refer_link_text?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: boolean
+          refer_link_text?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       intake_submissions: {
         Row: {
           answers: Json
@@ -1151,6 +1180,7 @@ export type Database = {
         Args: never
         Returns: {
           body: Json
+          can_refer: boolean
           fields: Json
           send_id: string
           subject: string
@@ -1287,6 +1317,7 @@ export type Database = {
         Args: { p_field: string; p_value: string }
         Returns: undefined
       }
+      set_refer_link_text: { Args: { p_text: string }; Returns: string }
       start_email_run: { Args: { p_forced: boolean }; Returns: number }
       toronto_today: { Args: never; Returns: string }
       trash_automatic_email: { Args: { p_id: string }; Returns: undefined }

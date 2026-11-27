@@ -14,7 +14,8 @@ import {
 import { Field } from "@/components/ui/Field";
 import { Select } from "@/components/ui/Select";
 import { VARIABLES } from "@/features/email-editor/variables";
-import { EMAIL_FOOTER, REPLY_TO } from "../footer";
+import { REPLY_TO } from "../footer";
+import { useEmailFooter } from "./EmailFooterContext";
 import { type AutomaticEmail, type Recipient, textToDoc } from "../model";
 import { renderEmailDoc, renderEmailText } from "./renderEmail";
 
@@ -117,6 +118,7 @@ export function EmailPreviewDialog({
   recipients: Recipient[];
   fallbacks: Record<string, string>;
 }) {
+  const footer = useEmailFooter();
   const [picked, setPicked] = useState(recipients[0]?.personId ?? "");
   const sample = recipients.length === 0;
   const member = recipients.find((r) => r.personId === picked) ?? recipients[0];
@@ -162,10 +164,11 @@ export function EmailPreviewDialog({
             {email.body ? renderEmailDoc(email.body, values, fallbacks) : <BodyPlaceholder>No message yet.</BodyPlaceholder>}
           </MailBody>
           <MailFooter>
-            <p>{EMAIL_FOOTER.organization}</p>
-            <p>{`${EMAIL_FOOTER.address} · ${EMAIL_FOOTER.contact}`}</p>
+            <p>{footer.organization}</p>
+            <p>{`${footer.address} · ${footer.contact}`}</p>
             <p>
-              {EMAIL_FOOTER.reason} <Underlined>Unsubscribe from emails</Underlined>
+              {footer.reason} <Underlined>Unsubscribe from emails</Underlined> ·{" "}
+              <Underlined>{footer.referLinkText}</Underlined>
             </p>
           </MailFooter>
         </Mail>

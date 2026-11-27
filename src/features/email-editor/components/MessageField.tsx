@@ -30,6 +30,8 @@ export interface EmailFooter {
   organization: string;
   address: string;
   contact: string;
+  /** The refer link's text, set in Settings. Always shown: the link can't be removed. */
+  referLinkText: string;
 }
 
 export interface MessageFieldProps {
@@ -391,7 +393,8 @@ export function MessageField({
                 {`${footer.address} · ${footer.contact}`}
               </div>
               <FooterSmall>
-                {footer.reason} <u>Unsubscribe from emails</u> · <u>Cancel membership</u>
+                {footer.reason} <u>Unsubscribe from emails</u> · <u>Cancel membership</u> ·{" "}
+                <u>{footer.referLinkText}</u>
               </FooterSmall>
             </Footer>
           </TooltipTrigger>

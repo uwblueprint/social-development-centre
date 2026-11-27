@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/Card";
 import { ErrorSummary } from "@/components/ui/ErrorSummary";
 import { Icon } from "@/components/ui/Icon";
 import { Tooltip } from "@/components/ui/Tooltip";
+import { useEmailFooter } from "@/features/automatic-emails/components/EmailFooterContext";
 import { EmailEditor } from "@/features/email-editor";
 import { EmailDocView } from "./EmailDocView";
 import {
@@ -287,15 +288,6 @@ const FooterSmall = styled.div`
 `;
 
 
-
-/** What every email ends with. The editor's footer and the read view's footer say the same. */
-const EMAIL_FOOTER = {
-  reason: "You're getting this because you're an SDC member.",
-  organization: "Social Development Centre Waterloo Region",
-  address: "Mailing address to come",
-  contact: "suhanya@waterlooregion.org",
-};
-
 const Actions = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -341,6 +333,7 @@ export function EmailView({ send, open, onChange, onBack, onSave, onApprove, onR
   const panelId = React.useId();
   const subjectId = `${panelId}-subject`;
   const bodyId = `${panelId}-body`;
+  const footer = useEmailFooter();
   const nameRef = React.useRef<HTMLHeadingElement>(null);
   const editorRef = React.useRef<HTMLDivElement>(null);
   // The editor reads its text once, when it mounts. When the draft changes from outside it (its Undo), the editor is mounted again on the new text. `typed` is what the editor itself last reported.
@@ -532,7 +525,7 @@ export function EmailView({ send, open, onChange, onBack, onSave, onApprove, onR
             moment="one_off"
             initialSubject={open.draftSubject}
             initialBody={open.draftBody}
-            footer={EMAIL_FOOTER}
+            footer={footer}
             hidePreview
             embedded
             personalize={false}
@@ -550,12 +543,13 @@ export function EmailView({ send, open, onChange, onBack, onSave, onApprove, onR
             </ReadBody>
             <ReadFooter>
               <div>
-                {EMAIL_FOOTER.organization}
+                {footer.organization}
                 <br />
-                {`${EMAIL_FOOTER.address} · ${EMAIL_FOOTER.contact}`}
+                {`${footer.address} · ${footer.contact}`}
               </div>
               <FooterSmall>
-                {EMAIL_FOOTER.reason} <u>Unsubscribe from emails</u> · <u>Cancel membership</u>
+                {footer.reason} <u>Unsubscribe from emails</u> · <u>Cancel membership</u> ·{" "}
+                <u>{footer.referLinkText}</u>
               </FooterSmall>
             </ReadFooter>
           </>

@@ -3,7 +3,7 @@
 A member refers a friend from an email. The page is `/refer/<token>` (`src/app/refer/[token]/`), built from `src/features/referrals/`; `/design/referrals` shows the same component on demo data. Copy is placeholder (`src/features/referrals/copy.ts`) until Gaurav signs it off. Database: `supabase/migrations/20261120000000_referrals.sql`.
 
 ## Flow
-1. Every member email's footer has a **Refer a friend** link: `/refer/<token>`, where `token` is the member's person token, `people.unsubscribe_token` (the same one the Unsubscribe link uses). No sign-in: the token is the proof. **#52's footer needs to add this link.**
+1. Every member email's footer has a **Refer a friend** link: `/refer/<token>`, where `token` is the member's person token, `people.unsubscribe_token` (the same one the Unsubscribe link uses). No sign-in: the token is the proof. The sender adds it to every email to a current member; admins set its text in Settings ([settings.md](settings.md#refer-link-text)).
 2. The page calls `referral_page(token)`: the referrer's first name, or no row (shown as "This link doesn't work") when the token isn't a current member's.
 3. The member enters the friend's name and email and picks **Email them for me** or **I'll send it myself**. Server action `referFriend` (`src/features/referrals/actions.ts`) → `refer_friend(token, name, email, send_email)`.
 4. The friend's link is `/intake-form/sdc-members?r=<referral id>`. The intake form stores the referral on `intake_submissions.referral_id` (`submit_intake`'s new `p_referral_id`; an unknown id is ignored).
@@ -29,7 +29,7 @@ A member refers a friend from an email. The page is `/refer/<token>` (`src/app/r
 
 ## For the sender (#52)
 - **Referral invites:** send rows of `referrals` with `invite_requested_at` set and `invite_sent_at` empty (index `referrals_invites_due`), then set `invite_sent_at`. Before sending, re-check the friend can still be emailed (they may have joined or unsubscribed since). The email greets the friend without the typed name, names the referrer in full (`people.full_name` of `referrer_id`), says it's sent because they referred them, links to `/intake-form/sdc-members?r=<referrals.id>`, and has an unsubscribe link. One email; no reminders.
-- **Footer:** add **Refer a friend** → `/refer/<unsubscribe_token>` next to Unsubscribe.
+- **Footer:** done. `renderDelivery` adds the refer link → `/refer/<unsubscribe_token>` next to Unsubscribe, with the text from Settings.
 - **Don't configure a "Member refers someone" (`refers`) email** for SDC: the decision is to email the referrer only when their friend joins.
 
 ## Tests
