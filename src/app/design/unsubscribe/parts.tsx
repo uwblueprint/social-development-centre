@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Icon } from "@/components/ui/Icon";
+import { Progress } from "@/components/ui/Progress";
 import { RadioGroup, RadioGroupOption } from "@/components/ui/RadioGroup";
 import { Separator } from "@/components/ui/Separator";
 import { AuthActions, SdcLogo } from "@/features/auth/AuthScreen";
@@ -739,29 +740,51 @@ const FlowCard = styled(Card)`
 `;
 
 /** Back arrow left, the flow's name centred, an empty cell right so the name stays centred with or without the arrow. */
+/**
+ * The back arrow and the flow's name on the left, the step count on the right, the progress bar under
+ * them. Same side padding as the content, so the bar and the arrow line up with the heading.
+ */
 const FlowHeader = styled.div`
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-6) var(--space-4);
   border-bottom: 1px solid var(--color-border);
+
+  @media (max-width: 480px) {
+    padding: var(--space-3) var(--space-4) var(--space-4);
+  }
 `;
 
+const FlowHeaderRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+`;
+
+/** Pulled left by its own padding, so the arrow itself lines up with the heading below. */
 const FlowBack = styled(Button)`
-  justify-self: start;
+  margin-left: calc(-1 * var(--space-2));
   padding: 0 var(--space-2);
   color: var(--color-text-muted);
 `;
 
-/** The flow's name: says where the person is on every step. Not a heading: each step's h1 is. */
+/** The flow's name, grey and large like the line under a heading (Shallot). Not a heading: each step's h1 is. */
 const FlowName = styled.p`
-  grid-column: 2;
+  flex: 1;
+  margin: 0;
+  font-size: var(--text-lg);
+  line-height: var(--leading-ui);
+  color: var(--color-text-muted);
+`;
+
+/** "Step 2 of 3", as the intake form shows "Question 2 of 5" beside its bar. */
+const FlowStep = styled.p`
   margin: 0;
   font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
   line-height: var(--leading-ui);
-  color: var(--color-text);
+  color: var(--color-text-muted);
+  white-space: nowrap;
 `;
 
 const FlowContent = styled.div`
@@ -879,9 +902,15 @@ export function Template({
   undo,
   footer,
   frame,
+  progress,
 }: {
-  /** The flow's name: puts the screen in a card with it in the header, the back arrow beside it and `footer` in the card's footer. */
-  frame?: string;
+  /**
+   * Puts the screen in a card. With a name: a header with the back arrow, the name and `progress`, and
+   * `footer` in the card's footer. `true`: the card alone, for a flow's end screens.
+   */
+  frame?: string | true;
+  /** Where this step is in the flow, shown in the card header: the bar and "Step 2 of 3". */
+  progress?: { step: number; total: number; label: string; text: string };
   screenKey: string;
   order?: number;
   onBack?: () => void;
@@ -941,15 +970,23 @@ export function Template({
         </LogoSlot>
         <FramedMiddle>
           <FlowCard>
-            <FlowHeader>
-              {back(FlowBack)}
-              <FlowName>{frame}</FlowName>
-            </FlowHeader>
+            {typeof frame === "string" && (
+              <FlowHeader>
+                <FlowHeaderRow>
+                  {back(FlowBack)}
+                  <FlowName>{frame}</FlowName>
+                  {progress && <FlowStep>{progress.text}</FlowStep>}
+                </FlowHeaderRow>
+                {progress && (
+                  <Progress value={progress.step} max={progress.total} aria-label={progress.label} />
+                )}
+              </FlowHeader>
+            )}
             <FlowContent>
               {heads}
               {body(true)}
             </FlowContent>
-            {footer && (
+            {typeof frame === "string" && footer && (
               <FlowFooter>
                 <FooterRow>{footer}</FooterRow>
               </FlowFooter>

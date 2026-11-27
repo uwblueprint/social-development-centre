@@ -144,9 +144,26 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
   }
   const back = previous[step] ? goBack : undefined;
 
-  /** "Keep membership": on every step of cancelling, bottom left. Filled only on the confirm step. */
-  const keep = (variant: "primary" | "outline") => (
-    <Button type="button" $variant={variant} onClick={() => go("kept")}>
+  /**
+   * The card around every step. Deciding steps get the header (back arrow, "Cancel membership", the
+   * progress bar) and the footer; the end screens get the card alone (Shallot: by then they're no
+   * longer cancelling). Steps: the reason, the offer (with "Confirm your plan change"), then confirm.
+   * Always three, so the count doesn't change as they pick an answer; with no offer, 1 goes to 3.
+   */
+  function frameFor(s: CancelStep) {
+    const total = 3;
+    const at: Partial<Record<CancelStep, number>> = { reasons: 1, offer: 2, pause: 2, plan: 2, confirm: 3 };
+    const n = at[s];
+    if (!n) return { frame: true as const };
+    return {
+      frame: copy.flowName,
+      progress: { step: n, total, label: copy.progressLabel, text: copy.progressText(n, total) },
+    };
+  }
+
+  /** "Keep membership": on every step of cancelling, bottom left. */
+  const keep = () => (
+    <Button type="button" $variant="outline" onClick={() => go("kept")}>
       {copy.keepMembership}
     </Button>
   );
@@ -156,7 +173,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
   /** "Continue to cancel": bottom right of every offer, with Keep membership bottom left. */
   const offerFooter = (
     <>
-      {keep("outline")}
+      {keep()}
       <Button type="button" $variant="danger-outline" onClick={() => go("confirm")}>
         {copy.offer.continueToCancel}
       </Button>
@@ -169,7 +186,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
    */
   const pausePage = () => (
     <Template
-          frame={copy.flowName}
+          {...frameFor(step)}
           onBack={back}
           backLabel={shared.back}
       screenKey="pause"
@@ -205,7 +222,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
     case "paused":
       return (
         <Template
-          frame={copy.flowName}
+          {...frameFor(step)}
           onBack={back}
           backLabel={shared.back}
           emoji={undone ? undefined : copy.emoji.paused}
@@ -228,7 +245,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
     case "reasons":
       return (
         <Template
-          frame={copy.flowName}
+          {...frameFor(step)}
           onBack={back}
           backLabel={shared.back}
           screenKey={step} order={ORDER[step]}
@@ -237,7 +254,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
           // someone and cancelling.
           footer={
             <>
-              {keep("outline")}
+              {keep()}
               <Button type="button" onClick={() => go(offersPause ? "pause" : hasOffer ? "offer" : "confirm")}>
                 {copy.reasons.continue}
               </Button>
@@ -263,7 +280,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
       if (!hasOffer) {
         return (
           <Template
-          frame={copy.flowName}
+          {...frameFor(step)}
           onBack={back}
           backLabel={shared.back}
             screenKey="offer-none" order={ORDER.offer}
@@ -281,7 +298,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
         return (
           // No card (Shallot): the offer is the heading, what it means under it, then the button.
           <Template
-          frame={copy.flowName}
+          {...frameFor(step)}
             onBack={back}
             backLabel={shared.back}
             screenKey="offer-emails"
@@ -307,7 +324,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
       const cheaper = lowerTiers[0];
       return (
         <Template
-          frame={copy.flowName}
+          {...frameFor(step)}
           onBack={back}
           backLabel={shared.back}
           screenKey="offer-budget"
@@ -350,7 +367,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
       const daysLeft = daysBetween(DEMO_TODAY, nextPayment);
       return (
         <Template
-          frame={copy.flowName}
+          {...frameFor(step)}
           onBack={back}
           backLabel={shared.back}
           screenKey={staying ? "plan-keep" : "plan-change"}
@@ -363,7 +380,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
               </Button>
             ) : (
               <>
-                {keep("outline")}
+                {keep()}
                 <Button type="button" onClick={() => go("switched")}>
                   {copy.plan.confirm}
                 </Button>
@@ -387,7 +404,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
     case "switched":
       return (
         <Template
-          frame={copy.flowName}
+          {...frameFor(step)}
           onBack={back}
           backLabel={shared.back}
           emoji={undone ? undefined : copy.emoji.switched}
@@ -410,7 +427,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
     case "unsubscribed":
       return (
         <Template
-          frame={copy.flowName}
+          {...frameFor(step)}
           onBack={back}
           backLabel={shared.back}
           emoji={undone ? undefined : copy.emoji.unsubscribed}
@@ -438,27 +455,27 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
     case "confirm":
       return (
         <Template
-          frame={copy.flowName}
+          {...frameFor(step)}
           onBack={back}
           backLabel={shared.back}
           screenKey={step} order={ORDER[step]}
           heading={copy.confirm.heading}
           line={copy.confirm.whatEnds}
-          // Shallot, after Dribbble's "Confirm your cancellation": Confirm cancellation (red outline) on the
-          // left, Keep membership (filled) on the right. Confirming submits a form so the kit's SubmitButton
+          // Shallot: Keep membership on the left like every other step, Confirm cancellation (primary) on
+          // the right, the way forward. Confirming submits a form so the kit's SubmitButton
           // shows its spinner while the cancellation goes through; the demo waits CANCEL_DEMO_MS. For devs:
           // the form's action becomes the cancel server action (docs/backend/unsubscribe.md).
           footer={
             <>
+              {keep()}
               <form
                 action={async () => {
                   await new Promise((resolve) => setTimeout(resolve, CANCEL_DEMO_MS));
                   go("cancelled");
                 }}
               >
-                <SubmitButton $variant="danger-outline">{copy.confirm.confirm}</SubmitButton>
+                <SubmitButton>{copy.confirm.confirm}</SubmitButton>
               </form>
-              {keep("primary")}
             </>
           }
         >
@@ -471,7 +488,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
       return (
         // The check draws and fills, then confetti bursts from the heading.
         <Template
-          frame={copy.flowName}
+          {...frameFor(step)}
           check
           confetti
           onBack={back}
@@ -490,7 +507,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
       return (
         // "Your membership has been cancelled" over the photo card (Shallot).
         <Template
-          frame={copy.flowName} onBack={back} backLabel={shared.back} screenKey={step} order={ORDER[step]} heading={copy.cancelled.heading}>
+          {...frameFor(step)} onBack={back} backLabel={shared.back} screenKey={step} order={ORDER[step]} heading={copy.cancelled.heading}>
           <PhotoCard photo={sdcPhoto} title={copy.cancelled.overlay}>
             <Lead>
               {copy.cancelled.membership(formatMonthYear(demoMember.memberSince), formatMonthYear(DEMO_TODAY), length)}
