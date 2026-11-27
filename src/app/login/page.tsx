@@ -4,6 +4,12 @@ import { SignIn } from "@/features/auth/SignIn";
 export const metadata: Metadata = { title: "Sign in to SDC" };
 
 export default async function MemberSignInPage({ searchParams }: PageProps<"/login">) {
-  const { error } = await searchParams;
-  return <SignIn portal="member" linkError={typeof error === "string" ? error : undefined} />;
+  const { error, reason } = await searchParams;
+  return (
+    <SignIn
+      portal="member"
+      linkError={typeof error === "string" ? error : undefined}
+      reason={typeof reason === "string" ? reason : undefined}
+    />
+  );
 }
