@@ -83,7 +83,7 @@ const StyledInput = styled.input`
   &:focus {
     outline: none;
     border-color: var(--color-focus);
-    box-shadow: var(--focus-field);
+    box-shadow: var(--focus-ring-text);
   }
 
   &:disabled {

@@ -31,6 +31,7 @@ Placeholder is an example, not the label. State any length expectation in the hi
 
 ## Accessibility
 The counter announces politely at 20/10/0 characters left (not every keystroke), and turns to `--color-danger` plus medium weight near the limit — never color alone. Resizable vertically.
+- Active versus focused is built in: a click or tap shows a darker 1px border with no ring, and arriving by keyboard (Tab) shows the focus ring. Don't style `:focus` yourself.
 
 ## Don't
 1. Relying on the counter's color alone — the number itself says so; keep it visible.

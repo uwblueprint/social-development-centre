@@ -54,16 +54,9 @@ const Fields = styled.div`
     padding: 0 var(--space-2);
   }
 
-  /* Active = the end being picked next, or an input with mouse focus: a darker 1px border. */
+  /* Active = the end being picked next, or a darker 1px border (a clicked input gets the same from Input; the ring is for keyboard arrival, see inputModality.ts). */
   & input[data-active="true"]:not(:focus) {
     border-color: var(--color-text);
-  }
-
-  /* Mouse focus shows the active style only; the kit ring is for keyboard focus (arrived by Tab). */
-  &:not([data-keyboard]) input:focus,
-  &:not([data-keyboard]) input:focus-visible {
-    border-color: var(--color-text);
-    box-shadow: none;
   }
 `;
 
@@ -509,12 +502,7 @@ export function RangeCalendar({ mode, value, onValueChange, "aria-label": ariaLa
 
   return (
     <Root>
-      <Fields
-        onPointerDownCapture={(e) => e.currentTarget.removeAttribute("data-keyboard")}
-        onKeyDownCapture={(e) => {
-          if (e.key === "Tab") e.currentTarget.setAttribute("data-keyboard", "");
-        }}
-      >
+      <Fields>
         <Input {...inputProps("start", from, mode === "between" ? "Start date" : "Date")} />
         {mode === "between" && <Input {...inputProps("end", to, "End date")} />}
       </Fields>

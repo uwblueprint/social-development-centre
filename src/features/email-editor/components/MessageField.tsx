@@ -426,10 +426,12 @@ const Card = styled.div`
 
   &:focus-within {
     border-color: var(--color-focus);
+    box-shadow: var(--focus-ring-text);
   }
   &[data-invalid],
   &[data-invalid]:focus-within {
     border-color: var(--color-danger);
+    box-shadow: var(--focus-ring-text-invalid);
   }
 `;
 

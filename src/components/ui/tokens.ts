@@ -263,8 +263,10 @@ globalStyle`
 
     --focus-ring: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-focus);
     --focus-ring-inset: inset 0 0 0 2px var(--color-focus); /* the ring for controls that fill a clipping container edge to edge (table rows, list rows, calendar cells): drawn inside, so nothing clips it */
-    --focus-field: inset 0 0 0 1px var(--color-focus); /* typed fields (input, textarea, search): a 2px border while you type, not the outer ring, which is for keyboard focus on buttons and links */
-    --focus-field-invalid: inset 0 0 0 2px var(--color-danger); /* the same for a field with an error: its 2px danger border thickens to 3px */
+    /* Text-entry controls only (input, textarea, tag fields): the ring for keyboard arrival, none for a click.
+       The pointer swap is below, keyed off <html data-input-modality>. See docs/design/principles.md. */
+    --focus-ring-text: var(--focus-ring);
+    --focus-ring-text-invalid: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-danger);
     /* Motion is calm and rare. See docs/design/motion.md. Nothing overshoots, springs or slides a pill. */
     --duration-fast: 100ms; /* colour fades on hover, press and state change (borders, fills, text) */
     --duration: 160ms; /* overlays in (menu, select, popover, tooltip, dialog), switch thumb, toast */
@@ -304,6 +306,13 @@ globalStyle`
    * whatever surface is underneath (page, sheet, menu), so it reads the same everywhere.
    * The block is repeated because next-yak's globalStyle can't interpolate a shared string.
    */
+  /* Active vs focused: a click or tap into a text field shows the quiet active border (--color-focus, 1px), no ring.
+     The ring stays for keyboard arrival. src/components/ui/inputModality.ts sets the attribute. */
+  html[data-input-modality="pointer"] {
+    --focus-ring-text: 0 0 0 0 transparent;
+    --focus-ring-text-invalid: 0 0 0 0 transparent;
+  }
+
   /* Text selection everywhere: a light tint of the primary colour (owner), not the browser's blue; text keeps its colour. */
   ::selection {
     background-color: var(--color-selection);
