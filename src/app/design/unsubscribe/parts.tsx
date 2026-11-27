@@ -386,7 +386,7 @@ const BannerPhoto = styled(Image)`
 `;
 
 /** The page heading's type (--text-xl), in white on the shade. */
-const BannerTitle = styled.h1`
+const BannerTitle = styled.p`
   margin: 0;
   font-size: var(--text-xl);
   font-weight: var(--weight-medium);
@@ -432,8 +432,7 @@ export function PhotoCard({
     <PhotoBox>
       <Banner>
         <BannerPhoto src={photo} alt="" fill sizes="624px" priority />
-        {/* The page's heading: the cancelled page has no other. */}
-        <BannerTitle tabIndex={-1}>{title}</BannerTitle>
+        <BannerTitle>{title}</BannerTitle>
         {caption && <BannerCaption>{caption}</BannerCaption>}
       </Banner>
       <PhotoBody>{children}</PhotoBody>

@@ -153,10 +153,11 @@ export const cancelCopy = {
     refund: (lastBillingDate: string, email: string) =>
       `If you'd like a refund for your payment on ${lastBillingDate}, please email ${email}.`, // Shallot.
     refundEmail: "admin@sdc.com", // Shallot. Confirm the real address with SDC.
+    confirm: "Confirm cancellation", // Shallot.
   },
 
   cancelled: {
-    // No page heading (Shallot): the photo card's overlay is the h1, "We're sorry to see you go" opens the text.
+    heading: "Your membership has been cancelled", // Shallot. Above the photo card.
     // The photo card (Shallot, after the referral page's banner): this over the photo, then the words under it.
     overlay: "Thank you for being a part of SDC", // Shallot.
     // How long they were a member: whole years, or months under a year.

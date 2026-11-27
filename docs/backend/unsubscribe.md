@@ -38,6 +38,8 @@ Items marked **new** aren't on Jesse's branch.
   before").
 - **Restart now (new):** `restart_membership(token)`.
 - **Cancel (new):** `cancel_membership(token, reason?)`. (The design dropped the copy doc's free-text note; add
+  The confirm step's Confirm cancellation is a form with the kit `SubmitButton` (spinner while pending): make
+  `cancel_membership` its server action, returning `ActionState`, and go to the cancelled page on success.
   `note?` back if SDC keeps it.) No more charges. Voting rights and benefits end at the end of
   the month. No automatic refund: the confirm step tells them to email admin@sdc.com (SDC to confirm the address). The page no longer mentions a confirmation email; whether to send one is SDC's call.
 - The cancelled page shows the member-since month and the month the membership ends.

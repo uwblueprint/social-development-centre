@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import { unsubscribeCopy as shared } from "../unsubscribe/copy";
 import {
   addMonths,
@@ -64,6 +65,9 @@ export interface CancelFlowStart {
 }
 
 const isStep = (s: string | null): s is CancelStep => CANCEL_STEPS.includes(s as CancelStep);
+
+/** How long the demo pretends cancelling takes, so the button's spinner shows. */
+const CANCEL_DEMO_MS = 1200;
 
 /** Each step's place in the flow, so going back slides the other way: survey, offer, pause, confirm, then the end screens. */
 const ORDER: Record<CancelStep, number> = { reasons: 0, offer: 1, pause: 1, plan: 2, confirm: 3, paused: 4, switched: 4, unsubscribed: 4, kept: 4, cancelled: 4 };
@@ -430,17 +434,21 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
           screenKey={step} order={ORDER[step]}
           heading={copy.confirm.heading}
           line={copy.confirm.whatEnds}
-          // Keeping is the filled button, on the left like every step; cancelling is the red outline, right.
+          // Shallot, after Dribbble's "Confirm your cancellation": Confirm cancellation (red outline) on the
+          // left, Keep membership (filled) on the right. Confirming submits a form so the kit's SubmitButton
+          // shows its spinner while the cancellation goes through; the demo waits CANCEL_DEMO_MS. For devs:
+          // the form's action becomes the cancel server action (docs/backend/unsubscribe.md).
           footer={
             <>
-              {keep("primary")}
-              <Button
-                type="button"
-                $variant="danger-outline"
-                onClick={() => go("cancelled")}
+              <form
+                action={async () => {
+                  await new Promise((resolve) => setTimeout(resolve, CANCEL_DEMO_MS));
+                  go("cancelled");
+                }}
               >
-                {shared.cancelMembership}
-              </Button>
+                <SubmitButton $variant="danger-outline">{copy.confirm.confirm}</SubmitButton>
+              </form>
+              {keep("primary")}
             </>
           }
         >
@@ -469,8 +477,8 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
       const months = wholeMonths(demoMember.memberSince, DEMO_TODAY);
       const length = copy.cancelled.length(Math.floor(months / 12), months);
       return (
-        // No heading (Shallot): the photo card's "Thank you for being a part of SDC" is the page's h1.
-        <Template onBack={back} backLabel={shared.back} screenKey={step} order={ORDER[step]}>
+        // "Your membership has been cancelled" over the photo card (Shallot).
+        <Template onBack={back} backLabel={shared.back} screenKey={step} order={ORDER[step]} heading={copy.cancelled.heading}>
           <PhotoCard photo={sdcPhoto} title={copy.cancelled.overlay}>
             <Lead>
               {copy.cancelled.membership(formatMonthYear(demoMember.memberSince), formatMonthYear(DEMO_TODAY), length)}
