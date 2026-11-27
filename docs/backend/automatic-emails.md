@@ -198,8 +198,9 @@ sdcentre@uwblueprint.org, the same Gmail account Supabase Auth uses for sign-in 
   really receive mail; everyone else is logged. Previews and local runs read the dev database, so
   this is what keeps them from emailing members.
 - **Rendering** (`render.ts`): until the Email Editor defines the body, a body is `{ "text": "..." }`.
-  `[First name]` fills in, or "there" when the member has no first name. Every email gets the
-  prototype's footer, an unsubscribe link and a `List-Unsubscribe` header.
+  `[First name]` fills in, or "there" when the member has no first name. Every email ends with the
+  footer saved in Settings, read when the email goes out so waiting emails get the latest one
+  ([settings.md](./settings.md)), with its unsubscribe link and a `List-Unsubscribe` header.
 - SMTP has no idempotency key. If the run dies between sending and recording, that one email can
   go again the next day.
 

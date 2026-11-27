@@ -26,7 +26,8 @@ import { Tag, type TagColor } from "@/components/ui/Tag";
 import { DateRulePicker, formatDateRule, monthOf, type DateRule } from "@/components/ui/DateRulePicker";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { EmailEditor as MessageEditor } from "@/features/email-editor";
-import { EMAIL_FOOTER } from "../footer";
+import type { FooterDoc } from "@/features/email-footer/doc";
+import { FooterContent } from "@/features/email-footer/FooterContent";
 import {
   type AutomaticEmail,
   type Unit,
@@ -565,6 +566,7 @@ export function EmailEditor({
   tagNames,
   recipients,
   fallbacks,
+  footer,
   onFallbackChange,
   saved,
   onUpdate,
@@ -580,6 +582,8 @@ export function EmailEditor({
   recipients: Recipient[];
   /** Saved backup text by field id, shared by every email. */
   fallbacks: Record<string, string>;
+  /** The footer saved in Settings. */
+  footer: FooterDoc;
   onFallbackChange: (id: string, value: string) => void;
   saved: SaveStatus;
   onUpdate: (patch: Partial<AutomaticEmail>) => void;
@@ -996,7 +1000,7 @@ export function EmailEditor({
           moment={momentFor(e.trigger)}
           initialSubject={e.subjectDoc ?? (e.subject ? textToDoc(e.subject) : undefined)}
           initialBody={e.body}
-          footer={EMAIL_FOOTER}
+          footer={<FooterContent doc={footer} />}
           fallbacks={fallbacks}
           onFallbackChange={onFallbackChange}
           files={false}
@@ -1166,7 +1170,7 @@ export function EmailEditor({
           <MemberRows members={eligible} />
         </DialogContent>
       </Dialog>
-      <EmailPreviewDialog open={previewOpen} onOpenChange={setPreviewOpen} email={e} recipients={recipients} fallbacks={fallbacks} />
+      <EmailPreviewDialog open={previewOpen} onOpenChange={setPreviewOpen} email={e} recipients={recipients} fallbacks={fallbacks} footer={footer} />
     </Flow>
   );
 }

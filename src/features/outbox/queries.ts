@@ -1,6 +1,8 @@
 import "server-only";
 import type { JSONContent } from "@tiptap/react";
 import { createClient } from "@/lib/supabase/server";
+import type { FooterDoc } from "@/features/email-footer/doc";
+import { getEmailFooter } from "@/features/email-footer/queries";
 import type { DelayUnit, Member, Rule, Send, Template, Trigger } from "./_data";
 import { textToDoc } from "./_emailDoc";
 
@@ -16,6 +18,8 @@ export interface OutboxInitial {
   members: Member[];
   templates: Record<string, Template>;
   sends: Send[];
+  /** The footer saved in Settings: what every email ends with when it goes out. */
+  footer: FooterDoc;
 }
 
 /** History the calendar and member panel look back over. */
@@ -41,7 +45,7 @@ export async function loadOutbox(): Promise<OutboxInitial> {
   const today = torontoToday();
   const since = new Date(Date.now() - HISTORY_DAYS * 86_400_000).toISOString();
 
-  const [upcoming, notSent, sent, run, tags] = await Promise.all([
+  const [upcoming, notSent, sent, run, tags, footer] = await Promise.all([
     supabase.rpc("outbox_upcoming", { p_days: 30 }),
     supabase.rpc("outbox_not_sent", { p_days: HISTORY_DAYS }),
     supabase
@@ -51,6 +55,7 @@ export async function loadOutbox(): Promise<OutboxInitial> {
       .gte("sent_at", since),
     supabase.from("email_runs").select("id").eq("run_on", today).not("finished_at", "is", null).limit(1),
     supabase.from("tags").select("id, name"),
+    getEmailFooter(),
   ]);
   for (const r of [upcoming, notSent, sent, run, tags]) if (r.error) throw r.error;
 
@@ -61,7 +66,7 @@ export async function loadOutbox(): Promise<OutboxInitial> {
 
   const afterSend = (run.data ?? []).length > 0 || torontoHour() >= 11;
   const personIds = [...new Set([...upcomingRows, ...notSentRows, ...sentRows].map((r) => r.person_id))];
-  if (personIds.length === 0) return { today, afterSend, members: [], templates: {}, sends: [] };
+  if (personIds.length === 0) return { today, afterSend, members: [], templates: {}, sends: [], footer };
   const occurrenceIds = [...new Set([...upcomingRows, ...notSentRows].map((r) => r.occurrence_id))];
   const emailIds = [...new Set([...upcomingRows, ...notSentRows, ...sentRows].map((r) => r.automatic_email_id))];
 
@@ -175,5 +180,5 @@ export async function loadOutbox(): Promise<OutboxInitial> {
     if (r.sent_at) push(r, { day: daysFrom(today, dayOf(r.sent_at)), status: "sent" });
   }
 
-  return { today, afterSend, members, templates, sends };
+  return { today, afterSend, members, templates, sends, footer };
 }

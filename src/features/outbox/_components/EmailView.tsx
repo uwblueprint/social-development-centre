@@ -22,6 +22,7 @@ import {
   type Send,
 } from "../_data";
 import { useOutboxLock } from "../_lock";
+import { FooterContent } from "@/features/email-footer/FooterContent";
 import { useOutboxData } from "../_outboxData";
 import type { OpenEmail } from "../_types";
 import { FailureAlert } from "./FailureAlert";
@@ -282,20 +283,6 @@ const ReadFooter = styled.div`
   line-height: var(--leading-footer);
 `;
 
-const FooterSmall = styled.div`
-  font-size: var(--text-xs);
-`;
-
-
-
-/** What every email ends with. The editor's footer and the read view's footer say the same. */
-const EMAIL_FOOTER = {
-  reason: "You're getting this because you're an SDC member.",
-  organization: "Social Development Centre Waterloo Region",
-  address: "Mailing address to come",
-  contact: "suhanya@waterlooregion.org",
-};
-
 const Actions = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -333,7 +320,7 @@ interface EmailViewProps {
 }
 
 export function EmailView({ send, open, onChange, onBack, onSave, onApprove, onResend, onDelete, onReset, onResetDraft, errors, sentNote, sends, hasPrev, hasNext, canOpenPrev, canOpenNext, onPrev, onNext }: EmailViewProps) {
-  const { members, templates } = useOutboxData();
+  const { members, templates, footer } = useOutboxData();
   // The email stays readable and its draft editable while changes are locked (offline, signed out, saving...).
   const { locked, reason, busy } = useOutboxLock();
   const m = members[send.member];
@@ -532,7 +519,7 @@ export function EmailView({ send, open, onChange, onBack, onSave, onApprove, onR
             moment="one_off"
             initialSubject={open.draftSubject}
             initialBody={open.draftBody}
-            footer={EMAIL_FOOTER}
+            footer={<FooterContent doc={footer} />}
             hidePreview
             embedded
             personalize={false}
@@ -550,13 +537,8 @@ export function EmailView({ send, open, onChange, onBack, onSave, onApprove, onR
             </ReadBody>
             <ReadFooter>
               <div>
-                {EMAIL_FOOTER.organization}
-                <br />
-                {`${EMAIL_FOOTER.address} · ${EMAIL_FOOTER.contact}`}
+                <FooterContent doc={footer} />
               </div>
-              <FooterSmall>
-                {EMAIL_FOOTER.reason} <u>Unsubscribe from emails</u> · <u>Cancel membership</u>
-              </FooterSmall>
             </ReadFooter>
           </>
         )}

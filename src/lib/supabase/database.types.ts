@@ -170,6 +170,35 @@ export type Database = {
           },
         ]
       }
+      email_footer: {
+        Row: {
+          doc: Json
+          id: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          doc: Json
+          id?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          doc?: Json
+          id?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_footer_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_occurrences: {
         Row: {
           automatic_email_id: string
@@ -1287,6 +1316,7 @@ export type Database = {
         Args: { p_field: string; p_value: string }
         Returns: undefined
       }
+      set_email_footer: { Args: { p_doc: Json }; Returns: undefined }
       start_email_run: { Args: { p_forced: boolean }; Returns: number }
       toronto_today: { Args: never; Returns: string }
       trash_automatic_email: { Args: { p_id: string }; Returns: undefined }
