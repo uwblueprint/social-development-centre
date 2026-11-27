@@ -100,6 +100,26 @@ const monthYearFormat = new Intl.DateTimeFormat("en-CA", { month: "long", year: 
 /** "April 2023": how long someone has been a member. */
 export const formatMonthYear = (iso: string) => monthYearFormat.format(parse(iso));
 
+/** Days from one ISO date to another (20 from November 11 to December 1). */
+export function daysBetween(fromIso: string, toIso: string): number {
+  return Math.round((parse(toIso).getTime() - parse(fromIso).getTime()) / 86_400_000);
+}
+
+/**
+ * What each tier gets, for "Confirm your plan change". Placeholders: SDC hasn't said what the tiers
+ * include. Each tier has everything the tier below it has.
+ */
+export const tierBenefits: Record<string, string[]> = {
+  friend: ["Voting rights at SDC's annual meeting", "The monthly member update"],
+  supporter: ["Voting rights at SDC's annual meeting", "The monthly member update", "Invitations to member events"],
+  sustainer: [
+    "Voting rights at SDC's annual meeting",
+    "The monthly member update",
+    "Invitations to member events",
+    "Early access to SDC's research reports",
+  ],
+};
+
 /** Whole years from one ISO date to another (3 for April 2023 to November 2026). */
 export function wholeYears(fromIso: string, toIso: string): number {
   const from = parse(fromIso);

@@ -2,8 +2,12 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
+import { ArrowLeft, Check } from "lucide-react";
 import { css, keyframes, styled } from "next-yak";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Icon } from "@/components/ui/Icon";
 import { RadioGroup, RadioGroupOption } from "@/components/ui/RadioGroup";
 import { Separator } from "@/components/ui/Separator";
 import { AuthActions, AuthColumn, AuthHeading, AuthScreen, SdcLogo } from "@/features/auth/AuthScreen";
@@ -81,13 +85,19 @@ const OfferSubheading = styled.p`
   color: var(--color-text);
 `;
 
-/** An offer card fills the content's width, alone or in a row. */
+/**
+ * An offer card fills the content's width, alone or in a row. A column, so in a row of two the
+ * buttons sit at the bottom and line up even when one card has more above them.
+ */
 const FullCard = styled(Card)`
+  display: flex;
+  flex-direction: column;
   width: 100%;
 `;
 
 /** The card's accept button fills the card's width. */
 const OfferFooter = styled(CardFooter)`
+  margin-top: auto;
   & > * {
     flex: 1;
   }
@@ -97,13 +107,32 @@ const OfferFooter = styled(CardFooter)`
  * One retention offer: a kit Card with a title, one line, and the button that accepts it. The title is
  * the card's h3; offer pages have no h2, which WCAG allows (heading order is a best practice).
  */
+/** The title with a badge beside it (the member's current plan); wraps under on a narrow card. */
+const TitleRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+
+  & h3 {
+    margin: 0;
+  }
+`;
+
+/**
+ * One retention offer: a kit Card with a title, one line, and the button that accepts it. The title is
+ * the card's h3; offer pages have no h2, which WCAG allows (heading order is a best practice).
+ */
 export function OfferCard({
   title,
+  badge,
   subheading,
   description,
   action,
 }: {
   title: string;
+  /** A short label beside the title, e.g. "Current plan". */
+  badge?: string;
   /** Near-black, body size, under the title (a tier's price). */
   subheading?: ReactNode;
   /** Muted small print under the title. */
@@ -113,12 +142,92 @@ export function OfferCard({
   return (
     <FullCard>
       <CardHeader>
-        <CardTitle>{title}</CardTitle>
+        <TitleRow>
+          <CardTitle>{title}</CardTitle>
+          {badge && <Badge $variant="outline">{badge}</Badge>}
+        </TitleRow>
         {subheading && <OfferSubheading>{subheading}</OfferSubheading>}
         {description && <CardDescription>{description}</CardDescription>}
       </CardHeader>
       <OfferFooter>{action}</OfferFooter>
     </FullCard>
+  );
+}
+
+/** Measures the space the offer cards have, so they stack by their own width, not the window's. */
+const OfferSpace = styled.div`
+  container-type: inline-size;
+  width: 100%;
+`;
+
+/** Two offer cards side by side; stacked only below 300px of room (a 320px phone). */
+const OfferColumns = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+
+  @container (max-width: 299px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+`;
+
+export function OfferPair({ children }: { children: ReactNode }) {
+  return (
+    <OfferSpace>
+      <OfferColumns>{children}</OfferColumns>
+    </OfferSpace>
+  );
+}
+
+/* ---- Confirm a plan change ---- */
+
+/** "You still have 20 days left": a quiet info panel (status tokens), centred. */
+export const InfoPanel = styled.p`
+  width: 100%;
+  margin: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--color-info-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-info-subtle);
+  color: var(--color-text);
+  line-height: var(--leading-ui);
+  text-align: center;
+`;
+
+const Benefits = styled.ul`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: var(--space-2) var(--space-4);
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+`;
+
+const Benefit = styled.li`
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  line-height: var(--leading-ui);
+
+  & svg {
+    flex: none;
+    margin-top: var(--space-1);
+    color: var(--color-success);
+  }
+`;
+
+/** What the member will have access to, each with a check (the words carry it, not the colour). */
+export function BenefitList({ items }: { items: string[] }) {
+  return (
+    <Benefits>
+      {items.map((item) => (
+        <Benefit key={item}>
+          <Icon icon={Check} size={16} />
+          {item}
+        </Benefit>
+      ))}
+    </Benefits>
   );
 }
 
@@ -327,6 +436,7 @@ export function YearsCard({ value, caption, dates, rejoin }: { value: string; ca
  * screen however much is under them.
  */
 const Screen = styled(AuthScreen)`
+  position: relative;
   place-items: start center;
   /* Lower on taller windows: 12% of the window's height, never less than 64px. */
   padding-top: max(var(--space-8), 12vh);
@@ -336,6 +446,15 @@ const Screen = styled(AuthScreen)`
   @media (max-width: 480px) {
     padding-top: var(--space-6);
   }
+`;
+
+/** The back arrow, top left of the page: small, grey, quiet. */
+const BackButton = styled(Button)`
+  position: absolute;
+  top: var(--space-4);
+  left: var(--space-4);
+  padding: 0 var(--space-2);
+  color: var(--color-text-muted);
 `;
 
 /** The heading, and the screen's contents under it. */
@@ -409,6 +528,8 @@ function useDirection(screenKey: string, order: number) {
  * Pattern 1: the template every screen fills. The logo and heading stay where they are between
  * screens; everything under the heading is keyed by `screenKey`, so each screen's contents are fresh.
  * - `order`: the screen's place in the flow, so going back slides the other way.
+ * - `onBack`: shows the back arrow top left. Every screen but a flow's first one.
+ * - `backLabel`: the arrow's name for screen readers.
  * - `line`: what happened, in one or two sentences, right under the heading (near-black, `Lead`).
  *   Every screen uses this one treatment; grey (`Note`) is only for small print in `children`.
  * - `undo`: a muted question and a text button, after a divider below the actions.
@@ -417,6 +538,8 @@ function useDirection(screenKey: string, order: number) {
 export function Template({
   screenKey,
   order = 0,
+  onBack,
+  backLabel = "Back",
   heading,
   line,
   children,
@@ -426,6 +549,8 @@ export function Template({
 }: {
   screenKey: string;
   order?: number;
+  onBack?: () => void;
+  backLabel?: string;
   heading: string;
   line?: ReactNode;
   children?: ReactNode;
@@ -436,6 +561,11 @@ export function Template({
   const dir = useDirection(screenKey, order);
   return (
     <Screen>
+      {onBack && (
+        <BackButton type="button" $variant="ghost" $size="sm" aria-label={backLabel} onClick={onBack}>
+          <Icon icon={ArrowLeft} size={20} />
+        </BackButton>
+      )}
       <Column $wide>
         <SdcLogo />
         <Stage>

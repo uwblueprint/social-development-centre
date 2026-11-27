@@ -79,11 +79,15 @@ export const cancelCopy = {
     // Too expensive → a card per lower tier (Shallot: title, "$xx per month", "Choose [tier] instead").
     budget: {
       heading: "Pay less instead", // Not in doc.
+      // The date on its own line (Shallot).
       line: (date: ReactNode) => (
         <>
-          A lower tier starts from your next payment on <strong>{date}</strong>.
+          A lower tier starts from your next payment on
+          <br />
+          <strong>{date}</strong>.
         </>
       ), // Not in doc.
+      current: "Current plan", // Not in doc. The badge on the member's own tier.
       price: (amount: string) => `${amount} per month`, // Shallot.
       choose: "Continue", // Shallot.
       // The accessible name, so screen readers can tell the cards' Continue buttons apart. Starts with the visible label (WCAG 2.5.3).
@@ -92,9 +96,36 @@ export const cancelCopy = {
     continueToCancel: "Continue to cancel", // Not in doc.
   },
 
+  /*
+   * After Continue on a Pay less card: what's left of this payment, then confirm (after Dribbble's
+   * "Confirm your cancellation"). Continue on the current plan's card confirms keeping it.
+   */
+  plan: {
+    daysLeft: (days: number, tier: string) => (
+      <>
+        You still have <strong>{days} days</strong> left on your {tier} plan.
+      </>
+    ), // Not in doc.
+    heading: "Confirm your plan change", // Shallot.
+    change: (tier: string, date: ReactNode, amount: ReactNode) => (
+      <>
+        From <strong>{date}</strong>, you{"'"}ll be a {tier} member for <strong>{amount}</strong> a month. You{"'"}ll have
+        access to:
+      </>
+    ), // Not in doc.
+    confirm: "Confirm plan change", // Not in doc.
+    keepHeading: "Keep your plan", // Not in doc.
+    keep: (tier: string, amount: ReactNode) => (
+      <>
+        You{"'"}ll stay a {tier} member for <strong>{amount}</strong> a month, with access to:
+      </>
+    ), // Not in doc.
+    confirmKeep: (tier: string) => `Stay a ${tier}`, // Not in doc.
+  },
+
   /* End screen after switching tier. */
   switched: {
-    heading: (tier: string) => `You'll switch to ${tier}`, // Not in doc.
+    heading: (tier: string) => `You've switched to ${tier}`, // Shallot.
     body: (date: ReactNode, amount: ReactNode) => (
       <>
         From <strong>{date}</strong>, you{"'"}ll pay <strong>{amount}</strong> a month.

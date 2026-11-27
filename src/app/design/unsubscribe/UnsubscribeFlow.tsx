@@ -55,6 +55,10 @@ function Flow({ start }: { start: EmailFlowStart }) {
 
   useFocusHeadingOn(screen);
 
+  /** The back arrow, top left on every screen but the preferences page: one screen back. */
+  const back =
+    screen === "preferences" ? undefined : () => setScreen(screen === "closed" ? "unsubscribed" : "preferences");
+
   function tick(choice: Choice, on: boolean) {
     setTicked((ts) => {
       // "Unsubscribe from all" and the email types exclude each other.
@@ -77,11 +81,13 @@ function Flow({ start }: { start: EmailFlowStart }) {
   }
 
   // "Sounds good": nothing left to do.
-  if (screen === "closed") return <Template screenKey="closed" order={2} heading={copy.unsubscribed} line={copy.emails.closeTab} />;
+  if (screen === "closed") return <Template onBack={back} backLabel={copy.back} screenKey="closed" order={2} heading={copy.unsubscribed} line={copy.emails.closeTab} />;
 
   if (screen === "unsubscribed") {
     return (
       <Template
+        onBack={back}
+        backLabel={copy.back}
         screenKey="unsubscribed" order={1}
         heading={copy.unsubscribed}
         // FigJam: after unsubscribing, members hear their membership is still active.

@@ -20,6 +20,7 @@ export const unsubscribeCopy = {
   resubscribed: "You're subscribed again. You'll get emails from SDC again.", // Not in doc (Jesse's).
   unsubscribed: "You're unsubscribed", // The doc's A4 heading.
   cancelMembership: "Cancel membership",
+  back: "Back", // The top-left arrow's name for screen readers.
 
   emails: {
     // The preferences page (footer link 1). Shallot.
