@@ -450,7 +450,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
     case "kept":
       // "Keep membership": nothing changed, so a thank-you, a little confetti, and no actions.
       return (
-        <Template onBack={back} backLabel={shared.back} screenKey={step} order={ORDER[step]} heading={copy.active.heading} line={copy.active.thanks}>
+        <Template check onBack={back} backLabel={shared.back} screenKey={step} order={ORDER[step]} heading={copy.active.heading} line={copy.active.thanks}>
           <Confetti />
         </Template>
       );
@@ -460,15 +460,8 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
       const months = wholeMonths(demoMember.memberSince, DEMO_TODAY);
       const length = copy.cancelled.length(Math.floor(months / 12), months);
       return (
-        // "We're sorry to see you go" in grey above the card; the card's photo carries the big text.
-        <Template
-          onBack={back}
-          backLabel={shared.back}
-          screenKey={step}
-          order={ORDER[step]}
-          heading={copy.cancelled.heading}
-          quietHeading
-        >
+        // No heading (Shallot): the photo card's "Thank you for being a part of SDC" is the page's h1.
+        <Template onBack={back} backLabel={shared.back} screenKey={step} order={ORDER[step]}>
           <PhotoCard photo={sdcPhoto} title={copy.cancelled.overlay}>
             <Lead>
               {copy.cancelled.membership(formatMonthYear(demoMember.memberSince), formatMonthYear(DEMO_TODAY), length)}

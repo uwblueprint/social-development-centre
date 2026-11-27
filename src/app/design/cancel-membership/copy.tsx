@@ -157,7 +157,7 @@ export const cancelCopy = {
   },
 
   cancelled: {
-    heading: "We're sorry to see you go", // Shallot.
+    // No page heading (Shallot): the photo card's overlay is the h1, "We're sorry to see you go" opens the text.
     // The photo card (Shallot, after the referral page's banner): this over the photo, then the words under it.
     overlay: "Thank you for being a part of SDC", // Shallot.
     // How long they were a member: whole years, or months under a year.
@@ -166,7 +166,8 @@ export const cancelCopy = {
     // Shallot.
     membership: (from: string, to: string, length: string) => (
       <>
-        You{"'"}ve been an SDC member from <strong>{from}</strong> to <strong>{to}</strong>. That{"'"}s {length} of support.
+        We{"'"}re sorry to see you go. You{"'"}ve been an SDC member from <strong>{from}</strong> to <strong>{to}</strong>.
+        That{"'"}s {length} of support!
       </>
     ),
     // Shallot; "rejoin" is the link (rejoin in the sentence, not a separate button).

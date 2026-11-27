@@ -386,13 +386,17 @@ const BannerPhoto = styled(Image)`
 `;
 
 /** The page heading's type (--text-xl), in white on the shade. */
-const BannerTitle = styled.p`
+const BannerTitle = styled.h1`
   margin: 0;
   font-size: var(--text-xl);
   font-weight: var(--weight-medium);
   line-height: var(--leading-heading);
   letter-spacing: var(--tracking-tight);
   color: var(--taupe-50);
+
+  &:focus {
+    outline: none;
+  }
 `;
 
 const BannerCaption = styled.p`
@@ -406,7 +410,7 @@ const PhotoBody = styled.div`
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  padding: var(--space-5);
+  padding: var(--space-5) var(--space-5) var(--space-6);
 `;
 
 /**
@@ -428,7 +432,8 @@ export function PhotoCard({
     <PhotoBox>
       <Banner>
         <BannerPhoto src={photo} alt="" fill sizes="624px" priority />
-        <BannerTitle>{title}</BannerTitle>
+        {/* The page's heading: the cancelled page has no other. */}
+        <BannerTitle tabIndex={-1}>{title}</BannerTitle>
         {caption && <BannerCaption>{caption}</BannerCaption>}
       </Banner>
       <PhotoBody>{children}</PhotoBody>
@@ -600,17 +605,59 @@ function alignInk(emojiEl: HTMLElement | null, titleEl: HTMLElement | null, emoj
   emojiEl.style.marginInlineStart = `${-shift}px`;
 }
 
-/** "quiet": the h1 in the grey line style, when something under it (a photo card) is the big text. */
-const QuietTitle = styled(Title)`
-  font-size: var(--text-lg);
-  font-weight: var(--weight-regular);
-  line-height: var(--leading-body);
-  letter-spacing: normal;
-  color: var(--color-text-muted);
+const drawCheck = keyframes`
+  to {
+    stroke-dashoffset: 0;
+  }
+`;
+const fillCircle = keyframes`
+  to {
+    fill-opacity: 1;
+  }
+`;
+const checkOnFill = keyframes`
+  to {
+    stroke: var(--color-on-primary);
+  }
 `;
 
-function PageHeading({ title, emoji, quiet }: { title: string; emoji?: string; quiet?: boolean }) {
-  const Heading = quiet ? QuietTitle : Title;
+/**
+ * A check in a circle that draws itself, then the circle fills (like the heart on the referral
+ * page's thank-you screen, gaurav/referrals-wired): a green check and circle, then the circle fills
+ * green and the check turns white (white on --color-success is 5.5:1). These pages are always light.
+ * A brand moment, so it uses the entrance tokens. Decorative; reduced motion shows it finished.
+ */
+const CheckMark = styled.svg`
+  width: calc(var(--text-display) * var(--leading-none));
+  height: calc(var(--text-display) * var(--leading-none));
+  color: var(--color-success);
+
+  & circle {
+    fill: var(--color-success);
+    fill-opacity: 0;
+    animation: ${fillCircle} var(--duration-slow) var(--ease-out) var(--duration-enter) forwards;
+  }
+
+  /* The check's path is about 12.1 units long; 13 hides all of it before it draws. */
+  & path {
+    stroke-dasharray: 13;
+    stroke-dashoffset: 13;
+    animation:
+      ${drawCheck} var(--duration-enter) var(--ease-out) forwards,
+      ${checkOnFill} var(--duration-slow) var(--ease-out) var(--duration-enter) forwards;
+  }
+`;
+
+function DrawnCheck() {
+  return (
+    <CheckMark viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <path d="m8 12 3 3 5-6" />
+    </CheckMark>
+  );
+}
+
+function PageHeading({ title, emoji, check }: { title: string; emoji?: string; check?: boolean }) {
   const emojiRef = useRef<HTMLSpanElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   useLayoutEffect(() => {
@@ -619,16 +666,17 @@ function PageHeading({ title, emoji, quiet }: { title: string; emoji?: string; q
   return (
     <HeadingGroup>
       <EmojiSlot aria-hidden="true">
-        {emoji && (
+        {check && <DrawnCheck />}
+        {!check && emoji && (
           // Keyed by the emoji, so a new one pops in.
           <Emoji key={emoji} ref={emojiRef}>
             {emoji}
           </Emoji>
         )}
       </EmojiSlot>
-      <Heading ref={titleRef} tabIndex={-1}>
+      <Title ref={titleRef} tabIndex={-1}>
         {title}
-      </Heading>
+      </Title>
     </HeadingGroup>
   );
 }
@@ -712,7 +760,7 @@ export function Template({
   backLabel = "Back",
   emoji,
   heading,
-  quietHeading,
+  check,
   line,
   children,
   actions,
@@ -725,9 +773,10 @@ export function Template({
   backLabel?: string;
   /** An emoji over the heading, only after someone accepts an offer. The space for it is always there. */
   emoji?: string;
-  heading: string;
-  /** Show the heading as grey text, for a screen whose card carries the big text. */
-  quietHeading?: boolean;
+  /** Leave it out when something in `children` is the page's h1 (the cancelled page's photo card). */
+  heading?: string;
+  /** The drawn check in the emoji's place ("Your membership is active again"). */
+  check?: boolean;
   line?: ReactNode;
   children?: ReactNode;
   actions?: ReactNode;
@@ -747,7 +796,7 @@ export function Template({
       </LogoSlot>
       <Middle>
         <Column>
-          <PageHeading title={heading} emoji={emoji} quiet={quietHeading} />
+          {heading && <PageHeading title={heading} emoji={emoji} check={check} />}
           <Body key={screenKey} $dir={dir} $hasLine={Boolean(line)}>
             {line && <Description>{line}</Description>}
             {children}
