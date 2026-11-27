@@ -58,7 +58,7 @@ const now = () => new Date().toISOString();
 /**
  * The Pay / Resubscribe button. Form field: `plan`. In order:
  * - Cancelled, but before cancel_at: reactivate the same PayPal subscription. No PayPal page, no new charge.
- * - Cancelled, after cancel_at: end the old one for good (if the daily job hasn't yet), then start anew.
+ * - Cancelled, after cancel_at: end the old one for good in PayPal, then start anew.
  * - Pending (they went to PayPal before): ask PayPal what happened first, so nobody pays twice.
  * - Otherwise: create the subscription in PayPal and send the member to PayPal to approve it.
  */
@@ -84,6 +84,7 @@ export async function startSubscription(_prev: ActionState, formData: FormData):
       if (reactivated) return reactivated;
       // PayPal wouldn't reactivate it (e.g. the member cancelled it in their PayPal account): start anew.
     }
+    // Past the billing date: end the paused one for good (nothing else does yet), then start anew.
     const ended = await endForGood(db, live, "Cancelled: billing date passed before resubscribing");
     if (ended) return ended;
   } else if (live?.status === "pending") {

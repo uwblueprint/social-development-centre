@@ -6,8 +6,8 @@
 --   - Resubscribe before cancel_at: we reactivate the same PayPal subscription. No PayPal page, no
 --     new charge; billing carries on from the date they already had.
 --   - Resubscribe after cancel_at: a new subscription through PayPal, as for anyone who never paid.
--- A daily job (src/app/api/payments/finish-cancellations) cancels the paused subscription for good in
--- PayPal once cancel_at passes, so nobody can reactivate it later and be charged for skipped months.
+-- After cancel_at the app treats it as not paying. The paused subscription is only cancelled for good
+-- in PayPal when they pay again (no daily job yet: docs/backend/payments.md).
 
 alter table public.subscriptions add column cancel_at timestamptz;
 
@@ -23,7 +23,7 @@ create unique index subscriptions_one_live_per_person on public.subscriptions (p
 create index subscriptions_cancel_due on public.subscriptions (cancel_at) where status = 'cancelling';
 
 -- Ends the subscription for good. The membership stays: they're a member who isn't paying. Safe to
--- call twice (our cancel, the daily job and PayPal's webhook can all call it). Server only.
+-- call twice (our cancel and PayPal's webhook can both call it). Server only.
 create or replace function public.end_paid_membership(p_subscription_id uuid, p_cancelled_by uuid default null)
 returns void
 language plpgsql security definer set search_path = ''

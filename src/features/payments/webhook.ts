@@ -151,7 +151,7 @@ async function setStatus(db: Db, paypalId: string, status: "suspended"): Promise
 }
 
 /**
- * Cancelled anywhere (our site, the daily job, the member's PayPal account, an admin): the subscription
+ * Cancelled anywhere (our site, the member’s PayPal account, an admin): the subscription
  * ends and they stay a member who isn't paying. Paying again starts a new one through PayPal.
  */
 async function subscriptionEnded(db: Db, paypalId: string): Promise<void> {

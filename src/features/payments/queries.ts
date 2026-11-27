@@ -12,6 +12,7 @@ import {
   type PlanOption,
   type UnmatchedPayment,
   LIVE_STATUSES as LIVE,
+  isPastCancelDate,
 } from "./types";
 
 /**
@@ -59,7 +60,7 @@ export async function getMyMembership(personId: string): Promise<MyMembership> {
     .in("status", LIVE)
     .maybeSingle();
   if (error) throw error;
-  if (!data || data.status === "pending") return { status: "none", nextBillingAt: null, lastFailedAt: null, cancelAt: null };
+  if (!data || data.status === "pending" || isPastCancelDate(data)) return { status: "none", nextBillingAt: null, lastFailedAt: null, cancelAt: null };
   return {
     status: data.status as PaymentStatus,
     nextBillingAt: data.status === "cancelling" ? null : data.next_billing_at,
@@ -120,7 +121,7 @@ export async function listMemberPayments(): Promise<MemberPaymentRow[]> {
   return people.data
     .map((person) => {
       const subscription = subscriptionOf.get(person.id);
-      const live = subscription && LIVE.includes(subscription.status) ? subscription : null;
+      const live = subscription && LIVE.includes(subscription.status) && !isPastCancelDate(subscription) ? subscription : null;
       const history = paymentsOf.get(person.id) ?? [];
       const last = history.find((p) => p.kind === "payment");
       return {

@@ -27,7 +27,7 @@ who isn't paying, and can resubscribe without a new sign-up until their next bil
 | `payment_problem` | first `BILLING.SUBSCRIPTION.PAYMENT.FAILED` | warning, link to update payment in PayPal, **Cancel** |
 | `suspended` | second failed attempt (we suspend it in PayPal), or `BILLING.SUBSCRIPTION.SUSPENDED` | link to PayPal, **Resume membership**, **Cancel** |
 | `cancelling` | an `active` member or an admin cancels: paused in PayPal until `cancel_at` | "Resubscribe before {date}", **Resubscribe** |
-| `cancelled` | the daily job after `cancel_at`, an immediate cancel, or `BILLING.SUBSCRIPTION.CANCELLED` / `EXPIRED` | Same as `none`. Still a member |
+| `cancelled` | Pay after `cancel_at`, an immediate cancel, or `BILLING.SUBSCRIPTION.CANCELLED` / `EXPIRED` | Same as `none`. Still a member |
 
 ### Cancelling and resubscribing
 
@@ -46,10 +46,10 @@ Pressing **Pay membership** / **Resubscribe** (`startSubscription`):
 - `cancelling` after `cancel_at`, or PayPal refuses to reactivate: we cancel it for good and start a new
   subscription through PayPal.
 
-A daily job (`/api/payments/finish-cancellations`, `vercel.json`, needs `CRON_SECRET`) cancels for good,
-in PayPal, every `cancelling` subscription whose `cancel_at` has passed. PayPal never does this itself: a
-suspended subscription stays suspended forever, and reactivating one late (e.g. from PayPal's dashboard)
-might charge the skipped time.
+After `cancel_at` the screens show them as not paying, but the subscription stays paused in PayPal until
+they press Pay, which cancels it for good first. PayPal never cancels a paused subscription by itself.
+**Not built yet:** a daily job to cancel them once `cancel_at` passes. Until then, don't reactivate a
+paused subscription from PayPal's dashboard: it might charge the skipped time.
 
 ### Paying twice
 
@@ -80,7 +80,6 @@ if it doesn't, suspension happens at PayPal's own threshold instead.
 | `src/features/payments/actions.ts` | Start, cancel and resume (member); cancel and assign (admin) |
 | `src/features/payments/MembershipCard.tsx` | The card in the members' area (`src/app/page.tsx`) |
 | `src/app/membership/thanks` | Return page from PayPal |
-| `src/app/api/payments/finish-cancellations` | Daily: ends paused subscriptions once their billing date passes |
 | `supabase/migrations/20261127000000_payments_cancel_at_period_end.sql` | `cancelling`, `cancel_at`; cancelling keeps the membership |
 | `src/features/payments/PaymentsPage.tsx`, `src/app/admin/payments` | Admin → Payments |
 
@@ -138,9 +137,9 @@ our button), member reminder emails on a failed payment, and showing payments on
    Admin → Members, Admin → Payments should say "Cancelling", and PayPal should show it suspended.
    **Resubscribe** the next day: check in PayPal that no new payment was taken and that the next
    billing date didn't move. (This is the one behaviour PayPal's docs don't spell out.)
-4. To test the end of the window, set `cancel_at` in the past and call
-   `/api/payments/finish-cancellations` with `Authorization: Bearer $CRON_SECRET`: it should be cancelled
-   in PayPal, show "Not paying", and **Pay membership** should go through PayPal again.
+4. To test the end of the window, set `cancel_at` in the past: the card should show **Pay membership**,
+   Admin → Payments "Not paying", and pressing Pay should cancel the old one in PayPal and go through
+   PayPal again.
 5. Paying twice: approve on PayPal, then (before the thanks page or webhook confirms) open the members'
    area and click **Pay membership**: you should see "Your payment went through" and only one
    subscription in PayPal.

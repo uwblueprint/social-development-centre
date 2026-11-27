@@ -17,7 +17,11 @@ export type PaymentStatus =
   | "cancelling"
   | "cancelled";
 
-/** Subscriptions that still exist in PayPal. A member has at most one (a unique index says so). */
+/**
+ * Subscriptions that still exist in PayPal. A member has at most one (a unique index says so). A
+ * cancelling one past its cancel_at is still here (nothing ends it until they pay again), but the
+ * screens show it as not paying: see isPastCancelDate.
+ */
 export const LIVE_STATUSES = ["pending", "active", "payment_problem", "suspended", "cancelling"];
 
 /** A plan as the members' area shows it (no PayPal ids). */
@@ -65,6 +69,11 @@ export interface UnmatchedPayment {
   currency: string;
   payerEmail: string | null;
   paypalTransactionId: string;
+}
+
+/** A cancelling subscription whose billing date has passed: they're not paying, and Pay starts anew. */
+export function isPastCancelDate(row: { status: string; cancel_at: string | null }): boolean {
+  return row.status === "cancelling" && (row.cancel_at === null || new Date(row.cancel_at) <= new Date());
 }
 
 /** "$25.00" for CAD; other currencies keep their code ("US$25.00"). */

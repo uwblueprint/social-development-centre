@@ -39,8 +39,6 @@ export function signInPathFor(pathname: string): string | null {
   if (pathname === "/api/automatic-emails/run") return null;
   // PayPal's webhooks, which have no session; the route asks PayPal to verify each one itself.
   if (pathname === "/api/webhooks/paypal") return null;
-  // Vercel cron, which has no session; the route checks CRON_SECRET itself.
-  if (pathname === "/api/payments/finish-cancellations") return null;
   // The goodbye screen is shown to someone who has just left and is signed out.
   if (pathname === "/goodbye") return null;
   if (PUBLIC_ASSETS.some((prefix) => pathname.startsWith(prefix))) return null;
