@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import Image, { type StaticImageData } from "next/image";
 import { ArrowLeft, Check } from "lucide-react";
 import { css, keyframes, styled } from "next-yak";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Icon } from "@/components/ui/Icon";
 import { RadioGroup, RadioGroupOption } from "@/components/ui/RadioGroup";
 import { Separator } from "@/components/ui/Separator";
@@ -340,43 +341,98 @@ const UndoLine = styled.div`
 
 /* ---- The cancelled page ---- */
 
-const Big = styled.p`
-  margin: 0;
-  /* Half again the heading size, so the number is the first thing read. */
-  font-size: calc(var(--text-xl) * 1.5);
-  font-weight: var(--weight-medium);
-  line-height: var(--leading-none);
-  letter-spacing: var(--tracking-tight);
-  color: var(--color-brand-heading);
+/* The photo card: the referral page's banner (SplitLayout.tsx on gaurav/referrals-wired). */
+
+/** One card: the photo banner on top, the words under it. */
+const PhotoBox = styled(Card)`
+  overflow: hidden;
 `;
 
-const YearsContent = styled(CardContent)`
+/** The banner: an SDC event photo, a green shade over its lower part, the text at the bottom left. */
+const Banner = styled.div`
+  position: relative;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: var(--space-2);
-  text-align: center;
+  justify-content: flex-end;
+  gap: var(--space-1);
+  min-height: 240px;
+  padding: var(--space-5);
+  background: var(--sdc-950);
+  color: var(--taupe-50);
+
+  /* Clear at the top, deep green behind the text (the referral banner's Figma gradient, simplified). */
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(
+      188deg,
+      color-mix(in oklch, var(--sdc-600) 0%, transparent) 35%,
+      color-mix(in oklch, var(--sdc-950) 92%, transparent) 96%
+    );
+  }
+
+  @media (max-width: 599px) {
+    min-height: 220px;
+  }
 `;
 
-/** Only as wide as what's in it, on the left like the rest of the column. */
-const YearsBox = styled(Card)`
-  align-self: flex-start;
+const BannerPhoto = styled(Image)`
+  z-index: -2;
+  object-fit: cover;
+  object-position: 60% center;
 `;
 
-const YearsPadding = styled(YearsContent)`
-  padding: var(--space-5) var(--space-7);
+/** The page heading's type (--text-xl), in white on the shade. */
+const BannerTitle = styled.p`
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-heading);
+  letter-spacing: var(--tracking-tight);
+  color: var(--taupe-50);
 `;
 
-/** The cancelled page's card: the time they've been a member as one big number, what it means, and the dates in small print. */
-export function YearsCard({ value, caption, dates }: { value: string; caption: string; dates: string }) {
+const BannerCaption = styled.p`
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-body);
+  color: var(--taupe-100);
+`;
+
+const PhotoBody = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+`;
+
+/**
+ * A photo card like the referral page's: the photo with a title and caption over it, then `children`
+ * under it in the same card. The photo is decorative (alt=""); the words carry it.
+ */
+export function PhotoCard({
+  photo,
+  title,
+  caption,
+  children,
+}: {
+  photo: StaticImageData;
+  title: string;
+  caption?: string;
+  children: ReactNode;
+}) {
   return (
-    <YearsBox>
-      <YearsPadding>
-        <Big>{value}</Big>
-        <Lead>{caption}</Lead>
-        <Note>{dates}</Note>
-      </YearsPadding>
-    </YearsBox>
+    <PhotoBox>
+      <Banner>
+        <BannerPhoto src={photo} alt="" fill sizes="624px" priority />
+        <BannerTitle>{title}</BannerTitle>
+        {caption && <BannerCaption>{caption}</BannerCaption>}
+      </Banner>
+      <PhotoBody>{children}</PhotoBody>
+    </PhotoBox>
   );
 }
 
@@ -544,7 +600,17 @@ function alignInk(emojiEl: HTMLElement | null, titleEl: HTMLElement | null, emoj
   emojiEl.style.marginInlineStart = `${-shift}px`;
 }
 
-function PageHeading({ title, emoji }: { title: string; emoji?: string }) {
+/** "quiet": the h1 in the grey line style, when something under it (a photo card) is the big text. */
+const QuietTitle = styled(Title)`
+  font-size: var(--text-lg);
+  font-weight: var(--weight-regular);
+  line-height: var(--leading-body);
+  letter-spacing: normal;
+  color: var(--color-text-muted);
+`;
+
+function PageHeading({ title, emoji, quiet }: { title: string; emoji?: string; quiet?: boolean }) {
+  const Heading = quiet ? QuietTitle : Title;
   const emojiRef = useRef<HTMLSpanElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   useLayoutEffect(() => {
@@ -560,9 +626,9 @@ function PageHeading({ title, emoji }: { title: string; emoji?: string }) {
           </Emoji>
         )}
       </EmojiSlot>
-      <Title ref={titleRef} tabIndex={-1}>
+      <Heading ref={titleRef} tabIndex={-1}>
         {title}
-      </Title>
+      </Heading>
     </HeadingGroup>
   );
 }
@@ -646,6 +712,7 @@ export function Template({
   backLabel = "Back",
   emoji,
   heading,
+  quietHeading,
   line,
   children,
   actions,
@@ -659,6 +726,8 @@ export function Template({
   /** An emoji over the heading, only after someone accepts an offer. The space for it is always there. */
   emoji?: string;
   heading: string;
+  /** Show the heading as grey text, for a screen whose card carries the big text. */
+  quietHeading?: boolean;
   line?: ReactNode;
   children?: ReactNode;
   actions?: ReactNode;
@@ -678,7 +747,7 @@ export function Template({
       </LogoSlot>
       <Middle>
         <Column>
-          <PageHeading title={heading} emoji={emoji} />
+          <PageHeading title={heading} emoji={emoji} quiet={quietHeading} />
           <Body key={screenKey} $dir={dir} $hasLine={Boolean(line)}>
             {line && <Description>{line}</Description>}
             {children}

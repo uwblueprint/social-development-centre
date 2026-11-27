@@ -19,7 +19,7 @@ import {
   type PauseLength,
   daysBetween,
   tierBenefits,
-  wholeYears,
+  wholeMonths,
 } from "../unsubscribe/data";
 import {
   Confetti,
@@ -34,9 +34,10 @@ import {
   Stack,
   Template,
   useFocusHeadingOn,
-  YearsCard,
+  PhotoCard,
 } from "../unsubscribe/parts";
 import { cancelCopy as copy } from "./copy";
+import sdcPhoto from "./sdc-photo.jpg";
 
 /*
  * The cancel-membership flow, its own path. Footer link 2 in every SDC email ("Pause or cancel
@@ -456,28 +457,37 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
 
     case "cancelled": {
       // From when they joined to the month their membership ends (it runs to the end of this month).
-      const dates = copy.cancelled.dates(formatMonthYear(demoMember.memberSince), formatMonthYear(DEMO_TODAY));
+      const months = wholeMonths(demoMember.memberSince, DEMO_TODAY);
+      const length = copy.cancelled.length(Math.floor(months / 12), months);
       return (
-        <Template onBack={back} backLabel={shared.back} screenKey={step} order={ORDER[step]} heading={copy.cancelled.heading} line={copy.cancelled.thanks}>
-          <YearsCard
-            value={copy.cancelled.years(wholeYears(demoMember.memberSince, DEMO_TODAY))}
-            caption={copy.cancelled.yearsCaption}
-            dates={dates}
-          />
-          {/* The way back in, under the card. Rejoining opens "active again", confetti and all. */}
-          <Note>
-            {copy.cancelled.rejoin(
-              <InlineLink
-                href={`?${withStep("kept")}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  go("kept");
-                }}
-              >
-                {copy.cancelled.rejoinLink}
-              </InlineLink>,
-            )}
-          </Note>
+        // "We're sorry to see you go" in grey above the card; the card's photo carries the big text.
+        <Template
+          onBack={back}
+          backLabel={shared.back}
+          screenKey={step}
+          order={ORDER[step]}
+          heading={copy.cancelled.heading}
+          quietHeading
+        >
+          <PhotoCard photo={sdcPhoto} title={copy.cancelled.overlay}>
+            <Lead>
+              {copy.cancelled.membership(formatMonthYear(demoMember.memberSince), formatMonthYear(DEMO_TODAY), length)}
+            </Lead>
+            <Lead>
+              {copy.cancelled.thanks(
+                // The way back in. Rejoining opens "active again", confetti and all.
+                <InlineLink
+                  href={`?${withStep("kept")}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    go("kept");
+                  }}
+                >
+                  {copy.cancelled.rejoinLink}
+                </InlineLink>,
+              )}
+            </Lead>
+          </PhotoCard>
         </Template>
       );
     }

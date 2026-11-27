@@ -158,14 +158,24 @@ export const cancelCopy = {
 
   cancelled: {
     heading: "We're sorry to see you go", // Shallot.
-    // Shallot: "You've been a supporter from [date] to [date], thank you for being a part of SDC".
-    // Shallot: the big-number card, with the way back in. Drafts (Claude, not in doc): confirm with SDC.
-    thanks: "Thank you for being a part of SDC.", // Shallot.
-    years: (n: number) => (n === 1 ? "1 year" : `${n} years`),
-    dates: (from: string, to: string) => `${from} to ${to}`,
-    // Under the card; "rejoin" is the link (Shallot: rejoin in the sentence, not a separate button).
-    rejoin: (link: ReactNode) => <>You{"'"}re welcome to {link} anytime.</>,
+    // The photo card (Shallot, after the referral page's banner): this over the photo, then the words under it.
+    overlay: "Thank you for being a part of SDC", // Shallot.
+    // How long they were a member: whole years, or months under a year.
+    length: (years: number, months: number) =>
+      years >= 1 ? `${years} ${years === 1 ? "year" : "years"}` : `${months} ${months === 1 ? "month" : "months"}`,
+    // Shallot.
+    membership: (from: string, to: string, length: string) => (
+      <>
+        You{"'"}ve been an SDC member from <strong>{from}</strong> to <strong>{to}</strong>. That{"'"}s {length} of support.
+      </>
+    ),
+    // Shallot; "rejoin" is the link (rejoin in the sentence, not a separate button).
+    thanks: (link: ReactNode) => (
+      <>
+        SDC runs on the generosity of members like you, so thank you for being part of it. You{"'"}re welcome to {link}{" "}
+        anytime.
+      </>
+    ),
     rejoinLink: "rejoin",
-    yearsCaption: "as an SDC supporter",
   },
 };

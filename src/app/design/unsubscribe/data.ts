@@ -120,12 +120,11 @@ export const tierBenefits: Record<string, string[]> = {
   ],
 };
 
-/** Whole years from one ISO date to another (3 for April 2023 to November 2026). */
-export function wholeYears(fromIso: string, toIso: string): number {
+/** Whole months from one ISO date to another (43 for April 15, 2023 to November 11, 2026). */
+export function wholeMonths(fromIso: string, toIso: string): number {
   const from = parse(fromIso);
   const to = parse(toIso);
-  const months = (to.getFullYear() - from.getFullYear()) * 12 + (to.getMonth() - from.getMonth()) - (to.getDate() < from.getDate() ? 1 : 0);
-  return Math.floor(months / 12);
+  return (to.getFullYear() - from.getFullYear()) * 12 + (to.getMonth() - from.getMonth()) - (to.getDate() < from.getDate() ? 1 : 0);
 }
 
 const moneyFormat = new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD", maximumFractionDigits: 2, minimumFractionDigits: 0 });
