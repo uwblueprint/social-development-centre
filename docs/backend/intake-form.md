@@ -111,3 +111,19 @@ Nothing in the product reads these rows. SDC can read them in the Supabase dashb
 - **No suppression.** Choosing **Not interested** is recorded as a page visit, but there is no
   suppression list the mailing-list campaign reads before sending. The button is not an
   unsubscribe; the user guide tells people to reply to SDC's email instead.
+
+## Design: the intake form in the portal's look (`/design/intake-form`)
+A redesign on demo data (`src/app/design/intake-form/`). It needs these from the backend before it
+can replace the live form:
+- **The person from the invitation link.** There is no contact step: the form never asks for a name
+  or email. The link has to identify the contact it was sent to (a signed token, like the referral
+  page's person token), and the answers are saved against that person. The design reads
+  `demoContact` (`firstName` may be missing; the greeting then says "Hi there").
+- **An admin-editable welcome message.** `defaultWelcome` is the default copy. SDC admins replace the
+  heading, greeting and letter; `{firstName}` and `{questionCount}` are filled in when the page is
+  shown. This needs a stored setting and a place in Settings to edit it.
+- **A real unsubscribe.** The design's Unsubscribe confirms and then stops SDC invitations to that
+  contact, so it needs the suppression list described under [Not built](#not-built).
+- **The questions it asks.** Five optional questions (`questions` in `survey.ts`): issues and ways to
+  be involved (any number, plus Other), location and weekly time (one, plus Other), and a free-text
+  answer. These differ from the live form's, so `submit_intake` needs their fields or a new version.
