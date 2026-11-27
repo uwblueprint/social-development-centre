@@ -12,6 +12,13 @@ import type { MembershipReason, PauseLength } from "../unsubscribe/data";
 export const cancelCopy = {
   pageTitle: "Pause or cancel your membership", // Not in doc.
 
+  /* The emoji over the heading once someone accepts an offer (Shallot). Drafts. */
+  emoji: {
+    switched: "🎉", // You've switched to [tier]
+    paused: "🌴", // Your membership is paused
+    unsubscribed: "📭", // You're unsubscribed (membership kept)
+  },
+
 
   /*
    * Pause: the offer for "I need a break" (and for a Friend who finds it too expensive), straight from

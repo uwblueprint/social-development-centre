@@ -392,7 +392,8 @@ export function YearsCard({ value, caption, dates, rejoin }: { value: string; ca
 /*
  * The same frame as the sign-in and "Check your inbox" pages (SignInParts.tsx on
  * gaurav/sign-in-magic-link): the logo centred at the top and one left-aligned column. Differences
- * (Shallot): no emoji over the heading, no skyline along the bottom, the heading at --text-xl, and the
+ * (Shallot): an emoji over the heading only after an offer is accepted (the space is always kept), no
+ * skyline along the bottom, the heading at --text-xl, and the
  * column starts at a fixed height instead of being centred, so the heading stays put between steps.
  * For devs: once that branch is merged, both should use one shared frame.
  */
@@ -484,10 +485,70 @@ const Description = styled.p`
   }
 `;
 
-function PageHeading({ title }: { title: string }) {
+const pop = keyframes`
+  from {
+    transform: scale(0.4) rotate(-12deg);
+    opacity: 0;
+  }
+`;
+
+/**
+ * The space above every heading, one emoji tall, so the heading sits at the same height on every
+ * screen whether or not there's an emoji in it.
+ */
+const EmojiSlot = styled.div`
+  height: calc(var(--text-display) * var(--leading-none));
+`;
+
+/**
+ * An emoji pops in only once someone has accepted an offer (Shallot: "You've switched to Supporter"),
+ * a small reward. Decorative: the heading says it in words.
+ */
+const Emoji = styled.span`
+  display: inline-block;
+  font-size: var(--text-display);
+  line-height: var(--leading-none);
+  transform-origin: 70% 80%;
+  animation: ${pop} var(--duration-slow) var(--ease-out) both;
+`;
+
+/**
+ * Emoji glyphs carry empty space on their left, so the picture looks indented from the heading under
+ * it. Measure where the ink starts in both and shift the emoji so the left edges line up (from the
+ * sign-in pages).
+ */
+function alignInk(emojiEl: HTMLElement | null, titleEl: HTMLElement | null, emoji: string, title: string) {
+  if (!emojiEl || !titleEl) return;
+  const context = document.createElement("canvas").getContext("2d");
+  if (!context) return;
+  const inkStart = (el: HTMLElement, text: string) => {
+    const style = getComputedStyle(el);
+    context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+    return -context.measureText(text).actualBoundingBoxLeft;
+  };
+  const shift = inkStart(emojiEl, emoji) - inkStart(titleEl, title.charAt(0));
+  emojiEl.style.marginInlineStart = `${-shift}px`;
+}
+
+function PageHeading({ title, emoji }: { title: string; emoji?: string }) {
+  const emojiRef = useRef<HTMLSpanElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  useLayoutEffect(() => {
+    if (emoji) alignInk(emojiRef.current, titleRef.current, emoji, title);
+  }, [emoji, title]);
   return (
     <HeadingGroup>
-      <Title tabIndex={-1}>{title}</Title>
+      <EmojiSlot aria-hidden="true">
+        {emoji && (
+          // Keyed by the emoji, so a new one pops in.
+          <Emoji key={emoji} ref={emojiRef}>
+            {emoji}
+          </Emoji>
+        )}
+      </EmojiSlot>
+      <Title ref={titleRef} tabIndex={-1}>
+        {title}
+      </Title>
     </HeadingGroup>
   );
 }
@@ -569,6 +630,7 @@ export function Template({
   order = 0,
   onBack,
   backLabel = "Back",
+  emoji,
   heading,
   line,
   children,
@@ -580,6 +642,8 @@ export function Template({
   order?: number;
   onBack?: () => void;
   backLabel?: string;
+  /** An emoji over the heading, only after someone accepts an offer. The space for it is always there. */
+  emoji?: string;
   heading: string;
   line?: ReactNode;
   children?: ReactNode;
@@ -600,7 +664,7 @@ export function Template({
       </LogoSlot>
       <Middle>
         <Column>
-          <PageHeading title={heading} />
+          <PageHeading title={heading} emoji={emoji} />
           <Body key={screenKey} $dir={dir} $hasLine={Boolean(line)}>
             {line && <Description>{line}</Description>}
             {children}

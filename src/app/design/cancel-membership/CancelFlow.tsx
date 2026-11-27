@@ -195,6 +195,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
         <Template
           onBack={back}
           backLabel={shared.back}
+          emoji={undone ? undefined : copy.emoji.paused}
           screenKey={step} order={ORDER[step]}
           heading={undone ? copy.active.heading : copy.paused.heading}
           line={undone ? copy.active.thanks : copy.paused.body(formatDate(restartDate))}
@@ -368,6 +369,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
         <Template
           onBack={back}
           backLabel={shared.back}
+          emoji={undone ? undefined : copy.emoji.switched}
           screenKey={step} order={ORDER[step]}
           heading={undone ? copy.switched.stayed(tier.name) : copy.switched.heading(switched.name)}
           line={!undone && copy.switched.body(formatDate(nextPayment), formatMoney(switched.monthlyPrice))}
@@ -389,6 +391,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
         <Template
           onBack={back}
           backLabel={shared.back}
+          emoji={undone ? undefined : copy.emoji.unsubscribed}
           screenKey={step} order={ORDER[step]}
           heading={undone ? copy.resubscribed : shared.unsubscribed}
           // Resubscribing changes nothing about the membership, so this line stays.
