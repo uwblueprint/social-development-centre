@@ -69,6 +69,11 @@ const StyledInput = styled.input`
     color: var(--color-text-muted);
   }
 
+  /* Empty: no clear button or spinner yet, so the placeholder can use that room instead of clipping. */
+  &:placeholder-shown {
+    padding-right: var(--space-3);
+  }
+
   /* The custom clear button replaces the native affordances. */
   &::-webkit-search-cancel-button,
   &::-webkit-search-decoration {

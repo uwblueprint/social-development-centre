@@ -1,7 +1,7 @@
 "use client";
 
 import { css, styled } from "next-yak";
-import { overlayMotion } from "./overlayMotion";
+import { overlayMotion } from "./internal";
 import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui";
 import { Check } from "lucide-react";
 import type { ReactNode } from "react";
@@ -107,6 +107,8 @@ const Item = styled(DropdownMenuPrimitive.Item)<{ $variant?: "danger" }>`
 
 const CheckboxItem = styled(DropdownMenuPrimitive.CheckboxItem)`
   ${itemStyles}
+  /* Box (8px inset + 16px) then the same 8px gap as the kit Checkbox, not the wide default column (owner, Nov 2026). */
+  padding-left: var(--space-6);
 `;
 
 /*

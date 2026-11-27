@@ -11,7 +11,7 @@ Pick one option from a list; renders as a plain dropdown for 5 or fewer options 
 ```tsx
 import { Select, type SelectOption } from "@/components/ui/Select";
 ```
-- `options: SelectOption[]` — `{ value, label, disabled? }` (required).
+- `options: SelectOption[]` — `{ value, label, disabled?, icon? }` (required). `icon` (a lucide icon) shows before the label in the list and in the field once chosen; it is decorative, so the label must still name the option. Give every option an icon or none.
 - `value?`, `defaultValue?`, `onValueChange?`.
 - `placeholder?: string`, `disabled?: boolean`, `required?: boolean`.
 - `aria-invalid?`, `aria-describedby?`, `aria-label?`/`aria-labelledby?` — always wrap in `Field` instead of setting these by hand.

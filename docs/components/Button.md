@@ -12,10 +12,12 @@ A clickable control for a single action, styled with six variants and three size
 ```tsx
 import { Button } from "@/components/ui/Button";
 ```
-- `$variant?: "primary" | "secondary" | "outline" | "ghost" | "danger" | "danger-outline"` — default `primary`. `danger-outline` is a destructive action that isn't the main one on the screen ("Move to trash" beside "Publish"); use `danger` when the destructive action is the point, e.g. the confirm button in an `AlertDialog`. There is no link-style variant (owner, 28 Sep): every action is a box. For a quiet in-content action ("Back", "Download template") use `ghost` or `secondary` at `$size="sm"`.
+- `$variant?: "primary" | "secondary" | "outline" | "ghost" | "danger" | "danger-secondary" | "danger-outline"` — default `primary`. `danger-secondary` (light red fill, red label) is Delete as a secondary action in a bar or a view, with the Trash2 icon and the verb "Delete"; prefer it to an icon-only trash button. `danger-outline` is a destructive action that isn't the main one on the screen ("Move to trash" beside "Publish"); use `danger` when the destructive action is the point, e.g. the confirm button in an `AlertDialog`. There is no link-style variant (owner, 28 Sep): every action is a box. For a quiet in-content action ("Back", "Download template") use `ghost` or `secondary` at `$size="sm"`.
 - `$size?: "sm" | "md" | "lg"` — default `md`.
 - All native `<button>` props (`type`, `disabled`, `onClick`, …).
 - Icon-only buttons need `aria-label` (hard rule #3); disabled buttons need `disabledReason` via `DisabledReason`.
+
+- `CancelButton` — the dismiss button of a dialog or popover footer: secondary, "Cancel" by default. Wrap it in `DialogClose` / `AlertDialogCancel` / `PopoverClose` with `asChild`. The footer pins it to the far left.
 
 ## Example
 ```tsx

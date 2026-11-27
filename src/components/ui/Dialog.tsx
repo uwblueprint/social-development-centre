@@ -32,7 +32,7 @@ const Overlay = styled(DialogPrimitive.Overlay)`
   position: fixed;
   inset: 0;
   background: var(--color-overlay);
-  /* Dialogs blur what's behind them; sheets don't (see tokens: --overlay-blur). */
+  /* Dialogs and sheets blur what's behind them (see tokens: --overlay-blur). */
   backdrop-filter: blur(var(--overlay-blur));
   z-index: var(--z-modal);
   animation: ${overlayShow} var(--duration) var(--ease-out);
@@ -91,7 +91,11 @@ const CloseButton = styled(DialogPrimitive.Close)`
 `;
 
 const Title = styled(DialogPrimitive.Title)`
-  margin: 0 0 4px;
+  /* 16px to whatever follows; 8px when a description follows (owner, Nov 2026). */
+  margin: 0 0 var(--space-4);
+  &:has(+ p) {
+    margin-bottom: var(--space-2);
+  }
   font-size: var(--text-lg);
   font-weight: var(--weight-medium);
   line-height: var(--leading-heading);
@@ -112,6 +116,13 @@ const Actions = styled.div`
   justify-content: flex-end;
   gap: var(--space-3);
   margin-top: var(--space-5);
+  /* Cancel sits on the far left, lined up with the content, away from the action (owner, Nov 2026). */
+  & > [data-cancel],
+  & > [data-back],
+  & > :has(> [data-cancel], > [data-back]) {
+    order: -1;
+    margin-inline-end: auto;
+  }
 `;
 
 export const Dialog = DialogPrimitive.Root;

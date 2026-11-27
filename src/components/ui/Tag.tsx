@@ -7,8 +7,8 @@ import { Icon } from "./Icon";
 import type { DisabledReasonText } from "./DisabledReason";
 import { Tooltip } from "./Tooltip";
 
-/** A tag's colour: one of five calm Tailwind hues with its --tag-* tokens, in palette order. No colour = the default grey. */
-export const TAG_COLORS = ["stone", "sky", "emerald", "amber", "rose"] as const;
+/** A tag's colour: one of ten calm Tailwind hues with its --tag-* tokens, in palette order. No colour = the default grey. */
+export const TAG_COLORS = ["stone", "rose", "pink", "orange", "amber", "emerald", "teal", "sky", "indigo", "violet"] as const;
 export type TagColor = (typeof TAG_COLORS)[number];
 
 /** Style for a coloured pill: sets the variables `tagPill` reads. Spread it into `style`. */

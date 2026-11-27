@@ -24,7 +24,7 @@ export const listEmptyCopy = {
   clearSearch: "Clear search",
   /** Filters hide everything: the title is "No " + the caller's description of the filtered items. */
   filtersTitle: (filtered: string) => `No ${filtered}`,
-  filtersBody: "Nothing matches these filters.",
+  filtersBody: "Clear a filter to see more",
   clearFilters: "Clear filters",
   /** Search plus filters. */
   searchAndFiltersBody: (fields: string) => `Searched ${fields} with these filters on. Check the spelling, or clear the search and filters.`,
@@ -60,8 +60,18 @@ const Header = styled.header`
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--space-2) var(--space-4);
+  /* When the actions wrap under the title (small screens), the title keeps 16px of room below it. */
+  gap: var(--space-4);
   min-height: 36px;
+`;
+
+/* The sidebar's open button (shown only while it's collapsed) sits right before the title. */
+const TitleRow = styled.div`
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
 `;
 
 const Title = styled.h1`
@@ -83,6 +93,11 @@ const Title = styled.h1`
 const HeaderSearch = styled.div`
   flex: 0 0 var(--search-width);
   min-width: 0;
+
+  /* Same height as the header's buttons (36px), so the search and the main action read as one row. */
+  & input {
+    height: 36px;
+  }
 
   @container (max-width: 640px) {
     order: 1;
@@ -118,7 +133,9 @@ export function ListPageHeader({
   return (
     <HeaderContainer>
       <Header>
-        <Title tabIndex={-1}>{title}</Title>
+        <TitleRow>
+          <Title tabIndex={-1}>{title}</Title>
+        </TitleRow>
         {search && <HeaderSearch>{search}</HeaderSearch>}
         {actions && <Actions>{actions}</Actions>}
       </Header>

@@ -12,7 +12,7 @@ Pick several options from a known list, shown as tags inside one field. Typing s
 ```tsx
 import { TagCombobox } from "@/components/ui/TagCombobox";
 ```
-- `options: { value, label, hint? }[]`: `hint` shows on the right of an option ("Moves from Has tag").
+- `options: { value, label, hint? }[]`: `hint` shows on the right of an option ("Moves from Has tag", or the person behind an email). Typing matches the hint as well as the label, so "Huang" finds `jesse@uwblueprint.org` listed beside "Jesse Huang".
 - `value: string[]` with `onValueChange(next)`. Controlled.
 - `placeholder?`: shown only while nothing is picked. Never the label.
 - `readOnly?`: shows the tags with no field or remove buttons.
@@ -32,6 +32,10 @@ import { TagCombobox } from "@/components/ui/TagCombobox";
 
 ## Behaviour
 - Focusing or clicking the field opens the list. Typing filters it; options already picked aren't listed.
+- The list closes when you click outside it, press Escape, or focus leaves the field (Tab). Picking an option keeps it open for the next pick.
+- When the list is too narrow for an option and its hint side by side, the hint moves to its own line under the label.
+- Typing matches anywhere in an option's label or hint, ignoring case.
+- The field sets `autocomplete="off"`, so browsers don't offer past entries over the list. Chrome can still show saved addresses on a field whose label mentions email; a made-up token would stop that, but it isn't valid `autocomplete` and fails the accessibility check (axe `autocomplete-valid`).
 - Click an option, or move with Arrow Up/Down and press Enter, to add it. The field clears and stays open for the next pick.
 - Backspace in the empty field selects the last tag (darker fill and stronger border). A second Backspace removes it.
 - After a removal, Backspace removes the next tag straight away for 5 seconds, without selecting first: the intent to delete is already clear.

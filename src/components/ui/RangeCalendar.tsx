@@ -5,8 +5,7 @@ import { keyframes, styled } from "next-yak";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Icon } from "./Icon";
 import { Input } from "./Input";
-import { formatISODate, parseISODate } from "./DatePicker";
-import { parseTypedDate } from "./dateText";
+import { formatISODate, monthStart, parseISODate, parseTypedDate } from "./dateText";
 
 export type RangeCalendarMode = "before" | "after" | "between";
 
@@ -312,7 +311,7 @@ export function RangeCalendar({ mode, value, onValueChange, "aria-label": ariaLa
 
   const [month, setMonth] = React.useState(() => {
     const d = from ?? today;
-    return new Date(d.getFullYear(), d.getMonth(), 1);
+    return monthStart(d);
   });
   const [focusDate, setFocusDate] = React.useState<Date>(() => from ?? today);
   const [level, setLevel] = React.useState<Level>("day");
@@ -345,7 +344,7 @@ export function RangeCalendar({ mode, value, onValueChange, "aria-label": ariaLa
   }, [focusDate, month, level, pickIndex, browseYear, blockStart]);
 
   // Six weeks starting on Monday, with the neighbouring months' days filling the ends.
-  const first = new Date(month.getFullYear(), month.getMonth(), 1);
+  const first = monthStart(month);
   const gridStart = addDays(first, -((first.getDay() + 6) % 7));
   const days = Array.from({ length: 42 }, (_, i) => addDays(gridStart, i));
   const weeks = Array.from({ length: 6 }, (_, i) => days.slice(i * 7, i * 7 + 7));
@@ -365,7 +364,7 @@ export function RangeCalendar({ mode, value, onValueChange, "aria-label": ariaLa
   }
 
   function showDate(date: Date) {
-    setMonth(new Date(date.getFullYear(), date.getMonth(), 1));
+    setMonth(monthStart(date));
     setFocusDate(date);
     setLevel("day");
   }
@@ -374,7 +373,7 @@ export function RangeCalendar({ mode, value, onValueChange, "aria-label": ariaLa
     wantFocus.current = true;
     setFocusDate(date);
     if (date.getMonth() !== month.getMonth() || date.getFullYear() !== month.getFullYear()) {
-      setMonth(new Date(date.getFullYear(), date.getMonth(), 1));
+      setMonth(monthStart(date));
     }
   }
 
@@ -418,6 +417,7 @@ export function RangeCalendar({ mode, value, onValueChange, "aria-label": ariaLa
     showDate(date);
   }
   const activeField: FieldName = draft?.field ?? (mode === "between" && rawFrom && !rawTo ? "end" : "start");
+  // Where the caret sat after the last click on an already-focused input, so a double-click can put it back.
   function inputProps(field: FieldName, d: Date | undefined, name: string) {
     return {
       "data-active": activeField === field,
@@ -434,7 +434,10 @@ export function RangeCalendar({ mode, value, onValueChange, "aria-label": ariaLa
       },
       onMouseDown: (e: React.MouseEvent<HTMLInputElement>) => {
         const input = e.currentTarget;
-        if (document.activeElement === input) return; // Already focused: the browser places the caret.
+        if (document.activeElement === input) {
+          delete input.dataset.caret; // Already focused: the browser places the caret.
+          return;
+        }
         // First click: focus and select everything, so typing replaces the date.
         e.preventDefault();
         input.focus();
@@ -545,7 +548,7 @@ export function RangeCalendar({ mode, value, onValueChange, "aria-label": ariaLa
                     const left = i > 0 && inBand(days[w * 7 + i - 1]);
                     const right = i < 6 && inBand(days[w * 7 + i + 1]);
                     const solid = isSolid(date);
-                    const isToday = date.getTime() === today.getTime();
+                                    const isToday = date.getTime() === today.getTime();
                     return (
                       <Cell
                         key={i}

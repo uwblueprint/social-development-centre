@@ -2,10 +2,10 @@
 
 import * as React from "react";
 import { css, styled } from "next-yak";
-import { overlayMotion } from "./overlayMotion";
+import { isInvalid, overlayMotion } from "./internal";
 import { Popover as PopoverPrimitive, Select as SelectPrimitive } from "radix-ui";
 import { Command } from "cmdk";
-import { Check, ChevronDown, Search } from "lucide-react";
+import { Check, ChevronDown, Search, type LucideIcon } from "lucide-react";
 import { ErrorIcon } from "./Field";
 import { Icon } from "./Icon";
 
@@ -13,6 +13,8 @@ export interface SelectOption {
   value: string;
   label: string;
   disabled?: boolean;
+  /** Small icon before the label, in the list and in the field once chosen (e.g. Sun for "Light"). */
+  icon?: LucideIcon;
 }
 
 export interface SelectProps {
@@ -29,10 +31,6 @@ export interface SelectProps {
   "aria-describedby"?: string;
   "aria-label"?: string;
   "aria-labelledby"?: string;
-}
-
-function isInvalid(value: unknown) {
-  return value === true || value === "true";
 }
 
 /* Shared visual style for the trigger, whichever variant renders it, so the
@@ -113,6 +111,25 @@ const TriggerLabel = styled.span`
   text-overflow: ellipsis;
   white-space: nowrap;
 `;
+
+/* An option's label with its icon, if it has one; the icon is decorative (the label names the option). */
+const OptionText = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  vertical-align: top;
+`;
+
+function optionText(option: SelectOption) {
+  if (!option.icon) return option.label;
+  return (
+    <OptionText>
+      <Icon icon={option.icon} size={16} />
+      {option.label}
+    </OptionText>
+  );
+}
 
 const IconGroup = styled.span`
   display: inline-flex;
@@ -262,7 +279,7 @@ function NativeSelect({
           <Viewport>
             {options.map((option) => (
               <Item key={option.value} value={option.value} disabled={option.disabled}>
-                <SelectPrimitive.ItemText>{option.label}</SelectPrimitive.ItemText>
+                <SelectPrimitive.ItemText>{optionText(option)}</SelectPrimitive.ItemText>
                 {option.disabled ? (
                   <UnavailableBadge>Unavailable</UnavailableBadge>
                 ) : (
@@ -444,7 +461,7 @@ function ComboboxSelect({
           aria-labelledby={ariaLabelledby}
           data-placeholder={selected ? undefined : ""}
         >
-          <TriggerLabel>{selected ? selected.label : placeholder}</TriggerLabel>
+          <TriggerLabel>{selected ? optionText(selected) : placeholder}</TriggerLabel>
           <IconGroup>
             {invalid && (
               <ErrorSlot aria-hidden="true">
@@ -485,7 +502,7 @@ function ComboboxSelect({
                   disabled={option.disabled}
                   onSelect={() => commit(option.value)}
                 >
-                  <ComboItemLabel>{option.label}</ComboItemLabel>
+                  <ComboItemLabel>{optionText(option)}</ComboItemLabel>
                   {option.disabled ? (
                     <UnavailableBadge>Unavailable</UnavailableBadge>
                   ) : option.value === currentValue ? (

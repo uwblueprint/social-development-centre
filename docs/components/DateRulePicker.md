@@ -1,6 +1,6 @@
 # DateRulePicker
 
-A date rule shown as plain text ("Between Nov 1 and Nov 30, 2026"). Clicking it opens a popover with a Before / After / Between switcher above a [RangeCalendar](RangeCalendar.md).
+A date rule shown as plain text ("Between Nov 1 and Nov 30, 2026"). Clicking it opens a popover with a Between / Before / After switcher above a [RangeCalendar](RangeCalendar.md).
 
 ## When to use
 
@@ -18,12 +18,15 @@ A date rule shown as plain text ("Between Nov 1 and Nov 30, 2026"). Clicking it 
 | `onOpenChange` | `(open) => void` | E.g. group changes made while open into one undo step. |
 | `openRequest` / `onOpenRequestHandled` | `boolean` / `() => void` | Open once programmatically (e.g. right after the rule is added). |
 
+`DateRuleEditor` is the popover's body on its own (switcher and calendar; takes `value`, `onValueChange`, `label`). Use it when you already have a popover, e.g. a filter button's, instead of nesting a second popover.
+
 Helpers: `formatDateRule(rule)` gives the same sentence the trigger shows; `monthOf(date)` gives a month's first and last day (the usual default).
 
 ## Behaviour
 
 - The popover is anchored to where the text was when it opened, so it doesn't move while the text changes width.
 - Switching rule keeps the first date; Between fills the end with the end of that month.
+- Between comes first: it is the most common rule.
 - The switcher spans the calendar's width with equal options.
 
 ## Accessibility

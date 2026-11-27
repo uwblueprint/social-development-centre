@@ -5,6 +5,7 @@ import { styled } from "next-yak";
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "./Popover";
 import { RangeCalendar, type RangeCalendarMode } from "./RangeCalendar";
 import { ToggleGroup, ToggleGroupItem } from "./ToggleGroup";
+import { formatISODate, monthEnd, monthStart } from "./dateText";
 
 /** A date rule: before or after one date, or between two. Dates are ISO (YYYY-MM-DD); "" means not set. */
 export interface DateRule {
@@ -13,14 +14,13 @@ export interface DateRule {
   to: string;
 }
 
-const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const dateOf = (value: string) => new Date(`${value}T12:00:00`);
 const short = (value: string) => dateOf(value).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 const long = (value: string) => dateOf(value).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
 /** The first and last day of the month a date falls in. */
 export function monthOf(date: Date): { from: string; to: string } {
-  return { from: iso(new Date(date.getFullYear(), date.getMonth(), 1)), to: iso(new Date(date.getFullYear(), date.getMonth() + 1, 0)) };
+  return { from: formatISODate(monthStart(date)), to: formatISODate(monthEnd(date)) };
 }
 
 /** The rule in words: "Between Nov 1 and Nov 30, 2026", "Before Nov 5, 2026". Reversed ranges read in order. */
@@ -71,13 +71,6 @@ export function DateRulePicker({ value, onValueChange, label, disabled, onOpenCh
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openRequest]);
 
-  // Switching rule keeps the first date; Between fills the end with the end of that month.
-  function setOp(next: RangeCalendarMode) {
-    if (next === value.op) return;
-    const from = value.from || monthOf(new Date()).from;
-    onValueChange(next === "between" ? { op: next, from, to: value.to || monthOf(dateOf(from)).to } : { op: next, from, to: "" });
-  }
-
   const text = formatDateRule(value);
   return (
     <Box ref={boxRef}>
@@ -93,22 +86,41 @@ export function DateRulePicker({ value, onValueChange, label, disabled, onOpenCh
           </Trigger>
         </PopoverTrigger>
         <Content align="start" showClose={false}>
-          <Switcher>
-            <ToggleGroup type="single" value={value.op} onValueChange={(v) => v && setOp(v as RangeCalendarMode)} aria-label={`${label} rule`}>
-              <ToggleGroupItem value="before">Before</ToggleGroupItem>
-              <ToggleGroupItem value="after">After</ToggleGroupItem>
-              <ToggleGroupItem value="between">Between</ToggleGroupItem>
-            </ToggleGroup>
-          </Switcher>
-          <RangeCalendar
-            mode={value.op}
-            value={{ from: value.from, to: value.to }}
-            onValueChange={(v) => onValueChange({ ...value, from: v.from ?? "", to: v.to ?? "" })}
-            aria-label={label}
-          />
+          <DateRuleEditor value={value} onValueChange={onValueChange} label={label} />
         </Content>
       </Popover>
     </Box>
+  );
+}
+
+/**
+ * What DateRulePicker's popover holds: Before / After / Between above a RangeCalendar. Use it on its own inside a popover
+ * you already have (e.g. a filter button's), so the rule isn't a second popover inside the first.
+ */
+export function DateRuleEditor({ value, onValueChange, label }: Pick<DateRulePickerProps, "value" | "onValueChange" | "label">) {
+  // Switching rule keeps the first date; Between fills the end with the end of that month.
+  function setOp(next: RangeCalendarMode) {
+    if (next === value.op) return;
+    const from = value.from || monthOf(new Date()).from;
+    onValueChange(next === "between" ? { op: next, from, to: value.to || monthOf(dateOf(from)).to } : { op: next, from, to: "" });
+  }
+
+  return (
+    <Editor>
+      <Switcher>
+        <ToggleGroup type="single" value={value.op} onValueChange={(v) => v && setOp(v as RangeCalendarMode)} aria-label={`${label} rule`}>
+          <ToggleGroupItem value="between">Between</ToggleGroupItem>
+          <ToggleGroupItem value="before">Before</ToggleGroupItem>
+          <ToggleGroupItem value="after">After</ToggleGroupItem>
+        </ToggleGroup>
+      </Switcher>
+      <RangeCalendar
+        mode={value.op}
+        value={{ from: value.from, to: value.to }}
+        onValueChange={(v) => onValueChange({ ...value, from: v.from ?? "", to: v.to ?? "" })}
+        aria-label={label}
+      />
+    </Editor>
   );
 }
 
@@ -153,10 +165,13 @@ const Trigger = styled.button`
 const Content = styled(PopoverContent)`
   && {
     width: auto;
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-3);
   }
+`;
+
+const Editor = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 `;
 
 /* Before / After / Between share the calendar's width equally. */

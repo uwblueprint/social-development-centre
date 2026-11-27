@@ -13,7 +13,7 @@ import { Popover, PopoverTrigger, PopoverAnchor, PopoverContent, PopoverActions,
 ```
 - `Popover` (Root): `open`/`onOpenChange`.
 - `PopoverTrigger asChild` — wrap your own `Button`.
-- `PopoverContent({ showClose = true, sideOffset = 8, ... })` — includes a labeled close (×) button and an arrow by default.
+- `PopoverContent({ showClose = true, sideOffset = 8, ... })` — includes a labeled close (×) button and an arrow by default; `showArrow={false}` drops the arrow for popovers that sit right under their button (filters).
 - `PopoverActions` — right-aligned footer row separated by spacing, for popovers that end in an action.
 
 ## Example

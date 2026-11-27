@@ -2,11 +2,11 @@
 
 import * as React from "react";
 import { styled } from "next-yak";
-import { overlayMotion } from "./overlayMotion";
+import { overlayMotion } from "./internal";
 import { Tooltip as TooltipPrimitive } from "radix-ui";
 import type { ReactNode } from "react";
 
-const Content = styled(TooltipPrimitive.Content)`
+const ContentBase = styled(TooltipPrimitive.Content)`
   z-index: var(--z-tooltip);
   max-width: 260px;
   background: var(--color-text);
@@ -18,9 +18,15 @@ const Content = styled(TooltipPrimitive.Content)`
   padding: 6px 10px;
   box-shadow: var(--shadow-md);
 
-  /* Tooltips appear faster than other overlays. */
-  --overlay-duration: var(--duration-fast);
+  --overlay-enter-duration: var(--duration-fast);
   ${overlayMotion}
+`;
+
+/* motion="none": no enter or exit animation, so it vanishes the instant it closes. */
+const Content = styled(ContentBase)`
+  &[data-motion="none"] {
+    animation: none;
+  }
 `;
 
 const Arrow = styled(TooltipPrimitive.Arrow)`
@@ -47,16 +53,32 @@ export const TooltipTrigger = TooltipPrimitive.Trigger;
 export function TooltipContent({
   children,
   sideOffset = 6,
+  motion = "default",
   ...props
-}: TooltipPrimitive.TooltipContentProps & { children: ReactNode }) {
+}: TooltipPrimitive.TooltipContentProps & {
+  children: ReactNode;
+  /** `"none"` skips the fade and slide in and out, for tooltips that follow the pointer across a chart. */
+  motion?: "default" | "none";
+}) {
   return (
     <TooltipPrimitive.Portal>
-      <Content sideOffset={sideOffset} {...props}>
+      <Content sideOffset={sideOffset} data-motion={motion} {...props}>
         {children}
         <Arrow />
       </Content>
     </TooltipPrimitive.Portal>
   );
+}
+
+/**
+ * The tooltip that's open now. Only one shows at a time: opening another (by hover, focus or click)
+ * closes this one, e.g. hovering one sidebar item while another has keyboard focus.
+ */
+let openTooltip: React.RefObject<() => void> | null = null;
+
+/** Closes the open tooltip, e.g. when a modal opens over it from the keyboard while the pointer rests on its trigger. */
+export function closeOpenTooltip() {
+  openTooltip?.current();
 }
 
 /**
@@ -81,6 +103,7 @@ export function Tooltip({
   pinOnClick?: boolean;
 }) {
   const [open, setOpen] = React.useState(false);
+  const trigger = React.useRef<HTMLButtonElement>(null);
   const pinned = React.useRef(false);
   const pressing = React.useRef(false);
   // Radix opens on keyboard focus instantly; with a delay, focus waits the same as hover.
@@ -97,8 +120,20 @@ export function Tooltip({
   const close = () => {
     clearFocusTimer();
     pinned.current = false;
+    if (openTooltip === closeSelf) openTooltip = null;
     setOpen(false);
   };
+  // `close` only touches refs and state setters, so the first one stays valid.
+  const closeSelf = React.useRef(close);
+  const forget = () => {
+    if (openTooltip === closeSelf) openTooltip = null;
+  };
+  const show = () => {
+    if (openTooltip && openTooltip !== closeSelf) openTooltip.current();
+    openTooltip = closeSelf;
+    setOpen(true);
+  };
+  React.useEffect(() => forget, []);
 
   return (
     <TooltipRoot
@@ -107,10 +142,16 @@ export function Tooltip({
       onOpenChange={(next) => {
         if (!next && (pinned.current || pressing.current)) return;
         if (next && suppressed.current) return;
-        setOpen(next);
+        if (next && coveredByModal(trigger.current)) return;
+        if (next) show();
+        else {
+          forget();
+          setOpen(false);
+        }
       }}
     >
       <TooltipTrigger
+        ref={trigger}
         asChild
         onPointerDown={() => {
           pointerDown.current = true;
@@ -128,7 +169,7 @@ export function Tooltip({
           event.preventDefault();
           if (pointerDown.current) return;
           clearFocusTimer();
-          focusTimer.current = setTimeout(() => !suppressed.current && setOpen(true), delayDuration);
+          focusTimer.current = setTimeout(() => !suppressed.current && !coveredByModal(trigger.current) && show(), delayDuration);
         }}
         onClick={() => {
           if (!pinOnClick) {
@@ -141,7 +182,7 @@ export function Tooltip({
             close();
           } else {
             pinned.current = true;
-            setOpen(true);
+            show();
           }
         }}
         onBlur={() => {
@@ -161,4 +202,13 @@ export function Tooltip({
       </TooltipContent>
     </TooltipRoot>
   );
+}
+
+/**
+ * A dialog is open and this trigger isn't inside it: the tooltip would float over the dialog (tooltips sit
+ * above modals so ones inside a dialog still show). A dialog that's closing doesn't count.
+ */
+function coveredByModal(trigger: HTMLElement | null) {
+  const open = document.querySelectorAll('[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"]');
+  return Array.from(open).some((dialog) => !trigger || !dialog.contains(trigger));
 }

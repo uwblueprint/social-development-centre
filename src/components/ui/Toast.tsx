@@ -2,7 +2,7 @@
 
 import { keyframes, styled } from "next-yak";
 import { Portal, Toast as ToastPrimitive } from "radix-ui";
-import { X } from "lucide-react";
+import { CircleAlert, X } from "lucide-react";
 import { createContext, useCallback, useContext, useState, type CSSProperties, type ReactNode } from "react";
 import { Button } from "./Button";
 import { Icon } from "./Icon";
@@ -11,12 +11,12 @@ import { Icon } from "./Icon";
 const DURATION = 5000;
 const DURATION_WITH_ACTION = 8000;
 
-/* In from the bottom edge, where it sits; out by fading, with no movement. */
+/* Floats up from the bottom edge as it fades in, and sinks back down as it fades out: a small, matching move (owner, Nov 2026). */
 const riseIn = keyframes`
-  from { opacity: 0; transform: translateY(var(--space-4)); }
+  from { opacity: 0; transform: translateY(var(--space-3)); }
 `;
 const fadeOut = keyframes`
-  to { opacity: 0; }
+  to { opacity: 0; transform: translateY(var(--space-3)); }
 `;
 /* The time left: the bar empties from right to left over the toast's duration. */
 const countdown = keyframes`
@@ -32,8 +32,11 @@ const Viewport = styled(ToastPrimitive.Viewport)`
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  width: 340px;
-  max-width: calc(100vw - var(--space-5) * 2);
+  /* As wide as the longest message needs, so a short one never wraps: --toast-width at least, up to
+     --toast-width-max, never past the screen's edges. Every toast in the stack takes the widest one's width. */
+  width: fit-content;
+  min-width: min(var(--toast-width), calc(100vw - var(--space-5) * 2));
+  max-width: min(var(--toast-width-max), calc(100vw - var(--space-5) * 2));
   list-style: none;
   /* Auto side margins centre the fixed box between left: 0 and right: 0. */
   margin: 0 auto;
@@ -47,24 +50,36 @@ const Viewport = styled(ToastPrimitive.Viewport)`
 const Root = styled(ToastPrimitive.Root)`
   position: relative;
   overflow: hidden;
-  /* The brand primary, so a toast stands out from the page: dark green in the light theme, light mint in the dark one (owner, Nov 2026). */
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-  border: 1px solid var(--color-primary);
+  /* A deep brand green, so a toast stands out from the page in both themes (owner, Nov 2026). */
+  background: var(--color-primary-deep);
+  color: var(--color-on-primary-deep);
+  border: 1px solid var(--color-primary-deep);
+
+  /* Something failed: the danger colour, with an alert icon before the message (owner, Nov 2026). */
+  &[data-tone="danger"] {
+    background: var(--color-danger);
+    color: var(--color-on-danger);
+    border-color: var(--color-danger);
+  }
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   /* One line (owner, Nov 2026): message, then the action, then close. Long text wraps in its own column. */
-  padding: var(--space-2) var(--space-3) var(--space-2) var(--space-4);
+  /* The action (or ×) sits as far from the right edge as from the top and bottom (owner, Nov 2026). */
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   column-gap: var(--space-2);
+  /* No ×: drop its column, or its gap would widen the right edge. */
+  &[data-no-close] {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
 
   &[data-state="open"] {
     animation: ${riseIn} var(--duration) var(--ease-out);
   }
   &[data-state="closed"] {
-    animation: ${fadeOut} var(--duration-fast) var(--ease-in) forwards;
+    animation: ${fadeOut} var(--duration) var(--ease-in) forwards;
   }
 `;
 
@@ -79,7 +94,7 @@ const TimeBar = styled.span`
   right: 0;
   bottom: 0;
   height: 2px;
-  background: color-mix(in oklch, var(--color-on-primary) 45%, transparent);
+  background: color-mix(in oklch, currentColor 45%, transparent);
   transform-origin: left;
   animation: ${countdown} var(--toast-duration) linear forwards;
   pointer-events: none;
@@ -97,14 +112,14 @@ const Title = styled(ToastPrimitive.Title)`
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
   line-height: var(--leading-ui);
-  color: var(--color-on-primary);
+  color: inherit;
   margin: 0;
 `;
 
 const Description = styled(ToastPrimitive.Description)`
   font-size: var(--text-xs);
   line-height: var(--leading-ui);
-  color: var(--color-on-primary);
+  color: inherit;
   opacity: 0.8;
   margin: var(--space-1) 0 0;
 `;
@@ -138,15 +153,15 @@ const Close = styled(ToastPrimitive.Close)`
   width: 24px;
   height: 24px;
   border-radius: var(--radius-full);
-  color: var(--color-on-primary);
+  color: inherit;
   cursor: pointer;
 
   &:hover {
-    background: color-mix(in oklch, var(--color-on-primary) 18%, transparent);
+    background: color-mix(in oklch, var(--color-on-primary-deep) 18%, transparent);
   }
-  /* The usual ring is the brand green, which would vanish on the green toast. */
+  /* The usual ring is the brand green, which would vanish on the deep green toast. */
   &:focus-visible {
-    box-shadow: 0 0 0 2px var(--color-on-primary);
+    box-shadow: 0 0 0 2px var(--color-on-primary-deep);
   }
 `;
 
@@ -157,20 +172,52 @@ export const ToastDescription = Description;
 export const ToastAction = Action;
 export const ToastClose = Close;
 
+/* The message, with the danger icon before it when there is one. */
+const Message = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  min-width: 0;
+
+  [data-tone="danger"] & {
+    color: var(--color-on-danger);
+  }
+`;
+
+const MessageIcon = styled.span`
+  display: inline-flex;
+  flex: none;
+  /* Centre the 16px icon on the first line of the message. */
+  height: calc(var(--text-sm) * var(--leading-ui));
+  align-items: center;
+`;
+
 export function Toast({
   children,
+  closable = true,
+  persistent,
   duration = DURATION,
   onPause,
   onResume,
   ...props
-}: ToastPrimitive.ToastProps & { children: ReactNode }) {
+}: ToastPrimitive.ToastProps & {
+  children: ReactNode;
+  /** False when the toast has an action such as Undo: an X beside it is too easy to hit by mistake, and the toast goes on its own. */
+  closable?: boolean;
+  /**
+   * Stays until the page closes it (pass `open`), with no close button and no time bar: for a state the
+   * person must act on wherever they are on the page, e.g. unsaved changes with a Save action.
+   */
+  persistent?: boolean;
+}) {
   const [paused, setPaused] = useState(false);
   return (
     <Root
       {...props}
-      duration={duration}
+      duration={persistent ? Infinity : duration}
       data-paused={paused ? "" : undefined}
-      style={{ ...props.style, "--toast-duration": `${duration}ms` } as CSSProperties}
+      data-no-close={closable && !persistent ? undefined : ""}
+      style={persistent ? props.style : ({ ...props.style, "--toast-duration": `${duration}ms` } as CSSProperties)}
       onPause={() => {
         setPaused(true);
         onPause?.();
@@ -181,10 +228,12 @@ export function Toast({
       }}
     >
       {children}
-      <Close aria-label="Close">
-        <Icon icon={X} size={14} />
-      </Close>
-      <TimeBar aria-hidden="true" />
+      {closable && !persistent && (
+        <Close aria-label="Close">
+          <Icon icon={X} size={14} />
+        </Close>
+      )}
+      {!persistent && <TimeBar aria-hidden="true" />}
     </Root>
   );
 }
@@ -195,6 +244,8 @@ type ToastData = {
   description?: ReactNode;
   actionLabel?: string;
   onAction?: () => void;
+  /** "danger" when something failed: red, with an alert icon. Keep it to one line, e.g. "Couldn't delete the email". */
+  tone?: "danger";
 };
 
 type ToastContextValue = {
@@ -221,18 +272,27 @@ export function AppToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={{ toast }}>
       <ToastPrimitive.Provider swipeDirection="down">
         {children}
-        {toasts.map(({ id, title, description, actionLabel, onAction }) => (
+        {toasts.map(({ id, title, description, actionLabel, onAction, tone }) => (
           <Toast
             key={id}
+            data-tone={tone}
+            closable={!actionLabel}
             duration={actionLabel ? DURATION_WITH_ACTION : DURATION}
             onOpenChange={(open) => {
               if (!open) remove(id);
             }}
           >
-            <div>
-              <ToastTitle>{title}</ToastTitle>
-              {description && <ToastDescription>{description}</ToastDescription>}
-            </div>
+            <Message>
+              {tone === "danger" && (
+                <MessageIcon>
+                  <Icon icon={CircleAlert} size={16} />
+                </MessageIcon>
+              )}
+              <div>
+                <ToastTitle>{title}</ToastTitle>
+                {description && <ToastDescription>{description}</ToastDescription>}
+              </div>
+            </Message>
             {actionLabel && (
               <ToastAction altText={actionLabel} onClick={onAction}>
                 {actionLabel}

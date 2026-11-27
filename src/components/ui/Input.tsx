@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { css, styled } from "next-yak";
+import { isInvalid } from "./internal";
 import { ErrorIcon } from "./Field";
 
 const Wrapper = styled.span`
@@ -80,10 +81,6 @@ const IconSlot = styled.span`
   color: var(--color-danger);
   pointer-events: none;
 `;
-
-function isInvalid(value: unknown) {
-  return value === true || value === "true";
-}
 
 export type InputProps = React.ComponentPropsWithoutRef<"input">;
 

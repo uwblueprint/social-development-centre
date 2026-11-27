@@ -34,6 +34,9 @@ function handlePageChange(page: number) {
 ## Content rules
 The summary always reads "Showing X–Y of Z"; don't reword it. Button labels are "Previous"/"Next", not "Prev"/"«".
 
+## Narrow screens
+Below 768px the numbered pages are replaced by "Page X of Y" between Previous and Next, so the row fits a 320px viewport without sideways scrolling.
+
 ## Accessibility
 Previous/Next are real, individually disabled `Button`s at the ends of the range. Page numbers are buttons in a `role="navigation"` region labeled "Pagination"; the current page carries `aria-current="page"` in addition to its filled background, so it isn't conveyed by color alone.
 

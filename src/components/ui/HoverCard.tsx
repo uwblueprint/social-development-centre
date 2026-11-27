@@ -1,7 +1,7 @@
 "use client";
 
 import { styled } from "next-yak";
-import { overlayMotion } from "./overlayMotion";
+import { overlayMotion } from "./internal";
 import { HoverCard as HoverCardPrimitive } from "radix-ui";
 import type { ReactNode } from "react";
 
