@@ -22,12 +22,11 @@ import { SubmitButton } from "@/components/ui/SubmitButton";
 import { useToast } from "@/components/ui/Toast";
 import { FormError } from "@/features/auth/AuthScreen";
 import { fieldError, idleState, type ActionState } from "@/lib/forms";
-import { normalizeReferLinkText } from "@/features/automatic-emails/footer";
-import { deleteAccount, saveSettings, type SettingsValues } from "./actions";
+import { deleteAccount, updateName, type NameValues } from "./actions";
 import { Cell, Column, FormColumn, Row, RowLabel, Section, SectionTitle, Sections } from "./layout";
 import type { Account } from "./queries";
 
-const idleSettings: ActionState<SettingsValues> = { status: "idle" };
+const idleName: ActionState<NameValues> = { status: "idle" };
 
 /* Delete account sits a full section away from the name form. */
 const PageColumn = styled(Column)`
@@ -38,9 +37,7 @@ export function AccountSettings({ account }: { account: Account }) {
   return (
     <ListPage>
       <PageColumn>
-        <SettingsForm
-          initial={{ firstName: account.firstName, lastName: account.lastName, referLinkText: account.referLinkText }}
-        />
+        <NameForm initial={{ firstName: account.firstName, lastName: account.lastName }} />
         <Sections>
           <DeleteAccount onlyAdmin={account.onlyAdmin} />
         </Sections>
@@ -50,40 +47,32 @@ export function AccountSettings({ account }: { account: Account }) {
 }
 
 /**
- * Always editable. Nothing is saved until Save, and the Save button only appears once something has changed.
- * It says "Save for all admins" when the refer link text changed, because every admin's emails change.
+ * Always editable. Nothing is saved until Save, and the Save button only appears once a name has changed.
  * Leaving the page with unsaved edits discards them.
  */
-function SettingsForm({ initial }: { initial: SettingsValues }) {
+function NameForm({ initial }: { initial: NameValues }) {
   const { toast } = useToast();
   const [saved, setSaved] = useState(initial);
   const [draft, setDraft] = useState(initial);
 
-  const [state, formAction] = useActionState(async (prev: ActionState<SettingsValues>, formData: FormData) => {
-    // What the page loaded, so the server only writes link text this admin actually changed.
-    formData.set("referLinkTextBefore", saved.referLinkText);
-    const result = await saveSettings(prev, formData);
-    if (result.data) setSaved(result.data);
+  const [state, formAction] = useActionState(async (prev: ActionState<NameValues>, formData: FormData) => {
+    const result = await updateName(prev, formData);
     if (result.status === "success" && result.data) {
+      setSaved(result.data);
       setDraft(result.data);
-      toast({ title: result.message ?? "Settings saved." });
+      toast({ title: result.message ?? "Your name is saved." });
       // Save disappears once nothing is unsaved; move focus off it before it goes, so it isn't lost.
-      document.querySelector<HTMLInputElement>('input[name="referLinkText"]')?.focus();
+      document.querySelector<HTMLInputElement>('input[name="firstName"]')?.focus();
     }
     return result;
-  }, idleSettings);
+  }, idleName);
 
-  const referChanged = normalizeReferLinkText(draft.referLinkText) !== saved.referLinkText;
-  const dirty =
-    draft.firstName.trim() !== saved.firstName || draft.lastName.trim() !== saved.lastName || referChanged;
+  const dirty = draft.firstName.trim() !== saved.firstName || draft.lastName.trim() !== saved.lastName;
   const formLevelError = state.status === "error" && !state.fieldErrors ? state.message : undefined;
 
   return (
     <FormColumn action={formAction} noValidate>
-      <ListPageHeader
-        title="Settings"
-        actions={dirty ? <SubmitButton>{referChanged ? "Save for all admins" : "Save"}</SubmitButton> : undefined}
-      />
+      <ListPageHeader title="Settings" actions={dirty ? <SubmitButton>Save</SubmitButton> : undefined} />
       {formLevelError && (
         <FormError role="alert">
           <Icon icon={CircleAlert} size={16} />
@@ -91,29 +80,6 @@ function SettingsForm({ initial }: { initial: SettingsValues }) {
         </FormError>
       )}
       <Sections>
-        <Section aria-labelledby="footer">
-          <SectionTitle id="footer">Email footer</SectionTitle>
-          <Row>
-            <RowLabel>Refer link text</RowLabel>
-            <Cell>
-              <Field
-                label="Refer link text"
-                hint="Every member email ends with this link, next to Unsubscribe. It opens their refer-a-friend page. You can change the words, not remove the link."
-                error={fieldError(state, "referLinkText")}
-              >
-                {(props) => (
-                  <Input
-                    {...props}
-                    name="referLinkText"
-                    autoComplete="off"
-                    value={draft.referLinkText}
-                    onChange={(e) => setDraft((d) => ({ ...d, referLinkText: e.target.value }))}
-                  />
-                )}
-              </Field>
-            </Cell>
-          </Row>
-        </Section>
         <Section aria-labelledby="name">
           <SectionTitle id="name">Your name</SectionTitle>
           <Row>

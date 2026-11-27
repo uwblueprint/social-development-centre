@@ -108,5 +108,5 @@ export const emailEditorCopy = {
   previewDisabled: "Add a subject and message to preview",
   saving: "Saving…",
   saved: "Draft saved",
-  footerTip: "You can edit this footer in Settings.",
+  footerTip: "The same footer ends every email. Click the refer link to change its words.",
 } as const;

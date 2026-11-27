@@ -30,8 +30,9 @@ export interface EmailFooter {
   organization: string;
   address: string;
   contact: string;
-  /** The refer link's text, set in Settings. Always shown: the link can't be removed. */
-  referLinkText: string;
+  /** The refer link, after Unsubscribe and Cancel membership. Always shown: it can't be removed. The host
+   * passes it in, so it can be the link's editor (automatic-emails/components/ReferLinkEditor). */
+  referLink: React.ReactNode;
 }
 
 export interface MessageFieldProps {
@@ -114,12 +115,16 @@ export function MessageField({
   const [footerTipOpen, setFooterTipOpen] = React.useState(false);
   const footerTipId = React.useId();
   const footerTipTimer = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const footerRef = React.useRef<HTMLDivElement>(null);
   const closeFooterTip = React.useCallback(() => {
     clearTimeout(footerTipTimer.current);
     setFooterTipOpen(false);
   }, []);
   // Once open it stays 3s, or until the pointer leaves, Escape or blur. Radix's own closing is ignored (see TooltipRoot).
   const openFooterTip = React.useCallback(() => {
+    // Not over a control in the footer that has its own popup open (the refer link's editor): the hint
+    // would sit on top of it and take its Escape.
+    if (footerRef.current?.querySelector('[aria-expanded="true"]')) return;
     clearTimeout(footerTipTimer.current);
     setFooterTipOpen(true);
     footerTipTimer.current = setTimeout(() => setFooterTipOpen(false), 3000);
@@ -380,6 +385,7 @@ export function MessageField({
         <TooltipRoot delayDuration={1000} open={footerTipOpen} onOpenChange={(next) => next && !footerTipOpen && openFooterTip()}>
           <TooltipTrigger asChild>
             <Footer
+              ref={footerRef}
               aria-label="Email footer, added to every email"
               aria-describedby={footerTipId}
               tabIndex={0}
@@ -393,8 +399,7 @@ export function MessageField({
                 {`${footer.address} · ${footer.contact}`}
               </div>
               <FooterSmall>
-                {footer.reason} <u>Unsubscribe from emails</u> · <u>Cancel membership</u> ·{" "}
-                <u>{footer.referLinkText}</u>
+                {footer.reason} <u>Unsubscribe from emails</u> · <u>Cancel membership</u> · {footer.referLink}
               </FooterSmall>
             </Footer>
           </TooltipTrigger>

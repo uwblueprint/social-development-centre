@@ -548,8 +548,7 @@ export function EmailView({ send, open, onChange, onBack, onSave, onApprove, onR
                 {`${footer.address} · ${footer.contact}`}
               </div>
               <FooterSmall>
-                {footer.reason} <u>Unsubscribe from emails</u> · <u>Cancel membership</u> ·{" "}
-                <u>{footer.referLinkText}</u>
+                {footer.reason} <u>Unsubscribe from emails</u> · <u>Cancel membership</u> · {footer.referLink}
               </FooterSmall>
             </ReadFooter>
           </>

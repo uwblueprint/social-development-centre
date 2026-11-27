@@ -15,7 +15,7 @@ import { Field } from "@/components/ui/Field";
 import { Select } from "@/components/ui/Select";
 import { VARIABLES } from "@/features/email-editor/variables";
 import { REPLY_TO } from "../footer";
-import { useEmailFooter } from "./EmailFooterContext";
+import { useEmailFooter, useReferLink } from "./EmailFooterContext";
 import { type AutomaticEmail, type Recipient, textToDoc } from "../model";
 import { renderEmailDoc, renderEmailText } from "./renderEmail";
 
@@ -119,6 +119,8 @@ export function EmailPreviewDialog({
   fallbacks: Record<string, string>;
 }) {
   const footer = useEmailFooter();
+  // The preview shows the email as the member gets it: the link's text, not its editor.
+  const { text: referLinkText } = useReferLink();
   const [picked, setPicked] = useState(recipients[0]?.personId ?? "");
   const sample = recipients.length === 0;
   const member = recipients.find((r) => r.personId === picked) ?? recipients[0];
@@ -168,7 +170,7 @@ export function EmailPreviewDialog({
             <p>{`${footer.address} · ${footer.contact}`}</p>
             <p>
               {footer.reason} <Underlined>Unsubscribe from emails</Underlined> ·{" "}
-              <Underlined>{footer.referLinkText}</Underlined>
+              <Underlined>{referLinkText}</Underlined>
             </p>
           </MailFooter>
         </Mail>
