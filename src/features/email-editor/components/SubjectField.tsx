@@ -12,6 +12,7 @@ import { Icon } from "@/components/ui/Icon";
 import type { LucideIcon } from "lucide-react";
 import { EMAIL_LIMITS, emailEditorCopy as copy } from "../copy";
 import { PersonalizedText } from "../extensions/personalizedText";
+import { plainJson } from "../plainJson";
 import type { PersonalizationVariable } from "../variables";
 
 /** One line only, but it can hold personalized text, so it's an editor rather than an Input. */
@@ -111,7 +112,7 @@ export function SubjectField({
     onFocus: ({ editor: e }) => onFocusEditor(e),
     onUpdate: ({ editor: e }) => {
       setCount(e.storage.characterCount.characters());
-      onChange(e.getJSON(), e.isEmpty);
+      onChange(plainJson(e.getJSON()), e.isEmpty);
     },
   });
 

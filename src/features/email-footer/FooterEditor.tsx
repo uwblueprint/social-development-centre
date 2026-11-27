@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { Tag } from "@/components/ui/Tag";
 import { Tooltip } from "@/components/ui/Tooltip";
+import { plainJson } from "@/features/email-editor/plainJson";
 import { countLinks, FOOTER_LINKS, type FooterDoc, type FooterLinkKind } from "./doc";
 
 const dropKey = new PluginKey<number | null>("footerDropCaret");
@@ -207,7 +208,8 @@ export function FooterEditor({ initial, onChange, id, "aria-describedby": descri
         ...(invalid ? { "aria-invalid": "true" } : {}),
       },
     },
-    onUpdate: ({ editor }) => onChange(editor.getJSON() as FooterDoc),
+    // Plain data: ProseMirror's attrs have no prototype, and a server action can't read those (plainJson.ts).
+    onUpdate: ({ editor }) => onChange(plainJson(editor.getJSON()) as FooterDoc),
   });
 
   const marks = useEditorState({
