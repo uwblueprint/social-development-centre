@@ -21,6 +21,8 @@ export type Delivery = {
   /** The member's details by personalized field id ("first_name", "referrer_full_name"). */
   fields: Record<string, string>;
   unsubscribe_token: string;
+  /** A current member: their refer link works. Someone whose membership ended gets no refer link. */
+  can_refer: boolean;
 };
 
 /** Saved backup text by field id; a field with none uses its default from variables.ts. */
@@ -63,7 +65,11 @@ export function renderDelivery(
     : plain(delivery.subject_doc, fill).replace(/\s+/g, " ").trim();
 
   // The cancel link has no page to go to yet, so it's left out of sent emails until there is one.
-  const footerUrls = { unsubscribe: unsubscribeUrl };
+  // The refer page reads the same person token as Unsubscribe (src/app/refer/[token]).
+  const footerUrls = {
+    unsubscribe: unsubscribeUrl,
+    ...(delivery.can_refer && { refer: new URL(`/refer/${delivery.unsubscribe_token}`, origin).toString() }),
+  };
   return {
     to: delivery.to_email,
     subject,

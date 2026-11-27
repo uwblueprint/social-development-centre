@@ -1,4 +1,4 @@
-import { FOOTER_LINKS, inline, SENT_LINKS, type FooterDoc, type FooterLinkKind } from "./doc";
+import { inline, linkLabel, SENT_LINKS, type FooterDoc, type FooterLinkKind } from "./doc";
 
 /**
  * The saved footer as members will see it, for the previews (the automatic email editor, its preview dialog
@@ -13,7 +13,7 @@ export function FooterContent({ doc }: { doc: FooterDoc }) {
         <p key={i} style={{ margin: 0 }}>
           {inline(p.content, sent).map((n, j) => {
             if (n.type === "hardBreak") return <br key={j} />;
-            if (n.type === "footerLink") return <u key={j}>{FOOTER_LINKS[n.attrs?.kind as FooterLinkKind]}</u>;
+            if (n.type === "footerLink") return <u key={j}>{linkLabel(n)}</u>;
             let out: React.ReactNode = n.text ?? "";
             for (const m of n.marks ?? []) {
               if (m.type === "bold") out = <strong>{out}</strong>;

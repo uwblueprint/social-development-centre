@@ -1180,6 +1180,7 @@ export type Database = {
         Args: never
         Returns: {
           body: Json
+          can_refer: boolean
           fields: Json
           send_id: string
           subject: string

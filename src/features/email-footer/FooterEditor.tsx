@@ -12,7 +12,8 @@ import { Icon } from "@/components/ui/Icon";
 import { Tag } from "@/components/ui/Tag";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { plainJson } from "@/features/email-editor/plainJson";
-import { countLinks, FOOTER_LINKS, type FooterDoc, type FooterLinkKind } from "./doc";
+import { countLinks, linkLabel, type FooterDoc, type FooterLinkKind } from "./doc";
+import { ReferLinkContext, ReferLinkTag } from "./ReferLinkEditor";
 
 const dropKey = new PluginKey<number | null>("footerDropCaret");
 
@@ -112,6 +113,12 @@ const FooterLink = Node.create({
         parseHTML: (el) => el.getAttribute("data-footer-link"),
         renderHTML: (attrs) => ({ "data-footer-link": attrs.kind }),
       },
+      // The refer link's words, chosen in Settings (the other links always say the same).
+      label: {
+        default: null,
+        parseHTML: (el) => el.getAttribute("data-label"),
+        renderHTML: (attrs) => (attrs.label ? { "data-label": attrs.label } : {}),
+      },
     };
   },
 
@@ -120,11 +127,11 @@ const FooterLink = Node.create({
   },
 
   renderHTML({ node, HTMLAttributes }) {
-    return ["span", mergeAttributes(HTMLAttributes), FOOTER_LINKS[node.attrs.kind as FooterLinkKind] ?? ""];
+    return ["span", mergeAttributes(HTMLAttributes), linkLabel(node.toJSON() as FooterDoc)];
   },
 
   renderText({ node }) {
-    return FOOTER_LINKS[node.attrs.kind as FooterLinkKind] ?? "";
+    return linkLabel(node.toJSON() as FooterDoc);
   },
 
   addNodeView() {
@@ -148,10 +155,13 @@ const FooterLink = Node.create({
 });
 
 function LinkTag({ node }: NodeViewProps) {
+  // The refer link's words come from Settings (they can change there before the footer is saved again).
+  const refer = React.useContext(ReferLinkContext);
+  const json = node.toJSON() as FooterDoc;
   return (
     <NodeViewWrapper as="span">
       <Grab data-drag-handle="" contentEditable={false}>
-        <Tag>{FOOTER_LINKS[node.attrs.kind as FooterLinkKind]}</Tag>
+        {json.attrs?.kind === "refer" && refer ? <ReferLinkTag link={refer} /> : <Tag>{linkLabel(json)}</Tag>}
       </Grab>
     </NodeViewWrapper>
   );
