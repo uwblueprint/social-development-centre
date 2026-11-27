@@ -678,11 +678,14 @@ function PageHeading({
   emoji,
   check,
   confetti,
+  emojiSpace = true,
 }: {
   title: string;
   emoji?: string;
   check?: boolean;
   confetti?: boolean;
+  /** Keep the emoji's space when there's no emoji. Off in the flow card: no step in it has one. */
+  emojiSpace?: boolean;
 }) {
   const emojiRef = useRef<HTMLSpanElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
@@ -691,15 +694,17 @@ function PageHeading({
   }, [emoji, title]);
   return (
     <HeadingGroup>
-      <EmojiSlot aria-hidden="true">
-        {check && <DrawnCheck />}
-        {!check && emoji && (
-          // Keyed by the emoji, so a new one pops in.
-          <Emoji key={emoji} ref={emojiRef}>
-            {emoji}
-          </Emoji>
-        )}
-      </EmojiSlot>
+      {(emojiSpace || check || emoji) && (
+        <EmojiSlot aria-hidden="true">
+          {check && <DrawnCheck />}
+          {!check && emoji && (
+            // Keyed by the emoji, so a new one pops in.
+            <Emoji key={emoji} ref={emojiRef}>
+              {emoji}
+            </Emoji>
+          )}
+        </EmojiSlot>
+      )}
       <Title ref={titleRef} tabIndex={-1}>
         <TitleWords>
           {title}
@@ -716,15 +721,14 @@ function PageHeading({
 /*
  * Shallot: every step of cancelling sits in one card, so the offers read as steps of one flow, not
  * standalone pages. Three sections: a header (back arrow and the flow's name) that stays put, the
- * step's content, and a footer with the step's two buttons. The card fills the window's height so the
- * footer sits in the same place on every step; when a step is taller than the window (phones), the
- * footer sticks to the bottom of the screen so its buttons are always in reach.
+ * step's content, and a footer with the step's two buttons. The card is as tall as its step; when a
+ * step is taller than the window (phones), the footer sticks to the bottom of the screen so its
+ * buttons are always in reach. The end screens aren't in the card: by then they're not cancelling.
  */
 
-/** Stretches the card to the bottom of the window instead of sitting at the top. */
 const FramedMiddle = styled.div`
   display: grid;
-  justify-items: center;
+  place-items: start center;
   padding-block: var(--space-6) var(--space-7);
 
   @media (max-width: 480px) {
@@ -739,20 +743,19 @@ const FlowCard = styled(Card)`
   max-width: 624px;
 `;
 
-/** Back arrow left, the flow's name centred, an empty cell right so the name stays centred with or without the arrow. */
 /**
- * The back arrow and the flow's name on the left, the step count on the right, the progress bar under
- * them. Same side padding as the content, so the bar and the arrow line up with the heading.
+ * The back arrow and the flow's name, the progress bar under them. The same space above, between and
+ * below; the same side padding as the content, so the bar and the arrow line up with the heading.
  */
 const FlowHeader = styled.div`
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-6) var(--space-4);
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-6);
   border-bottom: 1px solid var(--color-border);
 
   @media (max-width: 480px) {
-    padding: var(--space-3) var(--space-4) var(--space-4);
+    padding: var(--space-4);
   }
 `;
 
@@ -778,26 +781,17 @@ const FlowName = styled.p`
   color: var(--color-text-muted);
 `;
 
-/** "Step 2 of 3", as the intake form shows "Question 2 of 5" beside its bar. */
-const FlowStep = styled.p`
-  margin: 0;
-  font-size: var(--text-sm);
-  line-height: var(--leading-ui);
-  color: var(--color-text-muted);
-  white-space: nowrap;
-`;
-
 const FlowContent = styled.div`
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
-  padding: var(--space-5) var(--space-6) var(--space-7);
+  padding: var(--space-6);
   /* The slide-in starts to the side: keep it inside the card. */
   overflow-x: clip;
 
   @media (max-width: 480px) {
-    padding: var(--space-4) var(--space-4) var(--space-6);
+    padding: var(--space-5) var(--space-4);
   }
 `;
 
@@ -905,12 +899,12 @@ export function Template({
   progress,
 }: {
   /**
-   * Puts the screen in a card. With a name: a header with the back arrow, the name and `progress`, and
-   * `footer` in the card's footer. `true`: the card alone, for a flow's end screens.
+   * Puts the screen in a card named this: a header with the back arrow, the name and `progress`, and
+   * `footer` in the card's footer.
    */
-  frame?: string | true;
-  /** Where this step is in the flow, shown in the card header: the bar and "Step 2 of 3". */
-  progress?: { step: number; total: number; label: string; text: string };
+  frame?: string;
+  /** Where this step is in the flow: the bar in the card header. */
+  progress?: { step: number; total: number; label: string };
   screenKey: string;
   order?: number;
   onBack?: () => void;
@@ -932,7 +926,9 @@ export function Template({
   footer?: ReactNode;
 }) {
   const dir = useDirection(screenKey, order);
-  const heads = heading && <PageHeading title={heading} emoji={emoji} check={check} confetti={confetti} />;
+  const heads = heading && (
+    <PageHeading title={heading} emoji={emoji} check={check} confetti={confetti} emojiSpace={!frame} />
+  );
   const body = (inCard: boolean) => (
     <Body key={screenKey} $dir={dir} $hasLine={Boolean(line)}>
       {line &&
@@ -970,23 +966,18 @@ export function Template({
         </LogoSlot>
         <FramedMiddle>
           <FlowCard>
-            {typeof frame === "string" && (
-              <FlowHeader>
-                <FlowHeaderRow>
-                  {back(FlowBack)}
-                  <FlowName>{frame}</FlowName>
-                  {progress && <FlowStep>{progress.text}</FlowStep>}
-                </FlowHeaderRow>
-                {progress && (
-                  <Progress value={progress.step} max={progress.total} aria-label={progress.label} />
-                )}
-              </FlowHeader>
-            )}
+            <FlowHeader>
+              <FlowHeaderRow>
+                {back(FlowBack)}
+                <FlowName>{frame}</FlowName>
+              </FlowHeaderRow>
+              {progress && <Progress value={progress.step} max={progress.total} aria-label={progress.label} />}
+            </FlowHeader>
             <FlowContent>
               {heads}
               {body(true)}
             </FlowContent>
-            {typeof frame === "string" && footer && (
+            {footer && (
               <FlowFooter>
                 <FooterRow>{footer}</FooterRow>
               </FlowFooter>

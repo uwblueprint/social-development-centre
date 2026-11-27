@@ -13,8 +13,6 @@ export const cancelCopy = {
   pageTitle: "Pause or cancel your membership", // Not in doc.
   // The name in the card header on every step, so each step reads as part of cancelling. Shallot.
   flowName: "Cancel membership",
-  // Beside the progress bar, like the intake form's "Question 2 of 5". Not in doc.
-  progressText: (step: number, total: number) => `Step ${step} of ${total}`,
   progressLabel: "Cancellation progress", // The bar's name for screen readers. Not in doc.
 
   /* The emoji over the heading once someone accepts an offer (Shallot). Drafts. */

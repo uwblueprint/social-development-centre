@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { SubmitButton } from "@/components/ui/SubmitButton";
@@ -66,11 +66,29 @@ export interface CancelFlowStart {
 
 const isStep = (s: string | null): s is CancelStep => CANCEL_STEPS.includes(s as CancelStep);
 
-/** How long the demo pretends cancelling takes, so the button's spinner shows. */
-const CANCEL_DEMO_MS = 1200;
+/** How long the demo pretends a change takes (cancelling, unsubscribing, pausing, switching), so the button's spinner shows. */
+const PENDING_DEMO_MS = 600;
 
 /** Each step's place in the flow, so going back slides the other way: survey, offer, pause, confirm, then the end screens. */
 const ORDER: Record<CancelStep, number> = { reasons: 0, offer: 1, pause: 1, plan: 2, confirm: 3, paused: 4, switched: 4, unsubscribed: 4, kept: 4, cancelled: 4 };
+
+/**
+ * A button that accepts an offer or cancels: it shows the kit SubmitButton's spinner for a moment
+ * while the change goes through, then moves on. For devs: the form's action becomes the server action
+ * (docs/backend/unsubscribe.md); the demo just waits PENDING_DEMO_MS.
+ */
+function PendingButton({ onClick, children }: { onClick: () => void; children: string }) {
+  return (
+    <form
+      action={async () => {
+        await new Promise((resolve) => setTimeout(resolve, PENDING_DEMO_MS));
+        onClick();
+      }}
+    >
+      <SubmitButton>{children}</SubmitButton>
+    </form>
+  );
+}
 
 export function CancelFlow({ start }: { start: CancelFlowStart }) {
   const params = useSearchParams();
@@ -85,12 +103,12 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
   const [pauseLength, setPauseLength] = useState<PauseLength>("1");
   const [switchedTo, setSwitchedTo] = useState(lowerTiers[0]?.id ?? tier.id);
   const [undone, setUndone] = useState(false);
-  // Steps this flow has pushed onto the browser history, so the back arrow can use the browser's own
-  // back while there's somewhere in the flow to go back to.
-  const pushed = useRef(0);
 
   // A new step, or an undo that changes the heading: move focus to the heading.
   useFocusHeadingOn(`${step}:${undone}`);
+
+  /** Steps of this flow behind the current history entry (0 when the flow was opened at this step). */
+  const depth = (): number => window.history.state?.cancelDepth ?? 0;
 
   /** The URL query for a step, keeping the other demo parameters. */
   function withStep(next: CancelStep) {
@@ -106,8 +124,9 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
     // The browser's own history, not router.push: the step lives only in this client component, so
     // there's no server round trip and the next screen appears on the same frame as the click.
     // Back and forward still work, and useSearchParams follows along.
-    pushed.current += 1;
-    window.history.pushState(null, "", `?${query}`);
+    // Each entry remembers how many steps of this flow are behind it, so the back arrow can use the
+    // browser's own back while there's somewhere in the flow to go back to.
+    window.history.pushState({ cancelDepth: depth() + 1 }, "", `?${query}`);
   }
   /** Answers with a retention offer. "No longer involved", or no answer, goes straight to the confirm step. */
   const hasOffer = reason === "emails" || reason === "budget" || reason === "break";
@@ -133,8 +152,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
     const to = previous[step];
     if (!to) return;
     setUndone(false);
-    if (pushed.current > 0) {
-      pushed.current -= 1;
+    if (depth() > 0) {
       window.history.back();
       return;
     }
@@ -145,21 +163,19 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
   const back = previous[step] ? goBack : undefined;
 
   /**
-   * The card around every step. Deciding steps get the header (back arrow, "Cancel membership", the
-   * progress bar) and the footer; the end screens get the card alone (Shallot: by then they're no
-   * longer cancelling). Steps: the reason, the offer (with "Confirm your plan change"), then confirm.
-   * Always three, so the count doesn't change as they pick an answer; with no offer, 1 goes to 3.
+   * The card around each deciding step: a header (back arrow, "Cancel membership", the progress bar)
+   * and a footer. The end screens have no card (Shallot: by then they're no longer cancelling).
+   * Progress: the reason, the offer (with "Confirm your plan change"), then confirm. Always three
+   * steps, so the bar doesn't change as they pick an answer; with no offer, 1 goes to 3.
    */
   function frameFor(s: CancelStep) {
-    const total = 3;
     const at: Partial<Record<CancelStep, number>> = { reasons: 1, offer: 2, pause: 2, plan: 2, confirm: 3 };
     const n = at[s];
-    if (!n) return { frame: true as const };
-    return {
-      frame: copy.flowName,
-      progress: { step: n, total, label: copy.progressLabel, text: copy.progressText(n, total) },
-    };
+    if (!n) return {};
+    return { frame: copy.flowName, progress: { step: n, total: 3, label: copy.progressLabel } };
   }
+
+  const pending = (next: CancelStep, label: string) => <PendingButton onClick={() => go(next)}>{label}</PendingButton>;
 
   /** "Keep membership": on every step of cancelling, bottom left. */
   const keep = () => (
@@ -193,9 +209,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
       order={ORDER.pause}
       heading={copy.pause.heading}
       actions={
-        <Button type="button" onClick={() => go("paused")}>
-          {copy.pause.pause}
-        </Button>
+        pending("paused", copy.pause.pause)
       }
       footer={offerFooter}
     >
@@ -306,11 +320,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
             heading={copy.offer.emails.heading}
             line={copy.offer.emails.line}
             // Under the line, the size of Keep membership, on the left.
-            lineAction={
-              <Button type="button" onClick={() => go("unsubscribed")}>
-                {copy.offer.emails.action}
-              </Button>
-            }
+            lineAction={pending("unsubscribed", copy.offer.emails.action)}
             footer={footer}
           />
         );
@@ -381,9 +391,7 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
             ) : (
               <>
                 {keep()}
-                <Button type="button" onClick={() => go("switched")}>
-                  {copy.plan.confirm}
-                </Button>
+                {pending("switched", copy.plan.confirm)}
               </>
             )
           }
@@ -461,21 +469,12 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
           screenKey={step} order={ORDER[step]}
           heading={copy.confirm.heading}
           line={copy.confirm.whatEnds}
-          // Shallot: Keep membership on the left like every other step, Confirm cancellation (primary) on
-          // the right, the way forward. Confirming submits a form so the kit's SubmitButton
-          // shows its spinner while the cancellation goes through; the demo waits CANCEL_DEMO_MS. For devs:
-          // the form's action becomes the cancel server action (docs/backend/unsubscribe.md).
+          // Shallot: Keep membership on the left like every other step, Confirm cancellation (primary,
+          // with the spinner) on the right.
           footer={
             <>
               {keep()}
-              <form
-                action={async () => {
-                  await new Promise((resolve) => setTimeout(resolve, CANCEL_DEMO_MS));
-                  go("cancelled");
-                }}
-              >
-                <SubmitButton>{copy.confirm.confirm}</SubmitButton>
-              </form>
+              {pending("cancelled", copy.confirm.confirm)}
             </>
           }
         >
