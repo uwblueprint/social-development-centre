@@ -23,6 +23,7 @@ import {
 } from "../unsubscribe/data";
 import {
   Confetti,
+  InlineLink,
   Lead,
   Note,
   BenefitList,
@@ -87,10 +88,16 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
   // A new step, or an undo that changes the heading: move focus to the heading.
   useFocusHeadingOn(`${step}:${undone}`);
 
-  /** Go to a step, keeping the other demo parameters in the URL. */
-  function go(next: CancelStep) {
+  /** The URL query for a step, keeping the other demo parameters. */
+  function withStep(next: CancelStep) {
     const query = new URLSearchParams(params);
     query.set("step", next);
+    return query;
+  }
+
+  /** Go to a step, keeping the other demo parameters in the URL. */
+  function go(next: CancelStep) {
+    const query = withStep(next);
     setUndone(false);
     // The browser's own history, not router.push: the step lives only in this client component, so
     // there's no server round trip and the next screen appears on the same frame as the click.
@@ -456,16 +463,21 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
             value={copy.cancelled.years(wholeYears(demoMember.memberSince, DEMO_TODAY))}
             caption={copy.cancelled.yearsCaption}
             dates={dates}
-            // The way back in. Rejoining opens "active again", confetti and all.
-            rejoin={
-              <>
-                <Note>{copy.cancelled.rejoinQuestion}</Note>
-                <Button type="button" $variant="ghost" onClick={() => go("kept")}>
-                  {copy.cancelled.rejoin}
-                </Button>
-              </>
-            }
           />
+          {/* The way back in, under the card. Rejoining opens "active again", confetti and all. */}
+          <Note>
+            {copy.cancelled.rejoin(
+              <InlineLink
+                href={`?${withStep("kept")}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  go("kept");
+                }}
+              >
+                {copy.cancelled.rejoinLink}
+              </InlineLink>,
+            )}
+          </Note>
         </Template>
       );
     }

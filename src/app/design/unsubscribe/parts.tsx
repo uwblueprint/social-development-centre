@@ -358,34 +358,48 @@ const YearsContent = styled(CardContent)`
   text-align: center;
 `;
 
-/** The way back in, at the bottom of the card, after a divider. */
-const YearsFooter = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding: 0 var(--space-5) var(--space-3);
+/** Only as wide as what's in it, on the left like the rest of the column. */
+const YearsBox = styled(Card)`
+  align-self: flex-start;
 `;
 
-/**
- * The cancelled page's card: the time they've been a member as one big number, what it means, the
- * dates in small print, then the way back in after a divider (`rejoin`: a muted line and a text
- * button, like an undo).
- */
-export function YearsCard({ value, caption, dates, rejoin }: { value: string; caption: string; dates: string; rejoin: ReactNode }) {
+const YearsPadding = styled(YearsContent)`
+  padding: var(--space-5) var(--space-7);
+`;
+
+/** The cancelled page's card: the time they've been a member as one big number, what it means, and the dates in small print. */
+export function YearsCard({ value, caption, dates }: { value: string; caption: string; dates: string }) {
   return (
-    <FullCard>
-      <YearsContent>
+    <YearsBox>
+      <YearsPadding>
         <Big>{value}</Big>
         <Lead>{caption}</Lead>
         <Note>{dates}</Note>
-      </YearsContent>
-      <YearsFooter>
-        <Separator />
-        <UndoLine>{rejoin}</UndoLine>
-      </YearsFooter>
-    </FullCard>
+      </YearsPadding>
+    </YearsBox>
   );
 }
+
+/**
+ * An action inside a sentence ("You're welcome to rejoin anytime."): the sentence's colour, underlined
+ * so it isn't told apart by colour alone. A real link to the step, so it also opens in a new tab; a
+ * plain click is handled by the flow.
+ */
+export const InlineLink = styled.a`
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  border-radius: var(--radius-sm);
+
+  &:hover {
+    color: var(--color-text);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+`;
 
 /* ---- The page: matches the sign-in pages ---- */
 

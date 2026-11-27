@@ -15,7 +15,7 @@ export const cancelCopy = {
   /* The emoji over the heading once someone accepts an offer (Shallot). Drafts. */
   emoji: {
     switched: "🎉", // You've switched to [tier]
-    paused: "🌴", // Your membership is paused
+    paused: "🗓️", // Your membership is paused
     unsubscribed: "📭", // You're unsubscribed (membership kept)
   },
 
@@ -163,8 +163,9 @@ export const cancelCopy = {
     thanks: "Thank you for being a part of SDC.", // Shallot.
     years: (n: number) => (n === 1 ? "1 year" : `${n} years`),
     dates: (from: string, to: string) => `${from} to ${to}`,
-    rejoinQuestion: "You're welcome back anytime.",
-    rejoin: "Rejoin SDC",
+    // Under the card; "rejoin" is the link (Shallot: rejoin in the sentence, not a separate button).
+    rejoin: (link: ReactNode) => <>You{"'"}re welcome to {link} anytime.</>,
+    rejoinLink: "rejoin",
     yearsCaption: "as an SDC supporter",
   },
 };
