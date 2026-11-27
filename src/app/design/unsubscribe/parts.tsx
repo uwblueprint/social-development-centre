@@ -721,8 +721,8 @@ function PageHeading({
 /*
  * Shallot: every step of cancelling sits in one card, so the offers read as steps of one flow, not
  * standalone pages. Three sections: a header (back arrow and the flow's name) that stays put, the
- * step's content, and a footer with the step's two buttons. The card is as tall as its step; when a
- * step is taller than the window (phones), the footer sticks to the bottom of the screen so its
+ * step's content, and a footer with the step's two buttons. The card is one height on every step
+ * (FlowCard); when a step is taller than the window (phones), the footer sticks to the bottom of the screen so its
  * buttons are always in reach. The end screens aren't in the card: by then they're not cancelling.
  */
 
@@ -736,11 +736,22 @@ const FramedMiddle = styled.div`
   }
 `;
 
+/**
+ * One height for every step (Shallot), so the buttons stay in the same place and well apart from the
+ * content: 592px fits the tallest step ("Pause membership instead?", 589px at desktop). A step that
+ * grows taller makes the card taller. On phones the steps are taller than the screen anyway, so the
+ * card follows its content there and the footer sticks to the bottom.
+ */
 const FlowCard = styled(Card)`
   display: flex;
   flex-direction: column;
   width: 100%;
   max-width: 624px;
+  min-height: 592px;
+
+  @media (max-width: 480px) {
+    min-height: 0;
+  }
 `;
 
 /**
