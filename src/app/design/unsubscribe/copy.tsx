@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { EmailType } from "./data";
+import type { EmailReason } from "./data";
 
 /*
  * Every user-facing string for the email flow (/design/unsubscribe), plus the strings the
@@ -12,7 +12,7 @@ import type { EmailType } from "./data";
  */
 
 export const unsubscribeCopy = {
-  pageTitle: "Email preferences", // Not in doc.
+  pageTitle: "Unsubscribe from SDC emails", // Not in doc.
 
 
   /* Shared with the cancel-membership flow. */
@@ -24,17 +24,16 @@ export const unsubscribeCopy = {
   back: "Back", // The top-left arrow's name for screen readers.
 
   emails: {
-    // The preferences page (footer link 1). Shallot.
-    heading: "Update your email preferences",
-    line: "Choose what you still want to hear about.",
-    types: {
-      monthly: "A monthly summary of SDC's work",
-      membership: "Only emails about my membership",
-    } satisfies Record<EmailType, string>,
-    unsubscribeAll: "Unsubscribe from all emails",
-    save: "Save my preference",
-    // The toast after saving. Shallot.
-    saved: "Your preference has been updated.",
+    // The unsubscribe page (footer link 1): a one-answer survey, optional, then the button. Shallot.
+    heading: "Unsubscribe from SDC emails",
+    // The question and the first two answers are from the first version of this page; placeholders until SDC confirms them.
+    question: "What's going on?",
+    reasons: {
+      "too-many": "I get too many emails",
+      "not-relevant": "The emails aren't relevant to me",
+      done: "I don't want to be involved with SDC anymore", // Shallot.
+    } satisfies Record<EmailReason, string>,
+    unsubscribeAll: "Unsubscribe from all", // Shallot.
 
     // After unsubscribing from all, for members (FigJam: "Membership is still active and will be automatically renewed").
     membership: (tier: string, date: ReactNode, amount: ReactNode) => (

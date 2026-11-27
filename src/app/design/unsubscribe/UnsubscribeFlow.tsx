@@ -2,17 +2,15 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { styled } from "next-yak";
 import { Button } from "@/components/ui/Button";
-import { Checkbox } from "@/components/ui/Checkbox";
 import { AppToastProvider, useToast } from "@/components/ui/Toast";
 import { unsubscribeCopy as copy } from "./copy";
-import { demoMember, emailTypesFor, formatDate, formatMoney, tierById, type EmailType } from "./data";
-import { ChoiceText, Note, OptionList, Template, useFocusHeadingOn } from "./parts";
+import { demoMember, emailReasons, formatDate, formatMoney, tierById, type EmailReason } from "./data";
+import { Note, Options, Template, useFocusHeadingOn } from "./parts";
 
 /*
- * The email flow: footer link 1 in every SDC email. The preferences page, then, after "Unsubscribe
- * from all emails", the unsubscribed page (members hear their membership is still active, with the
+ * The email flow: footer link 1 in every SDC email. "Unsubscribe from SDC emails" asks what's going
+ * on (one answer, optional), then, after "Unsubscribe from all", the unsubscribed page (members hear their membership is still active, with the
  * way into the cancel flow), and after "Sounds good" a closing screen. Follows the "Unsub flow"
  * FigJam board; the look is Jesse's unsubscribe page, built from AuthScreen. Client state only:
  * saving just shows its result.
@@ -24,15 +22,6 @@ export interface EmailFlowStart {
   screen: EmailScreen;
   tierId: string;
 }
-
-/** A row in the bordered list: an email type, or unsubscribing from all of them. */
-type Choice = EmailType | "none";
-
-/** A checkbox row, padded like the kit's radio rows so the list matches the cancel flow's questions. */
-const CheckRow = styled.div`
-  display: flex;
-  padding: var(--space-2) var(--space-3);
-`;
 
 export function UnsubscribeFlow({ start }: { start: EmailFlowStart }) {
   return (
@@ -48,34 +37,18 @@ function Flow({ start }: { start: EmailFlowStart }) {
   const tier = tierById(start.tierId);
   // From the member's record, never the URL.
   const isMember = demoMember.isMember;
-  const types = emailTypesFor(isMember);
 
   const [screen, setScreen] = useState<EmailScreen>(start.screen);
-  const [ticked, setTicked] = useState<Choice[]>([...types]);
+  // Stored with the unsubscribe; kept if they resubscribe and come back.
+  const [reason, setReason] = useState<EmailReason | null>(null);
 
   useFocusHeadingOn(screen);
 
-  /** The back arrow, top left on every screen but the preferences page: one screen back. */
+  /** The back arrow, top left on every screen but the first: one screen back. */
   const back =
     screen === "preferences" ? undefined : () => setScreen(screen === "closed" ? "unsubscribed" : "preferences");
 
-  function tick(choice: Choice, on: boolean) {
-    setTicked((ts) => {
-      // "Unsubscribe from all" and the email types exclude each other.
-      if (choice === "none") return on ? ["none"] : [];
-      const rest = ts.filter((t) => t !== "none" && t !== choice);
-      return on ? types.filter((t) => t === choice || rest.includes(t)) : rest;
-    });
-  }
-
-  function save() {
-    // Nothing ticked means no emails, the same as unsubscribing from all.
-    if (ticked.length === 0 || ticked.includes("none")) return setScreen("unsubscribed");
-    toast({ title: copy.emails.saved });
-  }
-
   function resubscribe() {
-    setTicked([...types]);
     setScreen("preferences");
     toast({ title: copy.resubscribed });
   }
@@ -117,35 +90,23 @@ function Flow({ start }: { start: EmailFlowStart }) {
     );
   }
 
-  const choices: { value: Choice; label: string }[] = [
-    ...types.map((t) => ({ value: t, label: copy.emails.types[t] })),
-    { value: "none", label: copy.emails.unsubscribeAll },
-  ];
-
   return (
     <Template
       screenKey="preferences" order={0}
       heading={copy.emails.heading}
-      line={<span id="preferences-line">{copy.emails.line}</span>}
       actions={
-        <Button type="button" $size="lg" onClick={save}>
-          {copy.emails.save}
+        <Button type="button" $variant="danger-outline" $size="lg" onClick={() => setScreen("unsubscribed")}>
+          {copy.emails.unsubscribeAll}
         </Button>
       }
     >
-      <OptionList role="group" aria-labelledby="preferences-line" style={{ width: "100%" }}>
-        {choices.map((c) => (
-          <CheckRow key={c.value}>
-            <Checkbox
-              name="emails"
-              value={c.value}
-              label={<ChoiceText>{c.label}</ChoiceText>}
-              checked={ticked.includes(c.value)}
-              onCheckedChange={(on) => tick(c.value, on === true)}
-            />
-          </CheckRow>
-        ))}
-      </OptionList>
+      <Options
+        id="unsubscribe-reason"
+        question={copy.emails.question}
+        options={emailReasons.map((r) => ({ value: r, label: copy.emails.reasons[r] }))}
+        value={reason}
+        onChange={setReason}
+      />
     </Template>
   );
 }

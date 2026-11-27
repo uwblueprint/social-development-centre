@@ -6,9 +6,9 @@ The flow follows the [Unsub flow FigJam board](https://www.figma.com/board/jvbGj
 
 ## Screens
 
-- **Update your email preferences** (footer link 1). "Choose what you still want to hear about." over one bordered list of checkboxes: A monthly summary of SDC's work; Only emails about my membership (members only); Unsubscribe from all emails. "Unsubscribe from all" and the email types exclude each other: ticking one clears the other side. Everything the person gets now starts ticked. "Save my preference" shows a toast: "Your preference has been updated."
-- **You're unsubscribed** (`?screen=unsubscribed`): saving with "Unsubscribe from all" ticked, or with nothing ticked. Members see that their membership is still active (date and price in bold), with "Sounds good" and "Cancel membership" (opens the cancel-membership flow at "Before you go"). Non-members see only the heading. "Unsubscribed by mistake? Resubscribe" is the last line; resubscribing returns to the preferences page with everything ticked and a toast.
-- Every screen after the preferences page has a small grey back arrow top left (one screen back).
+- **Unsubscribe from SDC emails** (footer link 1). "What's going on?" over one bordered list of answers (one answer, optional): I get too many emails; The emails aren't relevant to me; I don't want to be involved with SDC anymore. "Unsubscribe from all" (red outline) under it.
+- **You're unsubscribed** (`?screen=unsubscribed`): after "Unsubscribe from all", with or without an answer. Members see that their membership is still active (date and price in bold), with "Sounds good" and "Cancel membership" (opens the cancel-membership flow at "Before you go"). Non-members see only the heading. "Unsubscribed by mistake? Resubscribe" is the last line; resubscribing returns to the first page with a toast.
+- Every screen after the first has a small grey back arrow top left (one screen back).
 - **"Sounds good"** opens a closing screen: "You're unsubscribed / Awesome! You can close this tab now." (`?screen=closed`)
 
 Whether the person is a member comes from their record (`demoMember.isMember` in `data.ts`), never the URL. The demo person is always a member; set it to `false` to preview a subscriber.
@@ -47,5 +47,5 @@ Layout-only: `Stack`, `Question`, `Note`, and `Template`'s `footer` row (Keep me
 
 ## Open with SDC
 
-- Strings marked "Not in doc" in `copy.tsx`, and the email types: SDC still has to list the types it sends.
+- Strings marked "Not in doc" in `copy.tsx`, and the survey's question and answers.
 - "Only emails about my membership" sits beside the monthly summary as its own checkbox, so ticking both means both. If "only" should mean "nothing else", it would clear the monthly summary like "Unsubscribe from all" does.

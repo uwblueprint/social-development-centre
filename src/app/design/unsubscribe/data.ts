@@ -54,17 +54,9 @@ export const DEMO_TODAY = "2026-11-11";
 /** Days before a pause ends that the restart reminder goes out (FigJam: "an email a week before"). */
 export const RESTART_REMINDER_DAYS = 7;
 
-/**
- * The email types on the preferences page, independent of each other. "membership" (only emails
- * about my membership) shows for members only: see `emailTypesFor`. Placeholders until SDC lists the
- * email types it actually sends (doc: Open questions).
- */
-export const emailTypes = ["monthly", "membership"] as const;
-export type EmailType = (typeof emailTypes)[number];
-
-/** The email types a person can choose: everyone gets the monthly summary; members also get membership emails. */
-export const emailTypesFor = (isMember: boolean): EmailType[] =>
-  emailTypes.filter((t) => isMember || t !== "membership");
+/** "What's going on?" answers on the unsubscribe page: one answer, optional. Stored with the unsubscribe. */
+export const emailReasons = ["too-many", "not-relevant", "done"] as const;
+export type EmailReason = (typeof emailReasons)[number];
 
 /**
  * How long a pause lasts, in months: presets rather than free entry, since most people want one to
