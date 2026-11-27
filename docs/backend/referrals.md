@@ -32,10 +32,101 @@ A member refers a friend from an email. The page is `/refer/<token>` (`src/app/r
 - **Footer:** add **Refer a friend** → `/refer/<unsubscribe_token>` next to Unsubscribe.
 - **Don't configure a "Member refers someone" (`refers`) email** for SDC: the decision is to email the referrer only when their friend joins.
 
+## Design additions (Justin, Nov 2026)
+From the PM's notes. Design only, on demo data; nothing below is connected yet.
+
+### Member page layout (`/design/referrals`)
+One photo banner, centred on the page: "Share SDC referral" on the left; under it the member's invite
+link (shown, not editable) with **Copy link**, then "or", then **Recipient's first name** and **Send to
+email address** with **Share invite**. After sending, the same "Thanks for inviting…" and repeat-referral states as `ReferPage`.
+To ship it, port the layout into
+`src/features/referrals/ReferPage.tsx`.
+
+The design changes two things the backend needs to know about:
+
+- **No message to write.** "Email them for me" sends SDC's standard email (an earlier draft let the member
+  customize it; it was dropped, so the "no member text in SDC's email" rule above stays as it is).
+- **I'll send it myself** shows the invite link with **Copy link** (no separate "message" step). Copy link
+  waits for the name and email, calls `refer_friend` with `delivery = 'self'` so the referral is tracked
+  against that email, then copies that friend's own link.
+- **The form asks for the friend's first name and email address**, the same two things `refer_friend`
+  takes today (`p_name`, `p_email`), so nothing changes there.
+
+### The friend's first name
+
+The member types the friend's name however they like: "Priya", "Priya Patel", "Dr. Priya Patel", "dr priya". The invite email greets the friend by first name, and the member's page thanks them by it, so both need the same rule (`firstNameOf` in `src/app/design/referrals/data.ts`):
+
+- Drop leading titles, with or without a full stop and in any case: Mr, Mrs, Ms, Miss, Mx, Dr, Prof, Professor, Rev, Sir, Madam, Dame.
+- Use the first word that's left.
+- If a title leaves only one word ("Dr. Patel"), keep the title: we can't tell a first name from a last name.
+- Keep the case as typed.
+
+Store the name as typed too; admins see it in full.
+
+### Where a referral link goes: the join page
+A referral link opens the **join page** (`/design/membership` in the `justin/membership-design` branch),
+not the intake form. The join page already reads the channel from the link: `/join?via=referral&ref=<code>`
+shows "{member} invited you to join SDC" and keeps the referral code through sign-up and payment, so the
+new member is credited to whoever invited them.
+
+So, for the backend:
+
+- `friendLinkPath()` (in `src/features/referrals/types.ts`) builds `/intake-form/sdc-members?r=<id>` today.
+  Change it to the join page: `/join?via=referral&ref=<code>`.
+- The join page needs a lookup from `ref` to the inviting member's first name (for its heading), and the
+  join must record `ref` so "Member joins via referral" can fire and the referral shows as Joined in the
+  admin view.
+
+### How links work (Justin, Nov 23)
+Researched against common referral programs (Dropbox, Uber: one lasting link per person) and invite links
+(Discord, Slack: per-invite links you can reset). The design:
+
+- **One link per member and friend email, no general link.** Copy link (or Send invite) creates the
+  referral and its link the first time; doing it again for the same email returns the same link (already
+  how `refer_friend` works). Every link is tied to an email, so every join is tracked. The member's general
+  link from an earlier draft is gone. The link shows as soon as the friend's email is typed, before Copy
+  link records anything, so the backend needs a way to give that email's link up front (for example a
+  `referral_link_preview(token, email)` that returns the code the referral will get, or creates a draft
+  referral) and to record the referral with that same code on Copy link.
+- **A 30-day credit window, not an expiring link.** The link keeps working (a friend who opens it in week
+  five can still join), but it only counts as the member's referral if they join within 30 days of the
+  referral. The page says so after Send invite ("If they join within 30 days, it counts as your
+  referral."). Backend: check
+  `joined_at - referred_at <= 30 days` when crediting; after that the join is a normal one.
+
+- **Send another referral.** Shown only after Send invite or Copy link; clears the form for the next
+  person, who gets their own referral and link. No backend change.
+
+### Edge cases (`/design/referrals/states`)
+Every state of the form, live, is laid out at `/design/referrals/states`. What the page does, and the rule
+the backend needs for each:
+
+| Case | What the member sees | Backend rule needed |
+|---|---|---|
+| Copy fails after the referral is recorded (Safari blocks a copy after a network wait) | The link stays, selected, with "copy it yourself"; Copy link copies again without recording twice | Recording with `delivery = 'self'` is idempotent for the same member and email (returns the same link) |
+| Typo in the email (`priya@gmial.com`) | "Did you mean priya@gmail.com?" under the field, before sending | None; the suggestion is client-side only |
+| Two members invite the same person | Each member sees a normal "Invitation sent" (nothing about the other) | Only the first is emailed. Credit goes to the link they join through; if they join with no link, to the earliest invite for that email |
+| Friend joins without any link | Nothing on the member page | At join, match the new member's normalised email to an open referral and credit it |
+| Ten referrals in a day | "You've referred 10 people today. Try again tomorrow." under the email row | The daily limit stays (see "Daily limit" below) |
+| Same person, different spelling (`Sam+sdc@`, `SAM@`, `s.am@gmail.com`) | Treated as already invited | Compare normalised emails: lower case, trimmed, no `+tag`, no dots in Gmail names. Email the address as typed |
+| Changing the choice after an error | The old error or result clears; what's typed stays | None |
+| Already a member, unsubscribed, or invited by someone else | A normal "Invitation sent", so the form reveals nothing | Never email an unsubscribed person (CASL); still record the referral so a later join can be credited |
+
+### Daily limit
+The PM decided to keep the limit (Nov 23): ten new referrals per member per day, because the page works
+without signing in. Justin's design had dropped it; the page now shows `refer_friend`'s `limit` result as an
+error under the email row. One email per address, ever, also stays.
+
+### Email footer (`/design/referrals/footer`)
+The **Refer a friend** line sits above the legal footer (why they get the email, SDC's address, Unsubscribe),
+so it reads as an invitation, not small print. Three copy options for the PM; the recommendation is
+"Know someone who'd care about this? **Refer a friend**", which matches the page title.
+
 ## Tests
 `supabase/tests/`: replays every migration on a local Postgres and checks every rule above (65 checks), see its README. Also checked by hand: 15 parallel requests create exactly 10 referrals; 8 parallel requests for one friend create one referral and one invite; 12 members referring one friend at once create 12 referrals and one invite; two people joining at once through one link credit one. An independent review found no security issues; its three email-option findings are fixed.
 
 ## Open
-- N for the daily limit (10 for now).
+- Later (PM, Nov 23): a friend who joins with a different email, or through a link passed on to someone else, and how admins see referrals on a member's profile. Not designed yet.
+- Later (PM, Nov 23): a broken or incomplete refer-page link should open the join page, not an error screen. Not designed yet.
 - A way to rotate a member's person token if one leaks (it's in every email and never changes).
 - Removing a friend's details on request: admins can read referrals but there's no delete function yet.
