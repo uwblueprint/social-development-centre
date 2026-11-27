@@ -587,6 +587,13 @@ const Emoji = styled.span`
   animation: ${pop} var(--duration-slow) var(--ease-out) both;
 `;
 
+/** The line under the heading and its button, close together so they read as one offer. */
+const LineGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+`;
+
 /**
  * Emoji glyphs carry empty space on their left, so the picture looks indented from the heading under
  * it. Measure where the ink starts in both and shift the emoji so the left edges line up (from the
@@ -786,6 +793,7 @@ export function Template({
   check,
   confetti,
   line,
+  lineAction,
   children,
   actions,
   undo,
@@ -804,6 +812,8 @@ export function Template({
   /** A confetti burst from the middle of the heading's words (after the check, if there is one). */
   confetti?: boolean;
   line?: ReactNode;
+  /** A button that belongs to `line`: right under it, close, at its natural width on the left. */
+  lineAction?: ReactNode;
   children?: ReactNode;
   actions?: ReactNode;
   undo?: ReactNode;
@@ -824,7 +834,15 @@ export function Template({
         <Column>
           {heading && <PageHeading title={heading} emoji={emoji} check={check} confetti={confetti} />}
           <Body key={screenKey} $dir={dir} $hasLine={Boolean(line)}>
-            {line && <Description>{line}</Description>}
+            {line &&
+              (lineAction ? (
+                <LineGroup>
+                  <Description>{line}</Description>
+                  <div>{lineAction}</div>
+                </LineGroup>
+              ) : (
+                <Description>{line}</Description>
+              ))}
             {children}
             {actions && <AuthActions>{actions}</AuthActions>}
             {footer && <FooterRow>{footer}</FooterRow>}

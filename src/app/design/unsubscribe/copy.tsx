@@ -39,7 +39,9 @@ export const unsubscribeCopy = {
     // After unsubscribing from all, for members (FigJam: "Membership is still active and will be automatically renewed").
     membership: (tier: string, date: ReactNode, amount: ReactNode) => (
       <>
-        Your {tier} membership is still active. It renews on <strong>{date}</strong> for <strong>{amount}</strong>.
+        Your {tier} membership is still active.
+        <br />
+        It renews on <strong>{date}</strong> for <strong>{amount}</strong>.
       </>
     ),
     soundsGood: "Sounds good", // Not in doc (FigJam).

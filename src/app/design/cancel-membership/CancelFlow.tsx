@@ -279,7 +279,8 @@ export function CancelFlow({ start }: { start: CancelFlowStart }) {
             order={ORDER.offer}
             heading={copy.offer.emails.heading}
             line={copy.offer.emails.line}
-            actions={
+            // Under the line, the size of Keep membership, on the left.
+            lineAction={
               <Button type="button" onClick={() => go("unsubscribed")}>
                 {copy.offer.emails.action}
               </Button>
