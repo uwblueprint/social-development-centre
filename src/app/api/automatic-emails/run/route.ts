@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { renderDelivery, type Delivery, type Fallbacks } from "@/features/automatic-emails/render";
 import { createSender } from "@/features/automatic-emails/sender";
-import type { FooterDoc } from "@/features/email-footer/doc";
+import { withReferLink, type FooterDoc } from "@/features/email-footer/doc";
 import { createSecretClient } from "@/lib/supabase/secret";
 
 // Vercel's Hobby limit. Sends left when time runs out stay ready and go in the next run.
@@ -59,7 +59,9 @@ export async function GET(request: NextRequest) {
     console.error("[automatic-emails] email_footer failed:", footerRow.error.message);
     return Response.json({ error: "Couldn't load sends" }, { status: 500 });
   }
-  const footer = footerRow.data?.doc as unknown as FooterDoc | undefined;
+  const savedFooter = footerRow.data?.doc as unknown as FooterDoc | undefined;
+  // A footer saved before the refer link existed still sends it.
+  const footer = savedFooter ? withReferLink(savedFooter) : undefined;
 
   const sender = createSender();
   const started = Date.now();

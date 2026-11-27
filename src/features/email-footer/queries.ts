@@ -1,11 +1,11 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import { defaultFooterDoc, type FooterDoc } from "./doc";
+import { defaultFooterDoc, withReferLink, type FooterDoc } from "./doc";
 
-/** The saved footer, or the default one if no one has edited it yet. */
+/** The saved footer (with the refer link, if it was saved before there was one), or the default one. */
 export async function getEmailFooter(): Promise<FooterDoc> {
   const supabase = await createClient();
   const { data, error } = await supabase.from("email_footer").select("doc").maybeSingle();
   if (error) throw error;
-  return (data?.doc as unknown as FooterDoc | undefined) ?? defaultFooterDoc();
+  return withReferLink((data?.doc as unknown as FooterDoc | undefined) ?? defaultFooterDoc());
 }
