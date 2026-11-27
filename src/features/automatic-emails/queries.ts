@@ -1,6 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { AUTOMATIC_EMAIL_COLUMNS, emailFromRow, type AutomaticEmailRow } from "./mapping";
+import { referLinkTextOrDefault } from "./footer";
 import { pretty, type AutomaticEmail, type Recipient, type TagOption } from "./model";
 
 /** Every automatic email, oldest first, as the list shows them. */
@@ -90,4 +91,15 @@ export async function getAutomaticEmail(id: string): Promise<EmailPageData | nul
   });
 
   return { email: emailFromRow(row as AutomaticEmailRow, counts), recipients };
+}
+
+/**
+ * The refer link's text for the email previews. Never blank: a missing row or a failed read shows the
+ * default, so a preview never breaks over it. Settings reads it with `getEmailSettings` instead.
+ */
+export async function getReferLinkText(): Promise<string> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("email_settings").select("refer_link_text").maybeSingle();
+  if (error) console.error("email_settings failed:", error.message);
+  return referLinkTextOrDefault(data?.refer_link_text);
 }

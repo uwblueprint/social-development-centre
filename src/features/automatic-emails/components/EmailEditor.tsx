@@ -26,7 +26,7 @@ import { Tag, type TagColor } from "@/components/ui/Tag";
 import { DateRulePicker, formatDateRule, monthOf, type DateRule } from "@/components/ui/DateRulePicker";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { EmailEditor as MessageEditor } from "@/features/email-editor";
-import { EMAIL_FOOTER } from "../footer";
+import { useEmailFooter } from "./EmailFooterContext";
 import {
   type AutomaticEmail,
   type Unit,
@@ -588,6 +588,7 @@ export function EmailEditor({
   onRestore: () => void;
   onBack: () => void;
 }) {
+  const footer = useEmailFooter();
   const [eligibleOpen, setEligibleOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
 
@@ -996,7 +997,7 @@ export function EmailEditor({
           moment={momentFor(e.trigger)}
           initialSubject={e.subjectDoc ?? (e.subject ? textToDoc(e.subject) : undefined)}
           initialBody={e.body}
-          footer={EMAIL_FOOTER}
+          footer={footer}
           fallbacks={fallbacks}
           onFallbackChange={onFallbackChange}
           files={false}

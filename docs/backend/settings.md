@@ -3,7 +3,7 @@
 `/admin/settings` (the product) and `/design/settings` (the full design on demo data). Decisions: [../decisions/account.md](../decisions/account.md).
 
 ## Connected today
-Two things on the page work against the database. Everything else in the design has no backend yet.
+Two things on the page work against the database. Everything else in the design has no backend yet. The refer link's text isn't on this page: it's edited where it shows, in the email footer ([referrals.md](referrals.md#refer-link-text)).
 
 ### Your name
 - Table `people`: `first_name`, `last_name` (`full_name` is generated from them).
@@ -22,5 +22,5 @@ Two things on the page work against the database. Everything else in the design 
 ## Design only, no backend yet
 These are on `/design/settings` and need storage and server actions before they can ship:
 - **Reply-to address**, **email signature**, and the six **email alerts** (each is a list of admin emails; an empty list means off). Alerts need a sender per event: the member triggers in `member_events`, the Outbox timers in the emails engine, and `add_admin` for a new admin.
-- The signature is plain text (a sign-off, a name and SDC's mailing address). The emails engine appends the unsubscribe, cancel and refer links itself.
+- The signature is plain text (a sign-off, a name and SDC's mailing address). The emails engine appends the unsubscribe, cancel and refer links itself. The refer link is sent today (text edited from the footer itself); the sender doesn't add a **Cancel membership** link yet, though the editor and Outbox footers show one.
 - Save button label: **Save** when only your name or signature changed, **Save for all admins** when a reply-to or an alert changed.

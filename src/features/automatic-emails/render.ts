@@ -1,5 +1,5 @@
 import { VARIABLES, variableById } from "@/features/email-editor/variables";
-import { EMAIL_FOOTER } from "./footer";
+import { EMAIL_FOOTER, referLinkTextOrDefault } from "./footer";
 import type { OutgoingEmail } from "./sender";
 
 /** Email Editor JSON (TipTap's JSONContent), as stored. Typed loosely: it comes from the database. */
@@ -21,6 +21,8 @@ export type Delivery = {
   /** The member's details by personalized field id ("first_name", "referrer_full_name"). */
   fields: Record<string, string>;
   unsubscribe_token: string;
+  /** A current member: their refer link works. Someone whose membership ended gets no refer link. */
+  can_refer: boolean;
 };
 
 /** Saved backup text by field id; a field with none uses its default from variables.ts. */
@@ -45,9 +47,21 @@ const EMAIL_COLORS = {
  * (paragraphs, one heading level, lists, quotes, links, bold, italic, underline, strikethrough,
  * highlight, images and personalized text); anything else is dropped. Every value is escaped.
  */
-export function renderDelivery(delivery: Delivery, origin: string, fallbacks: Fallbacks): OutgoingEmail {
+export function renderDelivery(
+  delivery: Delivery,
+  origin: string,
+  fallbacks: Fallbacks,
+  /** The admin's text for the refer link (Settings). Missing or unusable text falls back to the default. */
+  referLinkText?: string | null,
+): OutgoingEmail {
   const fill = (id: string) => delivery.fields[id]?.trim() || (fallbacks[id] ?? variableById(id)?.fallback ?? "");
   const unsubscribeUrl = new URL(`/unsubscribe/${delivery.unsubscribe_token}`, origin).toString();
+  // The same person token the refer page reads (src/app/refer/[token]). Always there for a member.
+  const refer = delivery.can_refer
+    ? { url: new URL(`/refer/${delivery.unsubscribe_token}`, origin).toString(), text: referLinkTextOrDefault(referLinkText) }
+    : null;
+  const link = (href: string, text: string) =>
+    `<a href="${escape(href)}" style="color:${EMAIL_COLORS.muted}">${escape(text)}</a>`;
 
   const subject = isEmpty(delivery.subject_doc)
     ? delivery.subject.replace(/\[([^\]]+)\]/g, (whole, label: string) => {
@@ -61,14 +75,19 @@ export function renderDelivery(delivery: Delivery, origin: string, fallbacks: Fa
     to: delivery.to_email,
     subject,
     unsubscribeUrl,
-    text: `${plain(delivery.body, fill).trim()}\n\n--\n${footerLines.join("\n")}\n${EMAIL_FOOTER.reason}\nUnsubscribe: ${unsubscribeUrl}\n`,
+    text:
+      `${plain(delivery.body, fill).trim()}\n\n--\n${footerLines.join("\n")}\n${EMAIL_FOOTER.reason}\n` +
+      `Unsubscribe: ${unsubscribeUrl}\n` +
+      (refer ? `${refer.text}: ${refer.url}\n` : ""),
     html:
       `<div style="font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:${EMAIL_COLORS.text};max-width:600px">` +
       html(delivery.body, fill) +
       `<hr style="border:0;border-top:1px solid ${EMAIL_COLORS.rule};margin:24px 0 12px">` +
       `<div style="font-size:12px;line-height:1.5;color:${EMAIL_COLORS.muted}">` +
       footerLines.map((l) => `<p style="margin:0">${escape(l)}</p>`).join("") +
-      `<p style="margin:0">${escape(EMAIL_FOOTER.reason)} <a href="${escape(unsubscribeUrl)}" style="color:${EMAIL_COLORS.muted}">Unsubscribe from emails</a></p>` +
+      `<p style="margin:0">${escape(EMAIL_FOOTER.reason)} ${link(unsubscribeUrl, "Unsubscribe from emails")}` +
+      (refer ? ` · ${link(refer.url, refer.text)}` : "") +
+      `</p>` +
       `</div></div>`,
   };
 }
