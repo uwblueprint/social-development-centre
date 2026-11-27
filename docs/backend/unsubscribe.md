@@ -20,15 +20,15 @@ Items marked **new** aren't on Jesse's branch.
 
 ## Unsubscribe page
 - Whether the person is a member comes from their record via the token, never from the URL.
-- "What's going on?" (optional, one answer): too many emails / not relevant / no longer involved. Store the
+- "Mind telling us why you are unsubscribing?" (optional, one answer): too many emails / not relevant / no longer involved. Store the
   answer with the unsubscribe (Jesse's `subscription_events.reason`, via `giveUnsubscribeReason`).
-- "Unsubscribe from all": Jesse's `unsubscribe(token)`. Legally required voting notices still send.
+- "Unsubscribe": Jesse's `unsubscribe(token)`. Legally required voting notices still send.
 - Resubscribe: Jesse's `resubscribe(token)`.
 
 ## Cancel-membership flow
 - "What's the main reason you're cancelling?" (optional, one answer): too many emails / too expensive / need a
   break / no longer involved. Store it with whatever they do next, including the cancellation.
-- Too many emails: unsubscribes from emails only (same as the unsubscribe page's "Unsubscribe from all").
+- Too many emails: unsubscribes from emails only (same as the unsubscribe page's "Unsubscribe").
 - **Switch to a lower tier (new):** `change_tier(token, tierId)`. Takes effect on the next payment; the
   current period stays at the current tier. Undoable until then (`change_tier` back to the current tier).
 - **Pause (new):** `pause_membership(token, months)`, months 1, 2 or 3 (SDC to confirm the maximum; the FigJam

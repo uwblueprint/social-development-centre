@@ -14,7 +14,7 @@ const screens: EmailScreen[] = ["preferences", "unsubscribed", "closed"];
  * member comes from their record (`demoMember.isMember` in data.ts), never the URL. Every state opens
  * directly:
  *
- * - `?screen=unsubscribed` is the page after "Unsubscribe from all"; `?screen=closed` the
+ * - `?screen=unsubscribed` is the page after "Unsubscribe"; `?screen=closed` the
  *   closing screen after "Sounds good" (default: "Unsubscribe from SDC emails").
  * - `?tier=friend|supporter|sustainer` sets the demo member's tier (default sustainer).
  */

@@ -6,8 +6,8 @@ The flow follows the [Unsub flow FigJam board](https://www.figma.com/board/jvbGj
 
 ## Screens
 
-- **Unsubscribe from SDC emails** (footer link 1). "What's going on?" over one bordered list of answers (one answer, optional): I get too many emails; The emails aren't relevant to me; I don't want to be involved with SDC anymore. "Unsubscribe from all" (red outline) under it.
-- **You're unsubscribed** (`?screen=unsubscribed`): after "Unsubscribe from all", with or without an answer. Members see that their membership is still active (date and price in bold), with "Sounds good" and "Cancel membership" (opens the cancel-membership flow at "Before you go"). Non-members see only the heading. "Unsubscribed by mistake? Resubscribe" is the last line; resubscribing returns to the first page with a toast.
+- **Unsubscribe from SDC emails** (footer link 1). "Mind telling us why you are unsubscribing?" over one bordered list of answers (one answer, optional): I get too many emails; The emails aren't relevant to me; I don't want to be involved with SDC anymore. "Unsubscribe" (primary) under it.
+- **You're unsubscribed** (`?screen=unsubscribed`): after "Unsubscribe", with or without an answer. Members see that their membership is still active (date and price in bold), with "Sounds good" and "Cancel membership" (opens the cancel-membership flow at "Before you go"). Non-members see only the heading. "Unsubscribed by mistake? Resubscribe" is the last line; resubscribing returns to the first page with a toast.
 - Every screen after the first has a small grey back arrow top left (one screen back).
 - **"Sounds good"** opens a closing screen: "You're unsubscribed / Awesome! You can close this tab now." (`?screen=closed`)
 
@@ -48,4 +48,4 @@ Layout-only: `Stack`, `Question`, `Note`, and `Template`'s `footer` row (Keep me
 ## Open with SDC
 
 - Strings marked "Not in doc" in `copy.tsx`, and the survey's question and answers.
-- "Only emails about my membership" sits beside the monthly summary as its own checkbox, so ticking both means both. If "only" should mean "nothing else", it would clear the monthly summary like "Unsubscribe from all" does.
+- "Only emails about my membership" sits beside the monthly summary as its own checkbox, so ticking both means both. If "only" should mean "nothing else", it would clear the monthly summary like "Unsubscribe" does.

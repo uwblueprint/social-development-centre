@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { styled } from "next-yak";
 import { Button } from "@/components/ui/Button";
 import { AppToastProvider, useToast } from "@/components/ui/Toast";
 import { unsubscribeCopy as copy } from "./copy";
@@ -9,8 +10,8 @@ import { demoMember, emailReasons, formatDate, formatMoney, tierById, type Email
 import { Note, Options, Template, useFocusHeadingOn } from "./parts";
 
 /*
- * The email flow: footer link 1 in every SDC email. "Unsubscribe from SDC emails" asks what's going
- * on (one answer, optional), then, after "Unsubscribe from all", the unsubscribed page (members hear their membership is still active, with the
+ * The email flow: footer link 1 in every SDC email. "Unsubscribe from SDC emails" asks why they're
+ * unsubscribing (one answer, optional), then, after "Unsubscribe", the unsubscribed page (members hear their membership is still active, with the
  * way into the cancel flow), and after "Sounds good" a closing screen. Follows the "Unsub flow"
  * FigJam board; the look is Jesse's unsubscribe page, built from AuthScreen. Client state only:
  * saving just shows its result.
@@ -22,6 +23,12 @@ export interface EmailFlowStart {
   screen: EmailScreen;
   tierId: string;
 }
+
+const SpacedAction = styled.div`
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--space-2);
+`;
 
 export function UnsubscribeFlow({ start }: { start: EmailFlowStart }) {
   return (
@@ -95,9 +102,12 @@ function Flow({ start }: { start: EmailFlowStart }) {
       screenKey="preferences" order={0}
       heading={copy.emails.heading}
       actions={
-        <Button type="button" $variant="danger-outline" $size="lg" onClick={() => setScreen("unsubscribed")}>
-          {copy.emails.unsubscribeAll}
-        </Button>
+        // A little further from the survey than the usual gap, so it reads as the page's one action.
+        <SpacedAction>
+          <Button type="button" $size="lg" onClick={() => setScreen("unsubscribed")}>
+            {copy.emails.unsubscribe}
+          </Button>
+        </SpacedAction>
       }
     >
       <Options

@@ -54,7 +54,7 @@ export const DEMO_TODAY = "2026-11-11";
 /** Days before a pause ends that the restart reminder goes out (FigJam: "an email a week before"). */
 export const RESTART_REMINDER_DAYS = 7;
 
-/** "What's going on?" answers on the unsubscribe page: one answer, optional. Stored with the unsubscribe. */
+/** "Mind telling us why you are unsubscribing?" answers on the unsubscribe page: one answer, optional. Stored with the unsubscribe. */
 export const emailReasons = ["too-many", "not-relevant", "done"] as const;
 export type EmailReason = (typeof emailReasons)[number];
 

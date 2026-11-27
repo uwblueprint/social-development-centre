@@ -26,14 +26,14 @@ export const unsubscribeCopy = {
   emails: {
     // The unsubscribe page (footer link 1): a one-answer survey, optional, then the button. Shallot.
     heading: "Unsubscribe from SDC emails",
-    // The question and the first two answers are from the first version of this page; placeholders until SDC confirms them.
-    question: "What's going on?",
+    // The first two answers are from the first version of this page; placeholders until SDC confirms them.
+    question: "Mind telling us why you are unsubscribing?", // Shallot.
     reasons: {
       "too-many": "I get too many emails",
       "not-relevant": "The emails aren't relevant to me",
       done: "I don't want to be involved with SDC anymore", // Shallot.
     } satisfies Record<EmailReason, string>,
-    unsubscribeAll: "Unsubscribe from all", // Shallot.
+    unsubscribe: "Unsubscribe", // Shallot.
 
     // After unsubscribing from all, for members (FigJam: "Membership is still active and will be automatically renewed").
     membership: (tier: string, date: ReactNode, amount: ReactNode) => (
