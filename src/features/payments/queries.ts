@@ -11,9 +11,8 @@ import {
   type PaymentStatus,
   type PlanOption,
   type UnmatchedPayment,
+  LIVE_STATUSES as LIVE,
 } from "./types";
-
-const LIVE = ["pending", "active", "payment_problem", "suspended"];
 
 /**
  * The plans the members' area offers, with the name and price set on each Plan in PayPal (so the page
@@ -47,28 +46,32 @@ function priceLabel(plan: PayPalPlan): string {
   return count === 1 ? `${amount} a ${unit}` : `${amount} every ${count} ${unit}s`;
 }
 
-/** The signed-in member's own subscription (row-level security lets them read only theirs). */
+/**
+ * The signed-in member's own subscription (row-level security lets them read only theirs). A pending
+ * one was never paid for, so the member sees the card they had before they clicked Pay.
+ */
 export async function getMyMembership(personId: string): Promise<MyMembership> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("subscriptions")
-    .select("status, next_billing_at, last_failed_at")
+    .select("status, next_billing_at, last_failed_at, cancel_at")
     .eq("person_id", personId)
     .in("status", LIVE)
     .maybeSingle();
   if (error) throw error;
-  if (!data) return { status: "none", nextBillingAt: null, lastFailedAt: null };
+  if (!data || data.status === "pending") return { status: "none", nextBillingAt: null, lastFailedAt: null, cancelAt: null };
   return {
     status: data.status as PaymentStatus,
-    nextBillingAt: data.next_billing_at,
+    nextBillingAt: data.status === "cancelling" ? null : data.next_billing_at,
     lastFailedAt: data.last_failed_at,
+    cancelAt: data.status === "cancelling" ? data.cancel_at : null,
   };
 }
 
 /**
  * Everyone on the Payments page, A–Z: every current member, plus anyone who has a subscription or a
- * payment on record. Cancelling ends the membership, so without the second group a cancelled member
- * would disappear along with their payment history. Admins only (row-level security).
+ * payment on record (someone an admin removed keeps their payment history here). Admins only
+ * (row-level security). Someone whose subscription ended shows as "Not paying".
  */
 export async function listMemberPayments(): Promise<MemberPaymentRow[]> {
   const supabase = await createClient();
@@ -76,7 +79,7 @@ export async function listMemberPayments(): Promise<MemberPaymentRow[]> {
     supabase.from("memberships").select("person_id"),
     supabase
       .from("subscriptions")
-      .select("person_id, status, failed_attempts, next_billing_at, created_at")
+      .select("person_id, status, failed_attempts, next_billing_at, cancel_at, created_at")
       .not("person_id", "is", null)
       .order("created_at", { ascending: false }),
     supabase
@@ -100,7 +103,7 @@ export async function listMemberPayments(): Promise<MemberPaymentRow[]> {
   const people = await supabase.from("people").select("id, email, full_name").in("id", [...personIds]);
   if (people.error) throw people.error;
 
-  // A live subscription wins; otherwise the newest one (a cancelled one says "Cancelled").
+  // A live subscription wins; otherwise the newest one.
   const subscriptionOf = new Map<string, (typeof subscriptions.data)[number]>();
   for (const s of subscriptions.data) {
     const current = subscriptionOf.get(s.person_id!);
@@ -125,9 +128,10 @@ export async function listMemberPayments(): Promise<MemberPaymentRow[]> {
         name: person.full_name,
         email: person.email,
         isMember: memberIds.has(person.id),
-        status: (subscription?.status ?? "none") as PaymentStatus,
+        status: (live?.status ?? "none") as PaymentStatus,
         failedAttempts: live?.failed_attempts ?? 0,
-        nextBillingAt: live?.next_billing_at ?? null,
+        nextBillingAt: live && live.status !== "cancelling" ? live.next_billing_at : null,
+        cancelAt: live?.status === "cancelling" ? live.cancel_at : null,
         lastPaidAt: last?.paid_at ?? null,
         lastAmountCents: last?.amount_cents ?? null,
         currency: last?.currency ?? null,

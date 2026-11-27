@@ -5,7 +5,8 @@ automatically each period and tells our server about every payment, failure and 
 webhooks. Admins see it all on **Payments** (`/admin/payments`).
 
 Decisions (19 Nov 2026): subscriptions only, no one-time payments. Two failed payment attempts suspend
-the subscription. Cancelling ends the membership: the member loses the members' area. See also
+the subscription. **Updated 27 Nov 2026:** cancelling stops payment, not membership. They stay a member
+who isn't paying, and can resubscribe without a new sign-up until their next billing date. See also
 [../decisions/members.md](../decisions/members.md) (decision 1, update).
 
 ## How it works
@@ -21,11 +22,45 @@ the subscription. Cancelling ends the membership: the member loses the members' 
 | Status | Set by | Member sees |
 | --- | --- | --- |
 | `none` (no row) | default | **Pay membership** |
-| `pending` | `startSubscription` | "Confirming…", **Start again** |
-| `active` | `BILLING.SUBSCRIPTION.ACTIVATED`, a completed payment, or the thanks page | next payment date, **Cancel membership** |
+| `pending` | `startSubscription` | Same as `none`: nothing has been paid. See "Paying twice" below |
+| `active` | `BILLING.SUBSCRIPTION.ACTIVATED`, a completed payment, or the thanks page | next payment date, **Cancel membership payments** |
 | `payment_problem` | first `BILLING.SUBSCRIPTION.PAYMENT.FAILED` | warning, link to update payment in PayPal, **Cancel** |
 | `suspended` | second failed attempt (we suspend it in PayPal), or `BILLING.SUBSCRIPTION.SUSPENDED` | link to PayPal, **Resume membership**, **Cancel** |
-| `cancelled` | the member, an admin, or `BILLING.SUBSCRIPTION.CANCELLED` / `EXPIRED` | membership ended: no members' area |
+| `cancelling` | an `active` member or an admin cancels: paused in PayPal until `cancel_at` | "Resubscribe before {date}", **Resubscribe** |
+| `cancelled` | the daily job after `cancel_at`, an immediate cancel, or `BILLING.SUBSCRIPTION.CANCELLED` / `EXPIRED` | Same as `none`. Still a member |
+
+### Cancelling and resubscribing
+
+Cancelling never ends the membership. What happens to the PayPal subscription depends on its status:
+
+- `active`: we save PayPal's next billing time as `cancel_at`, mark it `cancelling`, and **suspend** it in
+  PayPal, which charges nothing while it's paused. (A PayPal cancel is final; only a suspended
+  subscription can be reactivated.)
+- `payment_problem` or `suspended`: the last payment failed, so there's no paid time left. It's
+  cancelled in PayPal right away.
+
+Pressing **Pay membership** / **Resubscribe** (`startSubscription`):
+
+- `cancelling` and before `cancel_at`: we reactivate the same PayPal subscription. No PayPal page, no
+  new charge; billing carries on from the date they already had.
+- `cancelling` after `cancel_at`, or PayPal refuses to reactivate: we cancel it for good and start a new
+  subscription through PayPal.
+
+A daily job (`/api/payments/finish-cancellations`, `vercel.json`, needs `CRON_SECRET`) cancels for good,
+in PayPal, every `cancelling` subscription whose `cancel_at` has passed. PayPal never does this itself: a
+suspended subscription stays suspended forever, and reactivating one late (e.g. from PayPal's dashboard)
+might charge the skipped time.
+
+### Paying twice
+
+A `pending` subscription means the member went to PayPal and we haven't heard back. Before starting a new
+one, `startSubscription` asks PayPal for its status:
+
+- `ACTIVE`: they did pay. We mark it `active` and create nothing.
+- `APPROVED` (approved, not started): we cancel it in PayPal so it never charges, then start a new one.
+- `APPROVAL_PENDING` or gone: we drop our row and start a new one.
+
+The unique index (one live subscription per member) stops two tabs from saving two at once.
 
 PayPal retries a failed charge every 5 days, twice. We count each failed attempt ourselves
 (`FAILED_ATTEMPTS_BEFORE_SUSPEND` in `config.ts`) because PayPal's own threshold counts whole billing
@@ -44,7 +79,9 @@ if it doesn't, suspension happens at PayPal's own threshold instead.
 | `src/app/api/webhooks/paypal/route.ts` | Verifies, de-duplicates and dispatches webhooks; exempt from sign-in in `portals.ts` |
 | `src/features/payments/actions.ts` | Start, cancel and resume (member); cancel and assign (admin) |
 | `src/features/payments/MembershipCard.tsx` | The card in the members' area (`src/app/page.tsx`) |
-| `src/app/membership/thanks`, `src/app/membership/cancelled` | Return page from PayPal; confirmation after cancelling |
+| `src/app/membership/thanks` | Return page from PayPal |
+| `src/app/api/payments/finish-cancellations` | Daily: ends paused subscriptions once their billing date passes |
+| `supabase/migrations/20261127000000_payments_cancel_at_period_end.sql` | `cancelling`, `cancel_at`; cancelling keeps the membership |
 | `src/features/payments/PaymentsPage.tsx`, `src/app/admin/payments` | Admin → Payments |
 
 Writes to the payment tables only happen on the server with the secret key, after checking who is
@@ -97,15 +134,23 @@ our button), member reminder emails on a failed payment, and showing payments on
    land on the thanks page, then see "active" in the members' area and a row on Admin → Payments.
 2. PayPal's dashboard → *Webhooks events* shows each event PayPal sent and what our route answered.
    `paypal_events` has the same events with any processing error.
-3. Cancel from the members' area: you should land on "Your membership is cancelled", disappear from
-   Admin → Members, and the subscription should show as cancelled in PayPal.
-4. Failed payments: in the sandbox, make the buyer's funding fail (e.g. a sandbox card set to decline)
+3. Cancel from the members' area: the card should say "Resubscribe before {date}", you should stay on
+   Admin → Members, Admin → Payments should say "Cancelling", and PayPal should show it suspended.
+   **Resubscribe** the next day: check in PayPal that no new payment was taken and that the next
+   billing date didn't move. (This is the one behaviour PayPal's docs don't spell out.)
+4. To test the end of the window, set `cancel_at` in the past and call
+   `/api/payments/finish-cancellations` with `Authorization: Bearer $CRON_SECRET`: it should be cancelled
+   in PayPal, show "Not paying", and **Pay membership** should go through PayPal again.
+5. Paying twice: approve on PayPal, then (before the thanks page or webhook confirms) open the members'
+   area and click **Pay membership**: you should see "Your payment went through" and only one
+   subscription in PayPal.
+6. Failed payments: in the sandbox, make the buyer's funding fail (e.g. a sandbox card set to decline)
    and wait for the next billing date, or use PayPal's webhook simulator to send
    `BILLING.SUBSCRIPTION.PAYMENT.FAILED`. Simulator events may fail signature verification; a real
    sandbox subscription is the true end-to-end test.
-5. Refunds: refund a sandbox payment from the Business account; a negative row should appear.
+7. Refunds: refund a sandbox payment from the Business account; a negative row should appear.
 
-Without a tunnel, steps 1 and 3 still work locally (the thanks page asks PayPal directly), but no
+Without a tunnel, steps 1, 3 and 5 still work locally (the thanks page asks PayPal directly), but no
 payments are recorded.
 
 ## Going live

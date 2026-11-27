@@ -34,8 +34,9 @@ export const HANDLED_EVENTS = [
 export async function handleEvent(db: Db, event: PayPalEvent): Promise<void> {
   switch (event.event_type) {
     case "BILLING.SUBSCRIPTION.ACTIVATED":
+      return subscriptionActivated(db, event.resource as unknown as PayPalSubscription, false);
     case "BILLING.SUBSCRIPTION.RE-ACTIVATED":
-      return subscriptionActivated(db, event.resource as unknown as PayPalSubscription);
+      return subscriptionActivated(db, event.resource as unknown as PayPalSubscription, true);
     case "BILLING.SUBSCRIPTION.PAYMENT.FAILED":
       return paymentFailed(db, event.resource as unknown as PayPalSubscription);
     case "BILLING.SUBSCRIPTION.SUSPENDED":
@@ -64,11 +65,15 @@ async function findSubscription(db: Db, paypalId: string): Promise<SubscriptionR
   return data;
 }
 
-/** A member's subscription went live (or came back after a suspension). */
-async function subscriptionActivated(db: Db, resource: PayPalSubscription): Promise<void> {
+/**
+ * A member's subscription went live, or came back after a pause (`reactivated`). Only a reactivation
+ * brings a cancelling one back: a late first ACTIVATED for one they've since cancelled changes nothing.
+ */
+async function subscriptionActivated(db: Db, resource: PayPalSubscription, reactivated: boolean): Promise<void> {
   const existing = await findSubscription(db, resource.id);
   const fields = {
     status: "active",
+    cancel_at: null,
     failed_attempts: 0,
     last_failed_at: null,
     next_billing_at: resource.billing_info?.next_billing_time ?? null,
@@ -77,6 +82,7 @@ async function subscriptionActivated(db: Db, resource: PayPalSubscription): Prom
 
   if (existing) {
     if (existing.status === "cancelled") return;
+    if (existing.status === "cancelling" && !reactivated) return;
     const { error } = await db.from("subscriptions").update(fields).eq("id", existing.id);
     if (error) throw error;
     return;
@@ -106,7 +112,8 @@ async function subscriptionActivated(db: Db, resource: PayPalSubscription): Prom
  */
 async function paymentFailed(db: Db, resource: PayPalSubscription): Promise<void> {
   const subscription = await findSubscription(db, resource.id);
-  if (!subscription || subscription.status === "cancelled") return;
+  // A cancelling one is paused: PayPal doesn't charge it, so a failure here is stale.
+  if (!subscription || subscription.status === "cancelled" || subscription.status === "cancelling") return;
 
   const failedAttempts = subscription.failed_attempts + 1;
   const suspend = failedAttempts >= FAILED_ATTEMPTS_BEFORE_SUSPEND || resource.status === "SUSPENDED";
@@ -133,16 +140,20 @@ async function paymentFailed(db: Db, resource: PayPalSubscription): Promise<void
   if (error) throw error;
 }
 
+/** PayPal suspended it. Our own pause when a member cancels sends this too; that stays "cancelling". */
 async function setStatus(db: Db, paypalId: string, status: "suspended"): Promise<void> {
   const { error } = await db
     .from("subscriptions")
     .update({ status, updated_at: new Date().toISOString() })
     .eq("paypal_subscription_id", paypalId)
-    .neq("status", "cancelled");
+    .not("status", "in", "(cancelled,cancelling)");
   if (error) throw error;
 }
 
-/** Cancelled anywhere (our site, the member's PayPal account, an admin): the membership ends. */
+/**
+ * Cancelled anywhere (our site, the daily job, the member's PayPal account, an admin): the subscription
+ * ends and they stay a member who isn't paying. Paying again starts a new one through PayPal.
+ */
 async function subscriptionEnded(db: Db, paypalId: string): Promise<void> {
   const subscription = await findSubscription(db, paypalId);
   if (!subscription) return;
@@ -187,7 +198,8 @@ async function saleCompleted(db: Db, sale: Sale): Promise<void> {
     { onConflict: "paypal_transaction_id", ignoreDuplicates: true },
   );
   if (error) throw error;
-  if (!subscription || subscription.status === "cancelled") return;
+  // Recorded either way. A paused (cancelling) one only goes back to active through RE-ACTIVATED.
+  if (!subscription || subscription.status === "cancelled" || subscription.status === "cancelling") return;
 
   // The sale doesn't say when the next charge is; ask PayPal. Not worth failing the webhook over.
   let nextBillingAt = subscription.next_billing_at;

@@ -37,7 +37,7 @@ export function MembershipCard({
   plans: PlanOption[];
   managePaymentsUrl: string;
 }) {
-  const { status, nextBillingAt } = membership;
+  const { status, nextBillingAt, cancelAt } = membership;
   const showWarning = status === "payment_problem" || status === "suspended";
 
   return (
@@ -51,14 +51,15 @@ export function MembershipCard({
             {nextBillingAt && (status === "active" || status === "payment_problem") && (
               <> {memberCopy.nextPayment(formatDate(nextBillingAt))}</>
             )}
+            {cancelAt && status === "cancelling" && <> {memberCopy.cancelsOn(formatDate(cancelAt))}</>}
           </span>
         </StatusLine>
       </CardHeader>
       <CardContent>
         <Actions>
-          {(status === "none" || status === "pending") && (
-            <PayButtons plans={plans} label={status === "pending" ? memberCopy.payAgainButton : memberCopy.payButton} />
-          )}
+          {/* "pending" never reaches here: a payment we haven't captured shows as "none" (queries.ts). */}
+          {(status === "none" || status === "cancelled") && <PayButtons plans={plans} label={memberCopy.payButton} />}
+          {status === "cancelling" && <PayButtons plans={plans} label={memberCopy.resubscribeButton} />}
           {showWarning && (
             <PayPalLink href={managePaymentsUrl} target="_blank" rel="noreferrer">
               {memberCopy.updatePaymentLink}
@@ -98,6 +99,7 @@ function PayButtons({ plans, label }: { plans: PlanOption[]; label: string }) {
         </PlanForm>
       ))}
       <ErrorMessage state={state} />
+      <SuccessMessage state={state} />
     </>
   );
 }
@@ -146,6 +148,12 @@ function CancelForm() {
       </AlertDialogActions>
     </form>
   );
+}
+
+/** Resubscribing (or a payment PayPal had already taken) updates the card in place; this says so. */
+function SuccessMessage({ state }: { state: ActionState }) {
+  if (state.status !== "success" || !state.message) return null;
+  return <Hint role="status">{state.message}</Hint>;
 }
 
 function ErrorMessage({ state }: { state: ActionState }) {

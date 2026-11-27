@@ -45,9 +45,8 @@ export function PaymentsPage({ members, unmatched }: { members: MemberPaymentRow
   };
 
   const cancelButton = (m: MemberPaymentRow) =>
-    // Nothing to cancel: "none" never started, "pending" is still on PayPal's approval page,
-    // "cancelled" already ended.
-    m.status === "none" || m.status === "pending" || m.status === "cancelled" ? null : (
+    // Nothing to cancel: "none" isn't paying, "pending" hasn't paid yet, "cancelling" already stopped.
+    m.status === "none" || m.status === "pending" || m.status === "cancelling" || m.status === "cancelled" ? null : (
       <Button
         type="button"
         $variant="outline"
@@ -91,7 +90,7 @@ export function PaymentsPage({ members, unmatched }: { members: MemberPaymentRow
       header: "Paid this year",
       render: (m) => (m.currency ? formatMoney(m.paidThisYearCents, m.currency) : "—"),
     },
-    { key: "next", header: "Next payment", render: (m) => (m.nextBillingAt ? formatDate(m.nextBillingAt) : "—") },
+    { key: "next", header: "Next payment", render: nextPayment },
     {
       key: "actions",
       header: <VisuallyHidden>Actions</VisuallyHidden>,
@@ -143,7 +142,7 @@ export function PaymentsPage({ members, unmatched }: { members: MemberPaymentRow
                   <StatusBadge status={m.status} />
                 </span>
                 <MutedText>Last paid: {lastPaid(m)}</MutedText>
-                {m.nextBillingAt && <MutedText>Next payment: {formatDate(m.nextBillingAt)}</MutedText>}
+                {(m.nextBillingAt || m.cancelAt) && <MutedText>Next payment: {nextPayment(m)}</MutedText>}
               </MobileText>
               {cancelButton(m)}
             </MobileRow>
@@ -224,6 +223,12 @@ function lastPaid(m: MemberPaymentRow): string {
     : "Never";
 }
 
+/** The next charge, or when a cancelled subscription ends for good. */
+function nextPayment(m: MemberPaymentRow): string {
+  if (m.cancelAt) return adminCopy.cancelsOn(formatDate(m.cancelAt));
+  return m.nextBillingAt ? formatDate(m.nextBillingAt) : "—";
+}
+
 /** Text on every badge, so the status never rides on color alone. */
 function StatusBadge({ status }: { status: PaymentStatus }) {
   const variant = (
@@ -233,6 +238,7 @@ function StatusBadge({ status }: { status: PaymentStatus }) {
       active: "success",
       payment_problem: "warning",
       suspended: "danger",
+      cancelling: "warning",
       cancelled: "neutral",
     } as const
   )[status];

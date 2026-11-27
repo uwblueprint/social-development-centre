@@ -855,6 +855,7 @@ export type Database = {
       }
       subscriptions: {
         Row: {
+          cancel_at: string | null
           cancelled_at: string | null
           cancelled_by: string | null
           created_at: string
@@ -869,6 +870,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cancel_at?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
           created_at?: string
@@ -883,6 +885,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cancel_at?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
           created_at?: string

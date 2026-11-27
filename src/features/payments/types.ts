@@ -3,8 +3,22 @@
  * docs/backend/payments.md describes the tables behind them.
  */
 
-/** "none" = never started a subscription. The others mirror public.subscriptions.status. */
-export type PaymentStatus = "none" | "pending" | "active" | "payment_problem" | "suspended" | "cancelled";
+/**
+ * "none" = not paying: never started, or their subscription ended. The others mirror
+ * public.subscriptions.status. "cancelling" = they cancelled; paused in PayPal until cancel_at, and
+ * reactivated if they resubscribe before then.
+ */
+export type PaymentStatus =
+  | "none"
+  | "pending"
+  | "active"
+  | "payment_problem"
+  | "suspended"
+  | "cancelling"
+  | "cancelled";
+
+/** Subscriptions that still exist in PayPal. A member has at most one (a unique index says so). */
+export const LIVE_STATUSES = ["pending", "active", "payment_problem", "suspended", "cancelling"];
 
 /** A plan as the members' area shows it (no PayPal ids). */
 export interface PlanOption {
@@ -20,6 +34,8 @@ export interface MyMembership {
   status: PaymentStatus;
   nextBillingAt: string | null;
   lastFailedAt: string | null;
+  /** When a cancelling subscription ends for good; resubscribing before then keeps the same one. */
+  cancelAt: string | null;
 }
 
 /** A row on the admin Payments page: a current member, or anyone with payment history. */
@@ -27,11 +43,12 @@ export interface MemberPaymentRow {
   personId: string;
   name: string | null;
   email: string;
-  /** False once they've cancelled (cancelling ends the membership); kept for their payment history. */
+  /** False once they're no longer a member (an admin removed them); kept for their payment history. */
   isMember: boolean;
   status: PaymentStatus;
   failedAttempts: number;
   nextBillingAt: string | null;
+  cancelAt: string | null;
   lastPaidAt: string | null;
   lastAmountCents: number | null;
   currency: string | null;
