@@ -108,7 +108,7 @@ function OutboxScreen({ initial }: { initial: OutboxInitial }) {
     setPrevInitial(initial);
     setSends(initial.sends);
   }
-  const data: OutboxData = React.useMemo(() => ({ members: initial.members, templates: initial.templates }), [initial]);
+  const data: OutboxData = React.useMemo(() => ({ members: initial.members, templates: initial.templates, footer: initial.footer }), [initial]);
   const afterSend = initial.afterSend;
   const today = React.useMemo(() => {
     const [y, m, d] = initial.today.split("-").map(Number);

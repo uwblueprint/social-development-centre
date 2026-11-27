@@ -1,5 +1,5 @@
 import { VARIABLES, variableById } from "@/features/email-editor/variables";
-import { EMAIL_FOOTER } from "./footer";
+import { defaultFooterDoc, footerHtml, footerText, type FooterDoc } from "@/features/email-footer/doc";
 import type { OutgoingEmail } from "./sender";
 
 /** Email Editor JSON (TipTap's JSONContent), as stored. Typed loosely: it comes from the database. */
@@ -45,7 +45,13 @@ const EMAIL_COLORS = {
  * (paragraphs, one heading level, lists, quotes, links, bold, italic, underline, strikethrough,
  * highlight, images and personalized text); anything else is dropped. Every value is escaped.
  */
-export function renderDelivery(delivery: Delivery, origin: string, fallbacks: Fallbacks): OutgoingEmail {
+export function renderDelivery(
+  delivery: Delivery,
+  origin: string,
+  fallbacks: Fallbacks,
+  /** The footer saved in Settings, read when the email goes out, so emails waiting to send get the latest one. */
+  footer: FooterDoc = defaultFooterDoc(),
+): OutgoingEmail {
   const fill = (id: string) => delivery.fields[id]?.trim() || (fallbacks[id] ?? variableById(id)?.fallback ?? "");
   const unsubscribeUrl = new URL(`/unsubscribe/${delivery.unsubscribe_token}`, origin).toString();
 
@@ -56,20 +62,19 @@ export function renderDelivery(delivery: Delivery, origin: string, fallbacks: Fa
       })
     : plain(delivery.subject_doc, fill).replace(/\s+/g, " ").trim();
 
-  const footerLines = [EMAIL_FOOTER.organization, `${EMAIL_FOOTER.address} · ${EMAIL_FOOTER.contact}`];
+  // The cancel link has no page to go to yet, so it's left out of sent emails until there is one.
+  const footerUrls = { unsubscribe: unsubscribeUrl };
   return {
     to: delivery.to_email,
     subject,
     unsubscribeUrl,
-    text: `${plain(delivery.body, fill).trim()}\n\n--\n${footerLines.join("\n")}\n${EMAIL_FOOTER.reason}\nUnsubscribe: ${unsubscribeUrl}\n`,
+    text: `${plain(delivery.body, fill).trim()}\n\n--\n${footerText(footer, footerUrls)}\n`,
     html:
       `<div style="font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:${EMAIL_COLORS.text};max-width:600px">` +
       html(delivery.body, fill) +
       `<hr style="border:0;border-top:1px solid ${EMAIL_COLORS.rule};margin:24px 0 12px">` +
-      `<div style="font-size:12px;line-height:1.5;color:${EMAIL_COLORS.muted}">` +
-      footerLines.map((l) => `<p style="margin:0">${escape(l)}</p>`).join("") +
-      `<p style="margin:0">${escape(EMAIL_FOOTER.reason)} <a href="${escape(unsubscribeUrl)}" style="color:${EMAIL_COLORS.muted}">Unsubscribe from emails</a></p>` +
-      `</div></div>`,
+      footerHtml(footer, footerUrls) +
+      `</div>`,
   };
 }
 

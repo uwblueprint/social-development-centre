@@ -14,7 +14,9 @@ import {
 import { Field } from "@/components/ui/Field";
 import { Select } from "@/components/ui/Select";
 import { VARIABLES } from "@/features/email-editor/variables";
-import { EMAIL_FOOTER, REPLY_TO } from "../footer";
+import type { FooterDoc } from "@/features/email-footer/doc";
+import { FooterContent } from "@/features/email-footer/FooterContent";
+import { REPLY_TO } from "../footer";
 import { type AutomaticEmail, type Recipient, textToDoc } from "../model";
 import { renderEmailDoc, renderEmailText } from "./renderEmail";
 
@@ -94,10 +96,6 @@ const MailFooter = styled.div`
   }
 `;
 
-const Underlined = styled.span`
-  text-decoration: underline;
-`;
-
 const Strong = styled.span`
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
@@ -109,6 +107,7 @@ export function EmailPreviewDialog({
   email,
   recipients,
   fallbacks,
+  footer,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -116,6 +115,8 @@ export function EmailPreviewDialog({
   /** Who the Outbox has this email scheduled for. Empty shows the sample member. */
   recipients: Recipient[];
   fallbacks: Record<string, string>;
+  /** The footer saved in Settings. */
+  footer: FooterDoc;
 }) {
   const [picked, setPicked] = useState(recipients[0]?.personId ?? "");
   const sample = recipients.length === 0;
@@ -162,11 +163,7 @@ export function EmailPreviewDialog({
             {email.body ? renderEmailDoc(email.body, values, fallbacks) : <BodyPlaceholder>No message yet.</BodyPlaceholder>}
           </MailBody>
           <MailFooter>
-            <p>{EMAIL_FOOTER.organization}</p>
-            <p>{`${EMAIL_FOOTER.address} · ${EMAIL_FOOTER.contact}`}</p>
-            <p>
-              {EMAIL_FOOTER.reason} <Underlined>Unsubscribe from emails</Underlined>
-            </p>
+            <FooterContent doc={footer} />
           </MailFooter>
         </Mail>
         <DialogActions>

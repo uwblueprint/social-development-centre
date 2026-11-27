@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import type { FooterDoc } from "@/features/email-footer/doc";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -116,12 +117,15 @@ export function AutomaticEmailScreen({
   tags,
   recipients,
   fallbacks: initialFallbacks,
+  footer,
 }: {
   /** The email, or blankEmail() for a new one. */
   email: AutomaticEmail;
   tags: TagOption[];
   recipients: Recipient[];
   fallbacks: Record<string, string>;
+  /** The footer saved in Settings, shown under the message and in the preview. */
+  footer: FooterDoc;
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -249,6 +253,7 @@ export function AutomaticEmailScreen({
         tagNames={tagNames}
         recipients={email.state === "published" ? recipients : []}
         fallbacks={fallbacks}
+        footer={footer}
         onFallbackChange={changeFallback}
         saved={saved}
         onUpdate={update}

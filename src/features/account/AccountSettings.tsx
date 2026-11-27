@@ -4,6 +4,8 @@ import { useActionState, useState } from "react";
 import { CircleAlert } from "lucide-react";
 import { styled } from "next-yak";
 import { ListPage, ListPageHeader } from "@/components/patterns/ListPage";
+import type { FooterDoc } from "@/features/email-footer/doc";
+import { FooterSettings } from "@/features/email-footer/FooterSettings";
 import {
   AlertDialog,
   AlertDialogActions,
@@ -33,12 +35,21 @@ const PageColumn = styled(Column)`
   gap: var(--space-7);
 `;
 
-export function AccountSettings({ account }: { account: Account }) {
+export function AccountSettings({ account, footer }: { account: Account; footer: FooterDoc }) {
   return (
     <ListPage>
       <PageColumn>
         <NameForm initial={{ firstName: account.firstName, lastName: account.lastName }} />
         <Sections>
+          <Section aria-labelledby="sending">
+            <SectionTitle id="sending">Email sending</SectionTitle>
+            <Row>
+              <RowLabel>Email footer</RowLabel>
+              <Cell>
+                <FooterSettings initial={footer} />
+              </Cell>
+            </Row>
+          </Section>
           <DeleteAccount onlyAdmin={account.onlyAdmin} />
         </Sections>
       </PageColumn>

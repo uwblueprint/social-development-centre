@@ -17,20 +17,17 @@ import { EmailImage } from "../extensions/emailImage";
 import { PersonalizedText } from "../extensions/personalizedText";
 import type { PersonalizationVariable } from "../variables";
 import { LinkEditor, LinkMenu, type LinkUi } from "./LinkPopovers";
+import { plainJson } from "../plainJson";
 import { pickFiles } from "./shortcuts";
 import { Toolbar } from "./Toolbar";
 import { BodyKeyboard, EscapeBlur, FOCUS_TOOLBAR, LEAVE_TO_SUBJECT } from "../extensions/keyboardNav";
 
-export interface EmailFooter {
-  /*
-   * What CASL and CAN-SPAM expect at the bottom of every commercial email, in reading order:
-   * why they got it, who sent it, where to reach them, then the way out.
-   */
-  reason: string;
-  organization: string;
-  address: string;
-  contact: string;
-}
+/**
+ * The footer every email ends with, as the page draws it (the saved one: features/email-footer). What CASL and
+ * CAN-SPAM expect at the bottom of every commercial email: why they got it, who sent it, where to reach them,
+ * then the way out.
+ */
+export type EmailFooter = React.ReactNode;
 
 export interface MessageFieldProps {
   content?: JSONContent;
@@ -294,7 +291,7 @@ export function MessageField({
       onReady?.(e);
     },
     onFocus: ({ editor: e }) => onFocusEditor(e),
-    onUpdate: ({ editor: e }) => onChange(e.getJSON(), e.isEmpty, e.getText().length),
+    onUpdate: ({ editor: e }) => onChange(plainJson(e.getJSON()), e.isEmpty, e.getText().length),
   });
 
   // Published emails are read-only until they're unpublished, and that can change while the editor is open.
@@ -385,14 +382,7 @@ export function MessageField({
               onPointerLeave={closeFooterTip}
               onBlur={closeFooterTip}
             >
-              <div>
-                {footer.organization}
-                <br />
-                {`${footer.address} · ${footer.contact}`}
-              </div>
-              <FooterSmall>
-                {footer.reason} <u>Unsubscribe from emails</u> · <u>Cancel membership</u>
-              </FooterSmall>
+              <div>{footer}</div>
             </Footer>
           </TooltipTrigger>
           <TooltipContent>{copy.footerTip}</TooltipContent>
@@ -592,7 +582,3 @@ const Footer = styled.div`
   }
 `;
 
-const FooterSmall = styled.div`
-  font-size: var(--text-xs);
-  color: var(--color-text-subtle);
-`;
