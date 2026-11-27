@@ -40,6 +40,7 @@ No backend work. When there's no connection, what's on screen stays readable; su
 - [Automatic emails](./automatic-emails.md) (storage, lifecycle, conditions, Outbox and the daily send)
 - [Membership payments](./payments.md) (PayPal subscriptions, webhooks, Admin → Payments; sandbox setup and go-live)
 - [Settings](./settings.md) (your name and delete account are connected; the rest of the design has no backend yet)
+- [Unsubscribe and pause or cancel membership](./unsubscribe.md) (public, from email footer links, no sign-in)
 
 ## Support address
 `BSF_SUPPORT_EMAIL` (`src/lib/contact.ts`) is where admins escalate a page that keeps failing to load. It is info@blueprintsoftware.org; the load-error page turns it into a mailto link automatically.
