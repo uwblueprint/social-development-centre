@@ -764,11 +764,11 @@ const FlowBack = styled(Button)`
   color: var(--color-text-muted);
 `;
 
-/** The flow's name, grey and large like the line under a heading (Shallot). Not a heading: each step's h1 is. */
+/** The flow's name, grey and body size (Shallot). Not a heading: each step's h1 is. */
 const FlowName = styled.p`
   flex: 1;
   margin: 0;
-  font-size: var(--text-lg);
+  font-size: var(--text-md);
   line-height: var(--leading-ui);
   color: var(--color-text-muted);
 `;
